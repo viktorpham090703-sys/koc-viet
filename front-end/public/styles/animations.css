@@ -1,0 +1,975 @@
+/* ============================================================
+   KOC Việt · Animation System
+   Comprehensive, additive animations for all portals & landings.
+   Respects prefers-reduced-motion.
+   ============================================================ */
+
+/* ---------- Keyframes ---------- */
+@keyframes nvFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nvFadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes nvFadeInDown {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes nvFadeInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes nvFadeInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes nvZoomIn {
+  from { opacity: 0; transform: scale(.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes nvZoomOut {
+  from { opacity: 0; transform: scale(1.08); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes nvSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes nvSlideDown {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes nvPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+@keyframes nvPulseSoft {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+@keyframes nvShake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+@keyframes nvSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes nvBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes nvShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes nvGradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes nvRipple {
+  from { transform: scale(0); opacity: .5; }
+  to   { transform: scale(4); opacity: 0; }
+}
+@keyframes nvBadgePop {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@keyframes nvCheckDraw {
+  from { stroke-dashoffset: 24; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes nvBarGrow {
+  from { width: 0; }
+}
+@keyframes nvCountUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes nvRowIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes nvCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes nvFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes nvGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, .25); }
+  50%      { box-shadow: 0 0 0 8px rgba(238, 77, 45, 0); }
+}
+@keyframes nvDrawLine {
+  from { stroke-dashoffset: 1000; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes nvBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .3; }
+}
+
+/* ---------- Utility animation classes ---------- */
+.nv-anim-fade-in      { animation: nvFadeIn .35s ease both; }
+.nv-anim-fade-up      { animation: nvFadeInUp .45s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-fade-down    { animation: nvFadeInDown .45s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-fade-left    { animation: nvFadeInLeft .45s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-fade-right   { animation: nvFadeInRight .45s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-zoom-in      { animation: nvZoomIn .4s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-zoom-out     { animation: nvZoomOut .4s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-slide-up     { animation: nvSlideUp .35s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-slide-down   { animation: nvSlideDown .35s cubic-bezier(.22,1,.36,1) both; }
+.nv-anim-pulse        { animation: nvPulse 2s ease-in-out infinite; }
+.nv-anim-pulse-soft   { animation: nvPulseSoft 1.6s ease-in-out infinite; }
+.nv-anim-shake        { animation: nvShake .5s ease both; }
+.nv-anim-bounce       { animation: nvBounce 2s ease-in-out infinite; }
+.nv-anim-float        { animation: nvFloat 4s ease-in-out infinite; }
+.nv-anim-glow         { animation: nvGlow 2.5s ease-in-out infinite; }
+.nv-anim-blink        { animation: nvBlink 1.2s ease-in-out infinite; }
+.nv-anim-spin         { animation: nvSpin .8s linear infinite; }
+
+/* ---------- Staggered entrance (applied via JS with --nv-delay) ---------- */
+.nv-stagger > * {
+  opacity: 0;
+  animation: nvFadeInUp .5s cubic-bezier(.22,1,.36,1) forwards;
+  animation-delay: var(--nv-delay, 0ms);
+}
+
+/* ---------- Scroll-reveal (applied via JS IntersectionObserver) ---------- */
+.nv-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity .6s cubic-bezier(.22,1,.36,1) var(--nv-reveal-delay, 0ms),
+    transform .6s cubic-bezier(.22,1,.36,1) var(--nv-reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.nv-reveal.nv-reveal-left   { transform: translateX(-28px); }
+.nv-reveal.nv-reveal-right  { transform: translateX(28px); }
+.nv-reveal.nv-reveal-zoom   { transform: scale(.94); }
+.nv-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Card entrance (for grids/lists) ---------- */
+.nv-card-enter {
+  animation: nvCardIn .45s cubic-bezier(.22,1,.36,1) both;
+  animation-delay: var(--nv-delay, 0ms);
+}
+
+/* ---------- Table row entrance ---------- */
+.nv-row-enter {
+  animation: nvRowIn .35s ease both;
+  animation-delay: var(--nv-delay, 0ms);
+}
+
+/* ---------- Micro-interactions ---------- */
+/* Button press */
+.btn:active:not(:disabled) {
+  transform: scale(.97);
+}
+/* Button hover lift */
+.btn.nv-lift {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, background .15s ease;
+}
+.btn.nv-lift:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(11, 31, 58, .12);
+}
+/* Card hover lift */
+.nv-lift-card {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.nv-lift-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(11, 31, 58, .1);
+}
+/* Link underline grow */
+.nv-underline {
+  position: relative;
+}
+.nv-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s cubic-bezier(.22,1,.36,1);
+}
+.nv-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* ---------- Skeleton loading & utility elements ---------- */
+.nv-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e2e8f0;
+  border-radius: 8px;
+}
+.nv-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+  background-size: 400px 100%;
+  animation: nvShimmer 1.4s infinite;
+}
+
+.sk-line { height: 14px; margin-bottom: 8px; border-radius: 4px; }
+.sk-line.w-25 { width: 25%; }
+.sk-line.w-50 { width: 50%; }
+.sk-line.w-75 { width: 75%; }
+.sk-line.w-100 { width: 100%; }
+.sk-title { height: 24px; width: 40%; margin-bottom: 16px; border-radius: 6px; }
+
+.sk-circle { border-radius: 50%; flex-shrink: 0; }
+.sk-circle.sm { width: 32px; height: 32px; }
+.sk-circle.md { width: 48px; height: 48px; }
+.sk-circle.lg { width: 64px; height: 64px; }
+
+.sk-card {
+  background: #fff;
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: var(--r-card, 16px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.sk-portal-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+.sk-sidebar {
+  width: 240px;
+  background: #fff;
+  border-right: 1px solid #e8e8e8;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sk-main {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sk-topbar {
+  height: 56px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+@media (max-width: 1024px) {
+  .sk-sidebar { display: none; }
+  .sk-main { padding: 14px; }
+}
+
+/* ---------- Gradient animated background ---------- */
+.nv-gradient-anim {
+  background-size: 200% 200%;
+  animation: nvGradientShift 6s ease infinite;
+}
+
+/* ---------- Modal animations ---------- */
+.modal-bg {
+  animation: nvFadeIn .25s ease both;
+}
+.modal-bg .modal {
+  animation: nvZoomIn .35s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Toast animations ---------- */
+.toast {
+  animation: nvFadeInDown .3s cubic-bezier(.22,1,.36,1) both, nvFadeInUp .3s cubic-bezier(.22,1,.36,1) 2.3s reverse both;
+}
+
+/* ---------- Bottom nav active indicator ---------- */
+.bottom-nav a.active .ico {
+  animation: nvBadgePop .3s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Sidebar nav items ---------- */
+.sidebar a {
+  transition: background .2s ease, color .2s ease, border-color .2s ease, padding-left .2s ease;
+}
+.sidebar a:hover {
+  padding-left: 24px;
+}
+.sidebar a.active {
+  padding-left: 24px;
+}
+
+
+/* ---------- Progress bar animation ---------- */
+.progress i {
+  animation: nvBarGrow 1s cubic-bezier(.22,1,.36,1) both;
+  transform-origin: left;
+}
+
+/* ---------- Notification badge pop ---------- */
+.badge-num:not([hidden]) {
+  animation: nvBadgePop .35s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Empty state ---------- */
+.empty .ico {
+  animation: nvBounce 2.5s ease-in-out infinite;
+}
+
+/* ---------- Spinner enhancement ---------- */
+.spin {
+  border-width: 3px;
+  border-color: var(--border);
+  border-top-color: var(--primary);
+}
+
+/* ---------- Landing hero entrance ---------- */
+.lp-hero .lp-eyebrow {
+  animation: nvFadeInDown .5s cubic-bezier(.22,1,.36,1) both;
+}
+.lp-hero h1 {
+  animation: nvFadeInUp .6s .08s cubic-bezier(.22,1,.36,1) both;
+}
+.lp-hero p.lp-sub {
+  animation: nvFadeInUp .6s .16s cubic-bezier(.22,1,.36,1) both;
+}
+.lp-hero .lp-hero-cta {
+  animation: nvFadeInUp .6s .24s cubic-bezier(.22,1,.36,1) both;
+}
+.lp-hero .lp-trust {
+  animation: nvFadeInUp .6s .32s cubic-bezier(.22,1,.36,1) both;
+}
+.lp-hero .lp-hero-media {
+  animation: nvFadeInRight .7s .2s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Landing CTA final ---------- */
+.lp-cta-final h2 {
+  animation: nvFadeInUp .6s cubic-bezier(.22,1,.36,1) both;
+}
+.lp-cta-final .lp-hero-cta {
+  animation: nvFadeInUp .6s .1s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Accordion smooth open ---------- */
+.lp-acc-a {
+  transition: max-height .35s cubic-bezier(.22,1,.36,1), padding .35s ease;
+}
+
+/* ---------- Auth card entrance ---------- */
+.auth-card {
+  animation: nvZoomIn .45s cubic-bezier(.22,1,.36,1) both;
+}
+
+
+/* ---------- Table rows hover ---------- */
+tr {
+  transition: background .15s ease;
+}
+
+/* ---------- List items ---------- */
+.list-item {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, border-color .2s ease;
+}
+.list-item:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(11, 31, 58, .06);
+}
+
+/* ---------- KOC cards ---------- */
+.koc-card {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, border-color .2s ease;
+}
+.koc-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ---------- Product cards ---------- */
+.product-card {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(11, 31, 58, .08);
+}
+
+/* ---------- Notification items ---------- */
+.notification-item {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, border-color .2s ease;
+}
+.notification-item:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(11, 31, 58, .06);
+}
+
+/* ---------- Demo account hover ---------- */
+.demo-acc {
+  transition: background .2s ease, transform .2s cubic-bezier(.22,1,.36,1), border-color .2s ease;
+}
+.demo-acc:hover {
+  transform: translateX(3px);
+  border-color: var(--primary);
+}
+
+/* ---------- Chips ---------- */
+.chip {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s ease, box-shadow .2s ease;
+}
+.chip:hover {
+  transform: translateY(-1px);
+}
+
+/* ---------- Booking type tabs ---------- */
+.booking-type-tabs button {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s ease, border-color .2s ease, color .2s ease;
+}
+.booking-type-tabs button:hover:not(.active) {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+}
+
+/* ---------- Tab row ---------- */
+.tab-row button {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s ease, border-color .2s ease, color .2s ease;
+}
+.tab-row button:hover:not(.active) {
+  transform: translateY(-1px);
+}
+
+/* ---------- Pager buttons ---------- */
+.pager button {
+  transition: transform .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+}
+.pager button:hover:not(:disabled):not(.active) {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ---------- Input focus ---------- */
+input, select, textarea {
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(238, 77, 45, .12);
+}
+
+/* ---------- Video upload box ---------- */
+.video-upload-box {
+  transition: border-color .2s ease, background .2s ease;
+}
+.video-upload-box:hover {
+  border-color: var(--primary);
+  background: #f0f7ff;
+}
+
+/* ---------- Stream frame ---------- */
+.stream-frame {
+  transition: box-shadow .3s ease;
+}
+.stream-frame:hover {
+  box-shadow: 0 8px 24px rgba(11, 31, 58, .15);
+}
+
+/* ---------- Profile avatar ---------- */
+.profile-avatar {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+}
+.profile-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(11, 31, 58, .2);
+}
+
+/* ---------- Tier shield ---------- */
+.tier-shield {
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.tier-shield:hover {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+/* ---------- Landing stat numbers ---------- */
+.lp-stat strong {
+  animation: nvCountUp .6s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Landing chips ---------- */
+.lp-chip {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, background .2s ease;
+}
+.lp-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(238, 77, 45, .15);
+}
+
+/* ---------- Landing cards ---------- */
+.lp-card {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.lp-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(11, 31, 58, .08);
+  border-color: #ffc5b8;
+}
+
+/* ---------- Landing step cards ---------- */
+.lp-step {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.lp-step:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(11, 31, 58, .08);
+}
+
+/* ---------- Landing pricing cards ---------- */
+.lp-pricing-card {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.lp-pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(11, 31, 58, .1);
+}
+
+/* ---------- Landing quote cards ---------- */
+.lp-quote {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease;
+}
+.lp-quote:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(11, 31, 58, .08);
+}
+
+/* ---------- Landing banner ---------- */
+.lp-banner {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+}
+.lp-banner:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(11, 31, 58, .12);
+}
+
+/* ---------- Landing media ---------- */
+.lp-media {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+}
+.lp-media:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(11, 31, 58, .1);
+}
+
+/* ---------- Landing accordion ---------- */
+.lp-acc-item {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, border-color .2s ease;
+}
+.lp-acc-item:hover {
+  transform: translateX(3px);
+  border-color: #ffc5b8;
+}
+
+/* ---------- Landing feature rows ---------- */
+.lp-feature-row {
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.lp-feature-row:hover {
+  transform: translateY(-2px);
+}
+
+/* ---------- Landing recruit card ---------- */
+.lp-recruit-card {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+}
+.lp-recruit-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(11, 31, 58, .15);
+}
+
+/* ---------- Landing flow line ---------- */
+.lp-flow-line {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease;
+}
+.lp-flow-line:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(11, 31, 58, .06);
+}
+
+/* ---------- Landing box ---------- */
+.lp-box {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease;
+}
+.lp-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(11, 31, 58, .06);
+}
+
+/* ---------- Landing CTA buttons ---------- */
+.lp-hero-cta .btn,
+.lp-cta-final .btn {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, background .15s ease;
+}
+.lp-hero-cta .btn:hover,
+.lp-cta-final .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(11, 31, 58, .15);
+}
+
+/* ---------- Landing quote CTA ---------- */
+.lp-quote-cta {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, filter .15s ease;
+}
+.lp-quote-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(185, 28, 28, .2);
+}
+
+/* ---------- Landing footer links ---------- */
+.lp-footer-inner a {
+  transition: color .2s ease, padding-left .2s ease;
+}
+.lp-footer-inner a:hover {
+  padding-left: 4px;
+}
+
+/* ---------- Landing nav links ---------- */
+.lp-nav > a {
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+.lp-nav > a:hover {
+  transform: translateY(-1px);
+}
+
+/* ---------- Landing burger ---------- */
+.lp-burger {
+  transition: transform .2s ease;
+}
+.lp-burger:hover {
+  transform: scale(1.1);
+}
+
+/* ---------- Landing header ---------- */
+.lp-header {
+  animation: nvFadeIn .4s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Landing footer ---------- */
+.lp-footer {
+  animation: nvFadeInUp .5s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- KOC recruit hero ---------- */
+.koc-recruit-hero .koc-recruit-eyebrow {
+  animation: nvFadeInDown .5s cubic-bezier(.22,1,.36,1) both;
+}
+.koc-recruit-hero h1 {
+  animation: nvFadeInUp .6s .08s cubic-bezier(.22,1,.36,1) both;
+}
+.koc-recruit-hero-copy > p {
+  animation: nvFadeInUp .6s .16s cubic-bezier(.22,1,.36,1) both;
+}
+.koc-recruit-hero-actions {
+  animation: nvFadeInUp .6s .24s cubic-bezier(.22,1,.36,1) both;
+}
+.koc-recruit-trust {
+  animation: nvFadeInUp .6s .32s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- KOC recruit benefit cards ---------- */
+.koc-recruit-benefit-card {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.koc-recruit-benefit-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(11, 31, 58, .12);
+}
+
+/* ---------- KOC recruit step cards ---------- */
+.koc-recruit-step-grid article {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease;
+}
+.koc-recruit-step-grid article:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .2);
+}
+
+/* ---------- KOC recruit final box ---------- */
+.koc-recruit-final-box {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+}
+.koc-recruit-final-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 60px rgba(11, 31, 58, .12);
+}
+
+/* ---------- KOC recruit preview ---------- */
+.koc-recruit-preview {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+}
+.koc-recruit-preview:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 36px 80px rgba(0, 0, 0, .32);
+}
+
+/* ---------- KOC recruit header ---------- */
+.koc-recruit-header {
+  animation: nvFadeInDown .4s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- KOC recruit back link ---------- */
+.koc-recruit-back {
+  transition: color .2s ease, transform .2s ease;
+}
+.koc-recruit-back:hover {
+  transform: translateX(-3px);
+}
+
+/* ---------- KOC recruit text link ---------- */
+.koc-recruit-text-link {
+  transition: color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.koc-recruit-text-link:hover {
+  transform: translateX(3px);
+}
+
+/* ---------- KOC recruit card number ---------- */
+.koc-recruit-card-number {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), background .3s ease, color .3s ease;
+}
+.koc-recruit-benefit-card:hover .koc-recruit-card-number {
+  transform: rotate(-8deg) scale(1.1);
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ---------- KOC recruit step number ---------- */
+.koc-recruit-step-grid article > b {
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.koc-recruit-step-grid article:hover > b {
+  transform: scale(1.1) rotate(-8deg);
+}
+
+/* ---------- Commission states ---------- */
+.commission-state {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, border-color .2s ease;
+}
+.commission-state:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(11, 31, 58, .08);
+}
+
+/* ---------- Wallet transactions ---------- */
+.wallet-transaction {
+  transition: background .2s ease, padding-left .2s ease;
+}
+.wallet-transaction:hover {
+  background: #fafafa;
+  padding-left: 6px;
+}
+
+/* ---------- Affiliate orders ---------- */
+.affiliate-order {
+  transition: background .2s ease;
+}
+.affiliate-order:hover {
+  background: #f8fafc;
+}
+
+/* ---------- Copy box ---------- */
+.copybox {
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.copybox:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(238, 77, 45, .08);
+}
+
+/* ---------- Step dots ---------- */
+.step-dots i {
+  transition: background .3s ease, transform .3s ease;
+}
+.step-dots i.on {
+  animation: nvBarGrow .5s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ---------- Tier badges ---------- */
+.tier-badge {
+  transition: transform .2s cubic-bezier(.22,1,.36,1);
+}
+.tier-badge:hover {
+  transform: scale(1.08);
+}
+
+/* ---------- Booking kind badges ---------- */
+.booking-kind {
+  transition: transform .2s cubic-bezier(.22,1,.36,1);
+}
+.booking-kind:hover {
+  transform: scale(1.05);
+}
+
+/* ---------- Avatar ---------- */
+.avatar {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease;
+}
+.avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(11, 31, 58, .15);
+}
+
+/* ---------- Profile cover ---------- */
+.profile-cover {
+  transition: transform .4s cubic-bezier(.22,1,.36,1);
+}
+.profile-hero:hover .profile-cover {
+  transform: scale(1.02);
+}
+
+/* ---------- Image editor ---------- */
+.image-editor {
+  transition: box-shadow .25s ease, border-color .25s ease;
+}
+.image-editor:hover {
+  box-shadow: 0 6px 16px rgba(11, 31, 58, .06);
+}
+
+/* ---------- Tier benefit card ---------- */
+.tier-benefit-card {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease;
+}
+.tier-benefit-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(238, 77, 45, .1);
+}
+
+/* ---------- Password change section ---------- */
+.password-change-section {
+  transition: box-shadow .25s ease, border-color .25s ease;
+}
+.password-change-section:hover {
+  box-shadow: 0 6px 16px rgba(11, 31, 58, .06);
+}
+
+/* ---------- Profile category picker ---------- */
+.profile-category-picker .chip {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s ease, color .2s ease, box-shadow .2s ease;
+}
+.profile-category-picker .chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(238, 77, 45, .12);
+}
+
+/* ---------- Product media ---------- */
+.product-card-media {
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+}
+.product-card:hover .product-card-media {
+  transform: scale(1.03);
+}
+
+/* ---------- Product link ---------- */
+.product-link {
+  transition: color .2s ease;
+}
+
+/* ---------- Product actions ---------- */
+.product-actions .btn {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease;
+}
+.product-actions .btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ---------- Filters ---------- */
+.filters .field {
+  transition: transform .2s cubic-bezier(.22,1,.36,1);
+}
+.filters .field:focus-within {
+  transform: translateY(-1px);
+}
+
+/* ---------- Table wrap ---------- */
+.table-wrap {
+  transition: box-shadow .25s ease;
+}
+.table-wrap:hover {
+  box-shadow: 0 6px 16px rgba(11, 31, 58, .05);
+}
+
+/* ---------- Hero navy ---------- */
+.hero-navy {
+  transition: box-shadow .3s ease;
+}
+.hero-navy:hover {
+  box-shadow: 0 10px 24px rgba(11, 31, 58, .15);
+}
+
+/* ---------- Tint box ---------- */
+.tint-box {
+  transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease;
+}
+.tint-box:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 31, 58, .05);
+}
+
+/* ---------- Scrollbar (subtle) ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(11, 31, 58, .2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(11, 31, 58, .35);
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .nv-reveal,
+  .nv-stagger > *,
+  .nv-card-enter,
+  .nv-row-enter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

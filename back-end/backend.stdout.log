@@ -1,0 +1,5 @@
+
+> nexrall-koc-viet-back-end@2.0.0 dev
+> tsx watch src/server.ts
+
+Express API listening on http://localhost:3000

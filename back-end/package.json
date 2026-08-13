@@ -1,0 +1,29 @@
+{
+  "name": "nexrall-koc-viet-back-end",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:import": "psql -v ON_ERROR_STOP=1 -f ../database/postgresql_full.sql"
+  },
+  "dependencies": {
+    "compression": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "helmet": "latest",
+    "pg": "latest"
+  },
+  "devDependencies": {
+    "@types/compression": "latest",
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "@types/pg": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}
