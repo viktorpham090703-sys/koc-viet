@@ -1,5 +1,5 @@
 import { api, post } from './api.js';
-import { money, esc, stars, tierBadge, spinner, empty, pager, toast, modal, closeModal, num, skeletonKocGrid, skeletonStatCards, skeletonTable } from './ui.js';
+import { money, esc, stars, tierBadge, spinner, empty, pager, toast, modal, closeModal, num, skeletonKocGrid, skeletonStatCards, skeletonTable, avatarUrl } from './ui.js';
 import { state } from './app.js';
 
 function pubShell(inner) {
@@ -86,7 +86,7 @@ async function loadMp(bookMode, onBook) {
 
 function kocCard(k, bookMode) {
   return `<div class="koc-card" data-view="${k.id}">
-    <div class="row"><img class="avatar" src="${esc(k.avatar)}" alt=""><div style="flex:1">
+    <div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}" alt=""><div style="flex:1">
       <div class="between"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}</div>
       <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} follower</div>
     </div></div>
@@ -106,7 +106,7 @@ export async function renderKocProfile(el, id) {
     <a href="#/explore" class="muted" style="font-size:13px">‹ Về trang khám phá KOC</a>
     <div class="hero-navy" style="margin-top:10px">
       <div class="row" style="align-items:flex-start">
-        <img class="avatar lg" src="${esc(k.avatar)}" alt="">
+        <img class="avatar lg" src="${esc(avatarUrl(k.avatar))}" alt="">
         <div style="flex:1">
           <div class="row">${tierBadge(k.tier)} <span class="muted" style="color:#cdd6e4">📍 ${esc(k.province)}</span></div>
           <h1 style="margin:6px 0">${esc(k.name)}</h1>

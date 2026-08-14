@@ -2,6 +2,7 @@
 export const money = (n) => (Number(n)||0).toLocaleString('vi-VN') + 'đ';
 export const num = (n) => (Number(n)||0).toLocaleString('vi-VN');
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export const avatarUrl = (value) => String(value || '').trim() || '/default-avatar.svg';
 export const fmtDate = (ts) => {
   if (!ts) return '—';
   const num = Number(ts);

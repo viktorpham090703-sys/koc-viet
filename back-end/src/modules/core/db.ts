@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-08-05-business-products-v1';
+const SCHEMA_GUARD_VERSION = '2026-08-14-koc-identity-s3-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -205,12 +205,37 @@ const MIGRATIONS = [
      failure_reason TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, paid_at INTEGER )`,
   // ---- business product catalog: reusable source links for future affiliate flows ----
   ...BUSINESS_PRODUCT_SCHEMA,
+  // ---- private KOC identity images; only exposed through admin-only APIs ----
+  `CREATE TABLE IF NOT EXISTS koc_identity_documents (
+     koc_id TEXT PRIMARY KEY, front_image TEXT NOT NULL, back_image TEXT NOT NULL,
+     selfie_image TEXT NOT NULL, front_object_key TEXT, back_object_key TEXT,
+     selfie_object_key TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+  `ALTER TABLE koc_identity_documents ADD COLUMN front_object_key TEXT`,
+  `ALTER TABLE koc_identity_documents ADD COLUMN back_object_key TEXT`,
+  `ALTER TABLE koc_identity_documents ADD COLUMN selfie_object_key TEXT`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
 // after swallowing a failed migration. This is required for older persistent
 // databases that can report the latest version while still missing objects.
 async function ensureV14Schema(env) {
+  await env.DB.exec(
+    `CREATE TABLE IF NOT EXISTS koc_identity_documents (
+       koc_id TEXT PRIMARY KEY, front_image TEXT NOT NULL, back_image TEXT NOT NULL,
+       selfie_image TEXT NOT NULL, front_object_key TEXT, back_object_key TEXT,
+       selfie_object_key TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+  );
+  const identityColumns = await env.DB.prepare(`PRAGMA table_info(koc_identity_documents)`).all();
+  const existingIdentityColumns = new Set(
+    (identityColumns.results || []).map(column => column.name),
+  );
+  for (const [column, sql] of [
+    ['front_object_key', `ALTER TABLE koc_identity_documents ADD COLUMN front_object_key TEXT`],
+    ['back_object_key', `ALTER TABLE koc_identity_documents ADD COLUMN back_object_key TEXT`],
+    ['selfie_object_key', `ALTER TABLE koc_identity_documents ADD COLUMN selfie_object_key TEXT`],
+  ]) {
+    if (!existingIdentityColumns.has(column)) await env.DB.exec(sql);
+  }
   const columns = await env.DB.prepare(`PRAGMA table_info(bookings)`).all();
   const hasContentType = (columns.results || []).some(column => column.name === 'content_type');
   if (!hasContentType) {

@@ -78,6 +78,18 @@ CREATE TABLE IF NOT EXISTS koc_prices (
   price BIGINT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS koc_identity_documents (
+  koc_id TEXT PRIMARY KEY,
+  front_image TEXT NOT NULL,
+  back_image TEXT NOT NULL,
+  selfie_image TEXT NOT NULL,
+  front_object_key TEXT,
+  back_object_key TEXT,
+  selfie_object_key TEXT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS businesses (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
