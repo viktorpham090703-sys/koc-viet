@@ -5,7 +5,7 @@ export const ROUTES = [
   ["/trang-chu", "Trang chủ"],
   ["/koc", "Dành cho KOC"],
   ["/doanh-nghiep", "Doanh nghiệp"],
-  ["/marketplace", "Marketplace"],
+  ["/marketplace", "Khám phá KOC"],
   ["/ai-clone", "AI Clone Avatar"],
   ["/bang-gia", "Bảng giá"],
   ["/cong-dong", "Cộng đồng"],

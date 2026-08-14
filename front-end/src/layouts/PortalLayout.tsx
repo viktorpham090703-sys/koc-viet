@@ -3,9 +3,9 @@ import { useAuth } from '../context/AuthContext'
 import type { Role } from '../types'
 
 const navigation: Record<Role, Array<[string, string, string]>> = {
-  koc: [['/app/home','🏠','Tổng quan'],['/app/bookings','📋','Booking'],['/app/content','🎬','Nội dung'],['/app/affiliate','🔗','Affiliate'],['/app/wallet','💰','Ví'],['/app/aiclone','🤖','AI Clone'],['/app/notifications','🔔','Thông báo'],['/app/profile','👤','Hồ sơ']],
+  koc: [['/app/home','🏠','Tổng quan'],['/app/bookings','📋','Booking'],['/app/content','🎬','Nội dung'],['/app/affiliate','🔗','Hoa hồng bán hàng'],['/app/wallet','💰','Ví'],['/app/aiclone','🤖','Video đại diện'],['/app/notifications','🔔','Thông báo'],['/app/profile','👤','Hồ sơ']],
   business: [['/app/dashboard','📊','Tổng quan'],['/app/find','🔎','Tìm KOC'],['/app/orders','📋','Booking'],['/app/products','🛍️','Sản phẩm'],['/app/wallet','💰','Ví'],['/app/campaigns','📣','Chiến dịch'],['/app/kol','⭐','KOL'],['/app/report','📈','Báo cáo'],['/app/profile','🏢','Hồ sơ']],
-  admin: [['/app/dashboard','📊','Dashboard'],['/app/businesses','🏢','Doanh nghiệp'],['/app/queue','✅','Duyệt KOC'],['/app/allbookings','📋','Booking'],['/app/complaints','⚠️','Khiếu nại'],['/app/contracts','📜','Hợp đồng'],['/app/campaigns','📣','Chiến dịch'],['/app/settle','💰','Đối soát'],['/app/affiliate','🔗','Affiliate'],['/app/kol','⭐','KOL'],['/app/leads','🎯','Leads'],['/app/aiclone','🤖','AI Clone'],['/app/tiers','🏷️','Khung giá']],
+  admin: [['/app/dashboard','📊','Tổng quan'],['/app/businesses','🏢','Doanh nghiệp'],['/app/queue','✅','Duyệt KOC'],['/app/allbookings','📋','Booking'],['/app/complaints','⚠️','Khiếu nại'],['/app/contracts','📜','Hợp đồng'],['/app/campaigns','📣','Chiến dịch'],['/app/settle','💰','Đối soát'],['/app/affiliate','🔗','Tiếp thị liên kết'],['/app/kol','⭐','KOL'],['/app/leads','🎯','Khách cần tư vấn'],['/app/aiclone','🤖','Video đại diện'],['/app/tiers','🏷️','Khung giá']],
 }
 
 export function PortalLayout() {

@@ -125,11 +125,11 @@ async function renderLogin() {
     ],
     business: [
       'https://res.cloudinary.com/drxum5uxt/image/upload/v1785140673/business_ft0lrg.png',
-      'Business Portal',
+      'Trang doanh nghiệp',
     ],
     admin: [
       'https://res.cloudinary.com/drxum5uxt/image/upload/v1785140672/admin_qtwjgc.png',
-      'Admin Panel',
+      'Trang quản trị',
     ],
   };
   const demoAccounts = Array.isArray(state.config?.demoAccounts)
@@ -300,7 +300,7 @@ async function renderRecruitLanding(el) {
   const benefits = [
     ['01','Tự đặt giá','Niêm yết mức phí theo ngành hàng và hạng KOC của bạn.'],
     ['02','Toàn quyền lựa chọn','Xem brief, sản phẩm và thời hạn trước khi nhận booking.'],
-    ['03','Thêm thu nhập Affiliate','Gắn link bán hàng và nhận hoa hồng từ đơn phát sinh.'],
+    ['03','Thêm thu nhập từ tiếp thị liên kết','Chia sẻ đường dẫn sản phẩm và nhận hoa hồng từ đơn phát sinh.'],
     ['04','Ví và đối soát minh bạch','Theo dõi từng khoản thu, trạng thái và lịch sử rút tiền.'],
   ];
   el.innerHTML = `<div class="koc-recruit">
@@ -335,12 +335,12 @@ async function renderRecruitLanding(el) {
           </div>
           <div class="koc-recruit-preview" aria-label="Tổng quan quyền lợi KOC">
             <div class="koc-recruit-preview-top">
-              <span class="koc-recruit-preview-badge">KOC Dashboard</span>
+              <span class="koc-recruit-preview-badge">Tổng quan KOC</span>
               <span class="koc-recruit-live"><i></i> Minh bạch theo thời gian thực</span>
             </div>
             <div class="koc-recruit-earning">
               <span>Thu nhập của bạn</span>
-              <strong>Booking + Affiliate</strong>
+              <strong>Booking + Hoa hồng bán hàng</strong>
               <small>Chủ động kiểm soát từng nguồn thu</small>
             </div>
             <div class="koc-recruit-mini-grid">
@@ -377,8 +377,8 @@ async function renderRecruitLanding(el) {
           </div>
           <div class="koc-recruit-step-grid">
             <article><b>1</b><div><h3>Tạo hồ sơ KOC</h3><p>Xác thực email, khai báo kênh mạng xã hội và lĩnh vực nội dung.</p></div></article>
-            <article><b>2</b><div><h3>Hoàn tất xác minh</h3><p>Thực hiện eKYC, thiết lập bảng giá và ký hợp đồng điện tử.</p></div></article>
-            <article><b>3</b><div><h3>Nhận booking</h3><p>Sau khi được duyệt, hồ sơ của bạn xuất hiện trên Marketplace.</p></div></article>
+            <article><b>2</b><div><h3>Hoàn tất xác minh</h3><p>Xác minh danh tính, thiết lập bảng giá và ký hợp đồng điện tử.</p></div></article>
+            <article><b>3</b><div><h3>Nhận booking</h3><p>Sau khi được duyệt, hồ sơ của bạn xuất hiện trên trang khám phá.</p></div></article>
           </div>
         </div>
       </section>
@@ -422,7 +422,7 @@ function renderAiCloneLanding(el) {
     <div class="hero-navy" style="border-radius:0;padding:40px 24px">
       <span class="chip on-dark">Dịch vụ cộng thêm</span>
       <h1 style="font-size:30px;margin:12px 0 10px">AI Clone Avatar — NetViet sản xuất video cho bạn</h1>
-      <p style="opacity:.85;max-width:540px">Không cần tự quay dựng. NetViet booking trực tiếp và sản xuất video AI, giao cho bạn tải về đăng tải. Bạn vẫn nhận phí booking + hoa hồng affiliate như thường.</p>
+      <p style="opacity:.85;max-width:540px">Không cần tự quay dựng. NetViet tiếp nhận booking và sản xuất video, sau đó giao cho bạn duyệt và đăng tải. Bạn vẫn nhận phí booking cùng hoa hồng bán hàng như thường.</p>
     </div>
     <div class="content">
       <div class="card"><h3>Quyền lợi</h3>
@@ -430,7 +430,7 @@ function renderAiCloneLanding(el) {
           <li>Không cần tự sản xuất content — tiết kiệm thời gian</li>
           <li>NetViet booking trực tiếp, giá theo bảng niêm yết của bạn</li>
           <li>Nhận video thành phẩm, chỉ cần đăng bài + nộp link</li>
-          <li>Thu nhập: phí booking (95%) + hoa hồng affiliate</li>
+          <li>Thu nhập: 95% phí booking + hoa hồng bán hàng</li>
         </ul>
         <p class="muted" style="margin-top:14px">Đăng nhập tài khoản KOC đã kích hoạt để đăng ký tham gia tại tab tương ứng.</p>
         <a href="#/login" class="btn primary" style="margin-top:12px;max-width:220px">Đăng nhập để đăng ký</a>

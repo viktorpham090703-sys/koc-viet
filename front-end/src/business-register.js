@@ -47,7 +47,7 @@ export function renderBusinessRegister(el) {
       <div class="auth-card" style="max-width:620px">
         <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
         <h2 style="text-align:center;margin-bottom:6px">Đăng ký doanh nghiệp</h2>
-        <p class="muted" style="text-align:center;margin-bottom:18px">Tạo tài khoản Business Portal và chờ admin xác minh.</p>
+        <p class="muted" style="text-align:center;margin-bottom:18px">Tạo tài khoản doanh nghiệp và chờ đội ngũ quản trị xác minh.</p>
         <div class="field"><label>Tên doanh nghiệp</label><input id="br-company" value="${esc(data.companyName)}" placeholder="Công ty TNHH ABC"></div>
         <div class="field"><label>Người liên hệ</label><input id="br-contact" value="${esc(data.contactName)}" placeholder="Nguyễn Văn A"></div>
         <div class="field"><label>Số điện thoại</label><input id="br-phone" inputmode="tel" value="${esc(data.phone)}" placeholder="09xxxxxxxx"></div>
@@ -225,7 +225,7 @@ export function renderBusinessRegister(el) {
       el.innerHTML = `<div class="auth"><div class="auth-card" style="text-align:center">
         <div style="font-size:48px">✅</div>
         <h2 style="margin:10px 0">Đăng ký thành công</h2>
-        <p class="muted">Tài khoản doanh nghiệp đang chờ admin duyệt. Sau khi được kích hoạt, bạn có thể đăng nhập Business Portal.</p>
+        <p class="muted">Tài khoản doanh nghiệp đang chờ duyệt. Sau khi được kích hoạt, bạn có thể đăng nhập trang doanh nghiệp.</p>
         <a href="#/login" class="btn primary" style="margin-top:18px">Về trang đăng nhập</a>
       </div></div>`;
     } catch (error) {

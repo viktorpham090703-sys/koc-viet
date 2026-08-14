@@ -64,7 +64,7 @@ function bindingValue(binding, aliases) {
 
 function requiredValue(value, name) {
   value = String(value || '').trim();
-  if (!value) throw new Error(`Thiếu cấu hình ${name}`);
+  if (!value) throw new Error(`Thiếu ${name}`);
   return value;
 }
 
@@ -89,7 +89,7 @@ export function payOSConfig(env) {
         'Client ID',
         'clientId',
       ]),
-      'PAYOS_CLIENT_ID hoặc PAYOS.Client ID',
+      'cấu hình thanh toán',
     ),
     apiKey: requiredValue(
       env.PAYOS_API_KEY || bindingValue(binding, [
@@ -98,7 +98,7 @@ export function payOSConfig(env) {
         'API Key',
         'apiKey',
       ]),
-      'PAYOS_API_KEY hoặc PAYOS.API Key',
+      'cấu hình thanh toán',
     ),
     checksumKey: requiredValue(
       env.PAYOS_CHECKSUM_KEY || bindingValue(binding, [
@@ -107,7 +107,7 @@ export function payOSConfig(env) {
         'Checksum Key',
         'checksumKey',
       ]),
-      'PAYOS_CHECKSUM_KEY hoặc PAYOS.Checksum Key',
+      'cấu hình thanh toán',
     ),
   };
 }
@@ -198,16 +198,16 @@ async function payOSRequest(env, path, options = {}) {
       signal: AbortSignal.timeout(PAYOS_TIMEOUT_MS),
     });
   } catch (error) {
-    const reason = error?.name === 'TimeoutError'
-      ? 'payOS không phản hồi sau 10 giây'
-      : error?.message || 'lỗi kết nối';
-    throw new Error(`Không kết nối được payOS: ${reason}`);
+    throw new Error(
+      error?.name === 'TimeoutError'
+        ? 'Dịch vụ thanh toán chưa phản hồi. Vui lòng thử lại.'
+        : 'Chưa kết nối được dịch vụ thanh toán. Vui lòng thử lại.',
+    );
   }
 
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result.code !== '00') {
-    const reason = result.desc || result.message || result.code || `HTTP ${response.status}`;
-    throw new Error(`payOS từ chối yêu cầu: ${reason}`);
+    throw new Error('Yêu cầu thanh toán chưa được chấp nhận. Vui lòng thử lại.');
   }
   return result;
 }
@@ -216,7 +216,7 @@ async function verifiedResponseData(env, result) {
   if (!result?.data || !result.signature) return result?.data || {};
   const { checksumKey } = payOSConfig(env);
   const valid = await verifyPayOSSignature(checksumKey, result.data, result.signature);
-  if (!valid) throw new Error('Chữ ký phản hồi payOS không hợp lệ');
+  if (!valid) throw new Error('Không thể xác minh phản hồi thanh toán');
   return result.data;
 }
 
@@ -243,14 +243,14 @@ export async function createPayOSPaymentLink(env, payment) {
     checkoutUrl.hostname === 'payos.vn' ||
     checkoutUrl.hostname.endsWith('.payos.vn');
   if (checkoutUrl.protocol !== 'https:' || !payOSHost) {
-    throw new Error('payOS trả về checkout URL không hợp lệ');
+    throw new Error('Không thể mở trang thanh toán');
   }
   return data;
 }
 
 export async function getPayOSPaymentLink(env, id) {
   const value = encodeURIComponent(String(id || '').trim());
-  if (!value) throw new Error('Thiếu mã thanh toán payOS');
+  if (!value) throw new Error('Thiếu mã giao dịch');
   const result = await payOSRequest(env, `/v2/payment-requests/${value}`);
   return verifiedResponseData(env, result);
 }

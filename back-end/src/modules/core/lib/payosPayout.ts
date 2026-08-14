@@ -4,16 +4,24 @@ const PAYOS_TIMEOUT_MS = 15000;
 
 function required(value, name) {
   const result = String(value || '').trim();
-  if (!result) throw new Error(`Thiếu cấu hình ${name}`);
+  if (!result) throw new Error(`Thiếu ${name}`);
   return result;
 }
 
 export function payOSPayoutConfig(env) {
-  return {
-    clientId: required(env.PAYOS_PAYOUT_CLIENT_ID || env.PAYOS_CLIENT_ID, 'PAYOS_PAYOUT_CLIENT_ID'),
-    apiKey: required(env.PAYOS_PAYOUT_API_KEY || env.PAYOS_API_KEY, 'PAYOS_PAYOUT_API_KEY'),
-    checksumKey: required(env.PAYOS_PAYOUT_CHECKSUM_KEY || env.PAYOS_CHECKSUM_KEY, 'PAYOS_PAYOUT_CHECKSUM_KEY'),
+  const config = {
+    clientId: required(env.PAYOS_PAYOUT_CLIENT_ID, 'mã kết nối kênh rút tiền'),
+    apiKey: required(env.PAYOS_PAYOUT_API_KEY, 'khóa truy cập kênh rút tiền'),
+    checksumKey: required(env.PAYOS_PAYOUT_CHECKSUM_KEY, 'khóa xác thực kênh rút tiền'),
   };
+  const duplicatesPaymentConfig =
+    config.clientId === String(env.PAYOS_CLIENT_ID || '').trim()
+    && config.apiKey === String(env.PAYOS_API_KEY || '').trim()
+    && config.checksumKey === String(env.PAYOS_CHECKSUM_KEY || '').trim();
+  if (duplicatesPaymentConfig) {
+    throw new Error('Kênh rút tiền chưa được cấu hình đúng. Vui lòng liên hệ quản trị viên.');
+  }
+  return config;
 }
 
 function deepSort(value) {
@@ -25,7 +33,7 @@ function deepSort(value) {
   }, {});
 }
 
-function payoutSignatureData(payload) {
+export function payoutSignatureData(payload) {
   return Object.keys(payload || {}).sort().map(key => {
     const value = payload[key];
     const normalized = value === null || value === undefined
@@ -33,7 +41,7 @@ function payoutSignatureData(payload) {
       : typeof value === 'object'
         ? JSON.stringify(deepSort(value))
         : String(value);
-    return `${key}=${encodeURI(normalized)}`;
+    return `${encodeURIComponent(key)}=${encodeURIComponent(normalized)}`;
   }).join('&');
 }
 
@@ -84,19 +92,31 @@ async function payoutRequest(env, path, {
   } catch (cause) {
     const error = new Error(
       cause?.name === 'TimeoutError'
-        ? 'payOS chưa phản hồi lệnh chi sau 15 giây'
-        : `Không kết nối được payOS Chi hộ: ${cause?.message || 'lỗi kết nối'}`,
+        ? 'Dịch vụ rút tiền chưa phản hồi. Vui lòng thử lại.'
+        : 'Chưa kết nối được dịch vụ rút tiền. Vui lòng thử lại.',
     );
     error.ambiguous = true;
     throw error;
   }
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result.code !== '00') {
-    const error = new Error(
-      `payOS từ chối lệnh chi: ${result.desc || result.message || result.code || `HTTP ${response.status}`}`,
-    );
+    const providerCode = String(result.code || response.status || '');
+    const providerDescription = String(result.desc || result.message || '').trim();
+    console.error('Payout request rejected:', {
+      status: response.status,
+      code: providerCode,
+      description: providerDescription,
+    });
+    let message = 'Yêu cầu rút tiền chưa được chấp nhận. Vui lòng thử lại.';
+    if (providerCode === '601' || response.status === 401) {
+      message = 'Cấu hình kênh rút tiền chưa hợp lệ. Vui lòng liên hệ quản trị viên.';
+    } else if (response.status === 403) {
+      message = 'Kênh rút tiền chưa được kích hoạt hoặc máy chủ chưa được cho phép.';
+    }
+    const error = new Error(message);
     error.ambiguous = response.status >= 500;
     error.status = response.status;
+    error.providerCode = providerCode;
     throw error;
   }
   return result.data || {};
@@ -119,9 +139,13 @@ export async function createPayOSPayout(env, payout, idempotencyKey) {
   });
 }
 
+export async function getPayOSPayoutBalance(env) {
+  return payoutRequest(env, '/v1/payouts-account/balance');
+}
+
 export async function getPayOSPayout(env, payoutId) {
   const id = encodeURIComponent(String(payoutId || '').trim());
-  if (!id) throw new Error('Thiếu mã lệnh chi payOS');
+  if (!id) throw new Error('Thiếu mã yêu cầu rút tiền');
   return payoutRequest(env, `/v1/payouts/${id}`);
 }
 

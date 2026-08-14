@@ -8,7 +8,7 @@ function pubShell(inner) {
       <div class="topbar" style="max-width:1400px;margin:0 auto;padding:14px 32px">
         <a href="#/login" class="logo" style="font-size:22px">KOC<span style="color:var(--navy)"> Viet</span></a>
         <div class="row" style="gap:12px">
-          <a href="#/explore" class="btn ghost sm">Marketplace</a>
+          <a href="#/explore" class="btn ghost sm">Khám phá KOC</a>
           <a href="#/login" class="btn primary sm">Đăng nhập</a>
         </div>
       </div>
@@ -24,9 +24,9 @@ let mp = { page: 1, filters: {} };
 export async function renderMarketplacePublic(el) {
   el.innerHTML = pubShell(`<div class="content" style="padding:0">
     <div style="margin-bottom:12px">
-      <a href="/marketplace" class="muted" style="font-size:13.5px;display:inline-flex;align-items:center;gap:4px;font-weight:500">‹ Quay lại Trang Landing Marketplace</a>
+      <a href="/marketplace" class="muted" style="font-size:13.5px;display:inline-flex;align-items:center;gap:4px;font-weight:500">‹ Quay lại trang giới thiệu</a>
     </div>
-    <h1 style="font-size:28px;margin-bottom:6px">Marketplace KOC</h1>
+    <h1 style="font-size:28px;margin-bottom:6px">Khám phá KOC</h1>
     <p class="muted" style="margin-bottom:20px;font-size:15px">Tìm KOC theo ngành hàng, tỉnh, hạng, giá và đánh giá.</p>
     <div id="mp-filters"></div><div id="mp-list">${skeletonKocGrid(6)}</div></div>`);
   renderFilters(document.getElementById('mp-filters'), () => loadMp(false));
@@ -103,7 +103,7 @@ export async function renderKocProfile(el, id) {
   const k = r.koc;
   const content = el.querySelector('.content');
   content.innerHTML = `
-    <a href="#/explore" class="muted" style="font-size:13px">‹ Về Marketplace</a>
+    <a href="#/explore" class="muted" style="font-size:13px">‹ Về trang khám phá KOC</a>
     <div class="hero-navy" style="margin-top:10px">
       <div class="row" style="align-items:flex-start">
         <img class="avatar lg" src="${esc(k.avatar)}" alt="">

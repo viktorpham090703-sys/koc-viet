@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode, type CSSProperties } from 're
 import { Link, NavLink } from 'react-router-dom'
 import { post } from '../../lib/api'
 
-export const landingRoutes=[['/trang-chu','Trang chủ'],['/koc','Dành cho KOC'],['/doanh-nghiep','Doanh nghiệp'],['/marketplace','Marketplace'],['/ai-clone','AI Clone Avatar'],['/bang-gia','Bảng giá'],['/cong-dong','Cộng đồng'],['/ho-tro','Hỗ trợ']] as const
+export const landingRoutes=[['/trang-chu','Trang chủ'],['/koc','Dành cho KOC'],['/doanh-nghiep','Doanh nghiệp'],['/marketplace','Khám phá KOC'],['/ai-clone','Video đại diện'],['/bang-gia','Bảng giá'],['/cong-dong','Cộng đồng'],['/ho-tro','Hỗ trợ']] as const
 const logo='https://res.cloudinary.com/drxum5uxt/image/upload/v1785989746/iconXoaNen_afhony.png'
 const logoDesktop='https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/e823ecd8-9fa5-45de-9cec-74c8168e9249.png'
 const logoTablet='https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/fab8e04f-8d1d-45a9-b892-d59434ae8f21.png'

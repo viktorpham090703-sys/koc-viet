@@ -210,7 +210,7 @@ function pageKoc() {
     <div class="lp-steps n5">
       <div class="lp-step"><div class="num">1</div><p><strong>ĐĂNG KÝ</strong><br>Đăng ký bằng số điện thoại, xác thực OTP.</p></div>
       <div class="lp-step"><div class="num">2</div><p><strong>KẾT NỐI KÊNH</strong><br>Kết nối TikTok/Facebook/Instagram/YouTube — hệ thống tự xác minh follower thật và phân hạng Nano/Micro/Mid/Macro.</p></div>
-      <div class="lp-step"><div class="num">3</div><p><strong>XÁC MINH DANH TÍNH</strong><br>Xác minh eKYC (CCCD + selfie) — bảo đảm tiền về đúng chủ tài khoản.</p></div>
+      <div class="lp-step"><div class="num">3</div><p><strong>XÁC MINH DANH TÍNH</strong><br>Tải ảnh hai mặt CCCD và ảnh chân dung — bảo đảm tiền về đúng chủ tài khoản.</p></div>
       <div class="lp-step"><div class="num">4</div><p><strong>ĐẶT BẢNG GIÁ</strong><br>Tự đặt giá theo từng ngành hàng trong khung giá của hạng — bạn toàn quyền, hệ thống chỉ giữ khung để thị trường không phá giá.</p></div>
       <div class="lp-step"><div class="num">5</div><p><strong>KÝ HỢP ĐỒNG</strong><br>Ký hợp đồng điện tử có giá trị pháp lý — hồ sơ được duyệt là trang profile của bạn lên sàn, sẵn sàng nhận booking.</p></div>
     </div>
@@ -349,7 +349,7 @@ function pageBusiness() {
 
   const measure = `<section class="lp-section">
     <div class="lp-section-head"><h2>Mỗi đồng chi ra đều trả lời được: tạo ra bao nhiêu đơn?</h2></div>
-    <div class="lp-box" style="max-width:820px;margin:0 auto">Dashboard realtime: lượt click, đơn hàng, doanh thu quy về từng KOC, từng bài đăng. So sánh hiệu quả giữa các KOC để tái đầu tư đúng người. Cuối kỳ, hệ thống tự tổng hợp chi phí booking + hoa hồng phát sinh và xuất hoá đơn.</div>
+    <div class="lp-box" style="max-width:820px;margin:0 auto">Theo dõi tức thời lượt nhấp, đơn hàng và doanh thu của từng KOC, từng bài đăng. So sánh hiệu quả để tiếp tục đầu tư đúng người. Cuối kỳ, hệ thống tự tổng hợp chi phí booking, hoa hồng phát sinh và xuất hoá đơn.</div>
   </section>`;
 
   const testimonial = `<section class="lp-section tint">
@@ -425,7 +425,7 @@ function pageMarketplace() {
 
   const commit = `<section class="lp-section tint">
     <div class="lp-grid-3">
-      <div class="lp-card"><p>✅ 100% KOC đã xác minh danh tính eKYC và ký hợp đồng điện tử với nền tảng.</p></div>
+      <div class="lp-card"><p>✅ 100% KOC đã xác minh danh tính và ký hợp đồng điện tử với nền tảng.</p></div>
       <div class="lp-card"><p>✅ Giá trên hồ sơ là giá cuối — không phát sinh, không phí ẩn ngoài 5% dịch vụ đã bao gồm.</p></div>
       <div class="lp-card"><p>✅ Giao dịch ngoài nền tảng bị cấm theo hợp đồng — để mọi quyền lợi của bạn được ví đảm bảo bảo vệ.</p></div>
     </div>
@@ -561,7 +561,7 @@ function pagePricing() {
 
   const tierCriteria = `<section class="lp-section">
     <div class="lp-section-head"><h2>Hạng được tính bằng gì?</h2></div>
-    <div class="lp-box" style="max-width:900px;margin:0 auto">Ba nhóm tiêu chí, hệ thống chấm tự động: (1) quy mô — follower thật đã xác minh qua kết nối API kênh; (2) chất lượng — tỉ lệ tương tác, tỉ lệ chuyển đổi affiliate thực tế; (3) uy tín — tỉ lệ hoàn thành booking đúng hạn và điểm đánh giá từ doanh nghiệp. Xét thăng hạng tự động mỗi quý; làm tốt có thể được xét sớm.</div>
+    <div class="lp-box" style="max-width:900px;margin:0 auto">Ba nhóm tiêu chí được đánh giá tự động: (1) quy mô — số người theo dõi đã xác minh; (2) chất lượng — tỉ lệ tương tác và khả năng tạo đơn hàng; (3) uy tín — tỉ lệ hoàn thành booking đúng hạn và điểm đánh giá từ doanh nghiệp. Hạng được xem xét mỗi quý; kết quả tốt có thể được xét sớm.</div>
   </section>`;
 
   const benefits = `<section class="lp-section tint">
@@ -635,12 +635,12 @@ function pageCommunity() {
   </section>`;
 
   const leader = `<section class="lp-section tint">
-    <div class="lp-section-head"><h2>Leader cộng đồng — người giữ nhịp từng tỉnh</h2></div>
+    <div class="lp-section-head"><h2>Trưởng nhóm cộng đồng — người kết nối tại từng tỉnh</h2></div>
     <div class="lp-grid-2">
-      <div class="lp-box">Mỗi tỉnh có Leader cộng đồng: sàng lọc sơ bộ hồ sơ KOC mới, đào tạo người mới cách nhận booking và tối ưu affiliate, tổ chức workshop/sự kiện trải nghiệm sản phẩm, và nhận hoa hồng cộng đồng trên booking phát sinh trong tỉnh mình.</div>
+      <div class="lp-box">Mỗi tỉnh có một trưởng nhóm cộng đồng: hỗ trợ xem hồ sơ KOC mới, hướng dẫn người mới nhận booking và tăng hiệu quả bán hàng, tổ chức sự kiện trải nghiệm sản phẩm, đồng thời nhận hoa hồng cộng đồng từ booking phát sinh trong tỉnh.</div>
       <div class="lp-recruit-card">
-        <p>Bạn là KOC có uy tín tại địa phương và muốn dẫn dắt cộng đồng? Vị trí Leader đang mở tại nhiều tỉnh — quyền lợi gồm hoa hồng cộng đồng + huy hiệu riêng + ngân sách sự kiện.</p>
-        <a href="/#/tuyen-koc" class="btn grad">Ứng tuyển Leader tỉnh</a>
+        <p>Bạn là KOC có uy tín tại địa phương và muốn dẫn dắt cộng đồng? Vị trí trưởng nhóm đang mở tại nhiều tỉnh, với hoa hồng cộng đồng, huy hiệu riêng và ngân sách sự kiện.</p>
+        <a href="/#/tuyen-koc" class="btn grad">Ứng tuyển trưởng nhóm tỉnh</a>
       </div>
     </div>
   </section>`;
@@ -682,7 +682,7 @@ function pageSupport() {
         [
           [
             "Đăng ký KOC mất bao lâu?",
-            "Dưới 15 phút gồm cả eKYC và ký hợp đồng điện tử; hồ sơ được duyệt trong 24–48h.",
+            "Dưới 15 phút gồm cả xác minh danh tính và ký hợp đồng điện tử; hồ sơ được duyệt trong 24–48 giờ.",
           ],
           [
             "Doanh nghiệp cần gì để booking?",

@@ -17,7 +17,7 @@ export async function renderBusiness(el, hash) {
   const active = '#/' + (['dashboard','find','orders','products','aiclone-booking','wallet','kol','campaigns','report','profile'].includes(page)?page:'dashboard');
   el.innerHTML = `<div class="portal">
     ${sidebar(active)}
-    <div class="main"><div class="topbar"><h2>Business Portal</h2>
+    <div class="main"><div class="topbar"><h2>Trang doanh nghiệp</h2>
       <div class="row"><span class="muted">${esc(state.user.name)}</span><button class="btn ghost sm" id="bz-logout">Đăng xuất</button></div></div>
       <div class="content" id="bz-view">${skeletonStatCards(4) + skeletonTable(4)}</div></div></div>`;
   document.getElementById('bz-logout').addEventListener('click', logout);
@@ -48,7 +48,7 @@ async function dashboard(el) {
   el.innerHTML = `<h1>Xin chào, ${esc(state.user.name)}</h1>
     <div class="stat-cards" style="margin-top:16px">
       ${stat('Tổng chi booking', money(t.spend))}
-      ${stat('Click affiliate', num(t.clicks))}
+      ${stat('Lượt nhấp vào sản phẩm', num(t.clicks))}
       ${stat('Đơn hàng', num(t.orders))}
       ${stat('Phí dịch vụ (5%)', money(t.fee))}
     </div>
@@ -95,7 +95,7 @@ async function aiCloneBooking(el) {
       <div class="card" style="padding:16px">
         <b>📝 Cấu hình Brief & Nội dung Video</b>
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 12px;margin-top:12px">
-          <div class="field"><label>Loại nội dung</label><select id="ac-format"><option value="review">Review sản phẩm</option><option value="affiliate">Affiliate</option><option value="combo">Combo Review + Affiliate</option></select></div>
+          <div class="field"><label>Loại nội dung</label><select id="ac-format"><option value="review">Đánh giá sản phẩm</option><option value="affiliate">Tiếp thị liên kết</option><option value="combo">Đánh giá + tiếp thị liên kết</option></select></div>
           <div class="field"><label>Ngành hàng</label><select id="ac-category">${categories.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>
           <div class="field"><label>Link thông tin sản phẩm</label><input id="ac-product-link" placeholder="https://…"></div>
           <div class="field"><label>Deadline bàn giao</label><input id="ac-deadline" type="date"></div>
@@ -113,7 +113,7 @@ async function aiCloneBooking(el) {
         <div id="ac-affiliate" style="display:none;margin-top:8px">
           <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 12px">
             <div class="field"><label>Sàn áp dụng</label><select id="ac-platform">${PLATFORMS.map(x=>`<option>${x}</option>`).join('')}</select></div>
-            <div class="field"><label>Chiết khấu affiliate (%)</label><input id="ac-rate" type="number" min="1" max="90"></div>
+            <div class="field"><label>Hoa hồng bán hàng (%)</label><input id="ac-rate" type="number" min="1" max="90"></div>
           </div>
           <div class="field"><label>Link sản phẩm trên sàn</label><input id="ac-product-url" placeholder="https://…"></div>
         </div>
@@ -125,7 +125,7 @@ async function aiCloneBooking(el) {
             <button class="btn primary" id="ac-submit" style="flex:1;padding:12px;font-weight:600">📩 Gửi yêu cầu báo giá cho Admin</button>
             <button class="btn ghost" id="ac-contact-quote" style="flex:1;padding:12px;font-weight:600">💬 Liên hệ nhận báo giá trực tiếp</button>
           </div>
-          <p class="hint" style="margin-top:8px">Admin sẽ tiếp nhận brief, tiến hành báo giá chính thức và gửi lại bảng giá cho doanh nghiệp thanh toán / ký quỹ Escrow.</p>
+          <p class="hint" style="margin-top:8px">Đội ngũ hỗ trợ sẽ tiếp nhận yêu cầu, lập báo giá chính thức và gửi lại để doanh nghiệp thanh toán.</p>
         </div>
       </div>
     </div>`;
@@ -134,7 +134,7 @@ async function aiCloneBooking(el) {
   const renderKocs = () => {
     list.innerHTML = catalog.kocs.map(k => `<button type="button" class="card ${selected.has(k.id)?'selected':''}" data-koc="${k.id}" style="text-align:left;padding:10px;border:${selected.has(k.id)?'2px solid var(--primary)':'1px solid var(--border)'}">
       <div class="row" style="gap:8px"><img class="avatar" src="${esc(k.avatar||'')}" style="width:40px;height:40px"><div><b style="font-size:13px">${esc(k.name)}</b><div>${tierBadge(k.tier)}</div></div></div>
-      <div class="muted" style="font-size:11px;margin-top:6px">${esc(k.province||'')} · ${num(k.followers)} follower</div>
+      <div class="muted" style="font-size:11px;margin-top:6px">${esc(k.province||'')} · ${num(k.followers)} người theo dõi</div>
       <div class="muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.categories.map(esc).join(', ')}</div>
       <div style="margin-top:6px"><span class="chip g" style="font-size:10px">✅ AI Clone Ready</span></div></button>`).join('') || empty('','Không tìm thấy KOC đã đăng ký AI Clone');
     list.querySelectorAll('[data-koc]').forEach(button => button.addEventListener('click', () => {
@@ -245,12 +245,12 @@ async function openBookingForm(kocId, el) {
       <select id="bf-type">
         <option value="review">Review sản phẩm — phí cố định</option>
         <option value="advertising">Quảng cáo thương hiệu — phí cố định</option>
-        <option value="affiliate">Affiliate riêng — trả theo doanh số</option>
-        <option value="combo">Combo — review/quảng cáo + affiliate</option>
+        <option value="affiliate">Tiếp thị liên kết — trả theo doanh số</option>
+        <option value="combo">Gói kết hợp — đánh giá/quảng cáo + hoa hồng bán hàng</option>
       </select></div>
     <div class="field"><label>Gói ngành hàng (giá niêm yết cố định)</label>
       <select id="bf-cat">${prices.map(p=>`<option value="${esc(p.category)}" data-price="${p.price}">${esc(p.category)} — ${money(p.price)}</option>`).join('')}</select></div>
-    <div class="tint-box between" id="bf-esc-box"><span>Giá booking · tạm giữ Escrow từ Ví khả dụng khi gửi yêu cầu</span><b class="money" id="bf-price">${money(prices[0].price)}</b></div>
+    <div class="tint-box between" id="bf-esc-box"><span>Giá booking · khoản tiền được giữ an toàn khi gửi yêu cầu</span><b class="money" id="bf-price">${money(prices[0].price)}</b></div>
     <div id="bf-aff" style="display:none">
       <div class="field" style="margin-top:12px"><label>🛒 Sàn áp dụng</label>
         <select id="bf-plat">${PLATFORMS.map(pl=>`<option>${pl}</option>`).join('')}</select></div>
@@ -261,7 +261,7 @@ async function openBookingForm(kocId, el) {
     <div class="field" style="margin-top:12px"><label>${icon('productData')} Link dữ liệu sản phẩm (bắt buộc)</label><input id="bf-link" placeholder="https://… (thông tin, hình ảnh, giá, chính sách)"></div>
     <div class="field"><label>Mô tả yêu cầu</label><textarea id="bf-req" rows="3" placeholder="Yêu cầu nội dung, thông điệp…"></textarea></div>
     <div class="field"><label>Thời hạn</label><input id="bf-deadline" type="date"></div>
-    <p class="hint" id="bf-hint">Phí được trừ từ Ví khả dụng và tạm giữ tại Ví Escrow khi gửi yêu cầu. Khi bạn duyệt bài đăng, Ví Escrow sẽ giải ngân cho KOC 95% và NetViet 5%.</p>
+    <p class="hint" id="bf-hint">Phí được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.</p>
     <button class="btn primary" id="bf-go">Gửi yêu cầu booking</button>
     <button class="btn ghost" id="bf-cancel" style="margin-top:8px">Hủy</button>`);
   const sel = m.querySelector('#bf-cat');
@@ -277,8 +277,8 @@ async function openBookingForm(kocId, el) {
     escBox.style.display = showAd ? 'flex' : 'none';
     catField.style.display = showAd ? 'block' : 'none';
     m.querySelector('#bf-hint').textContent = showAd
-      ? `${t==='review'?'Phí review':t==='advertising'?'Phí quảng cáo':'Phí combo'} được trừ từ Ví khả dụng và tạm giữ tại Ví Escrow khi gửi yêu cầu. Khi bạn duyệt bài đăng, Ví Escrow sẽ giải ngân cho KOC 95% và NetViet 5%.`
-      : 'Affiliate: KOC nhận hoa hồng theo doanh số thực tế; DN trả thêm phí nền tảng 1%.';
+      ? `${t==='review'?'Phí đánh giá sản phẩm':t==='advertising'?'Phí quảng cáo':'Phí gói kết hợp'} được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.`
+      : 'Tiếp thị liên kết: KOC nhận hoa hồng theo doanh số thực tế; doanh nghiệp trả thêm phí nền tảng 1%.';
     m.querySelector('#bf-go').textContent = 'Gửi yêu cầu booking';
   }
   typeSel.addEventListener('change', syncType);
@@ -339,11 +339,11 @@ async function orders(el) {
         order_code: orderCode,
       });
       if (payment.status === 'paid') {
-        toast('Thanh toán payOS thành công · booking đã hoàn tất và KOC nhận 95%', 'ok');
+        toast('Thanh toán thành công · booking đã hoàn tất và KOC nhận 95%', 'ok');
       } else if (payment.status === 'cancelled') {
-        toast('Bạn đã hủy thanh toán payOS', 'err');
+        toast('Bạn đã hủy thanh toán', 'err');
       } else {
-        toast('Thanh toán đang chờ payOS xác nhận', 'ok');
+        toast('Thanh toán đang được xác nhận', 'ok');
       }
     } catch (e) {
       toast(e.message, 'err');
@@ -374,7 +374,7 @@ function businessVideoBlock(b) {
     <label>🎥 Video KOC gửi duyệt · phiên bản ${Number(b.video_version || 1)}</label>
     <div class="stream-frame"><video src="${esc(b.video_preview_url)}" title="Video ${esc(b.code)}" controls playsinline preload="metadata"></video></div>
     <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">
-      ${b.video_download_url ? `<a class="btn ghost sm" href="${esc(b.video_download_url)}" target="_blank" rel="noopener">⬇️ Tải video từ Cloudflare R2</a>` : '<span class="muted" style="font-size:12px">Chưa có link tải video.</span>'}
+      ${b.video_download_url ? `<a class="btn ghost sm" href="${esc(b.video_download_url)}" target="_blank" rel="noopener">⬇️ Tải video</a>` : '<span class="muted" style="font-size:12px">Video chưa sẵn sàng để tải.</span>'}
     </div>
   </div>`;
 }
@@ -406,8 +406,8 @@ async function openOrder(id, el) {
       <div class="between"><span>KOC</span><b>${esc(b.kocname)}</b></div>
       <div class="between"><span>Ngành</span><b>${esc(b.category)}</b></div>
       <div class="between"><span>Giá booking</span><b class="money">${b.status==='quote_pending'?'Chờ Admin báo giá':['quote_grouped','payment_grouped'].includes(b.status)?'Nằm trong báo giá chung':money(b.price)}</b></div>
-      ${Number(b.escrow) > 0 && Number(b.legacy_paid_escrow) ? `<div class="between"><span>Escrow payOS đang giữ</span><b class="money">${money(b.escrow)}</b></div>` : ''}
-      ${b.payment_order_code ? `<div class="between"><span>Mã payOS</span><b>${esc(b.payment_order_code)}</b></div>` : ''}
+      ${Number(b.escrow) > 0 && Number(b.legacy_paid_escrow) ? `<div class="between"><span>Khoản tiền đang được đảm bảo</span><b class="money">${money(b.escrow)}</b></div>` : ''}
+      ${b.payment_order_code ? `<div class="between"><span>Mã giao dịch</span><b>${esc(b.payment_order_code)}</b></div>` : ''}
     </div>
     ${b.type==='aiclone'&&Number(b.price)>0&&(
       Number(b.aiclone_quote_production||0)+Number(b.aiclone_quote_koc||0)+
@@ -428,7 +428,7 @@ async function openOrder(id, el) {
     ${businessVideoBlock(b)}
     ${b.video_review_note ? `<div class="tint-box video-review-note"><b>Phản hồi đã gửi:</b><p>${esc(b.video_review_note)}</p></div>` : ''}
     ${b.post_link?`<div class="field"><label>Bài KOC đã đăng (${esc(b.post_platform)})</label><div class="copybox"><a href="${esc(b.post_link)}" target="_blank" style="color:var(--info)">${esc(b.post_link)}</a></div></div>`:''}
-    ${b.reject_reason ? `<div class="chip r">KOC từ chối: ${esc(b.reject_reason)}${b.status === 'refund_pending' ? ' — escrow đang chờ hoàn.' : ''}</div>` : ''}
+    ${b.reject_reason ? `<div class="chip r">KOC từ chối: ${esc(b.reject_reason)}${b.status === 'refund_pending' ? ' — khoản thanh toán đang chờ hoàn.' : ''}</div>` : ''}
     <div id="ord-act" style="margin-top:14px"></div>
     <button class="btn ghost" id="ord-close" style="margin-top:8px">Đóng</button>`);
   m.querySelector('#ord-close').addEventListener('click', closeModal);
@@ -447,23 +447,23 @@ async function openOrder(id, el) {
     act.innerHTML = `<div class="card" style="padding:14px;border:1px solid var(--primary);margin-top:10px;background:var(--card-bg)">
         <div class="between" style="align-items:center;flex-wrap:wrap;gap:8px">
           <div>
-            <b style="font-size:15px;color:var(--primary)">💳 Báo giá & Thanh toán / Ký quỹ Escrow</b>
-            <div class="muted" style="font-size:12px;margin-top:2px">Admin đã duyệt báo giá chính thức. Thanh toán / ký quỹ để chuyển sang bước sản xuất video AI.</div>
+            <b style="font-size:15px;color:var(--primary)">💳 Báo giá và thanh toán</b>
+            <div class="muted" style="font-size:12px;margin-top:2px">Báo giá đã được duyệt. Hãy thanh toán để chuyển sang bước sản xuất video.</div>
           </div>
           <b class="money" style="font-size:20px">${money(b.price)}</b>
         </div>
         <div class="row" style="gap:10px;margin-top:14px;flex-wrap:wrap">
           <button class="btn primary" id="o-pay-wallet" style="flex:1;min-width:200px;padding:12px;white-space:normal;line-height:1.3;height:auto;text-align:center">💼 Thanh toán / Ký quỹ từ Ví doanh nghiệp</button>
-          <button class="btn ghost" id="o-pay-payos" style="flex:1;min-width:200px;padding:12px;white-space:normal;line-height:1.3;height:auto;text-align:center">🏦 Thanh toán payOS / Mã QR</button>
+          <button class="btn ghost" id="o-pay-payos" style="flex:1;min-width:200px;padding:12px;white-space:normal;line-height:1.3;height:auto;text-align:center">🏦 Thanh toán trực tuyến / Mã QR</button>
         </div>
       </div>`;
     const payWallet = act.querySelector('#o-pay-wallet');
     if (payWallet) payWallet.addEventListener('click', async () => {
-      if (!confirm(`Xác nhận trừ ${money(b.price)} từ Ví doanh nghiệp để ký quỹ Escrow và bắt đầu sản xuất video AI?`)) return;
+      if (!confirm(`Xác nhận thanh toán ${money(b.price)} từ Ví doanh nghiệp để bắt đầu sản xuất video?`)) return;
       payWallet.disabled = true;
       try {
         await post('/api/aiclone/quote-response', { id: b.id, action: 'accept' });
-        toast('Đã trừ tiền Ví doanh nghiệp và ký quỹ Escrow thành công · Đơn chuyển sang sản xuất', 'ok');
+        toast('Thanh toán thành công · Đơn đã chuyển sang sản xuất', 'ok');
         closeModal(); orders(el);
       } catch (e) { toast(e.message, 'err'); payWallet.disabled = false; }
     });
@@ -473,7 +473,7 @@ async function openOrder(id, el) {
       try {
         const res = await post('/api/booking/payment-link', { booking_id: b.id });
         if (res.checkoutUrl) window.open(res.checkoutUrl, '_blank');
-        toast('Đã khởi tạo link thanh toán payOS thành công', 'ok');
+        toast('Đã tạo yêu cầu thanh toán', 'ok');
         closeModal(); orders(el);
       } catch (e) { toast(e.message, 'err'); payPayOS.disabled = false; }
     });
@@ -502,17 +502,17 @@ async function openOrder(id, el) {
   } else if (['payment_pending', 'payment_failed', 'payment_cancelled'].includes(b.status)) {
     const canResume = b.status === 'payment_pending' && b.payment_checkout_url;
     act.innerHTML = `<div class="tint-box">
-        <b>${b.status === 'payment_failed' ? 'Chưa tạo được link payOS' : b.status === 'payment_cancelled' ? 'Thanh toán đã bị hủy' : 'Booking đang chờ thanh toán'}</b>
+        <b>${b.status === 'payment_failed' ? 'Chưa tạo được yêu cầu thanh toán' : b.status === 'payment_cancelled' ? 'Thanh toán đã bị hủy' : 'Booking đang chờ thanh toán'}</b>
         <p class="muted" style="margin-top:4px">${b.post_link
-          ? 'KOC đã đăng bài. Booking sẽ hoàn tất và 95% được ghi vào ví KOC sau khi payOS xác nhận thanh toán.'
+          ? 'KOC đã đăng bài. Booking sẽ hoàn tất và 95% được ghi vào ví KOC sau khi thanh toán được xác nhận.'
           : b.type === 'aiclone'
             ? `Admin đã gửi báo giá chính thức${b.aiclone_quote_note ? `: ${esc(b.aiclone_quote_note)}` : ''}. Thanh toán để NetViet bắt đầu sản xuất video.`
-            : 'Đây là booking được tạo theo luồng escrow cũ; KOC chỉ nhận booking sau khi payOS xác nhận thanh toán.'}</p>
+            : 'Đây là booking theo quy trình đảm bảo thanh toán cũ; KOC chỉ nhận booking sau khi giao dịch được xác nhận.'}</p>
       </div>
-      <button class="btn primary" id="o-payment" style="margin-top:10px">${canResume ? 'Tiếp tục thanh toán payOS' : 'Tạo lại link thanh toán payOS'}</button>
+      <button class="btn primary" id="o-payment" style="margin-top:10px">${canResume ? 'Tiếp tục thanh toán' : 'Tạo lại yêu cầu thanh toán'}</button>
       ${b.type === 'aiclone' && r.demoPaymentAllowed
         ? `<button class="btn ok" id="o-demo-paid" style="margin-top:8px">✓ Đã thanh toán (Demo)</button>
-           <p class="hint">Chỉ dùng để kiểm thử: hệ thống sẽ mô phỏng webhook payOS thành công.</p>`
+           <p class="hint">Chỉ dùng để kiểm thử: hệ thống sẽ mô phỏng một giao dịch thành công.</p>`
         : ''}`;
     act.querySelector('#o-payment').addEventListener('click', async () => {
       const button = act.querySelector('#o-payment');
@@ -575,7 +575,7 @@ async function openOrder(id, el) {
     act.querySelector('#o-video-approve').addEventListener('click', () => review('approve'));
     act.querySelector('#o-video-revise').addEventListener('click', () => review('request_revision'));
   } else if (b.status === 'video_processing') {
-    act.innerHTML = `<div class="tint-box"><b>Đang hoàn tất video trên Cloudflare R2</b><p class="muted" style="margin-top:4px">Mở lại chi tiết sau ít phút để xem và duyệt.</p></div>`;
+    act.innerHTML = `<div class="tint-box"><b>Đang hoàn tất video</b><p class="muted" style="margin-top:4px">Mở lại chi tiết sau ít phút để xem và duyệt.</p></div>`;
   } else if (b.status === 'video_approved') {
     act.innerHTML = `<div class="chip g">✅ Video đã duyệt · đang chờ KOC đăng lên mạng xã hội và nộp link.</div>`;
   } else if (b.status === 'revision_requested') {
@@ -661,7 +661,7 @@ async function products(el) {
   el.innerHTML = `<div class="between product-page-heading">
       <div>
         <h1 class="icon-heading">${icon('productData','teaser-icon')} Quản lý sản phẩm</h1>
-        <p class="muted">Lưu link sản phẩm tập trung để dùng lại khi booking và tạo link affiliate sau này.</p>
+        <p class="muted">Lưu đường dẫn sản phẩm để dùng lại khi tạo booking và chương trình hoa hồng bán hàng.</p>
       </div>
       <button class="btn primary sm" id="pr-new">+ Thêm sản phẩm</button>
     </div>
@@ -739,8 +739,8 @@ function renderBusinessProducts(list, products, reload) {
         </div>
         ${product.notes ? `<p class="muted product-notes">${esc(product.notes)}</p>` : ''}
         <div class="row product-affiliate-ready">
-          <span class="chip ${product.affiliate_enabled ? 'g' : 'n'}">${product.affiliate_enabled ? 'Sẵn sàng cho affiliate' : 'Chưa bật affiliate'}</span>
-          <button class="btn ghost sm" disabled title="Sẽ được kết nối ở giai đoạn affiliate tiếp theo">Tạo link affiliate · Sắp ra mắt</button>
+          <span class="chip ${product.affiliate_enabled ? 'g' : 'n'}">${product.affiliate_enabled ? 'Sẵn sàng trả hoa hồng' : 'Chưa bật hoa hồng bán hàng'}</span>
+          <button class="btn ghost sm" disabled title="Tính năng sẽ sớm được mở">Tạo đường dẫn riêng · Sắp ra mắt</button>
         </div>
         <div class="product-actions">
           <button class="btn ghost sm" data-product-action="copy" data-id="${product.id}">Sao chép link</button>
@@ -806,7 +806,7 @@ function businessProductModal(product, reload) {
   const value = (key, fallback = '') => esc(product?.[key] ?? fallback);
   const platforms = [...PLATFORMS, 'Website'];
   const m = modal(`<h2>${editing ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm'}</h2>
-    <p class="muted" style="margin-bottom:14px">Link này sẽ được lưu trong kho sản phẩm của doanh nghiệp và có thể tái sử dụng cho booking/affiliate.</p>
+    <p class="muted" style="margin-bottom:14px">Đường dẫn này sẽ được lưu trong danh mục sản phẩm và có thể dùng lại cho booking hoặc chương trình hoa hồng bán hàng.</p>
     <div class="field"><label>Tên sản phẩm *</label><input id="prf-name" maxlength="160" value="${value('name')}" placeholder="Ví dụ: Serum Vitamin C 30ml"></div>
     <div class="field"><label>Link sản phẩm *</label><input id="prf-url" type="url" maxlength="2000" value="${value('product_url')}" placeholder="https://..."></div>
     <div class="grid product-form-grid">
@@ -815,7 +815,7 @@ function businessProductModal(product, reload) {
       <div class="field"><label>Giá bán (đ)</label><input id="prf-price" type="number" min="0" step="1000" value="${value('price', 0)}"></div>
       <div class="field"><label>Hoa hồng dự kiến (%)</label><input id="prf-rate" type="number" min="0" max="100" step="0.01" value="${value('commission_rate', 0)}"></div>
       <div class="field"><label>Trạng thái</label><select id="prf-status"><option value="active" ${product?.status !== 'paused' ? 'selected' : ''}>Đang hoạt động</option><option value="paused" ${product?.status === 'paused' ? 'selected' : ''}>Tạm dừng</option></select></div>
-      <label class="product-affiliate-check"><input id="prf-affiliate" type="checkbox" ${product?.affiliate_enabled === 0 ? '' : 'checked'}> Sẵn sàng dùng cho affiliate</label>
+      <label class="product-affiliate-check"><input id="prf-affiliate" type="checkbox" ${product?.affiliate_enabled === 0 ? '' : 'checked'}> Cho phép KOC nhận hoa hồng bán hàng</label>
     </div>
     <div class="field"><label>Link ảnh sản phẩm</label><input id="prf-image" type="url" maxlength="2000" value="${value('image_url')}" placeholder="https://..."></div>
     <div class="field"><label>Ghi chú</label><textarea id="prf-notes" maxlength="1000" rows="3" placeholder="Biến thể, chính sách bán hàng, thông tin cần lưu ý…">${value('notes')}</textarea></div>
@@ -899,7 +899,7 @@ async function report(el) {
   const t = r.totals;
   el.innerHTML = `<h1>Báo cáo hiệu quả & đối soát</h1>
     <div class="stat-cards" style="margin:16px 0">
-      ${stat('Doanh số affiliate (GMV)', money(t.gmv))}${stat('Click', num(t.clicks))}${stat('Đơn hàng', num(t.orders))}${stat('ROI trung bình', ((t.commission+t.spend)>0?(t.gmv/(t.commission+t.spend)):0).toFixed(2)+'x')}
+      ${stat('Doanh số tiếp thị liên kết', money(t.gmv))}${stat('Lượt nhấp', num(t.clicks))}${stat('Đơn hàng', num(t.orders))}${stat('Hiệu quả chi tiêu', ((t.commission+t.spend)>0?(t.gmv/(t.commission+t.spend)):0).toFixed(2)+' lần')}
     </div>
     <div class="card" style="margin-bottom:16px"><h3>Đối soát chi phí — tách bạch 3 khoản</h3>
       <div class="tint-box" style="margin-top:10px">
@@ -908,7 +908,7 @@ async function report(el) {
         <div class="between"><span>③ Phí nền tảng 1% (DN trả thêm)</span><b class="money">${money(t.platformFee)}</b></div>
         <div class="between" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px"><span><b>DN thanh toán</b></span><b class="money" style="color:var(--primary)">${money(t.payable)}</b></div>
       </div></div>
-    <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Thời gian</th><th>KOC</th><th>Kiểu</th><th>Phí QC</th><th>GMV</th><th>Đơn</th><th>Hoa hồng</th><th>Phí 1%</th><th>TT</th></tr></thead><tbody>
+    <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Thời gian</th><th>KOC</th><th>Hình thức</th><th>Chi phí quảng cáo</th><th>Doanh số</th><th>Đơn</th><th>Hoa hồng</th><th>Phí 1%</th><th>Trạng thái</th></tr></thead><tbody>
       ${r.rows.map(x=>`<tr><td>${esc(x.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(x.created_at)}</td><td>${esc(x.kocname)}</td><td><span class="chip n">${btLabel(x.booking_type,x.content_type)}</span></td><td class="money">${money(x.price)}</td>
         <td class="money">${money(x.gmv||0)}</td><td>${num(x.orders||0)}</td><td class="money">${money(x.commission||0)}</td><td class="money">${money(x.platform_fee||0)}</td><td>${statusChip(x.status)}</td></tr>`).join('')}
     </tbody></table></div>
@@ -923,7 +923,7 @@ async function report(el) {
     </div><button class="btn primary" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:14px">Đóng</button>`);
   });
 }
-function btLabel(t,contentType){ return t==='ad'||!t ? (contentType==='advertising'?'Quảng cáo':'Review') : ({affiliate:'Affiliate',combo:'Combo',kol:'KOL'})[t]||t; }
+function btLabel(t,contentType){ return t==='ad'||!t ? (contentType==='advertising'?'Quảng cáo':'Đánh giá sản phẩm') : ({affiliate:'Tiếp thị liên kết',combo:'Gói kết hợp',kol:'KOL'})[t]||t; }
 
 async function kolPage(el) {
   const [{ kols }, reqs] = await Promise.all([api('/api/kols'), api('/api/kol/requests')]);
@@ -1131,11 +1131,11 @@ async function wallet(el) {
         order_code: orderCode,
       });
       if (payment.status === 'paid') {
-        toast('Thanh toán / Nạp tiền payOS thành công!', 'ok');
+        toast('Thanh toán hoặc nạp tiền thành công!', 'ok');
       } else if (payment.status === 'cancelled') {
-        toast('Bạn đã hủy giao dịch payOS', 'err');
+        toast('Bạn đã hủy giao dịch', 'err');
       } else {
-        toast('Giao dịch đang chờ payOS xác nhận', 'ok');
+        toast('Giao dịch đang được xác nhận', 'ok');
       }
     } catch (e) {
       toast(e.message, 'err');
@@ -1149,10 +1149,10 @@ async function wallet(el) {
     <div class="between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px">
       <div>
         <h1 class="icon-heading">${icon('wallet', 'teaser-icon')} Ví doanh nghiệp</h1>
-        <p class="muted">Quản lý số dư, tiền nạp ví, tạm giữ Escrow và lịch sử thanh toán qua payOS</p>
+        <p class="muted">Quản lý số dư, tiền nạp, khoản đang được đảm bảo và lịch sử giao dịch</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn primary" id="w-deposit-payos">💳 Nạp bằng payOS</button>
+        <button class="btn primary" id="w-deposit-payos">💳 Nạp tiền trực tuyến</button>
         <button class="btn secondary" id="w-deposit-demo">⚡ Nạp demo</button>
         <a class="btn ghost sm" href="#/orders">📋 Đơn booking</a>
       </div>
@@ -1165,14 +1165,14 @@ async function wallet(el) {
         <div class="muted" style="font-size:11px;margin-top:4px">Dùng để thanh toán trực tiếp các đơn booking KOC</div>
       </div>
       <div class="card" style="padding:16px;border-left:4px solid var(--warning)">
-        <div class="muted" style="font-size:12px">Đang tạm giữ Escrow</div>
+        <div class="muted" style="font-size:12px">Khoản đang được đảm bảo</div>
         <div class="money" style="font-size:24px;font-weight:700;margin-top:6px;color:var(--warning)">${money(w.escrow || 0)}</div>
         <div class="muted" style="font-size:11px;margin-top:4px">Tiền giữ an toàn chờ KOC hoàn thành bài đăng</div>
       </div>
     </div>
 
     <div class="card" style="padding:16px">
-      <b>📜 Lịch sử thanh toán & Nạp ví payOS</b>
+      <b>📜 Lịch sử thanh toán và nạp tiền</b>
       <div style="margin-top:12px;overflow-x:auto">
         ${(w.payments || []).length ? `
           <table class="table" style="width:100%;text-align:left;border-collapse:collapse">
@@ -1192,8 +1192,8 @@ async function wallet(el) {
                 <tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:8px"><b>#${esc(p.order_code)}</b></td>
                   <td style="padding:8px">${esc(p.booking_code || (p.booking_id === 'wallet_topup' ? 'Nạp tiền ví' : p.booking_id || '-'))}</td>
-                  <td style="padding:8px"><span class="chip ${p.purpose === 'deposit' ? 'g' : p.purpose === 'escrow' ? 'b' : 'w'}">${p.purpose === 'deposit' ? 'Nạp ví' : p.purpose === 'escrow' ? 'Tạm giữ Escrow' : 'Thanh toán'}</span></td>
-                  <td style="padding:8px"><span class="chip ghost">${p.provider === 'demo' ? '⚡ Demo' : '🏦 payOS'}</span></td>
+                  <td style="padding:8px"><span class="chip ${p.purpose === 'deposit' ? 'g' : p.purpose === 'escrow' ? 'b' : 'w'}">${p.purpose === 'deposit' ? 'Nạp tiền' : p.purpose === 'escrow' ? 'Khoản đảm bảo' : 'Thanh toán'}</span></td>
+                  <td style="padding:8px"><span class="chip ghost">${p.provider === 'demo' ? '⚡ Thử nghiệm' : '🏦 Trực tuyến'}</span></td>
                   <td style="padding:8px"><b class="money">${money(p.amount)}</b></td>
                   <td style="padding:8px">${p.status === 'paid' ? '<span class="chip g">✅ Thành công</span>' : p.status === 'pending' || p.status === 'creating' ? '<span class="chip w">⏳ Chờ thanh toán</span>' : '<span class="chip r">Thất bại</span>'}</td>
                   <td style="padding:8px;font-size:12px" class="muted">${new Date(p.created_at).toLocaleString('vi-VN')}</td>
@@ -1212,9 +1212,9 @@ async function wallet(el) {
 
 function depositModal(mode, el) {
   const isPayOS = mode === 'payos';
-  const title = isPayOS ? 'Nạp tiền qua payOS' : 'Nạp tiền Demo';
+  const title = isPayOS ? 'Nạp tiền trực tuyến' : 'Nạp tiền thử nghiệm';
   const desc = isPayOS
-    ? 'Thanh toán trực tiếp bằng mã QR ngân hàng qua cổng payOS.'
+    ? 'Thanh toán nhanh bằng mã QR ngân hàng.'
     : 'Nạp tiền mô phỏng thử nghiệm ngay tức thì vào ví doanh nghiệp.';
   const m = modal(`
     <h2>${title}</h2>
@@ -1229,7 +1229,7 @@ function depositModal(mode, el) {
       </div>
       <input id="dep-amt" type="number" placeholder="Nhập số tiền (tối thiểu 10.000đ)" value="500000" min="10000" step="10000">
     </div>
-    <button class="btn ${isPayOS ? 'primary' : 'ok'}" id="dep-go" style="width:100%;margin-top:8px">${isPayOS ? '💳 Mở thanh toán payOS' : '⚡ Xác nhận nạp demo'}</button>
+    <button class="btn ${isPayOS ? 'primary' : 'ok'}" id="dep-go" style="width:100%;margin-top:8px">${isPayOS ? '💳 Mở trang thanh toán' : '⚡ Xác nhận nạp thử'}</button>
     <button class="btn ghost" id="dep-cancel" style="width:100%;margin-top:6px">Hủy</button>
   `);
 
@@ -1253,7 +1253,7 @@ function depositModal(mode, el) {
       const res = await post('/api/wallet/deposit', { amount, mode });
       closeModal();
       if (res.mode === 'payos' && res.checkoutUrl) {
-        toast('Đang chuyển hướng sang payOS...', 'ok');
+        toast('Đang mở trang thanh toán...', 'ok');
         window.location.href = res.checkoutUrl;
       } else {
         toast(res.message || 'Nạp tiền demo thành công', 'ok');

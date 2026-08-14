@@ -1,6 +1,11 @@
 import 'dotenv/config'
+import dns from 'node:dns'
 import { createApp, initializeDatabase } from './app.js'
 import { loadConfig } from './config/env.js'
+
+// The payout channel allowlists the server's public IPv4 address. Prefer IPv4
+// so Node does not select a temporary IPv6 address and get rejected by the channel.
+dns.setDefaultResultOrder('ipv4first')
 
 async function start() {
   const config = loadConfig()
