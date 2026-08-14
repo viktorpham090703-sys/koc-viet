@@ -1,0 +1,99 @@
+/* KOC Việt · Hallmark design tokens · warm-paper editorial system */
+:root {
+  --color-paper: oklch(98% 0.008 40);
+  --color-paper-2: oklch(95.5% 0.012 40);
+  --color-paper-3: oklch(93% 0.015 40);
+  --color-ink: oklch(22% 0.015 40);
+  --color-ink-2: oklch(42% 0.012 40);
+  --color-ink-3: oklch(50% 0.008 40);
+  --color-rule: oklch(82% 0.01 40);
+  --color-rule-soft: oklch(88% 0.006 40);
+  --color-accent: oklch(62% 0.19 35);
+  --color-accent-hover: oklch(55% 0.17 35);
+  --color-accent-ink: oklch(96% 0.02 35);
+  --color-focus: oklch(58% 0.22 35);
+
+  --font-display: "Lora", ui-serif, serif;
+  --font-body: "Be Vietnam Pro", ui-sans-serif, sans-serif;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+  --text-display-s: clamp(2.5rem, 4.4vw, 3.75rem);
+  --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --rule-hair: 1px;
+  --rule-strong: 2px;
+  --radius-control: 0.25rem;
+  --radius-media: 0.125rem;
+  --radius-card: 0.25rem;
+  --radius-pill: 9999px;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* Backward-compatible aliases for existing public landing routes. */
+  --lp-paper: var(--color-paper);
+  --lp-paper-2: var(--color-paper-2);
+  --lp-paper-3: var(--color-paper-3);
+  --lp-ink: var(--color-ink);
+  --lp-ink-2: var(--color-ink-2);
+  --lp-ink-3: var(--color-ink-3);
+  --lp-rule: var(--color-rule-soft);
+  --lp-accent: var(--color-accent);
+  --lp-accent-h: var(--color-accent-hover);
+  --lp-accent-ink: var(--color-accent-ink);
+  --lp-focus: var(--color-focus);
+  --lp-font-display: var(--font-display);
+  --lp-font-body: var(--font-body);
+  --lp-space-3xs: var(--space-2xs);
+  --lp-space-2xs: var(--space-xs);
+  --lp-space-xs: var(--space-sm);
+  --lp-space-sm: var(--space-md);
+  --lp-space-md: var(--space-lg);
+  --lp-space-lg: var(--space-xl);
+  --lp-space-xl: var(--space-2xl);
+  --lp-space-2xl: var(--space-3xl);
+  --lp-space-3xl: var(--space-4xl);
+  --lp-text-xs: var(--text-xs);
+  --lp-text-sm: var(--text-sm);
+  --lp-text-md: var(--text-md);
+  --lp-text-lg: var(--text-lg);
+  --lp-text-xl: var(--text-xl);
+  --lp-text-2xl: var(--text-2xl);
+  --lp-text-display: var(--text-display-s);
+  --lp-text-lede: var(--text-lg);
+  --lp-ease-out: var(--ease-out);
+  --lp-dur-short: var(--dur-short);
+  --lp-radius-card: var(--radius-card);
+  --lp-radius-input: var(--radius-control);
+  --lp-radius-pill: var(--radius-pill);
+}
