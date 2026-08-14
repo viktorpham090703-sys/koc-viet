@@ -24,7 +24,7 @@ const NAV = [
   ["#/home", icon("home", "nav-icon"), "Trang chủ"],
   ["#/bookings", icon("booking", "nav-icon"), "Booking"],
   ["#/content", icon("content", "nav-icon"), "Nội dung"],
-  ["#/affiliate", icon("affiliate", "nav-icon"), "Affiliate"],
+  ["#/affiliate", icon("affiliate", "nav-icon"), "Hoa hồng bán hàng"],
   ["#/wallet", icon("wallet", "nav-icon"), "Ví"],
   ["#/notifications", icon("notification", "nav-icon"), "Thông báo"],
 ];
@@ -148,7 +148,7 @@ async function bookings(el) {
     ["aiclone", `${icon("aiClone")} AI Clone Avatar`],
     ["review", "📝 Review"],
     ["advertising", "📣 Quảng cáo"],
-    ["affiliate", "🔗 Affiliate"],
+    ["affiliate", "🔗 Tiếp thị liên kết"],
     ["combo", "🎯 Combo"],
   ];
   el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Booking của tôi</h2>
@@ -200,7 +200,7 @@ function bookingKindMeta(b) {
     aiclone: [icon("aiClone"), "AI Clone Avatar", "aiclone"],
     review: ["📝", "Review", "review"],
     advertising: ["📣", "Quảng cáo", "advertising"],
-    affiliate: ["🔗", "Affiliate", "affiliate"],
+    affiliate: ["🔗", "Tiếp thị liên kết", "affiliate"],
     combo: ["🎯", "Combo", "combo"],
   }[bookingKind(b)];
 }
@@ -242,7 +242,7 @@ function videoUploadForm() {
   return `<div class="video-upload-box">
     <div class="field"><label>Video gửi doanh nghiệp duyệt</label>
       <input id="a-video" type="file" accept="video/mp4,video/webm,.mp4,.m4v,.webm">
-      <p class="hint">Chấp nhận MP4/WebM, tối đa 5 phút và 5 GB. Video được lưu riêng tư trên Cloudflare R2.</p>
+      <p class="hint">Chấp nhận MP4/WebM, tối đa 5 phút và 5 GB. Video được lưu riêng tư và chỉ người có quyền mới xem được.</p>
     </div>
     <div class="upload-progress" id="a-upload-progress" hidden>
       <div class="between"><span id="a-upload-label">Đang tải video…</span><b id="a-upload-percent">0%</b></div>
@@ -280,12 +280,12 @@ function uploadR2Part(
       else
         reject(
           new Error(
-            result.error || `Cloudflare R2 từ chối video (${xhr.status})`,
+            result.error || `Chưa tải được video (${xhr.status})`,
           ),
         );
     });
     xhr.addEventListener("error", () =>
-      reject(new Error("Mất kết nối khi tải video lên Cloudflare R2")),
+      reject(new Error("Mất kết nối khi tải video")),
     );
     xhr.send(chunk);
   });
@@ -318,7 +318,7 @@ async function uploadR2Video(session, file, onProgress) {
       }
     }
     if (!uploaded?.etag)
-      throw new Error("Cloudflare R2 không xác nhận phần video đã tải");
+      throw new Error("Hệ thống chưa xác nhận phần video đã tải");
     parts.push({
       partNumber: Number(uploaded.partNumber || partNumber),
       etag: uploaded.etag,
@@ -368,7 +368,7 @@ async function uploadBookingVideo(b, act, el) {
   const bar = act.querySelector("#a-upload-bar");
   button.disabled = true;
   progress.hidden = false;
-  const setProgress = (ratio, text = "Đang tải video lên Cloudflare R2…") => {
+  const setProgress = (ratio, text = "Đang tải video…") => {
     const value = Math.max(0, Math.min(100, Math.round(ratio * 100)));
     label.textContent = text;
     percent.textContent = `${value}%`;
@@ -396,7 +396,7 @@ async function uploadBookingVideo(b, act, el) {
     toast(
       completed.video?.status === "pending_review"
         ? "Đã gửi video cho doanh nghiệp duyệt"
-        : "Đã tải video lên Cloudflare R2",
+        : "Đã tải video thành công",
       "ok",
     );
     closeModal();
@@ -462,13 +462,13 @@ async function openBooking(id, el) {
       <div class="between"><span>Bạn nhận (95%)</span><b class="money">${money(Math.round(b.price * 0.95))}</b></div>`
           : ""
       }
-      ${b.booking_type === "affiliate" || b.booking_type === "combo" ? `<div class="between"><span>Hoa hồng affiliate</span><b>${b.commission_rate}% doanh số</b></div>` : ""}
+      ${b.booking_type === "affiliate" || b.booking_type === "combo" ? `<div class="between"><span>Hoa hồng bán hàng</span><b>${b.commission_rate}% doanh số</b></div>` : ""}
       <div class="between"><span>Hạn</span><b>${esc(b.deadline || "—")}</b></div>
     </div>
     <div class="field"><label>${icon("productData")} Link dữ liệu sản phẩm (kiểm tra trước khi xác nhận)</label>
       <div class="copybox"><a href="${esc(b.product_link)}" target="_blank" style="color:var(--info)">${esc(b.product_link || "—")}</a></div></div>
     ${b.product_url ? `<div class="field"><label>🛒 Link sản phẩm gốc trên sàn (${esc(b.platform)})</label><div class="copybox"><a href="${esc(b.product_url)}" target="_blank" style="color:var(--info)">${esc(b.product_url)}</a></div></div>` : ""}
-    ${b.affLink ? `<div class="field"><label>🔗 Link affiliate cá nhân của bạn (đã sinh tự động)</label><div class="copybox"><span style="flex:1;word-break:break-all;font-size:12px">${esc(b.affLink)}</span><button class="btn primary sm" id="bk-copyaff">Sao chép</button></div></div>` : ""}
+    ${b.affLink ? `<div class="field"><label>🔗 Đường dẫn sản phẩm dành riêng cho bạn</label><div class="copybox"><span style="flex:1;word-break:break-all;font-size:12px">${esc(b.affLink)}</span><button class="btn primary sm" id="bk-copyaff">Sao chép</button></div></div>` : ""}
     <div class="field"><label>Yêu cầu</label><div class="tint-box">${esc(b.requirements || "—")}</div></div>
     ${b.type === "aiclone" && b.aiclone_script ? `<div class="field"><label>Kịch bản AI Clone</label><div class="tint-box" style="white-space:pre-wrap">${esc(b.aiclone_script)}</div></div>` : ""}
     ${(b.koc_video_link || b.video_link) && (b.type !== "aiclone" || ["pending_koc_review", "video_approved", "posted", "completed"].includes(b.status)) ? `<div class="field"><label>🎥 Video AI Clone Avatar admin giao KOC</label><div class="copybox" style="flex-wrap:wrap"><span style="flex:1;min-width:180px">${esc(b.koc_video_link || b.video_link)}</span><a class="btn ok sm" href="${esc(b.koc_video_link || b.video_link)}" target="_blank" rel="noopener">Mở / tải video</a></div></div>` : ""}
@@ -484,7 +484,7 @@ async function openBooking(id, el) {
     copyAff.addEventListener("click", async () => {
       const ok = await copyToClipboard(b.affLink);
       if (ok) {
-        toast("Đã sao chép link affiliate", "ok");
+        toast("Đã sao chép đường dẫn sản phẩm", "ok");
       } else {
         toast("Không thể sao chép tự động", "err");
       }
@@ -538,7 +538,7 @@ async function openBooking(id, el) {
     act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa</label><textarea id="a-ai-note" rows="3" placeholder="Nêu rõ vấn đề về hình ảnh, giọng nói hoặc nội dung…"></textarea></div>
       <div class="row" style="gap:8px"><button class="btn ok" id="a-ai-approve" style="flex:1">✅ Phê duyệt video</button>
       <button class="btn danger" id="a-ai-revise" style="flex:1">↩ Yêu cầu sửa</button></div>
-      <p class="hint">Sau khi duyệt, link affiliate cá nhân sẽ được tạo để bạn đăng video và quảng bá sản phẩm.</p>`;
+      <p class="hint">Sau khi duyệt, đường dẫn sản phẩm riêng sẽ được tạo để bạn đăng video và quảng bá sản phẩm.</p>`;
     const review = async (action) => {
       const note = act.querySelector("#a-ai-note").value.trim();
       if (action === "request_revision" && !note)
@@ -576,7 +576,7 @@ async function openBooking(id, el) {
       .querySelector("#a-upload")
       .addEventListener("click", () => uploadBookingVideo(b, act, el));
   } else if (b.status === "video_processing" && b.type === "aiclone") {
-    act.innerHTML = `<div class="tint-box"><b>Đang hoàn tất video trên Cloudflare R2</b><p class="muted" style="margin-top:4px">Bấm kiểm tra để cập nhật trạng thái.</p></div>
+    act.innerHTML = `<div class="tint-box"><b>Đang hoàn tất video</b><p class="muted" style="margin-top:4px">Bấm kiểm tra để cập nhật trạng thái.</p></div>
       <button class="btn primary" id="a-video-refresh" style="margin-top:8px">↻ Kiểm tra trạng thái video</button>`;
     act
       .querySelector("#a-video-refresh")
@@ -698,7 +698,7 @@ async function affiliate(el) {
     api("/api/affiliate"),
     api("/api/affiliate/links"),
   ]);
-  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Affiliate</h2><p style="opacity:.85;font-size:12px">Nhớ gắn nhãn #quangcao khi đăng bài</p></div><div class="m-body"></div>`;
+  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Hoa hồng bán hàng</h2><p style="opacity:.85;font-size:12px">Nhớ gắn nhãn #quangcao khi đăng bài</p></div><div class="m-body"></div>`;
   const body = el.querySelector(".m-body");
   body.classList.add("koc-affiliate-grid");
   const hasNew = r.links && r.links.length;
@@ -706,7 +706,7 @@ async function affiliate(el) {
   if (!hasNew && !hasLegacy) {
     body.innerHTML = empty(
       "🔗",
-      "Nhận & xác nhận booking affiliate để hệ thống tự sinh link",
+      "Nhận booking tiếp thị liên kết để hệ thống tạo đường dẫn sản phẩm riêng",
     );
     return;
   }
@@ -795,7 +795,7 @@ async function affiliate(el) {
           linkId: b.dataset.sync,
         });
         toast(
-          `Đơn ${rr.orderId} · GMV ${money(rr.gmv)} · HH +${money(rr.commission)}`,
+          `Đơn ${rr.orderId} · Doanh số ${money(rr.gmv)} · Hoa hồng +${money(rr.commission)}`,
           "ok",
         );
         affiliate(el);
@@ -853,7 +853,7 @@ async function wallet(el) {
         <div style="font-size:12px;opacity:.85;margin-top:6px">Hoa hồng dự kiến: ${money(summary.expected)}</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-        <button class="btn" id="w-withdraw-payos" style="flex:1;min-width:140px;background:#ffffff;color:#1e293b;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.15)">🏦 Rút bằng payOS</button>
+        <button class="btn" id="w-withdraw-payos" style="flex:1;min-width:140px;background:#ffffff;color:#1e293b;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.15)">🏦 Rút về ngân hàng</button>
         <button class="btn" id="w-withdraw-demo" style="flex:1;min-width:140px;background:rgba(255,255,255,0.22);color:#ffffff;border:1.5px solid rgba(255,255,255,0.6);font-weight:600">⚡ Rút demo</button>
       </div>
     </div>
@@ -934,8 +934,8 @@ function walletStatusChip(status) {
 
 function withdrawModal(mode, balance, el, payout) {
   const isPayOS = mode === "payos";
-  const title = isPayOS ? "Rút tiền qua payOS Chi hộ" : "Rút tiền Demo";
-  const hasBank = payout && payout.bank_account && payout.bank_name;
+  const title = isPayOS ? "Rút tiền về tài khoản ngân hàng" : "Rút tiền thử nghiệm";
+  const hasBank = payout && payout.bank_account && payout.bank_name && /^\d{6}$/.test(String(payout.bank_bin || ""));
   const m = modal(`<h2>${title}</h2>
     <p class="muted">Khả dụng: <b class="money">${money(balance)}</b> · Tối thiểu 100.000đ</p>
     ${
@@ -943,10 +943,11 @@ function withdrawModal(mode, balance, el, payout) {
         ? hasBank
           ? `<div style="background:var(--bg-muted);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
               <div><span class="muted">Ngân hàng nhận:</span> <b>${esc(payout.bank_name)}</b></div>
+              <div><span class="muted">Mã ngân hàng:</span> <b>${esc(payout.bank_bin)}</b></div>
               <div><span class="muted">Số tài khoản:</span> <b>${esc(payout.bank_account)}</b> (${esc(payout.bank_owner || "")})</div>
              </div>`
           : `<div style="color:var(--error);background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
-              ⚠️ Chưa cập nhật thông tin ngân hàng. Vui lòng thiết lập thông tin ngân hàng nhận tiền trước khi rút qua payOS.
+              ⚠️ Chưa cập nhật thông tin ngân hàng. Vui lòng thiết lập tài khoản nhận tiền trước khi rút.
              </div>`
         : `<p class="muted" style="font-size:12.5px;margin-top:6px">Rút tiền thử nghiệm mô phỏng trực tiếp về số dư.</p>`
     }
@@ -955,7 +956,7 @@ function withdrawModal(mode, balance, el, payout) {
       <input id="wd-otp" class="otp-in" inputmode="numeric" maxlength="6" placeholder="••••••" style="flex:1">
       <button class="btn ghost sm" id="wd-send-otp" type="button">Gửi OTP</button>
     </div></div>
-    <button class="btn ${isPayOS ? "primary" : "ok"}" id="wd-go">${isPayOS ? "🏦 Xác nhận rút payOS" : "⚡ Xác nhận rút demo"}</button>
+    <button class="btn ${isPayOS ? "primary" : "ok"}" id="wd-go">${isPayOS ? "🏦 Xác nhận rút tiền" : "⚡ Xác nhận rút thử"}</button>
     <button class="btn ghost" id="wd-cancel" style="margin-top:8px">Hủy</button>`);
   m.querySelector("#wd-cancel").addEventListener("click", closeModal);
   m.querySelector("#wd-send-otp").addEventListener("click", async () => {
@@ -1018,13 +1019,13 @@ function aiCloneTermsBody() {
 
     <p class="aic-part">PHẦN A — GIỚI THIỆU CHƯƠNG TRÌNH AI CLONE AVATAR</p>
     <p class="aic-h"><b>A.1. AI Clone Avatar là gì?</b></p>
-    <p>AI Clone Avatar là công nghệ tổng hợp video/âm thanh bằng trí tuệ nhân tạo, tái tạo hình ảnh và giọng nói của chính KOC với độ giống lên đến 99%. Khi nhận được booking từ doanh nghiệp, thay vì KOC phải tự quay dựng, các đối tác sản xuất chính thức của KOC Việt sẽ dùng công nghệ này để tạo ra video review/video affiliate mang hình ảnh, giọng nói của KOC, sau đó gửi lại cho KOC duyệt trước khi đăng tải.</p>
+    <p>Dịch vụ video đại diện dùng trí tuệ nhân tạo để tái tạo hình ảnh và giọng nói của chính KOC. Khi có booking từ doanh nghiệp, đối tác sản xuất của KOC Việt sẽ tạo video đánh giá hoặc giới thiệu sản phẩm, sau đó gửi lại để KOC duyệt trước khi đăng tải.</p>
     <p class="aic-h"><b>A.2. Chương trình vận hành như thế nào?</b></p>
-    <p>Đối tác sản xuất chính thức của KOC Việt tiếp nhận booking từ doanh nghiệp, sử dụng hình ảnh/giọng nói AI Clone Avatar của KOC (đã được cấp phép) để sản xuất video review hoặc video affiliate cho sản phẩm/dịch vụ của doanh nghiệp. Video hoàn thiện được gửi tới KOC qua hệ thống để KOC xem trước và phê duyệt. Nếu KOC thấy phù hợp, KOC đăng tải video lên kênh mạng xã hội của mình và gắn link affiliate (nếu có) để nhận phí booking và/hoặc chiết khấu affiliate.</p>
+    <p>Đối tác sản xuất của KOC Việt tiếp nhận booking từ doanh nghiệp và sử dụng hình ảnh, giọng nói đã được KOC cho phép để tạo video. Video hoàn thiện được gửi tới KOC xem trước và phê duyệt. Nếu phù hợp, KOC đăng video lên kênh mạng xã hội và gắn đường dẫn sản phẩm (nếu có) để nhận phí booking cùng hoa hồng bán hàng.</p>
     <p class="aic-h"><b>A.3. Lợi ích dành cho KOC</b></p>
     <ul>
       <li>Không phải bỏ công sức sáng tạo, quay dựng, sản xuất nội dung — công việc này do đối tác AI đảm nhiệm.</li>
-      <li>Nguồn thu nhập thụ động lớn và bền vững: nhận phí booking và/hoặc chiết khấu affiliate cho mỗi nội dung phù hợp được đăng tải.</li>
+      <li>Có thêm nguồn thu nhập: nhận phí booking và hoa hồng bán hàng cho mỗi nội dung phù hợp được đăng tải.</li>
       <li>Không ảnh hưởng tới công việc sáng tạo nội dung KOC đang làm; KOC hoàn toàn chủ động về thời gian.</li>
       <li>KOC luôn giữ quyền duyệt và đăng tải: chỉ những video KOC xét thấy phù hợp mới được đăng tải.</li>
     </ul>
@@ -1032,7 +1033,7 @@ function aiCloneTermsBody() {
     <ul>
       <li>Không tốn sản phẩm mẫu và chi phí vận chuyển vì nội dung được sản xuất bằng AI.</li>
       <li>Chi phí booking hợp lý hơn do KOC không phải trực tiếp sản xuất nội dung.</li>
-      <li>Kiểm soát rủi ro và thông điệp: nội dung được kiểm duyệt trước và đồng bộ, đồng thời tạo doanh thu ngay nhờ gắn link affiliate.</li>
+      <li>Kiểm soát rủi ro và thông điệp: nội dung được duyệt trước khi đăng và có thể tạo doanh thu nhờ đường dẫn sản phẩm riêng.</li>
     </ul>
     <p class="aic-h"><b>A.5. Những điểm KOC cần đặc biệt lưu ý</b></p>
     <ul>
@@ -1043,13 +1044,13 @@ function aiCloneTermsBody() {
 
     <p class="aic-part">PHẦN B — QUY TRÌNH THAM GIA & PHỐI HỢP KHI CÓ BOOKING</p>
     <p><b>Bước 1 — Xác nhận tham gia:</b> KOC đọc và đồng ý toàn bộ Điều khoản này, xác nhận bằng tick đã đăng ký.</p>
-    <p><b>Bước 2 — Xác minh hồ sơ:</b> KOC Việt kiểm tra và xác minh tính hợp lệ của hồ sơ, danh tính (eKYC), kênh mạng xã hội và thông tin thanh toán của KOC.</p>
+    <p><b>Bước 2 — Xác minh hồ sơ:</b> KOC Việt kiểm tra tính hợp lệ của hồ sơ, danh tính, kênh mạng xã hội và thông tin nhận tiền của KOC.</p>
     <p><b>Bước 3 — Liên hệ xác nhận & hướng dẫn:</b> Sau khi hồ sơ hợp lệ, KOC Việt liên hệ xác nhận, hướng dẫn KOC cách tham gia, cách thu thập mẫu hình ảnh/giọng nói và cách sử dụng hệ thống để sẵn sàng nhận booking.</p>
-    <p><b>Bước 4 — Tiếp nhận booking từ doanh nghiệp:</b> Khi có booking phù hợp, hệ thống gửi thông tin booking (loại booking, sản phẩm, phí booking, tỉ lệ chiết khấu affiliate nếu có) để KOC nhận hoặc từ chối.</p>
-    <p><b>Bước 5 — Sản xuất video AI Clone Avatar:</b> Đối tác sản xuất dùng hình ảnh/giọng nói AI Clone Avatar đã cấp phép để tạo video review/affiliate theo kịch bản của booking.</p>
+    <p><b>Bước 4 — Tiếp nhận booking từ doanh nghiệp:</b> Khi có booking phù hợp, hệ thống gửi loại nội dung, sản phẩm, mức phí và tỉ lệ hoa hồng bán hàng để KOC nhận hoặc từ chối.</p>
+    <p><b>Bước 5 — Sản xuất video đại diện:</b> Đối tác sản xuất dùng hình ảnh và giọng nói đã được KOC cho phép để tạo video theo yêu cầu của booking.</p>
     <p><b>Bước 6 — KOC duyệt nội dung:</b> KOC nhận bản xem trước, phê duyệt hoặc yêu cầu chỉnh sửa trong thời hạn quy định. Không có phê duyệt của KOC thì nội dung không được đăng tải.</p>
-    <p><b>Bước 7 — Đăng tải & gắn link affiliate:</b> KOC đăng video đã duyệt lên kênh của mình, gắn link/mã affiliate cá nhân (nếu booking có cấu phần affiliate) và gắn nhãn quảng cáo theo quy định.</p>
-    <p><b>Bước 8 — Ghi nhận, đối soát & thanh toán:</b> Hệ thống ghi nhận nội dung đã đăng và doanh số affiliate; KOC Việt đối soát minh bạch và chi trả phí booking, chiết khấu affiliate vào Ví nội bộ của KOC theo chu kỳ công bố.</p>
+    <p><b>Bước 7 — Đăng tải và gắn đường dẫn sản phẩm:</b> KOC đăng video đã duyệt lên kênh của mình, gắn đường dẫn hoặc mã giới thiệu riêng (nếu có) và gắn nhãn quảng cáo theo quy định.</p>
+    <p><b>Bước 8 — Ghi nhận, đối soát và thanh toán:</b> Hệ thống ghi nhận nội dung đã đăng và doanh số bán hàng; KOC Việt đối soát minh bạch rồi chuyển phí booking cùng hoa hồng vào Ví KOC theo lịch đã công bố.</p>
 
     <p class="aic-part">PHẦN C — CAM KẾT CỦA KOC</p>
     <p><b>C.1. Đồng ý sử dụng hình ảnh và giọng nói.</b> Tôi đồng ý cho KOC Việt và đối tác sản xuất được chỉ định thu thập, lưu trữ, xử lý và sử dụng hình ảnh, giọng nói cùng các dữ liệu cần thiết do tôi cung cấp để tạo nội dung bằng công nghệ AI Clone Avatar, phục vụ các booking, chiến dịch mà tôi đã xác nhận tham gia.</p>
@@ -1057,7 +1058,7 @@ function aiCloneTermsBody() {
     <p><b>C.3. Tuân thủ quy định về quảng cáo.</b> Tôi cam kết mọi nội dung công bố tuân thủ pháp luật về quảng cáo, thương mại điện tử và quy định của KOC Việt, bao gồm gắn nhãn nội dung quảng cáo/tài trợ (#quangcao/#ad) khi được yêu cầu.</p>
     <p><b>C.4. Trung thực thông tin và quyền sử dụng hợp pháp.</b> Tôi cam kết toàn bộ thông tin cá nhân, hình ảnh, giọng nói và dữ liệu cung cấp là trung thực, chính xác và thuộc quyền sử dụng hợp pháp của tôi; chịu trách nhiệm trước pháp luật đối với thông tin sai lệch, giả mạo hoặc xâm phạm quyền của bên thứ ba.</p>
     <p><b>C.5. Không sử dụng ngoài phạm vi cho phép.</b> Tôi cam kết không tự ý chỉnh sửa, chuyển giao, phát hành, khai thác nội dung AI Clone Avatar ngoài phạm vi đã được phê duyệt, trừ khi có thỏa thuận khác bằng văn bản.</p>
-    <p><b>C.6. Không gian lận affiliate.</b> Tôi cam kết không dùng công cụ giả lập click hay bất kỳ hình thức gian lận chuyển đổi nào.</p>
+    <p><b>C.6. Không gian lận doanh số.</b> Tôi cam kết không tạo lượt nhấp hoặc đơn hàng giả dưới bất kỳ hình thức nào.</p>
     <p><b>C.7. Bảo mật và không giao dịch ngoài hệ thống.</b> Tôi cam kết không thỏa thuận, báo giá riêng hay nhận thanh toán trực tiếp từ doanh nghiệp ngoài hệ thống đối với booking phát sinh qua Nền tảng; không tiết lộ thông tin bảo mật tiếp cận được qua Nền tảng.</p>
     <p><b>C.8. Trách nhiệm khi đăng tải.</b> Tôi chịu trách nhiệm đăng tải đúng nội dung đã phê duyệt, đúng kênh và thời điểm cam kết trong booking; không xóa/gỡ nội dung trước thời hạn tối thiểu quy định của booking nếu không có lý do chính đáng.</p>
 
@@ -1067,7 +1068,7 @@ function aiCloneTermsBody() {
     <p><b>D.3. Bảo mật và bảo vệ dữ liệu cá nhân.</b> KOC Việt áp dụng biện pháp kỹ thuật và quản lý phù hợp để bảo vệ dữ liệu cá nhân, hình ảnh, giọng nói của KOC; tuân thủ Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.</p>
     <p><b>D.4. Quyền xử lý vi phạm.</b> KOC Việt có quyền tạm khóa hoặc chấm dứt hợp tác với KOC vi phạm theo quy định pháp luật và Điều khoản sử dụng; việc này không ảnh hưởng đến quyền, nghĩa vụ phát sinh từ các booking đã hoàn thành.</p>
     <p><b>D.5. Thời hạn sử dụng dữ liệu.</b> KOC Việt chỉ sử dụng hình ảnh, giọng nói của KOC trong thời gian KOC tham gia Chương trình hoặc thời gian cần thiết để hoàn tất booking đã xác nhận; sau đó không tạo mới/phát hành nội dung AI Clone Avatar nếu chưa có sự đồng ý tiếp theo của KOC.</p>
-    <p><b>D.6. Bảo đảm quyền lợi của KOC.</b> Việc tham gia là tự nguyện và không làm thay đổi các chính sách về booking, thanh toán, hoa hồng affiliate, đối soát mà KOC được hưởng theo Điều khoản sử dụng.</p>
+    <p><b>D.6. Bảo đảm quyền lợi của KOC.</b> Việc tham gia là tự nguyện và không làm thay đổi các chính sách về booking, thanh toán, hoa hồng bán hàng và đối soát mà KOC được hưởng theo Điều khoản sử dụng.</p>
     <p><b>D.7. Tôn trọng quyền nhân thân.</b> KOC Việt tôn trọng quyền nhân thân của KOC đối với hình ảnh, giọng nói. Việc sử dụng dữ liệu AI Clone Avatar không làm phát sinh chuyển giao quyền nhân thân, trừ các quyền sử dụng đã được KOC đồng ý.</p>
     <p><b>D.8. Minh bạch đối soát và chi trả.</b> KOC Việt bảo đảm số liệu doanh số, đơn hàng, hoa hồng minh bạch, KOC tra cứu được và chi trả đúng hạn theo chu kỳ công bố.</p>
 
@@ -1077,17 +1078,17 @@ function aiCloneTermsBody() {
     <p><b>E.3. Bảo vệ hình ảnh, chống lạm dụng và quyền gỡ bỏ.</b> Nghiêm cấm sử dụng AI Clone Avatar của KOC để tạo nội dung sai sự thật, bôi nhọ, khiêu dâm, chính trị nhạy cảm, lừa đảo hay bất kỳ mục đích nào gây tổn hại danh dự, uy tín của KOC. KOC có quyền yêu cầu gỡ bỏ (takedown) nội dung sử dụng sai phạm vi trong thời hạn hợp lý.</p>
     <p><b>E.4. Thời hạn và xử lý sau khi kết thúc.</b> Sau khi KOC ngừng tham gia hoặc hoàn tất booking, KOC Việt ngừng tạo mới nội dung AI Clone Avatar; KOC có quyền yêu cầu ngừng lưu trữ và xóa dữ liệu clone, trừ dữ liệu bắt buộc lưu giữ phục vụ đối soát tài chính hoặc giải quyết tranh chấp theo quy định pháp luật.</p>
     <p><b>E.5. Rút lại đồng ý và yêu cầu xóa dữ liệu.</b> KOC có quyền rút lại sự đồng ý xử lý dữ liệu cá nhân và yêu cầu xóa dữ liệu theo Nghị định 13/2023/NĐ-CP, trừ phần dữ liệu cần lưu giữ theo nghĩa vụ pháp luật.</p>
-    <p><b>E.6. Bảo mật dữ liệu sinh trắc học.</b> Dữ liệu định danh (CCCD, ảnh selfie) và sinh trắc học (giọng nói, khuôn mặt dùng huấn luyện AI Clone Avatar) được mã hóa khi lưu trữ, truyền tải và chỉ dùng cho mục đích xác minh, chi trả và tạo nội dung theo booking đã duyệt.</p>
+    <p><b>E.6. Bảo mật dữ liệu sinh trắc học.</b> Dữ liệu định danh (CCCD, ảnh chân dung) và sinh trắc học (giọng nói, khuôn mặt dùng để tạo video đại diện) được bảo vệ khi lưu trữ, truyền tải và chỉ dùng cho mục đích xác minh, chi trả và tạo nội dung theo booking đã duyệt.</p>
 
     <p class="aic-part">PHẦN F — THANH TOÁN & ĐỐI SOÁT</p>
     <p>Thu nhập của KOC từ Chương trình gồm các cấu phần sau, tùy nội dung từng booking:</p>
     <table class="aic-table">
       <tr><th>Cấu phần</th><th>Cách tính</th><th>Ghi chú</th></tr>
       <tr><td>Phí booking (booking fee)</td><td>Cố định theo từng job, hiển thị khi KOC nhận booking</td><td>Áp dụng cho booking review/quảng cáo/AI Clone Avatar có phí</td></tr>
-      <tr><td>Chiết khấu affiliate</td><td>Doanh số hợp lệ × % chiết khấu do doanh nghiệp đề xuất</td><td>Chỉ tính đơn đã thanh toán, không hủy/hoàn trong kỳ đối soát</td></tr>
-      <tr><td>Phí nền tảng 1%</td><td>Doanh số affiliate × 1% — do DOANH NGHIỆP chi trả</td><td>Không trừ vào hoa hồng của KOC</td></tr>
+      <tr><td>Hoa hồng bán hàng</td><td>Doanh số hợp lệ × % hoa hồng do doanh nghiệp đề xuất</td><td>Chỉ tính đơn đã thanh toán, không hủy hoặc hoàn trong kỳ đối soát</td></tr>
+      <tr><td>Phí nền tảng 1%</td><td>Doanh số bán hàng × 1% — do DOANH NGHIỆP chi trả</td><td>Không trừ vào hoa hồng của KOC</td></tr>
     </table>
-    <p><b>F.1. Chu kỳ đối soát.</b> KOC Việt tổng hợp số liệu (Ledger) và thông báo cho KOC trước khi chi trả theo chu kỳ công bố (ví dụ 1 lần mỗi tháng). KOC xem cùng một con số với doanh nghiệp và admin.</p>
+    <p><b>F.1. Chu kỳ đối soát.</b> KOC Việt tổng hợp sổ thu chi và thông báo cho KOC trước khi chi trả theo chu kỳ công bố (ví dụ 1 lần mỗi tháng). KOC và doanh nghiệp cùng xem một số liệu thống nhất.</p>
     <p><b>F.2. Ví nội bộ và rút tiền.</b> Phí booking và hoa hồng được ghi có vào Ví nội bộ trên App; KOC yêu cầu rút về tài khoản ngân hàng đã đăng ký. Số dư dưới ngưỡng rút tối thiểu được cộng dồn sang kỳ kế tiếp.</p>
     <p><b>F.3. Thuế thu nhập cá nhân.</b> KOC Việt khấu trừ thuế TNCN (nếu có) theo quy định pháp luật trước khi chi trả, hoặc hướng dẫn KOC tự kê khai tùy hình thức hợp tác.</p>
     <p><b>F.4. Xử lý đơn hủy/hoàn.</b> Đơn hàng bị hủy, trả hàng hoặc hoàn tiền trong thời hạn đối soát sẽ bị trừ ngược khỏi doanh số ghi nhận, phản ánh minh bạch trên hệ thống.</p>
@@ -1183,7 +1184,7 @@ async function aiclone(el) {
           <li>Không cần tự quay dựng video</li>
           <li>NetViet booking trực tiếp theo bảng giá của bạn</li>
           <li>Nhận video → đăng bài → nộp link như booking thường</li>
-          <li>Vẫn nhận phí booking 95% + hoa hồng affiliate</li>
+          <li>Vẫn nhận 95% phí booking cùng hoa hồng bán hàng</li>
         </ul>
         <div style="margin-top:16px">
         ${
@@ -1284,7 +1285,7 @@ const TIER_BENEFITS = {
     "Phí dịch vụ 5%",
   ],
   Micro: [
-    "Ưu tiên đề xuất trong marketplace",
+    "Được ưu tiên giới thiệu trên trang khám phá KOC",
     "Tham gia chiến dịch theo ngành",
     "Phí dịch vụ 5%",
   ],
@@ -1416,6 +1417,7 @@ async function profile(el, editing = false) {
       <div id="pf-prices"></div>
       <h3 style="margin-top:18px;font-size:14px">Tài khoản nhận thanh toán</h3>
       <div class="field"><label>Ngân hàng</label><input id="pf-bank-name" value="${esc(k.bank_name || "")}"></div>
+      <div class="field"><label>Mã ngân hàng</label><input id="pf-bank-bin" value="${esc(k.bank_bin || "")}" inputmode="numeric" maxlength="6" placeholder="Gồm 6 chữ số"></div>
       <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" value="${esc(k.bank_account || "")}"></div>
       <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(k.bank_owner || "")}"></div>
       <section class="card password-change-section">
@@ -1532,9 +1534,12 @@ async function profile(el, editing = false) {
         ]
       : [];
     const bankName = el.querySelector("#pf-bank-name").value.trim();
+    const bankBin = el.querySelector("#pf-bank-bin").value.trim();
     const bankAccount = el.querySelector("#pf-bank-account").value.trim();
     const bankOwner = el.querySelector("#pf-bank-owner").value.trim();
     if (!bankName) return toast("Nhập tên ngân hàng", "err");
+    if (!/^\d{6}$/.test(bankBin))
+      return toast("Mã ngân hàng gồm đúng 6 chữ số", "err");
     if (!/^\d{6,20}$/.test(bankAccount))
       return toast("Số tài khoản chỉ gồm chữ số, 6-20 ký tự", "err");
     if (!bankOwner || /\d/.test(bankOwner))
@@ -1552,7 +1557,7 @@ async function profile(el, editing = false) {
         socials,
         categories: cats,
         prices,
-        bank: { name: bankName, account: bankAccount, owner: bankOwner },
+        bank: { name: bankName, bin: bankBin, account: bankAccount, owner: bankOwner },
       });
       toast("Đã lưu và cập nhật trang hồ sơ", "ok");
       profile(el);

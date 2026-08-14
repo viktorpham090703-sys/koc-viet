@@ -61,7 +61,7 @@ export function renderOnboarding(el) {
     "Email & OTP",
     "Hồ sơ",
     "Phân hạng & Bảng giá",
-    "eKYC & Thanh toán",
+    "Danh tính & Thanh toán",
     "Hợp đồng",
     "Hoàn tất",
   ];
@@ -469,32 +469,32 @@ export function renderOnboarding(el) {
       <div class="field"><label>Nền tảng chính</label><select id="o-platform">
         ${["TikTok", "Facebook", "Instagram", "YouTube"].map((platform) => `<option value="${platform}" ${platform === social.platform ? "selected" : ""}>${platform}</option>`).join("")}
       </select></div>
-      <div class="field"><label>Handle hoặc URL hồ sơ</label><input id="o-handle" value="${esc(social.handle || "")}" placeholder="@tenkenh hoặc https://..."></div>
-      <div class="field"><label>Tổng follower / subscriber</label><input id="o-fol" type="number" min="0" step="1" value="${d.followers}" ${verification.verified ? "readonly" : ""}></div>
+      <div class="field"><label>Tên tài khoản hoặc đường dẫn hồ sơ</label><input id="o-handle" value="${esc(social.handle || "")}" placeholder="@tenkenh hoặc https://..."></div>
+      <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="0" step="1" value="${d.followers}" ${verification.verified ? "readonly" : ""}></div>
       <div class="field"><label>Tỷ lệ tương tác (%)</label><input id="o-eng" type="number" step="0.1" value="${d.engagement}"></div>
       <div class="tint-box" style="margin:4px 0 14px">
         <div class="between" style="gap:10px">
           <div>
-            <b>Xác minh follower bằng Tesseract.js</b>
-            <div class="muted" style="font-size:12px;margin-top:3px">OCR chạy ngay trên thiết bị; ảnh không được gửi đến dịch vụ AI và không lưu vào hồ sơ.</div>
+            <b>Xác minh số người theo dõi từ ảnh chụp</b>
+            <div class="muted" style="font-size:12px;margin-top:3px">Ảnh chỉ được dùng để kiểm tra thông tin ngay trên thiết bị và không lưu vào hồ sơ.</div>
           </div>
           ${verification.verified ? '<span class="chip g">✓ Đã xác minh</span>' : '<span class="chip w">Bắt buộc</span>'}
         </div>
         ${
           verification.verified
-            ? `<div style="margin-top:10px"><b>${Number(d.followers).toLocaleString("vi-VN")} follower</b> · Độ tin cậy ${Math.round(Number(verification.confidence || 0) * 100)}%</div>
+            ? `<div style="margin-top:10px"><b>${Number(d.followers).toLocaleString("vi-VN")} người theo dõi</b> · Mức độ khớp ${Math.round(Number(verification.confidence || 0) * 100)}%</div>
                <button type="button" class="btn ghost sm" id="o-follower-reset" style="margin-top:10px">Xác minh lại</button>`
             : verification.challengeToken
               ? `<ol style="font-size:13px;line-height:1.6;margin:10px 0 10px 20px">
                    <li>Sao chép mã <b class="copybox" style="padding:3px 7px">${esc(verification.code)}</b>.</li>
-                   <li>Đặt mã vào bio/tiểu sử của đúng hồ sơ.</li>
-                   <li>Chụp một ảnh thấy rõ handle, số follower và mã trong bio.</li>
+                   <li>Đặt mã vào phần giới thiệu của đúng hồ sơ.</li>
+                   <li>Chụp một ảnh thấy rõ tên tài khoản, số người theo dõi và mã trong phần giới thiệu.</li>
                  </ol>
                  <div class="field" style="margin-bottom:8px"><input id="o-follower-shot" type="file" accept="image/jpeg,image/png,image/webp"></div>
                  <button type="button" class="btn primary" id="o-follower-verify">Đọc ảnh và xác minh</button>
                  <div class="muted" style="font-size:11px;margin-top:6px">Lần đầu có thể mất thêm thời gian để tải bộ nhận dạng chữ miễn phí.</div>
                  <button type="button" class="btn ghost sm" id="o-follower-new-code" style="margin-top:8px">Tạo mã khác</button>`
-              : `<p class="muted" style="font-size:13px;margin:10px 0">Nhập nền tảng, handle và số follower khai báo trước khi tạo mã.</p>
+              : `<p class="muted" style="font-size:13px;margin:10px 0">Nhập nền tảng, tên tài khoản và số người theo dõi trước khi tạo mã.</p>
                  <button type="button" class="btn primary" id="o-follower-challenge">Tạo mã xác minh</button>`
         }
       </div>
@@ -564,11 +564,11 @@ export function renderOnboarding(el) {
     collect1();
     const social = d.socials[0];
     if (!social) {
-      toast("Nhập handle hoặc URL hồ sơ mạng xã hội", "err");
+      toast("Nhập tên tài khoản hoặc đường dẫn hồ sơ mạng xã hội", "err");
       return;
     }
     if (!Number.isSafeInteger(d.followers) || d.followers < 0) {
-      toast("Nhập số follower hợp lệ", "err");
+      toast("Nhập số người theo dõi hợp lệ", "err");
       return;
     }
     const button =
@@ -632,7 +632,7 @@ export function renderOnboarding(el) {
     const button = el.querySelector("#o-follower-verify");
     const oldText = button.textContent;
     button.disabled = true;
-    button.textContent = "Đang tải OCR…";
+    button.textContent = "Đang đọc ảnh…";
     let worker;
     try {
       worker = await Tesseract.createWorker("eng", 1, {
@@ -667,7 +667,7 @@ export function renderOnboarding(el) {
         verifiedAt: Number(result.verifiedAt) || 0,
       };
       toast(
-        `Đã xác minh ${d.followers.toLocaleString("vi-VN")} follower`,
+        `Đã xác minh ${d.followers.toLocaleString("vi-VN")} người theo dõi`,
         "ok",
       );
       render();
@@ -699,7 +699,7 @@ export function renderOnboarding(el) {
       !d.followerVerification.proofToken ||
       d.followerVerification.inputKey !== followerInputKey()
     ) {
-      toast("Xác minh số follower bằng OCR trước khi tiếp tục", "err");
+      toast("Xác minh số người theo dõi từ ảnh chụp trước khi tiếp tục", "err");
       render();
       return false;
     }
@@ -715,14 +715,14 @@ export function renderOnboarding(el) {
         <div class="muted" style="margin-top:6px">Khung giá cho phép: <b>${money(tr.min)} – ${money(tr.max)}</b></div></div>
       <div class="card" style="margin:14px 0;background:var(--screen)">
         <h3 style="font-size:14px;margin-bottom:8px">📊 Cách hệ thống phân hạng KOC</h3>
-        <p class="muted" style="font-size:12.5px;line-height:1.7">Điểm phân hạng = Follower × (1 + Tỷ lệ tương tác%). Hệ thống tự động xếp hạng theo điểm:</p>
+        <p class="muted" style="font-size:12.5px;line-height:1.7">Điểm phân hạng dựa trên số người theo dõi và tỉ lệ tương tác. Hệ thống tự động xếp hạng như sau:</p>
         <ul style="margin:8px 0 0 18px;font-size:12.5px;color:var(--text);line-height:1.9">
-          <li><b>Nano</b> — điểm dưới 10.000 (≈1.000+ follower)</li>
+          <li><b>Nano</b> — điểm dưới 10.000 (khoảng 1.000 người theo dõi trở lên)</li>
           <li><b>Micro</b> — điểm từ 10.000 đến dưới 50.000</li>
           <li><b>Mid</b> — điểm từ 50.000 đến dưới 500.000</li>
           <li><b>Macro</b> — điểm từ 500.000 trở lên</li>
         </ul>
-        <p class="muted" style="font-size:12px;margin-top:8px">Hạng càng cao, khung giá niêm yết theo ngành hàng càng rộng. Hạng được xét nâng định kỳ theo follower, tỉ lệ hoàn thành booking và điểm đánh giá.</p>
+        <p class="muted" style="font-size:12px;margin-top:8px">Hạng càng cao, khung giá niêm yết theo ngành hàng càng rộng. Hạng được xem xét định kỳ theo số người theo dõi, tỉ lệ hoàn thành booking và điểm đánh giá.</p>
       </div>
       <p class="muted" style="margin:12px 0 6px">Đặt phí cố định cho từng ngành hàng (trong khung):</p>
       ${d.categories.map((c) => `<div class="field"><label>${esc(c)}</label><input type="number" data-price="${esc(c)}" value="${d.prices[c] || tr.min}" placeholder="${money(tr.min)}"></div>`).join("")}
@@ -761,7 +761,7 @@ export function renderOnboarding(el) {
   }
   function renderStep3() {
     el.innerHTML = wrap(`
-      <p class="muted" style="margin-bottom:12px">Xác thực danh tính (eKYC mock) — nhập thông tin định danh và tải ảnh CCCD 2 mặt + selfie.</p>
+      <p class="muted" style="margin-bottom:12px">Xác minh danh tính — nhập thông tin cá nhân, tải ảnh hai mặt CCCD và ảnh chân dung.</p>
       <div class="field"><label>Ngày sinh</label><input type="date" id="o-dob" value="${esc(d.dob)}">
         <div class="err" id="o-dob-err" style="display:none"></div></div>
       <div class="field"><label>Số CCCD</label><input id="o-cccd" value="${esc(d.cccd)}" placeholder="9-12 số">
@@ -774,7 +774,7 @@ export function renderOnboarding(el) {
         <div class="err" id="o-address-err" style="display:none"></div></div>
       ${fileRow("CCCD mặt trước", "front", "o-file-front")}
       ${fileRow("CCCD mặt sau", "back", "o-file-back")}
-      <div class="field"><label>Ảnh selfie (cầm CCCD)</label>
+      <div class="field"><label>Ảnh chân dung (cầm CCCD)</label>
         <div class="row" style="gap:8px">
           <button type="button" class="btn ghost sm" id="o-file-selfie-cam-btn" style="flex:1;text-align:center;cursor:pointer">📷 Chụp trực tiếp</button>
           <label class="btn ghost sm" style="flex:1;text-align:center;cursor:pointer">🖼 Chọn từ thư viện<input type="file" accept="image/*" id="o-file-selfie-lib" style="display:none"></label>
@@ -784,7 +784,7 @@ export function renderOnboarding(el) {
         <img id="o-file-selfie-preview" style="display:${d.files.selfiePreview ? "block" : "none"};margin-top:6px;max-width:140px;border-radius:8px" ${d.files.selfiePreview ? `src="${d.files.selfiePreview}"` : ""}>
       </div>
       <h3 style="margin-top:18px;font-size:14px">💳 Thông tin nhận thanh toán</h3>
-      <p class="muted" style="font-size:12px;margin-bottom:10px">Dùng để nhận phí booking (95%) + hoa hồng affiliate khi đối soát.</p>
+      <p class="muted" style="font-size:12px;margin-bottom:10px">Dùng để nhận 95% phí booking cùng hoa hồng bán hàng sau khi đối soát.</p>
       <div class="field"><label>Ngân hàng</label><input id="o-bank-name" value="${esc(d.bankName)}" placeholder="VD: Vietcombank">
         <div class="err" id="o-bank-name-err" style="display:none"></div></div>
       <div class="field"><label>Mã BIN ngân hàng</label><input id="o-bank-bin" value="${esc(d.bankBin)}" inputmode="numeric" maxlength="6" placeholder="VD: 970436">
@@ -851,7 +851,7 @@ export function renderOnboarding(el) {
           return;
         }
         const box = modal(`
-        <h3 style="margin-bottom:10px">📷 Chụp ảnh selfie</h3>
+        <h3 style="margin-bottom:10px">📷 Chụp ảnh chân dung</h3>
         <div style="position:relative;border-radius:10px;overflow:hidden;background:#000">
           <video id="o-cam-video" autoplay playsinline muted style="width:100%;display:block;transform:scaleX(-1)"></video>
         </div>
@@ -886,7 +886,7 @@ export function renderOnboarding(el) {
           showSelfiePreview(dataUrl);
           stopStream();
           closeModal();
-          toast("Đã chụp ảnh selfie", "ok");
+          toast("Đã chụp ảnh chân dung", "ok");
         });
       });
   }
@@ -943,7 +943,7 @@ export function renderOnboarding(el) {
       ok = false;
     }
     if (!d.files.front || !d.files.back || !d.files.selfie) {
-      toast("Vui lòng tải đủ ảnh CCCD 2 mặt và selfie", "err");
+      toast("Vui lòng tải đủ ảnh hai mặt CCCD và ảnh chân dung", "err");
       ok = false;
     }
     if (!d.bankName.trim()) {
@@ -1023,79 +1023,79 @@ export function renderOnboarding(el) {
       Số CCCD: ${esc(d.cccd) || "[•]"} cấp ngày ${fmtDate(d.cccdDate)} tại ${esc(d.cccdPlace) || "[•]"}<br>
       Địa chỉ thường trú: ${esc(d.address) || "[•]"}<br>
       Số điện thoại: ${esc(d.phone) || "[•]"} · Email: ${esc(d.email) || "[•]"}<br>
-      Kênh MXH chính: ${d.socials[0] ? esc(socialLabel(d.socials[0])) : "[•]"} · Follower tại thời điểm ký: ${d.followers || "[•]"}<br>
+      Kênh mạng xã hội chính: ${d.socials[0] ? esc(socialLabel(d.socials[0])) : "[•]"} · Số người theo dõi tại thời điểm ký: ${d.followers || "[•]"}<br>
       STK ngân hàng nhận chi trả: ${esc(d.bankAccount) || "[•]"} tại ${esc(d.bankName) || "[•]"}
     </div>
 
-    <p>Xét rằng Bên B đã hoàn tất đăng ký, xác minh danh tính điện tử (eKYC) và được Bên A phê duyệt hồ sơ trên Nền tảng NetViet, hai Bên thống nhất ký kết Hợp đồng hợp tác với các điều khoản như sau:</p>
+    <p>Xét rằng Bên B đã hoàn tất đăng ký, xác minh danh tính và được Bên A phê duyệt hồ sơ trên Nền tảng NetViet, hai Bên thống nhất ký kết Hợp đồng hợp tác với các điều khoản như sau:</p>
 
     <p class="contract-article-title">Điều 1. Giải thích từ ngữ</p>
-    <p class="term-def"><b>"Nền tảng"/"App":</b> Hệ thống KOC App, Business Portal và Admin Panel do Bên A vận hành.</p>
+    <p class="term-def"><b>"Nền tảng":</b> Hệ thống dành cho KOC, doanh nghiệp và đội ngũ quản trị do Bên A vận hành.</p>
     <p class="term-def"><b>"AI Clone Avatar":</b> Video/âm thanh được tổng hợp bằng công nghệ trí tuệ nhân tạo, tái tạo hình ảnh và giọng nói của Bên B với độ giống cao, dùng để sản xuất nội dung theo booking đã được Bên B phê duyệt.</p>
-    <p class="term-def"><b>"Booking":</b> Yêu cầu hợp tác quảng cáo/tiếp thị do doanh nghiệp tạo trên Nền tảng, gồm: Booking Review, Booking Quảng cáo, Booking Affiliate, Booking AI Clone Avatar và Booking kết hợp (Combo).</p>
+    <p class="term-def"><b>"Booking":</b> Yêu cầu hợp tác quảng cáo hoặc tiếp thị do doanh nghiệp tạo trên Nền tảng, gồm: đánh giá sản phẩm, quảng cáo, tiếp thị liên kết, video đại diện và gói kết hợp.</p>
     <p class="term-def"><b>"Luồng A – NetViet điều phối":</b> Bên A dùng AI matching để phân bổ booking phù hợp cho Bên B.</p>
-    <p class="term-def"><b>"Luồng B – Marketplace tự booking":</b> Doanh nghiệp tự tìm và đặt booking trực tiếp với Bên B qua hồ sơ công khai.</p>
-    <p class="term-def"><b>"Ví Escrow":</b> Ví ký quỹ trung gian của Bên A, giữ tiền doanh nghiệp thanh toán cho đến khi booking được xác nhận hoàn thành.</p>
+    <p class="term-def"><b>"Cách B – Doanh nghiệp tự đặt":</b> Doanh nghiệp tự tìm và đặt booking trực tiếp với Bên B qua hồ sơ công khai.</p>
+    <p class="term-def"><b>"Ví đảm bảo":</b> Khoản tiền do Bên A tạm giữ để bảo vệ hai bên cho đến khi booking được xác nhận hoàn thành.</p>
     <p class="term-def"><b>"Ví nội bộ":</b> Ví trên App ghi nhận thu nhập của Bên B (phí booking, hoa hồng), từ đó Bên B yêu cầu rút về ngân hàng.</p>
-    <p class="term-def"><b>"Ledger":</b> Sổ đối soát điện tử ghi nhận doanh số, đơn hàng, hoa hồng và các khoản chi trả, lưu vết bất biến.</p>
+    <p class="term-def"><b>"Sổ thu chi":</b> Lịch sử ghi nhận doanh số, đơn hàng, hoa hồng và các khoản chi trả một cách minh bạch.</p>
     <p class="term-def"><b>"Đơn hàng hợp lệ":</b> Đơn đã thanh toán thành công, không bị hủy/trả hàng/hoàn tiền trong thời hạn đối soát.</p>
-    <p class="term-def"><b>"Cửa sổ theo dõi":</b> Khoảng thời gian [•] ngày kể từ khi khách hàng click/tương tác với link/mã của Bên B để ghi nhận đơn phát sinh.</p>
+    <p class="term-def"><b>"Thời gian ghi nhận":</b> Khoảng thời gian [•] ngày kể từ khi khách hàng nhấp hoặc tương tác với đường dẫn, mã giới thiệu của Bên B để ghi nhận đơn phát sinh.</p>
 
     <p class="contract-article-title">Điều 2. Phạm vi hợp tác</p>
-    <p>2.1. Bên A cấp cho Bên B quyền truy cập Nền tảng để: (a) nhận booking từ doanh nghiệp qua Luồng A hoặc Luồng B; (b) sử dụng kênh mạng xã hội đăng ký để đăng nội dung quảng bá sản phẩm; (c) gắn link affiliate và nhận hoa hồng chuyển đổi.</p>
+    <p>2.1. Bên A cấp cho Bên B quyền truy cập Nền tảng để: (a) nhận booking từ doanh nghiệp theo Cách A hoặc Cách B; (b) sử dụng kênh mạng xã hội đã đăng ký để đăng nội dung quảng bá sản phẩm; (c) gắn đường dẫn giới thiệu và nhận hoa hồng bán hàng.</p>
     <p>2.2. Bên B hợp tác với tư cách đối tác độc lập, tự chủ về thời gian và cách thức thực hiện; quan hệ giữa hai Bên không phải là quan hệ lao động theo Bộ luật Lao động.</p>
     <p>2.3. Phạm vi hợp tác áp dụng cho toàn bộ booking phát sinh qua Nền tảng trong thời hạn hiệu lực của Hợp đồng.</p>
 
     <p class="contract-article-title">Điều 3. Các hình thức Booking</p>
     <p>Bên B có thể tham gia một hoặc nhiều hình thức booking dưới đây; mỗi hình thức có cơ chế ghi nhận, đối soát và chi trả riêng, không bù trừ lẫn nhau trừ khi có thỏa thuận khác:</p>
     <p><b>Booking Review/Quảng cáo:</b> Bên B tạo hoặc đăng tải nội dung review/quảng cáo theo yêu cầu doanh nghiệp, nhận phí booking cố định.</p>
-    <p><b>Booking Affiliate:</b> Bên B quảng bá sản phẩm qua link/mã giới thiệu riêng và nhận hoa hồng theo doanh số hợp lệ (Điều 6).</p>
-    <p><b>Booking AI Clone Avatar:</b> Đối tác sản xuất của Bên A dùng hình ảnh/giọng nói AI Clone Avatar của Bên B (đã cấp phép) để tạo video; Bên B duyệt và đăng tải, nhận phí booking và/hoặc hoa hồng affiliate.</p>
-    <p><b>Booking Combo:</b> Kết hợp cấu phần quảng cáo và affiliate trong cùng một booking.</p>
+    <p><b>Booking tiếp thị liên kết:</b> Bên B quảng bá sản phẩm qua đường dẫn hoặc mã giới thiệu riêng và nhận hoa hồng theo doanh số hợp lệ (Điều 6).</p>
+    <p><b>Booking video đại diện:</b> Đối tác sản xuất của Bên A dùng hình ảnh và giọng nói đã được Bên B cho phép để tạo video; Bên B duyệt, đăng tải và nhận phí booking hoặc hoa hồng bán hàng.</p>
+    <p><b>Booking kết hợp:</b> Kết hợp quảng cáo và tiếp thị liên kết trong cùng một booking.</p>
 
     <p class="contract-article-title">Điều 4. Chính sách hoa hồng và chi trả — Luồng A (NetViet điều phối)</p>
-    <p>4.1. Đối với booking do Bên A điều phối, Bên B được chi trả gồm: (a) Booking fee cố định theo từng job; và (b) % hoa hồng affiliate tính trên doanh thu chuyển đổi hợp lệ qua link/UTM riêng của Bên B, theo khung tham khảo dưới đây (mức chi tiết áp dụng theo Phụ lục Chính sách hoa hồng do Bên A công bố, điều chỉnh theo từng thời kỳ với thông báo trước tối thiểu 15 ngày):</p>
+    <p>4.1. Đối với booking do Bên A điều phối, Bên B được chi trả gồm: (a) phí cố định theo từng công việc; và (b) phần trăm hoa hồng tính trên doanh thu hợp lệ qua đường dẫn riêng của Bên B, theo khung tham khảo dưới đây (mức chi tiết áp dụng theo Phụ lục Chính sách hoa hồng do Bên A công bố, điều chỉnh theo từng thời kỳ với thông báo trước tối thiểu 15 ngày):</p>
     <table class="contract-table">
-      <tr><th>Hạng KOC</th><th>Tiêu chí tham khảo</th><th>% Hoa hồng affiliate (theo Phụ lục)</th></tr>
-      <tr><td>Nano</td><td>Dưới 10.000 follower</td><td>10%</td></tr>
-      <tr><td>Micro</td><td>10.000 – 50.000 follower</td><td>12%</td></tr>
-      <tr><td>Mid</td><td>50.000 – 200.000 follower</td><td>15%</td></tr>
-      <tr><td>Macro</td><td>Trên 200.000 follower</td><td>16%</td></tr>
+      <tr><th>Hạng KOC</th><th>Tiêu chí tham khảo</th><th>% Hoa hồng bán hàng (theo Phụ lục)</th></tr>
+      <tr><td>Nano</td><td>Dưới 10.000 người theo dõi</td><td>10%</td></tr>
+      <tr><td>Micro</td><td>10.000 – 50.000 người theo dõi</td><td>12%</td></tr>
+      <tr><td>Mid</td><td>50.000 – 200.000 người theo dõi</td><td>15%</td></tr>
+      <tr><td>Macro</td><td>Trên 200.000 người theo dõi</td><td>16%</td></tr>
     </table>
-    <p>4.2. Chu kỳ đối soát: 1 lần/tháng — Bên A tổng hợp Ledger và thông báo số liệu cho Bên B trước khi chi trả.</p>
+    <p>4.2. Chu kỳ đối soát: 1 lần/tháng — Bên A tổng hợp sổ thu chi và thông báo số liệu cho Bên B trước khi chi trả.</p>
     <p>4.3. Ngưỡng rút tiền tối thiểu: 1.000.000 đồng; số dư dưới ngưỡng được cộng dồn sang chu kỳ kế tiếp.</p>
     <p>4.4. Chi trả thực hiện vào Ví nội bộ trên App; Bên B có thể yêu cầu rút về tài khoản ngân hàng đã đăng ký, xử lý trong vòng 7 ngày làm việc.</p>
     <p>4.5. Bên A khấu trừ thuế thu nhập cá nhân (nếu có) theo quy định pháp luật trước khi chi trả, hoặc hướng dẫn Bên B tự kê khai tùy hình thức hợp tác.</p>
 
-    <p class="contract-article-title">Điều 5. Booking trực tiếp qua Marketplace (Luồng B) — Phí dịch vụ 5%</p>
-    <p>5.1. Bên B được quyền niêm yết hồ sơ năng lực, mức giá dịch vụ trên Marketplace để doanh nghiệp tìm kiếm và đặt booking trực tiếp.</p>
-    <p>5.2. Mọi giao dịch Luồng B bắt buộc thực hiện qua hệ thống thanh toán của Bên A: sau khi Bên B đăng nội dung lên nền tảng và nộp link bài đăng, doanh nghiệp thanh toán 100% giá trị booking qua payOS; khi giao dịch được xác nhận thành công, Bên A giữ lại 5% phí dịch vụ và ghi nhận 95% vào Ví nội bộ của Bên B.</p>
-    <p>5.3. Nghiêm cấm giao dịch ngoài hệ thống: Bên B không được thỏa thuận, báo giá riêng hoặc nhận thanh toán trực tiếp từ doanh nghiệp ngoài Ví Escrow đối với booking phát sinh từ việc doanh nghiệp biết đến/liên hệ Bên B qua Nền tảng. Vi phạm bị coi là vi phạm nghiêm trọng; Bên A không chịu trách nhiệm đối với mâu thuẫn phát sinh từ giao dịch ngoài hệ thống.</p>
+    <p class="contract-article-title">Điều 5. Doanh nghiệp đặt booking trực tiếp (Cách B) — Phí dịch vụ 5%</p>
+    <p>5.1. Bên B được quyền niêm yết hồ sơ năng lực và mức giá dịch vụ trên trang khám phá KOC để doanh nghiệp tìm kiếm và đặt booking trực tiếp.</p>
+    <p>5.2. Mọi giao dịch Luồng B bắt buộc thực hiện qua hệ thống thanh toán của Bên A: sau khi Bên B đăng nội dung lên nền tảng và nộp đường dẫn bài đăng, doanh nghiệp thanh toán 100% giá trị booking trực tuyến; khi giao dịch được xác nhận thành công, Bên A giữ lại 5% phí dịch vụ và ghi nhận 95% vào Ví nội bộ của Bên B.</p>
+    <p>5.3. Nghiêm cấm giao dịch ngoài hệ thống: Bên B không được thỏa thuận, báo giá riêng hoặc nhận thanh toán trực tiếp từ doanh nghiệp ngoài Ví đảm bảo đối với booking phát sinh từ việc doanh nghiệp biết đến/liên hệ Bên B qua Nền tảng. Vi phạm bị coi là vi phạm nghiêm trọng; Bên A không chịu trách nhiệm đối với mâu thuẫn phát sinh từ giao dịch ngoài hệ thống.</p>
 
-    <p class="contract-article-title">Điều 6. Booking Affiliate — Chương trình liên kết bán hàng</p>
-    <p>6.1. <b>Định nghĩa và phạm vi.</b> Booking Affiliate là hình thức Bên B tự lựa chọn sản phẩm/dịch vụ từ Danh mục Affiliate do doanh nghiệp đối tác đăng tải để quảng bá, không phụ thuộc vào một booking quảng cáo cụ thể theo Điều 4 hoặc Điều 5.</p>
-    <p>6.2. <b>Quy trình thực hiện.</b> (a) Bên B chọn sản phẩm trên Danh mục Affiliate; (b) Nền tảng tự động cấp link/mã giới thiệu gắn định danh riêng của Bên B; (c) Bên B sáng tạo nội dung quảng bá sử dụng link/mã đã cấp; (d) Nội dung phải gắn nhãn quảng cáo/tiếp thị liên kết theo quy định pháp luật.</p>
-    <p>6.3. <b>Ghi nhận đơn hàng.</b> Đơn phát sinh qua link/mã của Bên B được hệ thống ghi nhận trong Cửa sổ theo dõi 3 ngày kể từ khi khách hàng click/tương tác. Chỉ Đơn hàng hợp lệ mới là căn cứ tính hoa hồng.</p>
-    <p>6.4. <b>Mức hoa hồng và phí nền tảng.</b> Mức hoa hồng áp dụng theo từng doanh nghiệp/nhà cung cấp, công bố công khai tại thời điểm Bên B chọn sản phẩm. Bên A thu phí nền tảng 1% trên tổng doanh số affiliate được ghi nhận; phí này do DOANH NGHIỆP chi trả và không trừ vào hoa hồng của Bên B.</p>
+    <p class="contract-article-title">Điều 6. Booking tiếp thị liên kết — Chương trình liên kết bán hàng</p>
+    <p>6.1. <b>Định nghĩa và phạm vi.</b> Đây là hình thức Bên B tự lựa chọn sản phẩm hoặc dịch vụ từ danh mục do doanh nghiệp đối tác đăng tải để quảng bá, không phụ thuộc vào một booking quảng cáo cụ thể theo Điều 4 hoặc Điều 5.</p>
+    <p>6.2. <b>Quy trình thực hiện.</b> (a) Bên B chọn sản phẩm trong danh mục; (b) Nền tảng tự động cấp đường dẫn hoặc mã giới thiệu riêng cho Bên B; (c) Bên B sáng tạo nội dung quảng bá sử dụng đường dẫn hoặc mã đã cấp; (d) Nội dung phải gắn nhãn quảng cáo hoặc tiếp thị liên kết theo quy định pháp luật.</p>
+    <p>6.3. <b>Ghi nhận đơn hàng.</b> Đơn phát sinh qua đường dẫn hoặc mã của Bên B được hệ thống ghi nhận trong 3 ngày kể từ khi khách hàng nhấp hoặc tương tác. Chỉ đơn hàng hợp lệ mới được dùng để tính hoa hồng.</p>
+    <p>6.4. <b>Mức hoa hồng và phí nền tảng.</b> Mức hoa hồng áp dụng theo từng doanh nghiệp hoặc nhà cung cấp, được công bố khi Bên B chọn sản phẩm. Bên A thu phí nền tảng 1% trên tổng doanh số bán hàng được ghi nhận; phí này do DOANH NGHIỆP chi trả và không trừ vào hoa hồng của Bên B.</p>
     <p>6.5. <b>Đối soát và chi trả.</b> Chu kỳ đối soát: hàng tuần; chu kỳ chi trả: 1 tháng/lần. Hoa hồng ghi có vào Ví nội bộ, áp dụng cùng cơ chế rút tiền, ngưỡng tối thiểu và khấu trừ thuế TNCN tại Điều 4.</p>
     <p>6.6. <b>Nghiêm cấm gian lận.</b> Bên B không được dùng công cụ tự động, phần mềm giả lập click. Bên A có quyền từ chối chi trả hoa hồng gian lận và tạm khóa tài khoản, áp dụng chế tài tại Điều 13.</p>
-    <p>6.7. <b>Tính độc lập.</b> Bên B có thể đồng thời tham gia Booking Affiliate và các booking khác; thu nhập từ Booking Affiliate được ghi nhận, đối soát và chi trả riêng biệt.</p>
+    <p>6.7. <b>Tính độc lập.</b> Bên B có thể đồng thời tham gia booking tiếp thị liên kết và các booking khác; thu nhập từ tiếp thị liên kết được ghi nhận, đối soát và chi trả riêng biệt.</p>
 
     <p class="contract-article-title">Điều 7. Đối soát và thanh toán theo từng hạng mục booking</p>
     <p>Nguyên tắc đối soát minh bạch: mọi bản ghi doanh số truy vết được về đơn hàng gốc; Bên B, doanh nghiệp và Bên A cùng xem một nguồn số liệu.</p>
     <table class="contract-table">
       <tr><th>Hạng mục</th><th>Bên B nhận</th><th>Bên A thu</th><th>Chu kỳ</th></tr>
-      <tr><td>Luồng A (điều phối)</td><td>Booking fee + % hoa hồng affiliate</td><td>Theo chính sách nội bộ</td><td>1 lần/tháng</td></tr>
-      <tr><td>Luồng B (Marketplace)</td><td>95% giá trị booking</td><td>5% phí dịch vụ</td><td>Sau khi hoàn thành</td></tr>
-      <tr><td>Booking Affiliate</td><td>Doanh số × % hoa hồng</td><td>1% (do DN trả)</td><td>1 lần/tháng</td></tr>
-      <tr><td>Booking AI Clone Avatar</td><td>Booking fee và/hoặc hoa hồng affiliate</td><td>Theo booking</td><td>Theo loại cấu phần</td></tr>
+      <tr><td>Cách A (điều phối)</td><td>Phí booking + % hoa hồng bán hàng</td><td>Theo chính sách nội bộ</td><td>1 lần/tháng</td></tr>
+      <tr><td>Cách B (doanh nghiệp tự đặt)</td><td>95% giá trị booking</td><td>5% phí dịch vụ</td><td>Sau khi hoàn thành</td></tr>
+      <tr><td>Tiếp thị liên kết</td><td>Doanh số × % hoa hồng</td><td>1% (do doanh nghiệp trả)</td><td>1 lần/tháng</td></tr>
+      <tr><td>Booking video đại diện</td><td>Phí booking hoặc hoa hồng bán hàng</td><td>Theo booking</td><td>Theo loại nội dung</td></tr>
     </table>
     <p>7.1. Đơn hàng bị hủy/trả/hoàn trong thời hạn đối soát bị trừ ngược khỏi doanh số ghi nhận.</p>
     <p>7.2. Bên B có quyền tra cứu lịch sử thu nhập, đơn hàng và trạng thái chi trả trên App bất kỳ lúc nào.</p>
-    <p>7.3. Mọi số liệu đối soát được lưu trong Ledger bất biến (append-only), không chỉnh sửa thủ công.</p>
+    <p>7.3. Mọi số liệu đối soát đều có lịch sử rõ ràng và không thể tự ý chỉnh sửa.</p>
 
     <p class="contract-article-title">Điều 8. Bảo mật và dữ liệu cá nhân</p>
-    <p>8.1. Bên A tuân thủ Nghị định 13/2023/NĐ-CP: dữ liệu định danh (CCCD, ảnh selfie) và dữ liệu sinh trắc học (giọng nói, khuôn mặt dùng huấn luyện AI Clone Avatar) chỉ được thu thập, lưu trữ, sử dụng cho mục đích xác minh, chi trả và tạo nội dung theo booking đã phê duyệt; được mã hóa khi lưu trữ và truyền tải.</p>
+    <p>8.1. Bên A tuân thủ Nghị định 13/2023/NĐ-CP: dữ liệu định danh (CCCD, ảnh chân dung) và dữ liệu sinh trắc học (giọng nói, khuôn mặt dùng để tạo video đại diện) chỉ được thu thập, lưu trữ, sử dụng cho mục đích xác minh, chi trả và tạo nội dung theo booking đã phê duyệt; được bảo vệ khi lưu trữ và truyền tải.</p>
     <p>8.2. Bên B đồng ý cho Bên A xử lý dữ liệu cá nhân theo đúng mục đích tại Hợp đồng và có quyền rút lại sự đồng ý, yêu cầu xóa dữ liệu theo quy định pháp luật, trừ dữ liệu cần lưu giữ để đối soát tài chính hoặc giải quyết tranh chấp.</p>
     <p>8.3. Bên B cam kết cung cấp thông tin trung thực, chính xác và chịu trách nhiệm nếu cung cấp thông tin, danh tính giả mạo.</p>
 
@@ -1398,7 +1398,7 @@ export function renderOnboarding(el) {
         <p class="muted" style="margin-top:8px">Hạng: <b>${d.tier}</b></p>
         <div class="copybox" style="margin:12px auto;max-width:420px">Mã hợp đồng: ${esc(d.hash || "").slice(0, 24)}…</div>
         <p class="muted">Timestamp: ${new Date(d.ts || Date.now()).toLocaleString("vi-VN")}</p>
-        <p class="muted" style="margin-top:14px">Tài khoản đã được tạo. Admin sẽ duyệt hồ sơ của bạn; sau khi được kích hoạt, bạn mới có thể đăng nhập và xuất hiện trên Marketplace.</p>
+        <p class="muted" style="margin-top:14px">Tài khoản đã được tạo. Đội ngũ quản trị sẽ duyệt hồ sơ; sau khi được kích hoạt, bạn mới có thể đăng nhập và xuất hiện trên trang khám phá KOC.</p>
       </div>
       <a href="#/login" class="btn primary">Về trang đăng nhập</a>`,
       { hideNav: true },

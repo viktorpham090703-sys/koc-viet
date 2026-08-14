@@ -19,15 +19,15 @@ import { state, logout, enhancePortal } from "./app.js";
 import { icon } from "./icons.js";
 
 const NAV = [
-  ["#/dashboard", icon("kpi", "sidebar-icon"), "KPI Dashboard"],
+  ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
   ["#/businesses", "🏢", "Quản lý doanh nghiệp"],
   ["#/queue", icon("approval", "sidebar-icon"), "Duyệt hồ sơ"],
   ["#/allbookings", icon("booking", "sidebar-icon"), "Booking toàn sàn"],
   ["#/complaints", icon("complaint", "sidebar-icon"), "Khiếu nại"],
   ["#/contracts", "📜", "Hợp đồng điện tử"],
-  ["#/affiliate", "🔗", "Đơn Affiliate"],
+  ["#/affiliate", "🔗", "Đơn tiếp thị liên kết"],
   ["#/kol", icon("kolRequest", "sidebar-icon"), "Yêu cầu KOL"],
-  ["#/leads", icon("quoteLead", "sidebar-icon"), "Lead tư vấn"],
+  ["#/leads", icon("quoteLead", "sidebar-icon"), "Khách cần tư vấn"],
   ["#/campaigns", icon("coordination", "sidebar-icon"), "Điều phối chiến dịch"],
   ["#/settle", icon("settlement", "sidebar-icon"), "Đối soát & Chi trả"],
   ["#/aiclone", icon("aiClone", "sidebar-icon"), "AI Clone Avatar"],
@@ -41,7 +41,7 @@ export async function renderAdmin(el, hash) {
   el.innerHTML = `<div class="portal">
     <div class="sidebar"><div class="brand">${icon("admin", "brand-icon")}<span class="brand-name">KOC Viet <span>Admin</span></span></div>
       ${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</div>
-    <div class="main"><div class="topbar" style="background:var(--navy);color:#fff"><h2 style="color:#fff">Admin Panel</h2>
+    <div class="main"><div class="topbar" style="background:var(--navy);color:#fff"><h2 style="color:#fff">Trang quản trị</h2>
       <div class="row"><span style="color:#cdd6e4">${esc(state.user.name)}</span><button class="btn ghost sm" id="ad-logout">Đăng xuất</button></div></div>
       <div class="content" id="ad-view">${skeletonStatCards(4) + skeletonTable(5)}</div></div></div>`;
   document.getElementById("ad-logout").addEventListener("click", logout);
@@ -264,20 +264,20 @@ async function businessStatus(id, action, el) {
 async function kpi(el) {
   const k = await api("/api/admin/kpi");
   const pct = (a, b) => Math.min(100, (a / b) * 100).toFixed(3);
-  el.innerHTML = `<h1>KPI Dashboard</h1>
+  el.innerHTML = `<h1>Tổng quan hoạt động</h1>
     <div class="stat-cards" style="margin:16px 0">
       <div class="card"><div class="muted">KOC hoạt động</div><div style="font-size:26px;font-weight:800">${num(k.kocs)}</div>
         <div class="progress" style="margin-top:8px"><i style="width:${pct(k.kocs, k.targetKoc)}%"></i></div><div class="muted" style="font-size:11px;margin-top:4px">Mục tiêu ${num(k.targetKoc)}</div></div>
       <div class="card"><div class="muted">Doanh nghiệp</div><div style="font-size:26px;font-weight:800">${num(k.businesses)}</div>
         <div class="progress" style="margin-top:8px"><i style="width:${pct(k.businesses, k.targetBiz)}%"></i></div><div class="muted" style="font-size:11px;margin-top:4px">Mục tiêu ${num(k.targetBiz)}</div></div>
-      <div class="card"><div class="muted">GMV booking</div><div style="font-size:26px;font-weight:800" class="money">${money(k.gmv)}</div></div>
+      <div class="card"><div class="muted">Tổng giá trị booking</div><div style="font-size:26px;font-weight:800" class="money">${money(k.gmv)}</div></div>
       <div class="card"><div class="muted">Doanh thu phí (5%)</div><div style="font-size:26px;font-weight:800" class="money">${money(k.fee)}</div></div>
     </div>
     <div class="stat-cards" style="margin:0 0 16px">
-      <div class="card"><div class="muted">Doanh số affiliate (GMV)</div><div style="font-size:22px;font-weight:800" class="money">${money(k.affGmv || 0)}</div></div>
-      <div class="card"><div class="muted">Hoa hồng KOC affiliate</div><div style="font-size:22px;font-weight:800" class="money">${money(k.affCommission || 0)}</div></div>
-      <div class="card"><div class="muted">Phí nền tảng 1% (affiliate)</div><div style="font-size:22px;font-weight:800" class="money">${money(k.platformFee || 0)}</div></div>
-      <div class="card"><div class="muted">Lead tư vấn mới</div><div style="font-size:22px;font-weight:800">${num(k.newLeads || 0)}</div></div>
+      <div class="card"><div class="muted">Doanh số tiếp thị liên kết</div><div style="font-size:22px;font-weight:800" class="money">${money(k.affGmv || 0)}</div></div>
+      <div class="card"><div class="muted">Hoa hồng KOC</div><div style="font-size:22px;font-weight:800" class="money">${money(k.affCommission || 0)}</div></div>
+      <div class="card"><div class="muted">Phí nền tảng 1%</div><div style="font-size:22px;font-weight:800" class="money">${money(k.platformFee || 0)}</div></div>
+      <div class="card"><div class="muted">Khách mới cần tư vấn</div><div style="font-size:22px;font-weight:800">${num(k.newLeads || 0)}</div></div>
     </div>
     <div class="grid" style="grid-template-columns:1fr 1fr">
       <div class="card"><h2>Phễu chuyển đổi booking</h2><div style="margin-top:12px">
@@ -328,12 +328,12 @@ async function queue(el) {
 function kocQueueCard(k) {
   const followerVerifiedLabel =
     k.followers_verification_source === "tesseract_ocr"
-      ? "✓ Follower OCR"
-      : "✓ Follower đã xác minh";
+      ? "✓ Đã đọc từ ảnh"
+      : "✓ Người theo dõi đã xác minh";
   return `<div class="card" style="margin-bottom:12px"><div class="between">
     <div class="row"><img class="avatar" src="${esc(k.avatar)}"><div>
-      <div class="row"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Follower chưa xác minh</span>'}${k.status === "leader_ok" ? '<span class="chip b">Leader duyệt</span>' : ""}</div>
-      <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} follower · ${(k.categories || []).join(", ")}</div></div></div>
+       <div class="row"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Người theo dõi chưa xác minh</span>'}${k.status === "leader_ok" ? '<span class="chip b">Trưởng nhóm đã duyệt</span>' : ""}</div>
+       <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} người theo dõi · ${(k.categories || []).join(", ")}</div></div></div>
     <div class="row"><button class="btn ghost sm" data-detail="${k.id}">Chi tiết</button>
       <button class="btn ok sm" data-approve="${k.id}">Duyệt</button>
       <button class="btn danger sm" data-reject="${k.id}">Từ chối</button></div></div></div>`;
@@ -347,11 +347,11 @@ async function act(id, approve, el) {
 function kocDetail(k) {
   const followerVerifiedLabel =
     k.followers_verification_source === "tesseract_ocr"
-      ? "✓ OCR"
+      ? "✓ Đã đọc từ ảnh"
       : "✓ Đã xác minh";
   modal(`<div class="row"><img class="avatar lg" src="${esc(k.avatar)}"><div><h2>${esc(k.name)}</h2>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div></div>
     <div class="tint-box" style="margin:12px 0">
-      <div class="between"><span>Follower</span><b>${num(k.followers)} ${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Chưa xác minh</span>'}</b></div>
+       <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Chưa xác minh</span>'}</b></div>
       <div class="between"><span>Tương tác</span><b>${k.engagement}%</b></div>
       <div class="between"><span>Ngành hàng</span><b>${(k.categories || []).join(", ")}</b></div>
       <div class="between"><span>SĐT / Email</span><b style="font-size:12px">${esc(k.phone || "")} · ${esc(k.email || "—")}</b></div>
@@ -363,7 +363,7 @@ function kocDetail(k) {
       <div class="between"><span>Số TK</span><b>${esc(k.bank_account || "—")}</b></div>
       <div class="between"><span>Chủ TK</span><b>${esc(k.bank_owner || "—")}</b></div>
     </div>
-    <h3>eKYC</h3><div class="row" style="margin:8px 0">${["CCCD trước", "CCCD sau", "Selfie"].map((x) => `<div class="tint-box" style="text-align:center;flex:1;padding:16px 6px">📷<div style="font-size:11px">${x}</div><span class="chip g" style="margin-top:4px">Đạt</span></div>`).join("")}</div>
+    <h3>Xác minh danh tính</h3><div class="row" style="margin:8px 0">${["Mặt trước CCCD", "Mặt sau CCCD", "Ảnh chân dung"].map((x) => `<div class="tint-box" style="text-align:center;flex:1;padding:16px 6px">📷<div style="font-size:11px">${x}</div><span class="chip g" style="margin-top:4px">Đạt</span></div>`).join("")}</div>
     <div class="row">
       ${k.contract_html ? '<button class="btn primary" id="admin-view-contract">📜 Xem hợp đồng đã ký</button>' : ""}
       <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
@@ -457,7 +457,7 @@ async function allBookings(el) {
         ["aiclone", "AI Clone Avatar"],
         ["review", "Review"],
         ["advertising", "Quảng cáo"],
-        ["affiliate", "Affiliate"],
+        ["affiliate", "Tiếp thị liên kết"],
         ["combo", "Combo"],
       ]
         .map(
@@ -517,7 +517,7 @@ async function loadAllBookings(el) {
         (
           b,
         ) => `<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(b.created_at)}</td><td>${esc(b.bizname)}</td><td>${esc(b.kocname)}</td><td class="money">${money(b.price)}</td>
-      <td>${b.type === "aiclone" ? `${icon("aiClone")} AI Clone Avatar` : b.booking_type === "affiliate" ? "Affiliate" : b.booking_type === "combo" ? "Combo" : b.content_type === "advertising" ? "Quảng cáo" : "Review"}</td><td>${statusChip(b.status)}</td>
+      <td>${b.type === "aiclone" ? `${icon("aiClone")} Video đại diện` : b.booking_type === "affiliate" ? "Tiếp thị liên kết" : b.booking_type === "combo" ? "Gói kết hợp" : b.content_type === "advertising" ? "Quảng cáo" : "Đánh giá sản phẩm"}</td><td>${statusChip(b.status)}</td>
       <td style="width:1%;white-space:nowrap;text-align:right">${b.status === "pending" ? `<button class="btn danger sm" data-refund="${b.id}">Yêu cầu hoàn</button>` : ""}</td></tr>`,
       )
       .join("")}
@@ -532,7 +532,7 @@ async function loadAllBookings(el) {
         action: "reject",
         reason,
       });
-      toast("Đã chuyển escrow sang chờ hoàn", "ok");
+      toast("Khoản tiền đã được chuyển sang chờ hoàn", "ok");
       loadAllBookings(el);
     }),
   );
@@ -580,7 +580,7 @@ function complaintDetail(c, el) {
       <div class="between"><span>Doanh nghiệp</span><b>${esc(c.bizname)}</b></div>
       <div class="between"><span>KOC</span><b>${esc(c.kocname)}</b></div>
       <div class="between"><span>Gửi bởi</span><b>${c.raised_by_role === "business" ? "Doanh nghiệp" : "KOC"}</b></div>
-      <div class="between"><span>Escrow còn giữ</span><b class="money">${money(c.escrow || 0)}</b></div>
+      <div class="between"><span>Khoản tiền còn được đảm bảo</span><b class="money">${money(c.escrow || 0)}</b></div>
       <div class="between"><span>Trạng thái</span>${statusChip(c.status)}</div>
     </div>
     <div class="field"><label>Lý do khiếu nại</label><div class="tint-box">${esc(c.reason)}</div></div>
@@ -614,7 +614,7 @@ function complaintDetail(c, el) {
   const rf = m.querySelector("#cp-refund");
   if (rf)
     rf.addEventListener("click", () => {
-      if (confirm("Xác nhận hoàn tiền escrow cho doanh nghiệp?"))
+      if (confirm("Xác nhận hoàn khoản tiền đang được đảm bảo cho doanh nghiệp?"))
         doAct("refund");
     });
   const rs = m.querySelector("#cp-resolve");
@@ -629,7 +629,7 @@ async function contractsAdmin(el) {
   el.innerHTML = `<h1>📜 Hợp đồng điện tử KOC</h1>
     <div class="filters" style="margin:14px 0">
       <div class="field"><label>Tìm (tên/mã hash)</label><input id="ct-search" value="${esc(ctrFilters.search || "")}"></div>
-      <div class="field"><label>Trạng thái</label><select id="ct-status"><option value="">Tất cả</option><option value="pending">Chờ duyệt</option><option value="leader_ok">Leader duyệt</option><option value="active">Đã kích hoạt</option><option value="rejected">Từ chối</option></select></div>
+      <div class="field"><label>Trạng thái</label><select id="ct-status"><option value="">Tất cả</option><option value="pending">Chờ duyệt</option><option value="leader_ok">Trưởng nhóm duyệt</option><option value="active">Đã kích hoạt</option><option value="rejected">Từ chối</option></select></div>
       <button class="btn primary sm" id="ct-go">Tìm</button>
     </div>
     <div id="ct-list">${spinner()}</div>`;
@@ -833,35 +833,35 @@ async function settle(el) {
     })
     .join("");
 
-  el.innerHTML = `<div class="between"><div><h1>Đối soát & Giải ngân (Demo NetViet / payOS)</h1>
-      <p class="muted">Hạch toán phân bổ tiền Escrow khi doanh nghiệp bấm giải ngân: + Phí KOC vào Ví KOC và + Số tiền còn lại vào Tài khoản NetViet / payOS.</p></div>
+  el.innerHTML = `<div class="between"><div><h1>Đối soát và giải ngân</h1>
+      <p class="muted">Theo dõi cách khoản thanh toán được chia vào Ví KOC và doanh thu nền tảng sau khi doanh nghiệp giải ngân.</p></div>
     <button class="btn primary sm" id="s-run">▶ Chạy đối soát kỳ này</button></div>
     <div class="stat-cards" style="margin:16px 0">
-      ${scard("Doanh thu NetViet (Tài khoản payOS)", money(totalNetviet))}
+      ${scard("Doanh thu NetViet", money(totalNetviet))}
       ${scard("Giải ngân về Ví KOC (Phí KOC)", money(totalKoc))}
-      ${scard("Tổng Ký quỹ Escrow (Đã hoàn tất)", money(totalEscrow))}
+      ${scard("Tổng khoản đảm bảo đã hoàn tất", money(totalEscrow))}
       ${scard("Hoa hồng chờ đối soát", money(kpiData.pendingSettle))}
     </div>
     <div class="card" style="margin-bottom:16px">
-      <h2>🏛️ Nhật ký Phân bổ Giải ngân Đơn hàng (Demo payOS & Ví KOC)</h2>
+      <h2>🏛️ Lịch sử phân bổ tiền</h2>
       <div class="table-wrap" style="margin-top:12px;border:none">
-        <table><thead><tr><th>Mã đơn &amp; Doanh nghiệp</th><th>KOC thụ hưởng</th><th>Tổng Escrow</th><th>+ Ví KOC (Phí KOC)</th><th>+ TK NetViet (payOS)</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
+        <table><thead><tr><th>Mã đơn &amp; Doanh nghiệp</th><th>KOC nhận tiền</th><th>Tổng khoản đảm bảo</th><th>Tiền vào Ví KOC</th><th>Doanh thu NetViet</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
         ${rows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Chưa có đơn hàng đối soát</td></tr>'}
         </tbody></table>
       </div>
     </div>
-    <div class="card"><h2>Ledger tổng (append-only) — Sổ cái hệ thống</h2><div class="table-wrap" style="margin-top:12px;border:none">
+    <div class="card"><h2>Sổ thu chi toàn hệ thống</h2><div class="table-wrap" style="margin-top:12px;border:none">
       <table><thead><tr><th>Loại</th><th>Số tiền</th><th>Ghi chú</th><th>Thời gian</th></tr></thead><tbody>
-      ${led.ledger.length ? led.ledger.map((l) => `<tr><td>${ledgerKind(l.kind)}</td><td class="money">${money(l.amount)}</td><td>${esc(l.note || "")}</td><td class="muted">${fmtDate(l.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có bút toán</td></tr>'}
+      ${led.ledger.length ? led.ledger.map((l) => `<tr><td>${ledgerKind(l.kind)}</td><td class="money">${money(l.amount)}</td><td>${esc(l.note || "")}</td><td class="muted">${fmtDate(l.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có giao dịch</td></tr>'}
       </tbody></table></div></div>
-    <div class="card" style="margin-top:16px"><h2>Nhật ký kiểm toán (audit log)</h2><div class="table-wrap" style="margin-top:12px;border:none">
+    <div class="card" style="margin-top:16px"><h2>Lịch sử thao tác quản trị</h2><div class="table-wrap" style="margin-top:12px;border:none">
       <table><thead><tr><th>Hành động</th><th>Tham chiếu</th><th>Chi tiết</th><th>Thời gian</th></tr></thead><tbody>
-      ${led.audit && led.audit.length ? led.audit.map((a) => `<tr><td><span class="chip n">${esc(a.action)}</span></td><td class="muted">${esc((a.ref || "").slice(0, 16))}</td><td class="muted" style="max-width:220px">${esc(a.detail || "")}</td><td class="muted">${fmtDate(a.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có log</td></tr>'}
+      ${led.audit && led.audit.length ? led.audit.map((a) => `<tr><td><span class="chip n">${esc(a.action)}</span></td><td class="muted">${esc((a.ref || "").slice(0, 16))}</td><td class="muted" style="max-width:220px">${esc(a.detail || "")}</td><td class="muted">${fmtDate(a.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có thao tác nào</td></tr>'}
       </tbody></table></div></div>`;
   document.getElementById("s-run").addEventListener("click", async () => {
     const r = await post("/api/admin/settle", {});
     toast(
-      `Đối soát: ${r.count} khoản ví (${money(r.total)}) · ${r.affOrders} đơn affiliate · Phí NT 1% ${money(r.platformFee)}`,
+      `Đối soát: ${r.count} khoản ví (${money(r.total)}) · ${r.affOrders} đơn tiếp thị liên kết · Phí nền tảng 1% ${money(r.platformFee)}`,
       "ok",
     );
     settle(el);
@@ -883,11 +883,11 @@ function scard(l, v) {
 async function affiliateAdmin(el) {
   const r = await api("/api/admin/affiliate");
   const t = r.totals;
-  el.innerHTML = `<h1>🔗 Đơn Affiliate — đối soát với sàn</h1>
+  el.innerHTML = `<h1>🔗 Đơn tiếp thị liên kết</h1>
     <div class="stat-cards" style="margin:16px 0">
-      ${scard("Tổng GMV", money(t.g))}${scard("Hoa hồng KOC", money(t.c))}${scard("Phí nền tảng 1%", money(t.f))}${scard("Đơn nghi ngờ", num(t.flagged))}
+      ${scard("Tổng doanh số", money(t.g))}${scard("Hoa hồng KOC", money(t.c))}${scard("Phí nền tảng 1%", money(t.f))}${scard("Đơn cần kiểm tra", num(t.flagged))}
     </div>
-    <div class="table-wrap"><table><thead><tr><th>Order ID (sàn)</th><th>Thời gian</th><th>KOC</th><th>Booking</th><th>Sàn</th><th>GMV</th><th>Hoa hồng</th><th>Phí 1%</th><th>TT</th><th style="width:1%;white-space:nowrap"></th></tr></thead><tbody>
+    <div class="table-wrap"><table><thead><tr><th>Mã đơn trên sàn</th><th>Thời gian</th><th>KOC</th><th>Booking</th><th>Sàn</th><th>Doanh số</th><th>Hoa hồng</th><th>Phí 1%</th><th>Trạng thái</th><th style="width:1%;white-space:nowrap"></th></tr></thead><tbody>
       ${
         r.orders.length
           ? r.orders
@@ -901,10 +901,10 @@ async function affiliateAdmin(el) {
         <td style="width:1%;white-space:nowrap;text-align:right">${["pending", "confirmed"].includes(o.status) ? `<button class="btn ghost sm" data-refund="${o.id}">Hoàn</button>` : ""}</td></tr>`,
               )
               .join("")
-          : '<tr><td colspan="10" class="muted" style="text-align:center;padding:20px">Chưa có đơn affiliate</td></tr>'
+          : '<tr><td colspan="10" class="muted" style="text-align:center;padding:20px">Chưa có đơn tiếp thị liên kết</td></tr>'
       }
     </tbody></table></div>
-    <p class="hint" style="margin-top:10px">Mỗi bản ghi truy vết về order_id gốc của sàn · chống gian lận (self-referral, click ảo) tự đánh dấu · KOC & DN xem cùng số liệu.</p>`;
+    <p class="hint" style="margin-top:10px">Mỗi đơn được đối chiếu với mã gốc từ sàn. Hệ thống tự đánh dấu hoạt động bất thường để quản trị viên kiểm tra.</p>`;
   el.querySelectorAll("[data-refund]").forEach((b) =>
     b.addEventListener("click", async () => {
       if (!confirm("Xử lý hoàn đơn này? Doanh số & hoa hồng sẽ bị trừ ngược."))
@@ -929,13 +929,13 @@ async function kolAdmin(el) {
     ? `<div class="tint-box" style="margin-bottom:16px;border-left:4px solid var(--primary);padding:14px">
         <div class="between">
           <div>
-            <b>💡 Thông tin từ Lead tư vấn: ${esc(state.kolPrefill.name)}</b>
+            <b>💡 Thông tin từ khách cần tư vấn: ${esc(state.kolPrefill.name)}</b>
             <div style="font-size:13px;margin-top:4px">Liên hệ: ${esc(state.kolPrefill.contact)} ${state.kolPrefill.company ? `(${esc(state.kolPrefill.company)})` : ""}</div>
             <div class="muted" style="font-size:12px;margin-top:2px">Nội dung tư vấn: ${esc(state.kolPrefill.note || state.kolPrefill.need)}</div>
           </div>
           <button class="btn ghost sm" id="kol-clear-prefill">Đóng</button>
         </div>
-        <p class="hint" style="margin-top:8px">Thông tin điền sẵn từ Lead tư vấn đã sẵn sàng. Admin xem xét và trao đổi để chốt báo giá / phân bổ KOL khi cần.</p>
+        <p class="hint" style="margin-top:8px">Thông tin khách hàng đã được điền sẵn. Quản trị viên xem xét và trao đổi để chốt báo giá hoặc phân bổ KOL khi cần.</p>
       </div>`
     : "";
   el.innerHTML = `<h1 class="icon-heading">${icon("kolRequest", "teaser-icon")} Yêu cầu KOL / Nghệ sĩ</h1><p class="muted" style="margin-bottom:16px">Duyệt / báo giá / từ chối. Phân khúc cao cấp có duyệt riêng.</p>
@@ -1042,12 +1042,21 @@ const LEAD_NEEDS = [
 ];
 
 const LEAD_STATUSES = [
-  ["new", "Lead mới"],
+  ["new", "Khách mới"],
   ["contacting", "Đang liên hệ"],
   ["advised", "Đã tư vấn"],
   ["converted", "Chuyển đổi thành công"],
   ["no_need", "Không có nhu cầu"],
 ];
+
+function leadNeedLabel(need) {
+  return {
+    "Tư vấn booking marketplace": "Tư vấn chọn và đặt KOC",
+    "Tư vấn chiến dịch lớn": "Tư vấn chiến dịch lớn",
+    "Tìm hiểu AI Clone": "Tìm hiểu dịch vụ video đại diện",
+    "Hỗ trợ kỹ thuật khác": "Cần hỗ trợ khác",
+  }[need] || need;
+}
 
 function leadStatusChip(status) {
   const found = LEAD_STATUSES.find(([value]) => value === status);
@@ -1084,7 +1093,7 @@ function validateLeadStatusTransition(currentStatus, targetStatus) {
   if (["converted", "won"].includes(currentStatus)) return true;
 
   if (currentStatus === "new" && targetStatus !== "contacting") {
-    return "Không thể chuyển trực tiếp từ Lead mới sang trạng thái này. Vui lòng chuyển sang 'Đang liên hệ' trước.";
+    return "Không thể chuyển trực tiếp từ Khách mới sang trạng thái này. Vui lòng chuyển sang 'Đang liên hệ' trước.";
   }
   if (currentStatus === "contacting" && targetStatus === "converted") {
     return "Vui lòng chuyển sang 'Đã tư vấn' trước khi đánh dấu 'Chuyển đổi thành công'.";
@@ -1099,7 +1108,7 @@ async function leadsAdmin(el) {
   const r = await api("/api/admin/leads" + qs);
   el.innerHTML = `<div class="between" style="align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap">
     <div>
-      <h1 class="icon-heading" style="margin:0;white-space:nowrap">${icon("quoteLead", "teaser-icon")} Quản lý Lead tư vấn</h1>
+      <h1 class="icon-heading" style="margin:0;white-space:nowrap">${icon("quoteLead", "teaser-icon")} Quản lý khách cần tư vấn</h1>
       <p class="muted" style="margin-top:4px;font-size:13px">Tiếp nhận và theo dõi các lượt liên hệ/tư vấn từ website công khai — không phải nơi tạo booking hay báo giá.</p>
     </div>
     <div style="min-width:200px">
@@ -1113,7 +1122,7 @@ async function leadsAdmin(el) {
             .map((l) => {
               const hasValidNeed = LEAD_NEEDS.includes(l.need);
               const needDisplay = hasValidNeed
-                ? `<span class="chip b">${esc(l.need)}</span>`
+                ? `<span class="chip b">${esc(leadNeedLabel(l.need))}</span>`
                 : `<span class="chip r">⚠ Thiếu nhu cầu</span>`;
               return `<tr>
       <td><b>${esc(l.name)}</b><div class="muted" style="font-size:11px">${esc(l.company || "Cá nhân")}</div></td>
@@ -1125,7 +1134,7 @@ async function leadsAdmin(el) {
       <td><button class="btn primary sm" data-lead-progress="${l.id}">Theo dõi</button></td></tr>`;
             })
             .join("")
-        : '<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">Chưa có lead phù hợp</td></tr>'
+        : '<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">Chưa có khách hàng phù hợp</td></tr>'
     }
     </tbody></table></div>`;
   document.getElementById("lead-filter").addEventListener("change", (e) => {
@@ -1146,9 +1155,9 @@ async function leadProgressModal(id, lead, el) {
   const history = await api(
     "/api/admin/lead-activities?lead_id=" + encodeURIComponent(id),
   );
-  const m = modal(`<h2>Theo dõi Lead · ${esc(lead.name)}</h2>
+  const m = modal(`<h2>Theo dõi khách hàng · ${esc(lead.name)}</h2>
     <div class="field" style="margin-top:12px"><label>Trạng thái *</label><select id="lp-status">${LEAD_STATUSES.map(([v, l]) => `<option value="${v}" ${lead.status === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-    <div class="field"><label>Nhu cầu tư vấn *</label><select id="lp-need">${LEAD_NEEDS.map((n) => `<option value="${esc(n)}" ${lead.need === n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
+    <div class="field"><label>Nhu cầu tư vấn *</label><select id="lp-need">${LEAD_NEEDS.map((n) => `<option value="${esc(n)}" ${lead.need === n ? "selected" : ""}>${esc(leadNeedLabel(n))}</option>`).join("")}</select></div>
     <div id="lp-branch-box"></div>
     <div class="field" style="margin-top:10px"><label>Ghi chú tiến độ *</label><textarea id="lp-note" rows="3" maxlength="1000" placeholder="VD: Đã gọi điện tư vấn nhu cầu, giải đáp thắc mắc cho khách hàng…"></textarea></div>
     <button class="btn primary" id="lp-save">Lưu cập nhật</button><button class="btn ghost" id="lp-close" style="margin-top:8px">Đóng</button>
@@ -1178,8 +1187,8 @@ async function leadProgressModal(id, lead, el) {
 
     if (need === "Tư vấn booking marketplace") {
       box.innerHTML = `<div class="tint-box" style="margin-top:10px;border-left:3px solid var(--primary)">
-        <b>🛒 Tư vấn booking marketplace</b>
-        <div style="font-size:13px;margin-top:4px">Khách hàng tự thao tác đặt booking trực tiếp tại trang Marketplace (/marketplace). Hệ thống lưu nhật ký tư vấn.</div>
+        <b>🛒 Tư vấn đặt KOC</b>
+        <div style="font-size:13px;margin-top:4px">Khách hàng có thể tự chọn và đặt KOC tại trang khám phá. Hệ thống sẽ lưu lại lịch sử tư vấn.</div>
       </div>`;
     } else if (need === "Tư vấn chiến dịch lớn") {
       box.innerHTML = `<div class="tint-box" style="margin-top:10px;border-left:3px solid #B91C1C">
@@ -1239,7 +1248,7 @@ async function leadProgressModal(id, lead, el) {
         status,
         note,
       });
-      toast("Đã cập nhật tiến độ lead", "ok");
+      toast("Đã cập nhật tiến độ khách hàng", "ok");
       closeModal();
       leadsAdmin(el);
     } catch (e) {
@@ -1566,7 +1575,7 @@ async function tiers(el) {
     <div id="tr-warnings" style="margin-top:16px"></div>
     <div class="card" style="margin-top:16px"><h3>Quyền lợi theo hạng</h3>
       <ul style="margin:10px 0 0 18px;line-height:2;color:#444">
-        <li>Hạng cao hơn: khung giá cao hơn, ưu tiên hiển thị trên marketplace</li>
+        <li>Hạng cao hơn: khung giá cao hơn, ưu tiên hiển thị trên trang khám phá KOC</li>
         <li>Phí dịch vụ giảm dần theo hạng (Nano 5% → Macro 3%)</li>
         <li>Thăng hạng dựa trên: follower, số booking hoàn thành, điểm đánh giá</li>
       </ul></div>`;

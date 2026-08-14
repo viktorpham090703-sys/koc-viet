@@ -11,7 +11,7 @@ import {
   getPayOSPaymentLink,
   verifyPayOSWebhook,
 } from './lib/payos.js';
-import { createPayOSPayout } from './lib/payosPayout.js';
+import { createPayOSPayout, getPayOSPayoutBalance } from './lib/payosPayout.js';
 import {
   walletBalances,
   walletTransactions,
@@ -382,7 +382,7 @@ async function ensureBookingAffiliateLink(env, booking, actorId = "system") {
   if (existing?.generated_url) return existing.generated_url;
 
   if (!isUrl(booking.product_url))
-    throw new Error("Booking chưa có link sản phẩm hợp lệ để tạo link affiliate");
+    throw new Error("Booking chưa có đường dẫn sản phẩm hợp lệ");
   const trackingCode = Tracking.shortCode() + booking.koc_id.slice(0, 4);
   const provider = affiliateProvider(booking.platform);
   const generatedUrl = await provider.generateLink({
@@ -424,7 +424,7 @@ function requireVideoBucket(env) {
   const bucket = env.VIDEO_BUCKET || env.STORAGE;
   if (!bucket) {
     const error = new Error(
-      "Cloudflare R2 Storage chưa sẵn sàng trong môi trường hiện tại.",
+      "Kho lưu trữ video chưa sẵn sàng. Vui lòng thử lại sau.",
     );
     error.code = "R2_CONFIGURATION_MISSING";
     throw error;
@@ -708,14 +708,14 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
   if (!payment) return { found: false, changed: false };
   const amount = Number(providerData.amount ?? providerData.amountPaid);
   if (!Number.isSafeInteger(amount) || amount !== Number(payment.amount)) {
-    throw new Error('Số tiền webhook payOS không khớp booking');
+    throw new Error('Số tiền thanh toán không khớp booking');
   }
   const paymentLinkId = String(providerData.paymentLinkId || providerData.id || '');
   if (
     payment.payment_link_id &&
     paymentLinkId &&
     payment.payment_link_id !== paymentLinkId
-  ) throw new Error('Mã link thanh toán payOS không khớp');
+  ) throw new Error('Mã giao dịch thanh toán không khớp');
 
   const reference = String(providerData.reference || '').slice(0, 160);
 
@@ -739,7 +739,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
         eventType: 'wallet_topup',
         referenceType: 'payment_request',
         referenceId: payment.id,
-        note: `Nạp tiền vào Ví doanh nghiệp qua payOS (#${payment.order_code})`,
+        note: `Nạp tiền vào Ví doanh nghiệp (#${payment.order_code})`,
         postings: [
           {
             account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -769,7 +769,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
     `SELECT b.*,bz.name bizname
      FROM bookings b JOIN businesses bz ON bz.id=b.business_id WHERE b.id=?`,
   ).bind(payment.booking_id).first();
-  if (!booking) throw new Error('Booking của giao dịch payOS không tồn tại');
+  if (!booking) throw new Error('Không tìm thấy booking của giao dịch');
   if (['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
     return { found: true, changed: false, booking };
   }
@@ -835,7 +835,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
           eventType: 'booking_settled',
           referenceType: 'payment_request',
           referenceId: payment.id,
-          note: `Giải ngân booking ${booking.code} qua payOS vào ví KOC`,
+          note: `Chuyển tiền booking ${booking.code} vào ví KOC`,
           postings: [
             {
               account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -920,7 +920,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
           eventType: 'wallet_topup',
           referenceType: 'payment_request',
           referenceId: payment.id,
-          note: `Nạp tiền ví doanh nghiệp từ thanh toán demo/payOS đơn ${booking.code}`,
+          note: `Nạp tiền ví doanh nghiệp từ thanh toán đơn ${booking.code}`,
           postings: [
             {
               account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -938,7 +938,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
         eventType: 'escrow_hold',
         referenceType: 'payment_request',
         referenceId: payment.id,
-        note: `Trừ tiền Ví doanh nghiệp ký quỹ Escrow đơn ${booking.code}`,
+        note: `Giữ tiền an toàn cho đơn booking ${booking.code}`,
         source: walletAccount('business', booking.business_id, 'available'),
         destinations: [{
           account: walletAccount('business', booking.business_id, 'escrow'),
@@ -1011,7 +1011,7 @@ async function syncPayOSPayment(env, payment) {
   const paidAmount = Number(data.amountPaid ?? data.amount);
   if (status === 'PAID') {
     if (paidAmount !== Number(payment.amount))
-      throw new Error('Số tiền payOS đã nhận không khớp booking');
+      throw new Error('Số tiền đã nhận không khớp booking');
     await markPayOSPaymentPaid(env, payment, {
       ...data,
       amount: paidAmount,
@@ -1411,7 +1411,7 @@ export async function route(request, env, url) {
       claimedFollowers < 0 ||
       claimedFollowers > 2_000_000_000
     )
-      return err("Số follower khai báo không hợp lệ");
+      return err("Số người theo dõi khai báo không hợp lệ");
 
     const token = uid().replace(/-/g, "");
     const code = `KOCV-${uid().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -1465,7 +1465,7 @@ export async function route(request, env, url) {
       return J(
         {
           error:
-            "Tesseract chưa đọc đủ bằng chứng. Hãy chụp rõ handle, số follower và mã trong bio rồi thử lại.",
+            "Hệ thống chưa đọc đủ thông tin. Hãy chụp rõ tên tài khoản, số người theo dõi và mã trong phần giới thiệu rồi thử lại.",
           code: "FOLLOWER_OCR_EVIDENCE_REJECTED",
           failedChecks: analysis.failedChecks,
           analysis: {
@@ -1616,32 +1616,32 @@ export async function route(request, env, url) {
     const emailOk = await isEmailVerified(env, email, "onboard");
     if (!emailOk) return err("Email chưa được xác thực OTP");
     const kyc = await eKYC.verify(body.kyc || {});
-    if (!kyc.ok) return err("eKYC thất bại");
+    if (!kyc.ok) return err("Xác minh danh tính chưa thành công");
     const followerProofToken = String(
       body.followerVerificationToken || "",
     ).trim();
     if (!/^[a-f0-9]{32}$/i.test(followerProofToken))
-      return err("Bạn cần xác minh số follower bằng OCR trước khi đăng ký");
+      return err("Bạn cần xác minh số người theo dõi từ ảnh chụp trước khi đăng ký");
     const rawFollowerProof = await env.KV.get(
       `follower-proof:${followerProofToken}`,
     );
     if (!rawFollowerProof)
-      return err("Kết quả xác minh follower đã hết hạn. Hãy xác minh lại.", 410);
+      return err("Kết quả xác minh số người theo dõi đã hết hạn. Hãy xác minh lại.", 410);
     let followerProof;
     try {
       followerProof = JSON.parse(rawFollowerProof);
     } catch (_) {
-      return err("Kết quả xác minh follower không hợp lệ", 410);
+      return err("Kết quả xác minh số người theo dõi không hợp lệ", 410);
     }
     if (followerProof.email !== email)
-      return err("Kết quả xác minh follower không thuộc email này", 403);
+      return err("Kết quả xác minh số người theo dõi không thuộc email này", 403);
     const followers = Number(followerProof.followers);
     if (
       !Number.isSafeInteger(followers) ||
       followers < 0 ||
       followers > 2_000_000_000
     )
-      return err("Số follower đã xác minh không hợp lệ");
+      return err("Số người theo dõi đã xác minh không hợp lệ");
     const verifiedSocials = [
       {
         platform: followerProof.platform,
@@ -1667,9 +1667,12 @@ export async function route(request, env, url) {
     }
     const bank = body.bank || {};
     const bankName = String(bank.name || "").trim();
+    const bankBin = String(bank.bin || "").trim();
     const bankAccount = String(bank.account || "").trim();
     const bankOwner = String(bank.owner || "").trim();
     if (!bankName) return err("Nhập tên ngân hàng");
+    if (!/^\d{6}$/.test(bankBin))
+      return err("Mã ngân hàng gồm đúng 6 chữ số");
     if (!/^\d{6,20}$/.test(bankAccount))
       return err("Số tài khoản chỉ gồm chữ số, 6-20 ký tự");
     if (!bankOwner || /\d/.test(bankOwner))
@@ -1711,8 +1714,8 @@ export async function route(request, env, url) {
     const accepting = {};
     cats.forEach((c) => (accepting[c] = true));
     const createKoc = env.DB.prepare(
-      `INSERT INTO kocs (id,name,phone,email,tier,province,avatar,bio,followers,followers_verified,followers_verified_at,followers_verification_source,engagement,categories,socials,status,accepting,contract_hash,contract_version,contract_signed_at,contract_signature,contract_html,bank_name,bank_account,bank_owner,created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO kocs (id,name,phone,email,tier,province,avatar,bio,followers,followers_verified,followers_verified_at,followers_verification_source,engagement,categories,socials,status,accepting,contract_hash,contract_version,contract_signed_at,contract_signature,contract_html,bank_name,bank_bin,bank_account,bank_owner,created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
       .bind(
         id,
@@ -1738,6 +1741,7 @@ export async function route(request, env, url) {
         contractSignature,
         contractHtml,
         bankName.slice(0, 80),
+        bankBin,
         bankAccount.slice(0, 40),
         bankOwner.slice(0, 120),
         now(),
@@ -1926,9 +1930,9 @@ export async function route(request, env, url) {
       }
     } catch (error) {
       console.error("r2 video read", error?.message || error);
-      return err("Không đọc được video từ Cloudflare R2", 502);
+      return err("Không tải được video. Vui lòng thử lại sau.", 502);
     }
-    if (!object) return err("Video không tồn tại trên Cloudflare R2", 404);
+    if (!object) return err("Video không còn tồn tại.", 404);
 
     const headers = new Headers();
     if (typeof object.writeHttpMetadata === "function")
@@ -2002,7 +2006,7 @@ export async function route(request, env, url) {
     ).bind(body.booking_id, me.business_id).first();
     if (!booking) return err('Booking không tồn tại', 404);
     if (!(Number(booking.price) > 0))
-      return err('Booking này không cần thanh toán payOS');
+      return err('Booking này không cần thanh toán trực tuyến');
     const isAiCloneUpfront = booking.type === 'aiclone' && !booking.post_link;
     if (!booking.post_link && !isAiCloneUpfront)
       return err('KOC chưa đăng bài nên booking chưa đến bước thanh toán');
@@ -2016,7 +2020,7 @@ export async function route(request, env, url) {
       'quoted',
       'quote_pending',
     ].includes(booking.status))
-      return err('Booking đã được thanh toán hoặc không thể tạo link payOS');
+      return err('Booking đã được thanh toán hoặc chưa thể tạo yêu cầu thanh toán');
 
     const latest = await env.DB.prepare(
       `SELECT * FROM payment_requests
@@ -2064,7 +2068,7 @@ export async function route(request, env, url) {
         paymentRequired: true,
       });
     } catch (error) {
-      return err(error?.message || 'Không tạo được link thanh toán payOS', 502);
+      return err(error?.message || 'Chưa tạo được yêu cầu thanh toán', 502);
     }
   }
 
@@ -2077,12 +2081,12 @@ export async function route(request, env, url) {
       `SELECT p.* FROM payment_requests p
        WHERE p.order_code=? AND (?='admin' OR p.business_id=?) LIMIT 1`,
     ).bind(orderCode, me.role, me.business_id || '').first();
-    if (!payment) return err('Không tìm thấy giao dịch payOS', 404);
+    if (!payment) return err('Không tìm thấy giao dịch', 404);
     try {
       const result = await syncPayOSPayment(env, payment);
       return J({ ok: true, ...result, orderCode });
     } catch (error) {
-      return err(error?.message || 'Không đồng bộ được payOS', 502);
+      return err(error?.message || 'Chưa cập nhật được trạng thái thanh toán', 502);
     }
   }
 
@@ -2242,7 +2246,7 @@ export async function route(request, env, url) {
       if (!PLATFORMS.includes(platform)) return err("Chọn sàn áp dụng hợp lệ");
       if (!isUrl(productUrl)) return err("Link sản phẩm trên sàn không hợp lệ");
       if (!(commissionRate >= 1 && commissionRate <= 90))
-        return err("Chiết khấu affiliate phải từ 1–90%");
+        return err("Tỉ lệ hoa hồng bán hàng phải từ 1–90%");
     }
 
     const placeholders = kocIds.map(() => "?").join(",");
@@ -2403,7 +2407,7 @@ export async function route(request, env, url) {
           eventType: 'escrow_hold',
           referenceType: 'booking',
           referenceId: id,
-          note: `Trừ tiền Ví khả dụng ký quỹ Escrow cho đơn booking ${code}`,
+          note: `Giữ tiền an toàn cho đơn booking ${code}`,
           source: walletAccount('business', me.business_id, 'available'),
           destinations: [{
             account: walletAccount('business', me.business_id, 'escrow'),
@@ -2411,7 +2415,7 @@ export async function route(request, env, url) {
           }],
         });
       } catch (e) {
-        return err(`Không thể ký quỹ Escrow từ ví khả dụng: ${e.message}`, 400);
+        return err(`Chưa thể giữ khoản thanh toán từ số dư khả dụng: ${e.message}`, 400);
       }
     }
 
@@ -2642,7 +2646,7 @@ export async function route(request, env, url) {
         uploadMethod = "storage_chunks";
       } else {
         const error = new Error(
-          "Storage của Nexrall không hỗ trợ put/get video.",
+          "Kho lưu trữ hiện không hỗ trợ tải video.",
         );
         error.code = "R2_CONFIGURATION_MISSING";
         throw error;
@@ -2726,9 +2730,9 @@ export async function route(request, env, url) {
         uploaded = await multipart.uploadPart(partNumber, request.body);
       } else if (submission.storage_provider === "storage") {
         if (partNumber !== 1)
-          return err("Nexrall Storage chỉ nhận một phần video trực tiếp");
+          return err("Kho lưu trữ chỉ nhận video được tải trực tiếp");
         if (!supportsDirectStorage(bucket))
-          return err("Nexrall Storage không hỗ trợ tải video", 503);
+          return err("Kho lưu trữ hiện không hỗ trợ tải video", 503);
         const stored = await bucket.put(submission.object_key, request.body, {
           httpMetadata: {
             contentType: submission.mime_type || "video/mp4",
@@ -2744,7 +2748,7 @@ export async function route(request, env, url) {
         };
       } else {
         if (!supportsDirectStorage(bucket))
-          return err("Nexrall Storage không hỗ trợ tải video", 503);
+          return err("Kho lưu trữ hiện không hỗ trợ tải video", 503);
         const expectedParts = storagePartCount(submission);
         if (partNumber > expectedParts)
           return err("Số thứ tự phần video vượt quá giới hạn");
@@ -2774,7 +2778,7 @@ export async function route(request, env, url) {
       });
     } catch (error) {
       console.error("video storage upload", error?.message || error);
-      return err("Không tải được video lên Storage", 502);
+      return err("Không tải được video. Vui lòng thử lại.", 502);
     }
   }
 
@@ -2793,7 +2797,7 @@ export async function route(request, env, url) {
       !["r2", "storage", "storage_chunks"].includes(submission.storage_provider) ||
       !submission.object_key ||
       !submission.r2_upload_id
-    ) return err("Phiên tải video Storage không hợp lệ");
+    ) return err("Lần tải video này không hợp lệ");
 
     const parts = Array.isArray(body.parts)
       ? body.parts.map((part) => ({
@@ -2811,11 +2815,11 @@ export async function route(request, env, url) {
       );
     if (invalidParts) return err("Danh sách phần video tải lên không hợp lệ");
     if (submission.storage_provider === "storage" && parts.length !== 1)
-      return err("Danh sách phần video Nexrall Storage không hợp lệ");
+      return err("Thông tin video đã tải không hợp lệ");
     if (
       submission.storage_provider === "storage_chunks" &&
       parts.length !== storagePartCount(submission)
-    ) return err("Video chưa tải đủ các phần lên Nexrall Storage");
+    ) return err("Video chưa được tải lên đầy đủ");
 
     let object;
     try {
@@ -2844,13 +2848,13 @@ export async function route(request, env, url) {
       }
     } catch (error) {
       console.error("video storage complete", error?.message || error);
-      return err("Không thể hoàn tất video trên Storage", 502);
+      return err("Không thể hoàn tất video. Vui lòng thử lại.", 502);
     }
-    if (!object) return err("Video không tồn tại trên Storage", 502);
+    if (!object) return err("Video không còn tồn tại.", 502);
     if (
       Number(object.size) > 0 &&
       Number(object.size) !== Number(submission.size_bytes)
-    ) return err("Dung lượng video trên Storage không khớp", 502);
+    ) return err("Dung lượng video không khớp. Vui lòng tải lại.", 502);
 
     await env.DB.batch([
       env.DB.prepare(
@@ -2910,7 +2914,7 @@ export async function route(request, env, url) {
           ? await bucket.head(statusKey)
           : await bucket.get(statusKey);
       if (!object && submission.status !== "uploading")
-        return err("Video không còn tồn tại trên Storage", 404);
+        return err("Video không còn tồn tại.", 404);
     }
     return J({ video: await videoWithAccessUrls(env, submission) });
   }
@@ -3115,7 +3119,7 @@ export async function route(request, env, url) {
           "video_review",
           "Video AI Clone đã sẵn sàng quảng bá",
           ["affiliate", "combo"].includes(booking.booking_type)
-            ? `${booking.code} · Link affiliate cá nhân đã được tạo. Hãy đăng video kèm link này.`
+            ? `${booking.code} · Đường dẫn sản phẩm riêng đã được tạo. Hãy đăng video kèm đường dẫn này.`
             : `${booking.code} · Hãy đăng video theo yêu cầu của booking.`,
           "#/bookings",
         );
@@ -3182,7 +3186,7 @@ export async function route(request, env, url) {
           eventType: 'escrow_hold',
           referenceType: 'booking',
           referenceId: booking.id,
-          note: `Trừ tiền Ví doanh nghiệp ký quỹ Escrow đơn booking ${booking.code}`,
+          note: `Giữ tiền an toàn cho đơn booking ${booking.code}`,
           source: walletAccount('business', me.business_id, 'available'),
           destinations: [{
             account: walletAccount('business', me.business_id, 'escrow'),
@@ -3311,7 +3315,7 @@ export async function route(request, env, url) {
             eventType: 'escrow_refund',
             referenceType: 'booking',
             referenceId: b.id,
-            note: `Hoàn tiền Escrow về Ví khả dụng đơn booking ${b.code} do KOC từ chối`,
+            note: `Hoàn tiền về số dư khả dụng cho đơn booking ${b.code} do KOC từ chối`,
             source: walletAccount('business', b.business_id, 'escrow'),
             destinations: [{
               account: walletAccount('business', b.business_id, 'available'),
@@ -3337,7 +3341,7 @@ export async function route(request, env, url) {
         "booking",
         "Booking đã bị từ chối",
         needsRefund && refundAmount > 0
-          ? `${b.code} đã bị từ chối. Số tiền ${refundAmount.toLocaleString('vi-VN')}đ tạm giữ Escrow đã được hoàn lại vào Ví khả dụng của bạn.`
+          ? `${b.code} đã bị từ chối. Số tiền ${refundAmount.toLocaleString('vi-VN')}đ đang được giữ đã được hoàn lại vào số dư khả dụng của bạn.`
           : `${b.code} đã bị từ chối.`,
         "#/orders",
       );
@@ -3487,7 +3491,7 @@ export async function route(request, env, url) {
               eventType: 'booking_settled',
               referenceType: 'booking',
               referenceId: b.id,
-              note: `Giải ngân booking ${b.code} từ ví Escrow vào ví KOC`,
+              note: `Chuyển tiền booking ${b.code} vào ví KOC`,
               postings: [
                 {
                   account: srcAccount,
@@ -3576,7 +3580,7 @@ export async function route(request, env, url) {
         }
       }
       const koc = await env.DB.prepare(
-        "SELECT email,bank_name,bank_account,bank_owner FROM kocs WHERE id=?",
+        "SELECT email,bank_name,bank_bin,bank_account,bank_owner FROM kocs WHERE id=?",
       )
         .bind(me.koc_id)
         .first();
@@ -3732,21 +3736,29 @@ export async function route(request, env, url) {
     if (amount > avail) return err("Số dư khả dụng không đủ");
 
     if (mode === "payos") {
-      if (!koc?.bank_account || !koc?.bank_name) {
-        return err("Vui lòng cập nhật thông tin tài khoản ngân hàng nhận tiền trước khi rút qua payOS");
+      if (!koc?.bank_account || !koc?.bank_name || !/^\d{6}$/.test(String(koc?.bank_bin || ''))) {
+        return err("Vui lòng cập nhật đầy đủ ngân hàng nhận tiền và mã ngân hàng 6 số trước khi rút");
       }
       const txId = uid();
       const referenceId = `wd-${txId.slice(0, 16)}`;
       try {
+        const payoutAccount = await getPayOSPayoutBalance(env);
+        const payoutBalance = Number(String(payoutAccount?.balance ?? '').replace(/[^0-9.-]/g, ''));
+        if (!Number.isFinite(payoutBalance)) {
+          return err('Chưa kiểm tra được nguồn tiền chi trả. Vui lòng thử lại sau.');
+        }
+        if (payoutBalance < amount) {
+          return err('Nguồn tiền chi trả hiện chưa đủ. Vui lòng liên hệ quản trị viên hoặc thử lại sau.');
+        }
         await createPayOSPayout(env, {
           referenceId,
           amount,
           description: `RUT VI KOC ${me.koc_id.slice(0, 8)}`,
-          toBin: koc.bank_bin || '970422',
+          toBin: koc.bank_bin,
           toAccountNumber: koc.bank_account,
-        });
+        }, referenceId);
       } catch (error) {
-        return err(`Lỗi thanh toán payOS Chi hộ: ${error?.message || 'Không gửi được lệnh chi'}`);
+        return err(`Chưa gửi được yêu cầu rút tiền: ${error?.message || 'Vui lòng thử lại sau'}`);
       }
 
       await env.DB.prepare(
@@ -3758,7 +3770,7 @@ export async function route(request, env, url) {
           "withdraw",
           amount,
           "processing",
-          `Rút qua payOS Chi hộ (${koc.bank_name})`,
+          `Rút tiền về ngân hàng (${koc.bank_name})`,
           now(),
         )
         .run();
@@ -3769,7 +3781,7 @@ export async function route(request, env, url) {
           eventType: 'wallet_withdraw',
           referenceType: 'wallet_tx',
           referenceId: txId,
-          note: `KOC rút tiền qua payOS Chi hộ (${koc.bank_name})`,
+          note: `KOC rút tiền về ngân hàng (${koc.bank_name})`,
           source: walletAccount('koc', me.koc_id, 'available'),
           destinations: [{
             account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -3781,7 +3793,7 @@ export async function route(request, env, url) {
       }
 
       await audit(env, me.id, "wallet.withdraw_requested_payos", me.koc_id, `amount=${amount}`);
-      return J({ ok: true, mode: 'payos', message: 'Lệnh rút qua payOS Chi hộ đã gửi thành công' });
+      return J({ ok: true, mode: 'payos', message: 'Yêu cầu rút tiền đã được gửi thành công' });
     }
 
     // mode === "demo"
@@ -3856,7 +3868,7 @@ export async function route(request, env, url) {
         "commission",
         addCommission,
         "expected",
-        "Hoa hồng affiliate dự kiến",
+        "Hoa hồng bán hàng dự kiến",
         now(),
       )
       .run();
@@ -3901,7 +3913,7 @@ export async function route(request, env, url) {
     const l = await env.DB.prepare("SELECT * FROM affiliate_links WHERE id=?")
       .bind(body.linkId)
       .first();
-    if (!l) return err("Không tìm thấy link affiliate", 404);
+    if (!l) return err("Không tìm thấy đường dẫn bán hàng", 404);
     // authorization: the KOC who owns the link, or admin
     if (!(isAdmin || (me.role === "koc" && me.koc_id === l.koc_id)))
       return err("403", 403);
@@ -3964,7 +3976,7 @@ export async function route(request, env, url) {
           "commission",
           commission,
           "expected",
-          `Hoa hồng affiliate ${b.code} · đơn ${raw.platform_order_id}`,
+          `Hoa hồng bán hàng ${b.code} · đơn ${raw.platform_order_id}`,
           now(),
         )
         .run();
@@ -4047,10 +4059,10 @@ export async function route(request, env, url) {
           ? "cancel"
           : "commission",
       to === "refunded"
-        ? "Đơn affiliate đã hoàn"
+        ? "Đơn tiếp thị liên kết đã hoàn"
         : to === "cancelled"
-          ? "Đơn affiliate đã hủy"
-          : "Đơn affiliate đã xác nhận",
+          ? "Đơn tiếp thị liên kết đã hủy"
+          : "Đơn tiếp thị liên kết đã xác nhận",
       `${o.platform_order_id} · hoa hồng ${o.commission_amount.toLocaleString("vi-VN")}đ ${to === "confirmed" ? "chờ đối soát" : "không được ghi nhận"}.`,
       "#/affiliate",
     );
@@ -4731,7 +4743,7 @@ export async function route(request, env, url) {
             "platform_fee",
             platformFeeTotal,
             "batch",
-            `Phí nền tảng 1% affiliate (DN trả) · GMV ${gmvTotal.toLocaleString("vi")}đ`,
+            `Phí nền tảng 1% tiếp thị liên kết (doanh nghiệp trả) · Doanh số ${gmvTotal.toLocaleString("vi")}đ`,
             now(),
           ),
         );
@@ -5160,7 +5172,7 @@ export async function route(request, env, url) {
           .first();
         if (!b || b.escrow <= 0)
           return err(
-            "Booking không còn escrow để hoàn (đã giải ngân hoặc là booking affiliate thuần)",
+            "Booking không còn khoản tiền có thể hoàn (đã chuyển tiền hoặc là booking chỉ nhận hoa hồng bán hàng)",
           );
         await upd(env, b.id, {
           status: "refund_pending",
@@ -5578,6 +5590,7 @@ export async function route(request, env, url) {
     const bankName = String(bank.name || "")
       .trim()
       .slice(0, 80);
+    const bankBin = String(bank.bin || "").trim();
     const bankAccount = String(bank.account || "")
       .trim()
       .slice(0, 40);
@@ -5586,11 +5599,13 @@ export async function route(request, env, url) {
       .slice(0, 120);
     if (!bankName || !bankAccount || !bankOwner)
       return err("Nhập đầy đủ thông tin tài khoản nhận thanh toán");
+    if (!/^\d{6}$/.test(bankBin))
+      return err("Mã ngân hàng gồm đúng 6 chữ số");
     const oldAccepting = JSON.parse(k.accepting || "{}");
     const accepting = {};
     categories.forEach((c) => (accepting[c] = oldAccepting[c] !== false));
     await env.DB.prepare(
-      `UPDATE kocs SET email=?,bio=?,province=?,avatar=?,cover=?,socials=?,categories=?,accepting=?,bank_name=?,bank_account=?,bank_owner=? WHERE id=?`,
+      `UPDATE kocs SET email=?,bio=?,province=?,avatar=?,cover=?,socials=?,categories=?,accepting=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=? WHERE id=?`,
     )
       .bind(
         email,
@@ -5602,6 +5617,7 @@ export async function route(request, env, url) {
         JSON.stringify(categories),
         JSON.stringify(accepting),
         bankName,
+        bankBin,
         bankAccount,
         bankOwner,
         me.koc_id,
