@@ -14,6 +14,7 @@ import {
   tierBadge,
   stars,
   fmtDate,
+  avatarUrl,
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
 import { icon } from "./icons.js";
@@ -331,7 +332,7 @@ function kocQueueCard(k) {
       ? "✓ Đã đọc từ ảnh"
       : "✓ Người theo dõi đã xác minh";
   return `<div class="card" style="margin-bottom:12px"><div class="between">
-    <div class="row"><img class="avatar" src="${esc(k.avatar)}"><div>
+    <div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div>
        <div class="row"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Người theo dõi chưa xác minh</span>'}${k.status === "leader_ok" ? '<span class="chip b">Trưởng nhóm đã duyệt</span>' : ""}</div>
        <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} người theo dõi · ${(k.categories || []).join(", ")}</div></div></div>
     <div class="row"><button class="btn ghost sm" data-detail="${k.id}">Chi tiết</button>
@@ -344,12 +345,23 @@ async function act(id, approve, el) {
   closeModal();
   queue(el);
 }
-function kocDetail(k) {
+async function kocDetail(k) {
+  try {
+    const result = await api(`/api/admin/koc-identity/${encodeURIComponent(k.id)}`);
+    k = {
+      ...k,
+      kyc_front_image: result.identity?.front_url || "",
+      kyc_back_image: result.identity?.back_url || "",
+      kyc_selfie_image: result.identity?.selfie_url || "",
+    };
+  } catch (_) {
+    k = { ...k, kyc_front_image: "", kyc_back_image: "", kyc_selfie_image: "" };
+  }
   const followerVerifiedLabel =
     k.followers_verification_source === "tesseract_ocr"
       ? "✓ Đã đọc từ ảnh"
       : "✓ Đã xác minh";
-  modal(`<div class="row"><img class="avatar lg" src="${esc(k.avatar)}"><div><h2>${esc(k.name)}</h2>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div></div>
+  modal(`<div class="row"><img class="avatar lg" src="${esc(avatarUrl(k.avatar))}"><div><h2>${esc(k.name)}</h2>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div></div>
     <div class="tint-box" style="margin:12px 0">
        <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Chưa xác minh</span>'}</b></div>
       <div class="between"><span>Tương tác</span><b>${k.engagement}%</b></div>
@@ -363,7 +375,14 @@ function kocDetail(k) {
       <div class="between"><span>Số TK</span><b>${esc(k.bank_account || "—")}</b></div>
       <div class="between"><span>Chủ TK</span><b>${esc(k.bank_owner || "—")}</b></div>
     </div>
-    <h3>Xác minh danh tính</h3><div class="row" style="margin:8px 0">${["Mặt trước CCCD", "Mặt sau CCCD", "Ảnh chân dung"].map((x) => `<div class="tint-box" style="text-align:center;flex:1;padding:16px 6px">📷<div style="font-size:11px">${x}</div><span class="chip g" style="margin-top:4px">Đạt</span></div>`).join("")}</div>
+    <h3>Xác minh danh tính</h3><div class="row" style="margin:8px 0;align-items:stretch">${[
+      ["Mặt trước CCCD", k.kyc_front_image],
+      ["Mặt sau CCCD", k.kyc_back_image],
+      ["Ảnh chân dung", k.kyc_selfie_image],
+    ].map(([label, image], index) => `<div class="tint-box" style="text-align:center;flex:1;padding:8px;min-width:0">${image
+      ? `<button type="button" data-kyc-image="${index}" style="display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in"><img src="${esc(image)}" alt="${label}" style="display:block;width:100%;height:120px;object-fit:cover;border-radius:8px"></button>`
+      : `<div style="height:120px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.55)">📷</div>`}
+      <div style="font-size:11px;margin-top:6px">${label}</div><span class="chip ${image ? "g" : "w"}" style="margin-top:4px">${image ? "Đạt" : "Chưa lưu ảnh"}</span></div>`).join("")}</div>
     <div class="row">
       ${k.contract_html ? '<button class="btn primary" id="admin-view-contract">📜 Xem hợp đồng đã ký</button>' : ""}
       <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
@@ -371,6 +390,14 @@ function kocDetail(k) {
   document
     .getElementById("admin-view-contract")
     ?.addEventListener("click", () => showSignedContract(k));
+  const identityImages = [k.kyc_front_image, k.kyc_back_image, k.kyc_selfie_image];
+  document.querySelectorAll("[data-kyc-image]").forEach((button) =>
+    button.addEventListener("click", () => {
+      const image = identityImages[Number(button.dataset.kycImage)];
+      if (image)
+        modal(`<img src="${esc(image)}" alt="Ảnh xác minh danh tính" style="display:block;max-width:100%;max-height:82vh;margin:auto;border-radius:10px">`);
+    }),
+  );
 }
 
 function showSignedContract(c) {
@@ -733,7 +760,7 @@ async function adminCampaigns(el) {
           ? candidates
               .map(
                 (k) => `<label class="between list-item" style="cursor:pointer">
-        <div class="row"><input type="checkbox" data-kid="${k.id}" ${assignedIds.has(k.id) ? "checked" : ""} style="width:auto;margin-right:8px"><img class="avatar" src="${esc(k.avatar)}"><div><b>${esc(k.name)}</b><div class="muted" style="font-size:12px">${num(k.followers)} · ${stars(k.rating)}</div></div></div><span class="chip g">Phù hợp</span></label>`,
+        <div class="row"><input type="checkbox" data-kid="${k.id}" ${assignedIds.has(k.id) ? "checked" : ""} style="width:auto;margin-right:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div><b>${esc(k.name)}</b><div class="muted" style="font-size:12px">${num(k.followers)} · ${stars(k.rating)}</div></div></div><span class="chip g">Phù hợp</span></label>`,
               )
               .join("")
           : empty("🔍", "Không có KOC phù hợp")
@@ -1320,7 +1347,7 @@ async function aiclone(el) {
             (
               k,
             ) => `<div class="between" style="padding:10px 0;border-top:1px solid var(--border);gap:12px">
-          <div class="row"><img class="avatar" src="${esc(k.avatar || "")}"><div>
+          <div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div>
             <div class="row"><b>${esc(k.name)}</b>${tierBadge(k.tier)}${statusChip(k.booking_status)}</div>
             <div class="muted" style="font-size:11px">${esc(k.booking_code || "")} · ${esc(k.province || "")}</div>
           </div></div>

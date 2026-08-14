@@ -1,7 +1,12 @@
-import 'dotenv/config'
 import dns from 'node:dns'
+import { fileURLToPath } from 'node:url'
+import dotenv from 'dotenv'
 import { createApp, initializeDatabase } from './app.js'
 import { loadConfig } from './config/env.js'
+
+// Resolve the backend environment file independently of the shell's current
+// directory. This works for both src/server.ts and the compiled dist/server.js.
+dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) })
 
 // The payout channel allowlists the server's public IPv4 address. Prefer IPv4
 // so Node does not select a temporary IPv6 address and get rejected by the channel.
