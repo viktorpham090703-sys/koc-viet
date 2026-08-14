@@ -7,6 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test": "tsx --test src/database/d1-adapter.test.ts",
     "db:import": "psql -v ON_ERROR_STOP=1 -f ../database/postgresql_full.sql"
   },
   "dependencies": {

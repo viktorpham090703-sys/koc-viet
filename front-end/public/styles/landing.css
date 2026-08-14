@@ -1,3 +1,5 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4 */
+/* Hallmark · genre: editorial · macrostructure: source landing · design-system: design.md · designed-as-app */
 /* Landing marketing pages — additive stylesheet, reuses tokens/vars from styles/main.css */
 
 .lp-body {
@@ -1195,4 +1197,21 @@
 .lp-section-media {
   max-width: 900px;
   margin: 0 auto 28px;
+}
+
+/* Responsive invariants retained across every source landing route. */
+html,
+body {
+  overflow-x: clip;
+}
+
+.lp-hero h1,
+.lp-section h2,
+.lp-banner h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lp-banner .btn {
+  white-space: nowrap;
 }
