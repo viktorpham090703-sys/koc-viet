@@ -64,26 +64,26 @@
 }
 
 .lp-home .lp-header-inner {
-  max-width: 1320px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 12px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
+  gap: 20px;
+  box-sizing: border-box;
 }
 
 .lp-home .lp-logo,
 .lp-logo {
   display: inline-flex !important;
   align-items: center !important;
-  height: 42px !important;
-  width: auto !important;
+  height: 40px !important;
+  width: 155px !important;
   min-width: 155px !important;
-  max-width: 175px !important;
-  overflow: visible !important;
-  position: relative !important;
-  margin: 0 32px 0 0 !important;
+  max-width: 155px !important;
+  flex: 0 0 155px !important;
+  margin: 0 24px 0 0 !important;
   padding: 0 !important;
   text-indent: 0 !important;
   background: transparent !important;
@@ -91,6 +91,7 @@
   box-shadow: none !important;
   flex-shrink: 0 !important;
   text-decoration: none !important;
+  overflow: visible !important;
 }
 
 .lp-home .lp-logo picture,
@@ -98,15 +99,16 @@
   display: flex !important;
   align-items: center !important;
   height: 40px !important;
-  width: auto !important;
+  width: 155px !important;
 }
 
 .lp-home .lp-logo img,
 .lp-logo img {
-  height: 40px !important;
-  width: auto !important;
-  max-width: 165px !important;
+  height: 38px !important;
+  width: 155px !important;
+  max-width: 155px !important;
   object-fit: contain !important;
+  object-position: left center !important;
   display: block !important;
   background: transparent !important;
   background-image: none !important;
@@ -117,19 +119,23 @@
 .lp-home .lp-nav {
   display: flex;
   align-items: center;
-  gap: 22px;
+  justify-content: flex-end;
+  gap: clamp(8px, 1.1vw, 18px);
+  flex: 1;
+  min-width: 0;
 }
 
 .lp-home .lp-nav > a {
   position: relative;
   color: #1e293b;
-  opacity: 0.85;
-  font-size: 14.5px;
+  opacity: 0.88;
+  font-size: clamp(12.5px, 0.95vw, 14px);
   font-weight: 500;
   text-decoration: none;
-  padding: 10px 4px;
+  padding: 8px clamp(3px, 0.5vw, 7px);
   transition: opacity 0.15s ease, color 0.15s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .lp-home .lp-nav > a:hover {
@@ -140,15 +146,15 @@
 .lp-home .lp-nav > a.active {
   color: #ea583c;
   opacity: 1;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .lp-home .lp-nav > a.active::after {
   content: "";
   position: absolute;
   bottom: 0;
-  left: 2px;
-  right: 2px;
+  left: 4px;
+  right: 4px;
   height: 2.5px;
   background: #ea583c;
   border-radius: 2px;
@@ -157,8 +163,9 @@
 .lp-home .lp-auth-btns {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-left: 14px;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: clamp(8px, 1vw, 16px);
 }
 
 .lp-home .lp-auth-btns .btn {
