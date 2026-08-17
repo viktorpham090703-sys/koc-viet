@@ -3,11 +3,8 @@ import { Cards,Cta,Faq,Hero,LeadForm,Media,Section,Shell,Steps } from './Landing
 const img={koc:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785312036/BANNER_TRANG_KOC_qjho2n.jpg',business:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg',market:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/c%E1%BA%A3_m%E1%BB%99t_th%E1%BB%8B_tr%C6%B0%E1%BB%9Dng_koc_trong_b%E1%BB%99_l%E1%BB%8Dc_ynzysz.jpg',ai:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/banner_ai_clone_av_i0rjqx.jpg',price:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313899/b%E1%BA%A3ng_gi%C3%A1_u79tuy.jpg',community:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313892/kh%C3%A1ch_h%C3%A0ng_t%E1%BB%89nh_n%C3%A0o-koc_t%E1%BB%89nh_%C4%91%C3%B3_psuq1g.jpg'}
 const flow:Array<[string,string]>=[
   ['TÌM & CHỌN','Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.'],
-  ['BOOKING VÀ THANH TOÁN','Gửi yêu cầu kèm đường dẫn thông tin sản phẩm để KOC kiểm tra. Khoản thanh toán được giữ an toàn cho đến khi công việc hoàn thành.'],
-  ['SẢN XUẤT VÀ ĐĂNG BÀI','KOC xác nhận, tự sản xuất nội dung đúng phong cách của mình và đăng bài kèm đường dẫn sản phẩm riêng.'],
-  ['ĐO LƯỜNG & CHI TRẢ','Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.'],
-]
-
+  ['BOOKING & ĐẶT CỌC','Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.'],
+  ['SẢN XUẤT & ĐĂNG BÀI','KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.'],
   ['ĐO LƯỜNG & CHI TRẢ','Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.'],
 ]
 
@@ -214,29 +211,29 @@ export function HomeLanding(){
               <div className="lp-desk-step-item">
                 <div className="lp-desk-step-num">1</div>
                 <div className="lp-desk-step-content">
-                  <h4>Brief &amp; Tư vấn</h4>
-                  <p>Hiểu mục tiêu, tư vấn chiến lược và lựa chọn KOC phù hợp.</p>
+                  <h4>TÌM &amp; CHỌN</h4>
+                  <p>Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.</p>
                 </div>
               </div>
               <div className="lp-desk-step-item">
                 <div className="lp-desk-step-num">2</div>
                 <div className="lp-desk-step-content">
-                  <h4>Triển khai chiến dịch</h4>
-                  <p>Campaign Desk hỗ trợ toàn diện từ nội dung, phê duyệt đến đăng tải.</p>
+                  <h4>BOOKING &amp; ĐẶT CỌC</h4>
+                  <p>Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.</p>
                 </div>
               </div>
               <div className="lp-desk-step-item">
                 <div className="lp-desk-step-num">3</div>
                 <div className="lp-desk-step-content">
-                  <h4>Theo dõi &amp; Tối ưu</h4>
-                  <p>Theo dõi hiệu suất theo thời gian thực và tối ưu trong quá trình chạy.</p>
+                  <h4>SẢN XUẤT &amp; ĐĂNG BÀI</h4>
+                  <p>KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.</p>
                 </div>
               </div>
               <div className="lp-desk-step-item">
                 <div className="lp-desk-step-num">4</div>
                 <div className="lp-desk-step-content">
-                  <h4>Báo cáo &amp; Đo lường</h4>
-                  <p>Báo cáo minh bạch, đo lường hiệu quả để đánh giá và ra quyết định.</p>
+                  <h4>ĐO LƯỜNG &amp; CHI TRẢ</h4>
+                  <p>Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.</p>
                 </div>
               </div>
             </div>

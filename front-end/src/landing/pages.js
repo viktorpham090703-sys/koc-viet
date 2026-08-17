@@ -233,29 +233,29 @@ function pageHome() {
           <div class="lp-desk-step-item">
             <div class="lp-desk-step-num">1</div>
             <div class="lp-desk-step-content">
-              <h4>Brief &amp; Tư vấn</h4>
-              <p>Hiểu mục tiêu, tư vấn chiến lược và lựa chọn KOC phù hợp.</p>
+              <h4>TÌM &amp; CHỌN</h4>
+              <p>Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.</p>
             </div>
           </div>
           <div class="lp-desk-step-item">
             <div class="lp-desk-step-num">2</div>
             <div class="lp-desk-step-content">
-              <h4>Triển khai chiến dịch</h4>
-              <p>Campaign Desk hỗ trợ toàn diện từ nội dung, phê duyệt đến đăng tải.</p>
+              <h4>BOOKING &amp; ĐẶT CỌC</h4>
+              <p>Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.</p>
             </div>
           </div>
           <div class="lp-desk-step-item">
             <div class="lp-desk-step-num">3</div>
             <div class="lp-desk-step-content">
-              <h4>Theo dõi &amp; Tối ưu</h4>
-              <p>Theo dõi hiệu suất theo thời gian thực và tối ưu trong quá trình chạy.</p>
+              <h4>SẢN XUẤT &amp; ĐĂNG BÀI</h4>
+              <p>KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.</p>
             </div>
           </div>
           <div class="lp-desk-step-item">
             <div class="lp-desk-step-num">4</div>
             <div class="lp-desk-step-content">
-              <h4>Báo cáo &amp; Đo lường</h4>
-              <p>Báo cáo minh bạch, đo lường hiệu quả để đánh giá và ra quyết định.</p>
+              <h4>ĐO LƯỜNG &amp; CHI TRẢ</h4>
+              <p>Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.</p>
             </div>
           </div>
         </div>
