@@ -77,8 +77,13 @@
 .lp-logo {
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: flex-start !important;
   height: 48px !important;
-  width: auto !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  overflow: hidden !important;
+  position: relative !important;
   margin: 0 28px 0 0 !important;
   padding: 0 !important;
   text-indent: 0 !important;
@@ -93,16 +98,18 @@
 .lp-logo picture {
   display: flex !important;
   align-items: center !important;
-  height: 46px !important;
-  width: auto !important;
+  height: 48px !important;
+  width: 100% !important;
 }
 
 .lp-home .lp-logo img,
 .lp-logo img {
-  height: 46px !important;
+  height: 48px !important;
   width: auto !important;
+  min-width: 186px !important;
   max-width: none !important;
-  object-fit: contain !important;
+  object-fit: fill !important;
+  object-position: 0 0 !important;
   display: block !important;
   background: transparent !important;
   background-image: none !important;
