@@ -1,23 +1,23 @@
 /* ==========================================================================
    KOC VIET - HOMEPAGE (TRANG CHỦ) DESIGN SYSTEM
-   Pixel-perfect integration following Image 2 template & Image 1 aesthetics:
-   - Hero section with seamless background matching, zero image bounding boxes
-   - Floating stats directly on hero background
-   - Organic wave divider (đường lượn sóng)
-   - Crisp white navbar links with red active underline
-   - Alternating section backgrounds: White (#ffffff) & Soft Gray (#f8fafc)
+   - Hero section with seamless original user graphic (zero bounding boxes)
+   - Floating stats directly on dark hero background
+   - Full-width organic wave divider stretching 100% of viewport
+   - Full-width alternating section backgrounds: White (#ffffff) & Soft Gray (#f8fafc)
+   - Orange / Coral background for final CTA section ("Booking minh bạch...")
+   - Crisp white navbar links with red/coral active underline
    ========================================================================== */
 
 /* --- Base container for homepage --- */
 .lp-home {
-  --color-home-paper: #040c1a;
+  --color-home-paper: #030814;
   --color-home-paper-2: #09162e;
   --color-home-paper-3: #112244;
   --color-home-ink: #ffffff;
   --color-home-muted: rgba(255, 255, 255, 0.75);
   --color-home-rule: rgba(255, 255, 255, 0.12);
-  --color-home-accent: #e02424;
-  --color-home-accent-hover: #f05252;
+  --color-home-accent: #ea583c;
+  --color-home-accent-hover: #f36c52;
   --color-home-accent-ink: #ffffff;
   
   --color-light-bg: #ffffff;
@@ -30,6 +30,7 @@
   color: var(--color-light-ink);
   font-family: var(--font-body, "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif);
   overflow-x: clip;
+  width: 100%;
 }
 
 /* Common Coral/Red text highlight */
@@ -45,10 +46,11 @@
   position: sticky;
   top: 0;
   z-index: 500;
-  background: #030914;
+  background: #030814;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  width: 100%;
 }
 
 .lp-home .lp-header-inner {
@@ -166,21 +168,23 @@
 }
 
 /* ==========================================================================
-   2. HERO SECTION (Seamless Dark Navy Gradient Matching Template Image 2)
+   2. HERO SECTION (Dark Navy Radial Blend, Full Width, Seamless Image)
    ========================================================================== */
 .lp-home .lp-hero-home {
   position: relative;
-  background: linear-gradient(180deg, #020914 0%, #051329 55%, #020813 100%);
+  width: 100%;
+  background: radial-gradient(circle at 72% 38%, #152238 0%, #060e1d 55%, #020712 100%);
   color: #ffffff;
-  padding: 44px 24px 0 24px;
+  padding: 44px 0 0 0;
   overflow: hidden;
 }
 
 .lp-home .lp-hero-home-inner {
   max-width: 1320px;
   margin: 0 auto;
+  padding: 0 24px;
   display: grid;
-  grid-template-columns: 1fr 1.12fr;
+  grid-template-columns: 1fr 1.15fr;
   align-items: center;
   gap: 36px;
   position: relative;
@@ -293,12 +297,12 @@
 /* Dynamic coral/red brush arc background glow */
 .lp-home .lp-hero-brush-arc {
   position: absolute;
-  bottom: 12%;
-  left: 5%;
-  width: 90%;
-  height: 65%;
+  bottom: 10%;
+  left: 2%;
+  width: 95%;
+  height: 70%;
   background: radial-gradient(ellipse at 45% 65%, rgba(234, 88, 60, 0.4) 0%, rgba(234, 88, 60, 0) 72%);
-  filter: blur(36px);
+  filter: blur(40px);
   pointer-events: none;
   z-index: 1;
 }
@@ -307,13 +311,14 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 630px;
+  max-width: 660px;
   height: auto;
   object-fit: contain;
   display: block;
   background: transparent;
   border: none;
   box-shadow: none;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
 }
 
 /* ==========================================================================
@@ -324,7 +329,7 @@
   z-index: 3;
   max-width: 1320px;
   margin: 32px auto 20px auto;
-  padding: 0 12px;
+  padding: 0 24px;
 }
 
 .lp-home .lp-hero-stats-grid {
@@ -395,13 +400,17 @@
 }
 
 /* ==========================================================================
-   ORGANIC WAVE DIVIDER (Đường lượn sóng tự nhiên)
+   FULL-WIDTH ORGANIC WAVE DIVIDER (Đường lượn sóng kéo dài hết màn hình)
    ========================================================================== */
 .lp-home .lp-hero-wave-divider {
   width: 100%;
-  height: 70px;
+  height: 80px;
   background: transparent;
   line-height: 0;
+  margin: 0;
+  padding: 0;
+  display: block;
+  position: relative;
   margin-bottom: -1px;
 }
 
@@ -413,11 +422,12 @@
 }
 
 /* ==========================================================================
-   3. SECTION 1: SPLIT SECTION (Background: TRẮNG #ffffff)
+   3. SECTION 1: SPLIT SECTION (Full Width, Background: TRẮNG #ffffff)
       Left: Hoạt động Booking & KOC mới nhất
       Right: Dành cho doanh nghiệp & KOC
    ========================================================================== */
 .lp-home .lp-split-section {
+  width: 100%;
   background: #ffffff;
   padding: 50px 24px 75px 24px;
 }
@@ -687,9 +697,10 @@
 }
 
 /* ==========================================================================
-   4. SECTION 2: 4 BƯỚC CHO MỘT CHIẾN DỊCH TRỌN VẸN (Background: XÁM #f8fafc)
+   4. SECTION 2: 4 BƯỚC CHO MỘT CHIẾN DỊCH TRỌN VẸN (Full Width, Background: XÁM #f8fafc)
    ========================================================================== */
 .lp-home .lp-campaign-desk-section {
+  width: 100%;
   background: #f8fafc;
   padding: 75px 24px;
   border-top: 1px solid #edf2f7;
@@ -906,9 +917,10 @@
 }
 
 /* ==========================================================================
-   5. SECTION 3: ĐIỀU THỊ TRƯỜNG ĐANG THIẾU (Background: TRẮNG #ffffff)
+   5. SECTION 3: ĐIỀU THỊ TRƯỜNG ĐANG THIẾU (Full Width, Background: TRẮNG #ffffff)
    ========================================================================== */
 .lp-home .lp-home-proof {
+  width: 100%;
   background: #ffffff;
   padding: 75px 24px;
 }
@@ -962,9 +974,10 @@
 }
 
 /* ==========================================================================
-   6. SECTION 4: PHỦ MỌI NGÀNH HÀNG (Background: XÁM #f8fafc)
+   6. SECTION 4: PHỦ MỌI NGÀNH HÀNG (Full Width, Background: XÁM #f8fafc)
    ========================================================================== */
 .lp-home .lp-home-categories {
+  width: 100%;
   background: #f8fafc;
   padding: 75px 24px;
   border-top: 1px solid #edf2f7;
@@ -1015,9 +1028,10 @@
 }
 
 /* ==========================================================================
-   7. SECTION 5: AI CLONE SPOTLIGHT (Background: TRẮNG #ffffff)
+   7. SECTION 5: AI CLONE SPOTLIGHT (Full Width, Background: TRẮNG #ffffff)
    ========================================================================== */
 .lp-home .lp-home-spotlight {
+  width: 100%;
   background: #ffffff;
   padding: 60px 24px;
 }
@@ -1087,9 +1101,10 @@
 }
 
 /* ==========================================================================
-   8. SECTION 6: TESTIMONIALS (Background: XÁM #f8fafc)
+   8. SECTION 6: TESTIMONIALS (Full Width, Background: XÁM #f8fafc)
    ========================================================================== */
 .lp-home .lp-home-stories {
+  width: 100%;
   background: #f8fafc;
   padding: 75px 24px;
   border-top: 1px solid #edf2f7;
@@ -1126,29 +1141,96 @@
 }
 
 /* ==========================================================================
-   9. CTA FINAL & FOOTER
+   9. SECTION 7: FINAL CTA (Full Width, Background: MÀU CAM / CORAL)
+   "Booking minh bạch. Thanh toán an tâm. Kết nối bền vững."
    ========================================================================== */
 .lp-home .lp-cta-final {
-  background: linear-gradient(180deg, #050f20 0%, #030812 100%);
-  padding: 75px 24px;
+  width: 100%;
+  background: linear-gradient(135deg, #e02424 0%, #ea583c 50%, #f97316 100%);
+  padding: 85px 24px;
   text-align: center;
   color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-home .lp-cta-final::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 140%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 .lp-home .lp-cta-final h2 {
   font-family: var(--font-display, "Lora", serif);
-  font-size: clamp(26px, 3.2vw, 38px);
-  font-weight: 600;
-  margin: 0 auto 30px auto;
-  max-width: 820px;
-  line-height: 1.3;
+  font-size: clamp(28px, 3.4vw, 42px);
+  font-weight: 700;
+  margin: 0 auto 32px auto;
+  max-width: 860px;
+  line-height: 1.28;
+  color: #ffffff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+  position: relative;
+  z-index: 2;
 }
 
 .lp-home .lp-cta-final .lp-hero-cta {
   justify-content: center;
+  position: relative;
+  z-index: 2;
+  gap: 16px;
 }
 
+/* Button 1 on Orange Background: Solid Dark Navy */
+.lp-home .lp-cta-final .btn.navy,
+.lp-home .lp-cta-final .btn:not(.ghost) {
+  background: #091222 !important;
+  color: #ffffff !important;
+  border: 1px solid #091222 !important;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 30px;
+  border-radius: 6px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.lp-home .lp-cta-final .btn.navy:hover,
+.lp-home .lp-cta-final .btn:not(.ghost):hover {
+  background: #111e35 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4);
+}
+
+/* Button 2 on Orange Background: White Outlined */
+.lp-home .lp-cta-final .btn.ghost {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 13px 30px;
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.lp-home .lp-cta-final .btn.ghost:hover {
+  background: #ffffff !important;
+  color: #ea583c !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* ==========================================================================
+   10. FOOTER
+   ========================================================================== */
 .lp-home .lp-footer {
+  width: 100%;
   background: #020610;
   color: rgba(255, 255, 255, 0.7);
   padding: 60px 24px 30px 24px;
@@ -1224,7 +1306,7 @@
     gap: 32px;
   }
   .lp-home .lp-hero-visual img {
-    max-width: 500px;
+    max-width: 520px;
   }
   .lp-home .lp-hero-stats-grid {
     grid-template-columns: repeat(2, 1fr);

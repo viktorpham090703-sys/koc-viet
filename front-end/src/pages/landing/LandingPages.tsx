@@ -40,7 +40,7 @@ export function HomeLanding(){
           </div>
           <div className="lp-hero-visual">
             <div className="lp-hero-brush-arc" aria-hidden="true" />
-            <img src="/images/home-koc-hero.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchPriority="high" />
+            <img src="/images/home-hero-user-seamless.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchPriority="high" />
           </div>
         </div>
 

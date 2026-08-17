@@ -50,7 +50,7 @@ function pageHome() {
       </div>
       <div class="lp-hero-visual">
         <div class="lp-hero-brush-arc" aria-hidden="true"></div>
-        <img src="/images/home-koc-hero.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchpriority="high" decoding="async">
+        <img src="/images/home-hero-user-seamless.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchpriority="high" decoding="async">
       </div>
     </div>
     
