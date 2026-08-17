@@ -202,9 +202,11 @@ function pageHome() {
             <span>▶</span>
           </button>
           <div class="lp-video-bottom-bar" id="lp-video-controls">
-            <div class="lp-video-progress-wrap" id="lp-video-progress-container">
-              <div class="lp-video-progress-played" id="lp-video-played-bar"></div>
-              <input type="range" class="lp-video-seekbar" id="lp-video-seekbar" min="0" max="100" step="0.1" value="0" aria-label="Thanh thời gian video" />
+            <div class="lp-video-progress-wrap" id="lp-video-progress-wrap" aria-label="Thanh thời gian video">
+              <div class="lp-video-progress-track"></div>
+              <div class="lp-video-progress-played" id="lp-video-played-bar">
+                <span class="lp-video-progress-thumb"></span>
+              </div>
             </div>
             <div class="lp-video-controls-row">
               <div class="lp-video-ctrls-left">

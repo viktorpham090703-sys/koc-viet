@@ -275,13 +275,15 @@ export function bindLandingEvents(root) {
   const videoPlayBtn = root.querySelector("#lp-video-play-trigger");
   const videoEl = root.querySelector("#lp-campaign-video");
   const timeDisplay = root.querySelector("#lp-video-time-display");
-  const seekBar = root.querySelector("#lp-video-seekbar");
+  const progressWrap = root.querySelector("#lp-video-progress-wrap");
   const playedBar = root.querySelector("#lp-video-played-bar");
   const ctrlPlayBtn = root.querySelector("#lp-ctrl-play-pause");
   const ctrlVolBtn = root.querySelector("#lp-ctrl-volume");
   const ctrlFsBtn = root.querySelector("#lp-ctrl-fullscreen");
 
   if (videoEl) {
+    let isSeeking = false;
+
     const formatTime = (sec) => {
       if (isNaN(sec) || sec < 0) return "0:00";
       const m = Math.floor(sec / 60);
@@ -320,10 +322,15 @@ export function bindLandingEvents(root) {
     videoEl.addEventListener("pause", () => updatePlayState(false));
     videoEl.addEventListener("ended", () => updatePlayState(false));
 
+    videoEl.addEventListener("loadedmetadata", () => {
+      if (timeDisplay && !isNaN(videoEl.duration)) {
+        timeDisplay.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(videoEl.duration)}`;
+      }
+    });
+
     videoEl.addEventListener("timeupdate", () => {
-      if (!isNaN(videoEl.duration) && videoEl.duration > 0) {
+      if (!isSeeking && !isNaN(videoEl.duration) && videoEl.duration > 0) {
         const pct = (videoEl.currentTime / videoEl.duration) * 100;
-        if (seekBar) seekBar.value = pct;
         if (playedBar) playedBar.style.width = pct + "%";
         if (timeDisplay) {
           timeDisplay.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(videoEl.duration)}`;
@@ -331,16 +338,52 @@ export function bindLandingEvents(root) {
       }
     });
 
-    if (seekBar) {
-      const onSeek = (e) => {
-        if (!isNaN(videoEl.duration) && videoEl.duration > 0) {
-          const newTime = (parseFloat(e.target.value) / 100) * videoEl.duration;
-          videoEl.currentTime = newTime;
-          if (playedBar) playedBar.style.width = e.target.value + "%";
+    // Interactive timeline scrubbing & seeking
+    if (progressWrap) {
+      const seekTo = (clientX) => {
+        const rect = progressWrap.getBoundingClientRect();
+        const clickX = clientX - rect.left;
+        const pct = Math.max(0, Math.min(1, clickX / rect.width));
+        const dur = videoEl.duration;
+        if (!isNaN(dur) && dur > 0) {
+          videoEl.currentTime = pct * dur;
+          if (playedBar) playedBar.style.width = (pct * 100) + "%";
+          if (timeDisplay) {
+            timeDisplay.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(dur)}`;
+          }
         }
       };
-      seekBar.addEventListener("input", onSeek);
-      seekBar.addEventListener("change", onSeek);
+
+      progressWrap.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+        isSeeking = true;
+        progressWrap.setPointerCapture(e.pointerId);
+        seekTo(e.clientX);
+      });
+
+      progressWrap.addEventListener("pointermove", (e) => {
+        if (isSeeking) {
+          e.stopPropagation();
+          seekTo(e.clientX);
+        }
+      });
+
+      const stopSeek = (e) => {
+        if (isSeeking) {
+          e.stopPropagation();
+          isSeeking = false;
+          try {
+            progressWrap.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+        }
+      };
+
+      progressWrap.addEventListener("pointerup", stopSeek);
+      progressWrap.addEventListener("pointercancel", stopSeek);
+      progressWrap.addEventListener("click", (e) => {
+        e.stopPropagation();
+        seekTo(e.clientX);
+      });
     }
 
     if (ctrlVolBtn) {

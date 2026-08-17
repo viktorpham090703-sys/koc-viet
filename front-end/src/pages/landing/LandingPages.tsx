@@ -12,6 +12,9 @@ const flow:Array<[string,string]>=[
 export function CampaignVideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const progressWrapRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(107);
@@ -31,7 +34,7 @@ export function CampaignVideoPlayer() {
   };
 
   const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isDragging.current) return;
     const cur = videoRef.current.currentTime;
     const dur = videoRef.current.duration || duration;
     setCurrentTime(cur);
@@ -41,14 +44,42 @@ export function CampaignVideoPlayer() {
     }
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!videoRef.current) return;
-    const val = parseFloat(e.target.value);
+  const seekTo = (clientX: number) => {
+    if (!videoRef.current || !progressWrapRef.current) return;
+    const rect = progressWrapRef.current.getBoundingClientRect();
+    const clickX = clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
     const dur = videoRef.current.duration || duration;
-    const newTime = (val / 100) * dur;
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    setProgress(val);
+    if (!isNaN(dur) && dur > 0) {
+      const newTime = pct * dur;
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+      setProgress(pct * 100);
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    isDragging.current = true;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    seekTo(e.clientX);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDragging.current) {
+      e.stopPropagation();
+      seekTo(e.clientX);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDragging.current) {
+      e.stopPropagation();
+      isDragging.current = false;
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch (_) {}
+    }
   };
 
   const toggleMute = (e: React.MouseEvent) => {
@@ -70,7 +101,7 @@ export function CampaignVideoPlayer() {
   };
 
   const formatTime = (sec: number) => {
-    if (isNaN(sec)) return '0:00';
+    if (isNaN(sec) || sec < 0) return '0:00';
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
@@ -106,18 +137,21 @@ export function CampaignVideoPlayer() {
       </button>
 
       <div className="lp-video-bottom-bar" id="lp-video-controls" onClick={(e) => e.stopPropagation()}>
-        <div className="lp-video-progress-wrap">
-          <div className="lp-video-progress-played" style={{ width: `${progress}%` }} />
-          <input
-            type="range"
-            className="lp-video-seekbar"
-            min="0"
-            max="100"
-            step="0.1"
-            value={progress}
-            onChange={handleSeek}
-            aria-label="Thanh thời gian video"
-          />
+        <div
+          className="lp-video-progress-wrap"
+          id="lp-video-progress-wrap"
+          ref={progressWrapRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onClick={(e) => { e.stopPropagation(); seekTo(e.clientX); }}
+          aria-label="Thanh thời gian video"
+        >
+          <div className="lp-video-progress-track" />
+          <div className="lp-video-progress-played" style={{ width: `${progress}%` }}>
+            <span className="lp-video-progress-thumb" />
+          </div>
         </div>
 
         <div className="lp-video-controls-row">
