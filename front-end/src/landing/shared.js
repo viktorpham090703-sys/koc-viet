@@ -18,7 +18,7 @@ export function lpHeader(active) {
   return `<header class="lp-header">
     <div class="lp-header-inner">
       <a href="/trang-chu" class="lp-logo" aria-label="KOC Việt">
-        <img src="/images/koc-viet-logo.png" alt="KOC Việt" decoding="async" fetchpriority="high">
+        <img src="https://res.cloudinary.com/drxum5uxt/image/upload/c_crop,g_west,w_360,h_372/v1785865656/LogoDaXoaNen_r82hx2.png" alt="KOC Việt" decoding="async" fetchpriority="high">
       </a>
       <nav class="lp-nav" id="lp-nav">
         ${ROUTES.map(([href, label]) => `<a href="${href}" class="${active === href ? "active" : ""}">${label}</a>`).join("")}
