@@ -263,63 +263,73 @@ function pageHome() {
     </div>
   </section>`;
 
-  const whyUs = `<section class="lp-section lp-home-proof">
-    <div class="lp-section-head"><h2>Điều mà thị trường booking KOC đang thiếu — chúng tôi làm trước tiên</h2></div>
-    <div class="lp-grid-4">
-      <div class="lp-card"><p><strong>Giá niêm yết công khai</strong> — Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng <br>Nano – Micro – Mid – Macro.</p></div>
-      <div class="lp-card"><p><strong>Thanh toán an toàn</strong> — Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p></div>
-      <div class="lp-card"><p><strong>Hiệu quả bằng số thật</strong> — Chỉ số chuyển đổi của mỗi KOC tính từ dữ liệu affiliate thực tế, không tự khai báo, không mua follower ảo.</p></div>
-      <div class="lp-card"><p><strong>Đánh giá hai chiều</strong> — Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.</p></div>
+  const whyUs = `<section class="lp-home-proof">
+    <div class="lp-home-proof-inner">
+      <div class="lp-section-head"><h2>Điều mà thị trường booking KOC đang thiếu — chúng tôi làm trước tiên</h2></div>
+      <div class="lp-grid-4">
+        <div class="lp-card"><p><strong>Giá niêm yết công khai</strong> — Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng <br>Nano – Micro – Mid – Macro.</p></div>
+        <div class="lp-card"><p><strong>Thanh toán an toàn</strong> — Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p></div>
+        <div class="lp-card"><p><strong>Hiệu quả bằng số thật</strong> — Chỉ số chuyển đổi của mỗi KOC tính từ dữ liệu affiliate thực tế, không tự khai báo, không mua follower ảo.</p></div>
+        <div class="lp-card"><p><strong>Đánh giá hai chiều</strong> — Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.</p></div>
+      </div>
     </div>
   </section>`;
 
-  const categories = `<section class="lp-section tint lp-home-categories">
-    <div class="lp-section-head"><h2>Phủ mọi ngành hàng đang tăng trưởng</h2></div>
-    <div class="lp-section-media lp-reveal">${lpMedia({
-      src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785488594/Thi%E1%BA%BFt_k%E1%BA%BF_ch%C6%B0a_c%C3%B3_t%C3%AAn_3_n84ryp.jpg",
-      alt: "Minh họa các ngành hàng đang tăng trưởng",
-      ratio: "9/4",
-    })}</div>
-    <div class="lp-chip-row">
-      ${[
-        "Mỹ phẩm & Làm đẹp",
-        "Mẹ & Bé",
-        "Ẩm thực F&B",
-        "Thời trang",
-        "Điện tử gia dụng",
-        "Sức khoẻ",
-        "Du lịch địa phương",
-        "Tài chính cá nhân",
-        "Giáo dục",
-        "Thương mại điện tử",
-      ]
-        .map((c) => `<span class="lp-chip">${c}</span>`)
-        .join("")}
+  const categories = `<section class="lp-home-categories">
+    <div class="lp-home-categories-inner">
+      <div class="lp-section-head"><h2>Phủ mọi ngành hàng đang tăng trưởng</h2></div>
+      <div class="lp-section-media lp-reveal">${lpMedia({
+        src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785488594/Thi%E1%BA%BFt_k%E1%BA%BF_ch%C6%B0a_c%C3%B3_t%C3%AAn_3_n84ryp.jpg",
+        alt: "Minh họa các ngành hàng đang tăng trưởng",
+        ratio: "9/4",
+      })}</div>
+      <div class="lp-chip-row">
+        ${[
+          "Mỹ phẩm & Làm đẹp",
+          "Mẹ & Bé",
+          "Ẩm thực F&B",
+          "Thời trang",
+          "Điện tử gia dụng",
+          "Sức khoẻ",
+          "Du lịch địa phương",
+          "Tài chính cá nhân",
+          "Giáo dục",
+          "Thương mại điện tử",
+        ]
+          .map((c) => `<span class="lp-chip">${c}</span>`)
+          .join("")}
+      </div>
     </div>
   </section>`;
 
-  const aiCloneTeaser = `<section class="lp-section lp-home-spotlight">
-    <div class="lp-banner">
-      <h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3>
-      <p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p>
-      <a href="/ai-clone" class="btn grad">Tìm hiểu dịch vụ →</a>
+  const aiCloneTeaser = `<section class="lp-home-spotlight">
+    <div class="lp-home-spotlight-inner">
+      <div class="lp-banner">
+        <h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3>
+        <p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p>
+        <a href="/ai-clone" class="btn grad">Tìm hiểu dịch vụ →</a>
+      </div>
     </div>
   </section>`;
 
-  const testimonials = `<section class="lp-section tint lp-home-stories">
-    <div class="lp-grid-2">
-      <div class="lp-quote"><div class="stars">★★★★★</div><p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p></div>
-      <div class="lp-quote"><div class="stars">★★★★★</div><p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p></div>
+  const testimonials = `<section class="lp-home-stories">
+    <div class="lp-home-stories-inner">
+      <div class="lp-grid-2">
+        <div class="lp-quote"><div class="stars">★★★★★</div><p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p></div>
+        <div class="lp-quote"><div class="stars">★★★★★</div><p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p></div>
+      </div>
     </div>
   </section>`;
 
-  const ctaFinal = lpCtaFinal(
-    '<span class="lp-nowrap-desktop">Booking minh bạch. Thanh toán an tâm. Kết nối bền vững.</span>',
-    [
-      { href: "/#/tuyen-koc", label: "Đăng ký làm KOC — miễn phí" },
-      { href: "/#/explore", label: "Booking KOC ngay hôm nay", ghost: true },
-    ],
-  );
+  const ctaFinal = `<section class="lp-cta-final">
+    <div class="lp-cta-final-inner">
+      <h2>Booking minh bạch. Thanh toán an tâm. Kết nối bền vững.</h2>
+      <div class="lp-hero-cta">
+        <a href="/#/tuyen-koc" class="btn navy nv-lift">Đăng ký làm KOC — miễn phí</a>
+        <a href="/#/explore" class="btn ghost nv-lift">Booking KOC ngay hôm nay</a>
+      </div>
+    </div>
+  </section>`;
 
   return (
     hero +

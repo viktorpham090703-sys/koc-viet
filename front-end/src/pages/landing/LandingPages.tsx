@@ -246,55 +246,84 @@ export function HomeLanding(){
 
       {/* Điều mà thị trường booking KOC đang thiếu */}
       <section className="lp-home-proof">
-        <div className="lp-section-head">
-          <h2>Điều mà thị trường booking KOC đang thiếu — chúng tôi làm trước tiên</h2>
-        </div>
-        <div className="lp-grid-4">
-          <article className="lp-card">
-            <p><strong>Giá niêm yết công khai</strong> — Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng Nano – Micro – Mid – Macro.</p>
-          </article>
-          <article className="lp-card">
-            <p><strong>Thanh toán an toàn</strong> — Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p>
-          </article>
-          <article className="lp-card">
-            <p><strong>Hiệu quả bằng số thật</strong> — Khả năng tạo đơn của mỗi KOC được tính từ dữ liệu bán hàng thực tế, không dựa trên tự khai báo hoặc số người theo dõi ảo.</p>
-          </article>
-          <article className="lp-card">
-            <p><strong>Đánh giá hai chiều</strong> — Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.</p>
-          </article>
+        <div className="lp-home-proof-inner">
+          <div className="lp-section-head">
+            <h2>Điều mà thị trường booking KOC đang thiếu — chúng tôi làm trước tiên</h2>
+          </div>
+          <div className="lp-grid-4">
+            <article className="lp-card">
+              <p><strong>Giá niêm yết công khai</strong> — Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng Nano – Micro – Mid – Macro.</p>
+            </article>
+            <article className="lp-card">
+              <p><strong>Thanh toán an toàn</strong> — Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p>
+            </article>
+            <article className="lp-card">
+              <p><strong>Hiệu quả bằng số thật</strong> — Khả năng tạo đơn của mỗi KOC được tính từ dữ liệu bán hàng thực tế, không dựa trên tự khai báo hoặc số người theo dõi ảo.</p>
+            </article>
+            <article className="lp-card">
+              <p><strong>Đánh giá hai chiều</strong> — Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.</p>
+            </article>
+          </div>
         </div>
       </section>
 
-      <CategorySection />
+      {/* Phủ mọi ngành hàng đang tăng trưởng */}
+      <section className="lp-home-categories">
+        <div className="lp-home-categories-inner">
+          <div className="lp-section-head">
+            <h2>Phủ mọi ngành hàng đang tăng trưởng</h2>
+          </div>
+          <div className="lp-section-media lp-reveal">
+            <Media src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785488594/Thi%E1%BA%BFt_k%E1%BA%BF_ch%C6%B0a_c%C3%B3_t%C3%AAn_3_n84ryp.jpg" alt="Minh hoạ các ngành hàng đang tăng trưởng" ratio="21/9" />
+          </div>
+          <div className="lp-chip-row">
+            {['Mỹ phẩm & Làm đẹp','Mẹ & Bé','Ẩm thực F&B','Thời trang','Điện tử gia dụng','Sức khoẻ','Du lịch địa phương','Tài chính cá nhân','Giáo dục','Thương mại điện tử'].map(c => (
+              <span className="lp-chip" key={c}>{c}</span>
+            ))}
+          </div>
+        </div>
+      </section>
 
+      {/* Dịch vụ AI Clone Avatar */}
       <section className="lp-home-spotlight">
-        <div className="lp-banner">
-          <h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3>
-          <p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p>
-          <Link to="/ai-clone" className="btn">Tìm hiểu dịch vụ →</Link>
+        <div className="lp-home-spotlight-inner">
+          <div className="lp-banner">
+            <h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3>
+            <p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p>
+            <Link to="/ai-clone" className="btn">Tìm hiểu dịch vụ →</Link>
+          </div>
         </div>
       </section>
 
+      {/* Đánh giá / Testimonials */}
       <section className="lp-home-stories">
-        <div className="lp-grid-2">
-          <div className="lp-quote">
-            <div className="stars">★★★★★</div>
-            <p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p>
-          </div>
-          <div className="lp-quote">
-            <div className="stars">★★★★★</div>
-            <p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p>
+        <div className="lp-home-stories-inner">
+          <div className="lp-grid-2">
+            <div className="lp-quote">
+              <div className="stars">★★★★★</div>
+              <p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p>
+            </div>
+            <div className="lp-quote">
+              <div className="stars">★★★★★</div>
+              <p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <Cta title="Booking minh bạch. Thanh toán an tâm. Kết nối bền vững." primary={['Đăng ký làm KOC — miễn phí','/tuyen-koc']} secondary={['Booking KOC ngay hôm nay','/explore']}/>
+      {/* Final CTA (Orange Background) */}
+      <section className="lp-cta-final">
+        <div className="lp-cta-final-inner">
+          <h2>Booking minh bạch. Thanh toán an tâm. Kết nối bền vững.</h2>
+          <div className="lp-hero-cta">
+            <Link to="/tuyen-koc" className="btn navy nv-lift">Đăng ký làm KOC — miễn phí</Link>
+            <Link to="/explore" className="btn ghost nv-lift">Booking KOC ngay hôm nay</Link>
+          </div>
+        </div>
+      </section>
     </Shell>
   )
 }
-
-const homeCategories=['Mỹ phẩm & Làm đẹp','Mẹ & Bé','Ẩm thực F&B','Thời trang','Điện tử gia dụng','Sức khoẻ','Du lịch địa phương','Tài chính cá nhân','Giáo dục','Thương mại điện tử']
-function CategorySection(){return <Section title="Phủ mọi ngành hàng đang tăng trưởng" tint><div className="lp-section-media lp-reveal"><Media src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785488594/Thi%E1%BA%BFt_k%E1%BA%BF_ch%C6%B0a_c%C3%B3_t%C3%AAn_3_n84ryp.jpg" alt="Minh hoạ các ngành hàng đang tăng trưởng" ratio="21/9"/></div><div className="lp-chip-row">{homeCategories.map(category=><span className="lp-chip" key={category}>{category}</span>)}</div></Section>}
 export function KocLanding(){return <Shell><Hero eyebrow="DÀNH CHO KOC/KOLs" title="Bạn định giá. Nền tảng mang booking đến. Ví tự cộng tiền." sub="Mở hồ sơ năng lực, niêm yết phí theo ngành hàng và nhận thêm hoa hồng bán hàng." image={img.koc} primary={['Đăng ký làm KOC','/tuyen-koc']}/><Section title="Một bài đăng — hai dòng thu nhập"><Cards columns={2} items={[["95% phí booking","Nhận phần lớn giá trị booking khi hoàn thành."],["Hoa hồng bán hàng","Tiếp tục nhận thu nhập từ đơn hàng."]]}/></Section><Section title="5 bước để bắt đầu — dưới 15 phút" tint><Steps items={[["TẠO TÀI KHOẢN","Xác thực email."],["KHAI BÁO KÊNH","Thêm mạng xã hội."],["NIÊM YẾT GIÁ","Chọn ngành và phí."],["KÝ HỢP ĐỒNG","Ký điện tử."],["NHẬN BOOKING","Bật trạng thái hợp tác."]]}/></Section><Section title="Càng làm tốt, khung giá càng mở"><Cards columns={4} items={[["Nano","Uy tín gần gũi."],["Micro","Tối ưu chuyển đổi."],["Mid","Độ phủ toàn quốc."],["Macro","Chiến dịch lớn."]]}/></Section><Section title="Câu hỏi thường gặp"><Faq items={[["Đăng ký có mất phí không?","Không thu phí đăng ký hoặc thành viên."],["Khi nào nhận tiền?","Sau khi booking hoàn thành và đối soát."],["Ai quyết định giá?","KOC niêm yết trong khung giá theo hạng."]]}/></Section><Cta title="Biến sức ảnh hưởng thành thu nhập minh bạch." primary={['Trở thành KOC','/tuyen-koc']}/></Shell>}
 export function BusinessLanding(){return <Shell><Hero eyebrow="DÀNH CHO DOANH NGHIỆP & NHÃN HÀNG" title="Chọn người — Hợp giá — Chốt ngay." sub="Mọi KOC niêm yết giá công khai theo ngành hàng, kèm chỉ số hiệu quả thật." image={img.business} primary={['Tìm KOC ngay','/explore']} secondary={['Nhận tư vấn','/ho-tro']}/><Section title="Giải quyết bằng thiết kế, không bằng lời hứa"><Cards items={[["Tìm đúng người","Lọc theo ngành, tỉnh, hạng và hiệu suất.","🔎"],["Biết đúng giá","Giá công khai trước khi booking.","💵"],["Đo đúng kết quả","Báo cáo và đối soát cùng hệ thống.","📊"]]}/></Section><Section title="Hai cách hợp tác — tuỳ quy mô" tint><Cards columns={2} items={[["TỰ CHỌN VÀ ĐẶT KOC","Phù hợp doanh nghiệp vừa, nhỏ và chiến dịch đơn lẻ."],["NETVIET ĐIỀU PHỐI","Phù hợp chiến dịch lớn, nhiều KOC."]]}/></Section><Section title="Booking trong 5 phút"><Steps items={flow}/></Section><LeadForm source="landing-business"/><Cta title="Mỗi đồng chi ra đều đo được kết quả." primary={['Khám phá KOC','/explore']}/></Shell>}
 export function MarketplaceLanding(){return <Shell><Hero eyebrow="KHÁM PHÁ KOC/KOL" title="Cả một thị trường KOC trong một bộ lọc." sub="Hồ sơ được xác minh — lọc theo ngành, tỉnh, hạng, giá và hiệu quả thật." image={img.market} primary={['Khám phá KOC','/explore']}/><Section title="Lọc thông minh cho từng chiến dịch"><Cards items={[["Theo ngành hàng","Làm đẹp, thời trang, ẩm thực, công nghệ."],["Theo địa phương","Đúng tiếng nói tại thị trường mục tiêu."],["Theo ngân sách","So sánh giá ngay trên hồ sơ."]]}/></Section><Section title="Mỗi hồ sơ là một bản chào hàng đầy đủ" tint><Media src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785383806/h%E1%BB%93_s%C6%A1_koc_ihq9lf.jpg" alt="Hồ sơ KOC"/></Section><Cta title="Từ hồ sơ đến bài đăng — một đường thẳng." primary={['Tìm KOC ngay','/explore']}/></Shell>}

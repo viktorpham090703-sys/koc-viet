@@ -1,10 +1,11 @@
 /* ==========================================================================
    KOC VIET - HOMEPAGE (TRANG CHỦ) DESIGN SYSTEM
-   - Hero section with seamless original user graphic (zero bounding boxes)
+   - Full-width sections edge-to-edge (100% viewport width)
+   - Seamless user hero visual (zero bounding box)
    - Floating stats directly on dark hero background
-   - Full-width organic wave divider stretching 100% of viewport
-   - Full-width alternating section backgrounds: White (#ffffff) & Soft Gray (#f8fafc)
-   - Orange / Coral background for final CTA section ("Booking minh bạch...")
+   - Full-width organic wave divider
+   - Alternating section backgrounds: White (#ffffff) & Soft Gray (#f8fafc)
+   - Full-width Orange CTA ("Booking minh bạch...") with perfectly centered title
    - Crisp white navbar links with red/coral active underline
    ========================================================================== */
 
@@ -31,6 +32,16 @@
   font-family: var(--font-body, "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif);
   overflow-x: clip;
   width: 100%;
+}
+
+/* Ensure no global .lp-section restricts width on homepage */
+.lp-home .lp-section,
+.lp-home section {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
 }
 
 /* Common Coral/Red text highlight */
@@ -294,7 +305,6 @@
   justify-content: center;
 }
 
-/* Dynamic coral/red brush arc background glow */
 .lp-home .lp-hero-brush-arc {
   position: absolute;
   bottom: 10%;
@@ -423,11 +433,9 @@
 
 /* ==========================================================================
    3. SECTION 1: SPLIT SECTION (Full Width, Background: TRẮNG #ffffff)
-      Left: Hoạt động Booking & KOC mới nhất
-      Right: Dành cho doanh nghiệp & KOC
    ========================================================================== */
 .lp-home .lp-split-section {
-  width: 100%;
+  width: 100% !important;
   background: #ffffff;
   padding: 50px 24px 75px 24px;
 }
@@ -700,7 +708,7 @@
    4. SECTION 2: 4 BƯỚC CHO MỘT CHIẾN DỊCH TRỌN VẸN (Full Width, Background: XÁM #f8fafc)
    ========================================================================== */
 .lp-home .lp-campaign-desk-section {
-  width: 100%;
+  width: 100% !important;
   background: #f8fafc;
   padding: 75px 24px;
   border-top: 1px solid #edf2f7;
@@ -920,9 +928,15 @@
    5. SECTION 3: ĐIỀU THỊ TRƯỜNG ĐANG THIẾU (Full Width, Background: TRẮNG #ffffff)
    ========================================================================== */
 .lp-home .lp-home-proof {
-  width: 100%;
+  width: 100% !important;
   background: #ffffff;
   padding: 75px 24px;
+}
+
+.lp-home .lp-home-proof-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .lp-home .lp-home-proof .lp-section-head h2 {
@@ -937,8 +951,6 @@
 }
 
 .lp-home .lp-home-proof .lp-grid-4 {
-  max-width: 1320px;
-  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
@@ -977,11 +989,17 @@
    6. SECTION 4: PHỦ MỌI NGÀNH HÀNG (Full Width, Background: XÁM #f8fafc)
    ========================================================================== */
 .lp-home .lp-home-categories {
-  width: 100%;
-  background: #f8fafc;
+  width: 100% !important;
+  background: #f8fafc !important;
   padding: 75px 24px;
   border-top: 1px solid #edf2f7;
   border-bottom: 1px solid #edf2f7;
+}
+
+.lp-home .lp-home-categories-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .lp-home .lp-home-categories .lp-section-head h2 {
@@ -1031,14 +1049,19 @@
    7. SECTION 5: AI CLONE SPOTLIGHT (Full Width, Background: TRẮNG #ffffff)
    ========================================================================== */
 .lp-home .lp-home-spotlight {
-  width: 100%;
-  background: #ffffff;
+  width: 100% !important;
+  background: #ffffff !important;
   padding: 60px 24px;
 }
 
-.lp-home .lp-banner {
+.lp-home .lp-home-spotlight-inner {
   max-width: 1100px;
   margin: 0 auto;
+  width: 100%;
+}
+
+.lp-home .lp-banner {
+  width: 100%;
   background: linear-gradient(135deg, #091222 0%, #152642 100%);
   border-radius: 14px;
   padding: 38px 44px;
@@ -1049,6 +1072,7 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 12px 36px rgba(9, 18, 34, 0.18);
+  box-sizing: border-box;
 }
 
 .lp-home .lp-banner::after {
@@ -1104,15 +1128,19 @@
    8. SECTION 6: TESTIMONIALS (Full Width, Background: XÁM #f8fafc)
    ========================================================================== */
 .lp-home .lp-home-stories {
-  width: 100%;
-  background: #f8fafc;
+  width: 100% !important;
+  background: #f8fafc !important;
   padding: 75px 24px;
   border-top: 1px solid #edf2f7;
 }
 
-.lp-home .lp-home-stories .lp-grid-2 {
+.lp-home .lp-home-stories-inner {
   max-width: 1100px;
   margin: 0 auto;
+  width: 100%;
+}
+
+.lp-home .lp-home-stories .lp-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
@@ -1145,13 +1173,19 @@
    "Booking minh bạch. Thanh toán an tâm. Kết nối bền vững."
    ========================================================================== */
 .lp-home .lp-cta-final {
-  width: 100%;
-  background: linear-gradient(135deg, #e02424 0%, #ea583c 50%, #f97316 100%);
-  padding: 85px 24px;
-  text-align: center;
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, #e02424 0%, #ea583c 50%, #f97316 100%) !important;
+  padding: 85px 24px !important;
+  text-align: center !important;
+  color: #ffffff !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
 }
 
 .lp-home .lp-cta-final::before {
@@ -1165,24 +1199,50 @@
   pointer-events: none;
 }
 
-.lp-home .lp-cta-final h2 {
-  font-family: var(--font-display, "Lora", serif);
-  font-size: clamp(28px, 3.4vw, 42px);
-  font-weight: 700;
-  margin: 0 auto 32px auto;
-  max-width: 860px;
-  line-height: 1.28;
-  color: #ffffff;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+.lp-home .lp-cta-final-inner {
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lp-home .lp-cta-final h2 {
+  font-family: var(--font-display, "Lora", serif);
+  font-size: clamp(24px, 3.2vw, 38px);
+  font-weight: 700;
+  margin: 0 auto 30px auto !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  text-align: center !important;
+  line-height: 1.3;
+  color: #ffffff !important;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+  display: block !important;
+}
+
+.lp-home .lp-cta-final h2 span,
+.lp-home .lp-cta-final h2 .lp-nowrap-desktop {
+  display: inline !important;
+  white-space: normal !important;
+  text-align: center !important;
+  color: #ffffff !important;
 }
 
 .lp-home .lp-cta-final .lp-hero-cta {
-  justify-content: center;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 16px;
   position: relative;
   z-index: 2;
-  gap: 16px;
+  margin: 0 auto !important;
+  width: 100%;
+  max-width: 600px;
 }
 
 /* Button 1 on Orange Background: Solid Dark Navy */
@@ -1193,10 +1253,11 @@
   border: 1px solid #091222 !important;
   font-size: 15px;
   font-weight: 700;
-  padding: 14px 30px;
+  padding: 14px 28px;
   border-radius: 6px;
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .lp-home .lp-cta-final .btn.navy:hover,
@@ -1213,10 +1274,11 @@
   border: 2px solid #ffffff !important;
   font-size: 15px;
   font-weight: 700;
-  padding: 13px 30px;
+  padding: 13px 28px;
   border-radius: 6px;
   backdrop-filter: blur(8px);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .lp-home .lp-cta-final .btn.ghost:hover {
@@ -1230,7 +1292,7 @@
    10. FOOTER
    ========================================================================== */
 .lp-home .lp-footer {
-  width: 100%;
+  width: 100% !important;
   background: #020610;
   color: rgba(255, 255, 255, 0.7);
   padding: 60px 24px 30px 24px;
@@ -1359,5 +1421,12 @@
   }
   .lp-home .lp-footer-cols {
     grid-template-columns: 1fr;
+  }
+  .lp-home .lp-cta-final .lp-hero-cta {
+    flex-direction: column;
+    width: 100%;
+  }
+  .lp-home .lp-cta-final .btn {
+    width: 100%;
   }
 }
