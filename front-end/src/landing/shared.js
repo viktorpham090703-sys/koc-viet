@@ -61,6 +61,8 @@ export function lpFooter() {
           </div>
         </div>
       </div>
+    </div>
+    <div class="lp-footer-bottom-wrap">
       <div class="lp-footer-bottom">
         <p>© KOC Việt — NetViet. Bảo lưu mọi quyền.</p>
       </div>

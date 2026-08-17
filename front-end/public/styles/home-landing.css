@@ -1361,21 +1361,24 @@
   width: 100% !important;
   background: #0B1F3A !important;
   color: rgba(255, 255, 255, 0.85) !important;
-  padding: 65px 24px 32px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 65px 0 0 0 !important;
+  border-top: none !important;
+  box-sizing: border-box !important;
 }
 
 .lp-home .lp-footer-inner {
   max-width: 1320px;
   margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
 }
 
 .lp-home .lp-footer-top {
   display: grid;
   grid-template-columns: 1.4fr 2fr;
   gap: 48px;
-  padding-bottom: 40px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 48px;
+  border-bottom: none !important; /* Removed duplicate line */
 }
 
 .lp-home .lp-footer-brand .lp-footer-logo {
@@ -1418,8 +1421,20 @@
   color: #ffffff;
 }
 
+/* Single divider line spanning 100% full screen width */
+.lp-home .lp-footer-bottom-wrap {
+  width: 100% !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  margin: 0 !important;
+  padding: 24px 24px 28px 24px !important;
+  box-sizing: border-box !important;
+}
+
 .lp-home .lp-footer-bottom {
-  padding-top: 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 !important;
+  border-top: none !important;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.55);
   text-align: center;
