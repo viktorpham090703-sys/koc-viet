@@ -26,25 +26,27 @@ export const LANDING_ROUTES = [
 // ---------- 1. Trang chủ (/home) ----------
 function pageHome() {
   const hero = lpHero({
+    variant: "home",
     eyebrow: "NỀN TẢNG BOOKING KOC/KOLs MINH BẠCH",
     h1: "Booking KOC dễ như đặt xe. <br>Giá công khai. Hiệu quả đo được.",
-    sub: "KOC Việt kết nối trực tiếp doanh nghiệp với KOC/KOLs trên toàn quốc: mỗi KOC một trang hồ sơ với bảng giá cố định niêm yết theo ngành hàng — chọn đúng người, thấy đúng giá, chốt booking trong vài phút. Tiền giữ an toàn trong ví đảm bảo, chỉ giải ngân khi việc hoàn thành.",
+    sub: "Kết nối doanh nghiệp với KOC trên toàn quốc, xem giá trước khi đặt và chỉ thanh toán khi công việc hoàn thành.",
     ctas: [
       {
         href: "/#/tuyen-koc",
         cls: "grad",
-        label: "Đăng ký làm KOC — miễn phí",
+        label: "Đăng ký KOC miễn phí",
       },
       {
         href: "/#/explore",
         cls: "outline-white",
-        label: "Tìm KOC cho chiến dịch của bạn",
+        label: "Tìm KOC cho chiến dịch",
       },
     ],
     img: {
-      src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312022/BANNER_TRANG_CH%E1%BB%A6_rjdtn2.jpg",
+      src: "/images/home-hero-blended-v2.png",
       alt: "Booking KOC Việt minh bạch và dễ dàng",
       ratio: "4/3",
+      priority: true,
     },
   });
 
@@ -56,36 +58,40 @@ function pageHome() {
           <span class="lp-activity-header-tag">TRỰC TIẾP 24/7</span>
           <h3 class="lp-activity-heading">Hoạt động Booking &amp; KOC mới nhất</h3>
         </div>
-        <span class="lp-activity-sub">Cập nhật liên tục từ hệ thống KOC Việt</span>
+        <div class="lp-activity-controls" aria-label="Điều hướng hoạt động mới nhất">
+          <button type="button" class="lp-activity-arrow" data-koc-activity-prev aria-label="Xem hoạt động trước">←</button>
+          <button type="button" class="lp-activity-arrow" data-koc-activity-next aria-label="Xem hoạt động tiếp theo">→</button>
+        </div>
       </div>
-      <div class="lp-activity-list" data-koc-activity-list tabindex="0"></div>
+      <div class="lp-activity-list" data-koc-activity-list tabindex="0" aria-label="Danh sách hoạt động mới nhất"></div>
+      <div class="lp-activity-pagination" data-koc-activity-pagination aria-hidden="true"></div>
     </div>
   </section>`;
 
   const stats = `<div class="lp-stat-strip">
-    <div class="lp-stat"><strong>300.000</strong> — KOC/KOLs mục tiêu trên toàn quốc</div>
-    <div class="lp-stat"><strong>200.000</strong> — Doanh nghiệp đồng hành</div>
-    <div class="lp-stat"><strong>34</strong> — Tỉnh thành phủ cộng đồng KOC</div>
-    <div class="lp-stat"><strong>5%</strong> — Mức phí dịch vụ duy nhất, không phí ẩn</div>
+    <div class="lp-stat"><strong>300.000+</strong><span>KOC/KOL</span></div>
+    <div class="lp-stat"><strong>200.000+</strong><span>Doanh nghiệp</span></div>
+    <div class="lp-stat"><strong>34</strong><span>Tỉnh thành</span></div>
+    <div class="lp-stat"><strong>5%+</strong><span>Mức phí dịch vụ duy nhất</span></div>
   </div>`;
 
-  const twoAudiences = `<section class="lp-section">
+  const twoAudiences = `<section class="lp-section lp-home-audiences">
     <div class="lp-section-head"><h2>Bạn là ai trong hệ sinh thái KOC Việt?</h2></div>
     <div class="lp-grid-2">
       <div class="lp-card lp-card-big">
         <h3>DÀNH CHO KOC/KOLs — Thu nhập của bạn, giá của bạn</h3>
-        <p>Tự niêm yết mức phí theo từng ngành hàng trong khung giá 4 hạng. Nhận booking từ doanh nghiệp cả nước, cộng thêm hoa hồng affiliate trên mỗi đơn hàng. Nhận 95% giá trị mỗi booking — đối soát tự động, rút tiền về tài khoản trong 24h.</p>
+        <p>Tự niêm yết mức phí theo từng ngành hàng trong khung giá 4 hạng. Nhận booking từ doanh nghiệp cả nước, cộng thêm hoa hồng bán hàng trên mỗi đơn. Nhận 95% giá trị mỗi booking, đối soát rõ ràng và rút tiền về tài khoản.</p>
         <a href="/koc" class="btn primary">Trở thành KOC ngay</a>
       </div>
       <div class="lp-card lp-card-big">
         <h3>DÀNH CHO DOANH NGHIỆP — Đúng người, đúng giá, đúng đơn hàng</h3>
-        <p>Duyệt hàng trăm nghìn hồ sơ KOC theo ngành hàng, tỉnh thành, mức giá và hiệu quả thật từ dữ liệu affiliate. Booking theo bảng giá niêm yết — không thương lượng lòng vòng, không báo giá mù mờ. Thanh toán qua ví đảm bảo, chỉ trả tiền cho kết quả được xác nhận.</p>
+        <p>Khám phá hồ sơ KOC theo ngành hàng, tỉnh thành, mức giá và hiệu quả bán hàng thực tế. Đặt booking theo bảng giá niêm yết, không thương lượng lòng vòng. Khoản thanh toán được giữ an toàn và chỉ chuyển khi kết quả được xác nhận.</p>
         <a href="/doanh-nghiep" class="btn primary">Nhận tư vấn miễn phí</a>
       </div>
     </div>
   </section>`;
 
-  const howItWorks = `<section class="lp-section tint">
+  const howItWorks = `<section class="lp-section tint lp-home-process">
     <div class="lp-section-head"><h2>4 bước cho một chiến dịch trọn vẹn</h2></div>
     <div class="lp-section-media lp-reveal lp-media-howitworks">${lpMedia({
       src: "https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4",
@@ -95,28 +101,28 @@ function pageHome() {
     })}</div>
     <div class="lp-steps">
       <div class="lp-step"><div class="num">1</div><p><strong>TÌM &amp; CHỌN</strong><br>Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.</p></div>
-      <div class="lp-step"><div class="num">2</div><p><strong>BOOKING &amp; ĐẶT CỌC</strong><br>Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.</p></div>
-      <div class="lp-step"><div class="num">3</div><p><strong>SẢN XUẤT &amp; ĐĂNG BÀI</strong><br>KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.</p></div>
+      <div class="lp-step"><div class="num">2</div><p><strong>BOOKING VÀ THANH TOÁN</strong><br>Gửi yêu cầu kèm thông tin sản phẩm để KOC kiểm tra. Khoản thanh toán được giữ an toàn cho đến khi công việc hoàn thành.</p></div>
+      <div class="lp-step"><div class="num">3</div><p><strong>SẢN XUẤT VÀ ĐĂNG BÀI</strong><br>KOC xác nhận, tự sản xuất nội dung đúng phong cách của mình và đăng bài kèm đường dẫn sản phẩm riêng.</p></div>
       <div class="lp-step"><div class="num">4</div><p><strong>ĐO LƯỜNG &amp; CHI TRẢ</strong><br>Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.</p></div>
     </div>
   </section>`;
 
-  const whyUs = `<section class="lp-section">
+  const whyUs = `<section class="lp-section lp-home-proof">
     <div class="lp-section-head"><h2>Điều mà thị trường booking KOC đang thiếu — chúng tôi làm trước tiên</h2></div>
     <div class="lp-grid-4">
       <div class="lp-card"><p><strong>Giá niêm yết công khai</strong> — Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng <br>Nano – Micro – Mid – Macro.</p></div>
-      <div class="lp-card"><p><strong>Ví đảm bảo (escrow)</strong> — Doanh nghiệp không sợ mất tiền, KOC không sợ bị quỵt phí. Tiền chỉ giải ngân khi hai bên xác nhận hoàn thành.</p></div>
+      <div class="lp-card"><p><strong>Thanh toán an toàn</strong> — Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p></div>
       <div class="lp-card"><p><strong>Hiệu quả bằng số thật</strong> — Chỉ số chuyển đổi của mỗi KOC tính từ dữ liệu affiliate thực tế, không tự khai báo, không mua follower ảo.</p></div>
       <div class="lp-card"><p><strong>Đánh giá hai chiều</strong> — Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.</p></div>
     </div>
   </section>`;
 
-  const categories = `<section class="lp-section tint">
+  const categories = `<section class="lp-section tint lp-home-categories">
     <div class="lp-section-head"><h2>Phủ mọi ngành hàng đang tăng trưởng</h2></div>
     <div class="lp-section-media lp-reveal">${lpMedia({
       src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785488594/Thi%E1%BA%BFt_k%E1%BA%BF_ch%C6%B0a_c%C3%B3_t%C3%AAn_3_n84ryp.jpg",
       alt: "Minh họa các ngành hàng đang tăng trưởng",
-      ratio: "21/9",
+      ratio: "9/4",
     })}</div>
     <div class="lp-chip-row">
       ${[
@@ -136,15 +142,15 @@ function pageHome() {
     </div>
   </section>`;
 
-  const aiCloneTeaser = `<section class="lp-section">
+  const aiCloneTeaser = `<section class="lp-section lp-home-spotlight">
     <div class="lp-banner">
-      <h3>Mới: Dịch vụ AI Clone Avatar — thu nhập không cần quay video mỗi ngày</h3>
-      <p>Tham gia chương trình AI Clone Avatar: NetViet trực tiếp booking và sản xuất video cho bạn, bạn chỉ duyệt và đăng — vẫn nhận trọn phí booking cùng hoa hồng affiliate.</p>
-      <a href="/ai-clone" class="btn grad">Tìm hiểu AI Clone Avatar →</a>
+      <h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3>
+      <p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p>
+      <a href="/ai-clone" class="btn grad">Tìm hiểu dịch vụ →</a>
     </div>
   </section>`;
 
-  const testimonials = `<section class="lp-section tint">
+  const testimonials = `<section class="lp-section tint lp-home-stories">
     <div class="lp-grid-2">
       <div class="lp-quote"><div class="stars">★★★★★</div><p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p></div>
       <div class="lp-quote"><div class="stars">★★★★★</div><p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p></div>
@@ -794,5 +800,6 @@ const BUILDERS = {
 export function renderLandingBody(pathname) {
   const builder = BUILDERS[pathname];
   if (!builder) return null;
-  return `<div class="lp-body">${lpHeader(pathname)}${builder()}${lpFooter()}</div>`;
+  const pageClass = pathname === "/trang-chu" ? " lp-home" : "";
+  return `<div class="lp-body${pageClass}">${lpHeader(pathname)}${builder()}${lpFooter()}</div>`;
 }

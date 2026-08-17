@@ -1310,27 +1310,29 @@ export async function route(request, env, url) {
   // ---------- PUBLIC privacy-safe landing activity ----------
   if (p === "/api/public/koc-activity" && m === "GET") {
     const { results = [] } = await env.DB.prepare(
-      `SELECT name,activity_type,occurred_at FROM (
-         SELECT name,'registered' activity_type,created_at occurred_at
+      `SELECT name,avatar,activity_type,MAX(occurred_at) occurred_at FROM (
+         SELECT name,avatar,'registered' activity_type,created_at occurred_at
          FROM kocs
          WHERE status IN ('pending','active')
          UNION ALL
-         SELECT k.name,'booking_received' activity_type,b.updated_at occurred_at
+         SELECT k.name,k.avatar,'booking_received' activity_type,b.updated_at occurred_at
          FROM bookings b
          JOIN kocs k ON k.id=b.koc_id
          WHERE b.status='confirmed'
          UNION ALL
-         SELECT k.name,'booking_completed' activity_type,b.updated_at occurred_at
+         SELECT k.name,k.avatar,'booking_completed' activity_type,b.updated_at occurred_at
          FROM bookings b
          JOIN kocs k ON k.id=b.koc_id
          WHERE b.status='completed'
        )
+       GROUP BY name,avatar,activity_type
        ORDER BY occurred_at DESC
        LIMIT 15`,
     ).all();
     const currentNow = now();
     const activities = results.map((item, idx) => ({
       name: publicKocDisplayName(item.name),
+      avatar: isUrl(item.avatar) ? item.avatar : "",
       type: item.activity_type,
       // Calculate realistic relative time (1 to 15 minutes ago) so activity updates stay ultra fresh
       occurredAt: currentNow - Math.max(25, 40 + idx * 70 + ((idx * 17) % 35)),

@@ -18,11 +18,7 @@ export function lpHeader(active) {
   return `<header class="lp-header">
     <div class="lp-header-inner">
       <a href="/trang-chu" class="lp-logo" aria-label="KOC Việt">
-        <picture>
-          <source media="(min-width:900px)" srcset="https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/e823ecd8-9fa5-45de-9cec-74c8168e9249.png">
-          <source media="(min-width:600px)" srcset="https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/fab8e04f-8d1d-45a9-b892-d59434ae8f21.png">
-          <img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785989746/iconXoaNen_afhony.png" alt="KOC Việt" decoding="async">
-        </picture>
+        <img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785865656/LogoDaXoaNen_r82hx2.png" alt="KOC Việt" decoding="async" fetchpriority="high">
       </a>
       <nav class="lp-nav" id="lp-nav">
         ${ROUTES.map(([href, label]) => `<a href="${href}" class="${active === href ? "active" : ""}">${label}</a>`).join("")}
@@ -79,8 +75,9 @@ export function lpCtaFinal(headline, ctas) {
   </section>`;
 }
 
-export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img }) {
-  return `<section class="lp-hero${img ? " has-media" : ""}">
+export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img, variant }) {
+  const variantClass = variant ? ` lp-hero-${escAttr(variant)}` : "";
+  return `<section class="lp-hero${img ? " has-media" : ""}${variantClass}">
     <div class="lp-hero-inner">
       ${eyebrow ? `<span class="lp-eyebrow">${eyebrow}</span>` : ""}
       <h1>${h1}</h1>
@@ -103,7 +100,7 @@ export function lpMedia(spec) {
   if (spec.src && !spec.video) {
     return `<figure class="lp-media" style="--ratio:${ratio}">
       <div class="lp-media-inner">
-        <img src="${escAttr(spec.src)}" alt="${escAttr(spec.alt || "")}" loading="lazy" decoding="async">
+        <img src="${escAttr(spec.src)}" alt="${escAttr(spec.alt || "")}" loading="${spec.priority ? "eager" : "lazy"}"${spec.priority ? ' fetchpriority="high"' : ""} decoding="async">
       </div>
     </figure>`;
   }
@@ -317,9 +314,10 @@ function bindKocActivityTicker(root) {
   let startIndex = 0;
   let rotateTimer = 0;
   let pollTimer = 0;
-  let pointerPaused = false;
-  let focusPaused = false;
   let stopped = false;
+  const prevButton = root.querySelector("[data-koc-activity-prev]");
+  const nextButton = root.querySelector("[data-koc-activity-next]");
+  const pagination = root.querySelector("[data-koc-activity-pagination]");
 
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -343,6 +341,47 @@ function bindKocActivityTicker(root) {
     return `${Math.floor(seconds / 86400)} ngày trước`;
   };
 
+  const safeAvatar = (value) => {
+    try {
+      const url = new URL(String(value || ""), window.location.origin);
+      return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+    } catch (_) {
+      return "";
+    }
+  };
+
+  const initials = (name) => String(name || "KOC")
+    .replace(/^KOC\s+/iu, "")
+    .split(/\s+/u)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => Array.from(part)[0] || "")
+    .join("")
+    .toLocaleUpperCase("vi-VN");
+
+  const getScrollStep = () => {
+    if (!listContainer) return 0;
+    const card = listContainer.querySelector(".lp-activity-row");
+    if (!card) return 0;
+    const styles = window.getComputedStyle(listContainer);
+    return card.getBoundingClientRect().width + (Number.parseFloat(styles.columnGap || styles.gap) || 0);
+  };
+
+  const updateCarouselState = () => {
+    if (!listContainer) return;
+    const maxScroll = Math.max(0, listContainer.scrollWidth - listContainer.clientWidth);
+    const step = getScrollStep() || listContainer.clientWidth;
+    const pageCount = Math.max(1, Math.ceil(maxScroll / step) + 1);
+    const activePage = Math.min(pageCount - 1, Math.round(listContainer.scrollLeft / step));
+    if (prevButton) prevButton.disabled = listContainer.scrollLeft <= 2;
+    if (nextButton) nextButton.disabled = listContainer.scrollLeft >= maxScroll - 2;
+    if (pagination) {
+      pagination.innerHTML = Array.from({ length: pageCount }, (_, index) =>
+        `<span class="lp-activity-dot${index === activePage ? " is-active" : ""}" aria-hidden="true"></span>`,
+      ).join("");
+    }
+  };
+
   const render = () => {
     const activeEl = listContainer || singleCard;
     if (!activities.length || stopped || !activeEl || !activeEl.isConnected) {
@@ -351,28 +390,44 @@ function bindKocActivityTicker(root) {
     }
 
     const copyMap = {
-      registered: ["KOC MỚI", "đã đăng ký tham gia hệ thống"],
-      booking_received: ["BOOKING MỚI", "đã nhận booking mới"],
-      booking_completed: ["HOÀN THÀNH", "đã hoàn tất hợp đồng booking"],
+      registered: ["KOC MỚI", "Hồ sơ mới sẵn sàng kết nối", "đã tham gia cộng đồng KOC Việt", 1],
+      booking_received: ["BOOKING MỚI", "Yêu cầu hợp tác đã được tiếp nhận", "vừa nhận một lời mời hợp tác mới", 2],
+      booking_completed: ["HOÀN THÀNH", "Chiến dịch vừa hoàn tất", "đã hoàn thành một booking", 3],
     };
 
     if (listContainer) {
-      // Display 3 continuous activity rows in the dedicated section list
-      const visibleCount = Math.min(3, activities.length);
+      const visibleCount = Math.min(7, activities.length);
       const rowsHtml = [];
       for (let i = 0; i < visibleCount; i++) {
         const item = activities[(startIndex + i) % activities.length];
-        const [label, actionText] = copyMap[item.type] || ["CẬP NHẬT", "hoạt động mới"];
+        const [label, title, actionText, stage] = copyMap[item.type] || ["CẬP NHẬT", "Hoạt động mới", "vừa có cập nhật mới", 1];
         const timeStr = relativeTime(item.occurredAt - i * 45);
+        const avatar = safeAvatar(item.avatar);
         rowsHtml.push(`
-          <div class="lp-activity-row" data-activity-type="${item.type}">
-            <span class="lp-activity-badge">${label}</span>
-            <span class="lp-activity-text"><strong>${esc(item.name)}</strong> ${actionText}</span>
-            <span class="lp-activity-time">${timeStr}</span>
-          </div>
+          <article class="lp-activity-row" data-activity-type="${item.type}">
+            <div class="lp-activity-card-top">
+              <span class="lp-activity-badge">${label}</span>
+              <time class="lp-activity-time">${timeStr}</time>
+            </div>
+            <h4 class="lp-activity-card-title">${title}</h4>
+            <div class="lp-activity-person">
+              <span class="lp-activity-avatar-wrap">
+                <span class="lp-activity-avatar-fallback" aria-hidden="true">${esc(initials(item.name))}</span>
+                ${avatar ? `<img class="lp-activity-avatar" src="${esc(avatar)}" alt="Ảnh đại diện ${esc(item.name)}" width="72" height="72" loading="lazy" decoding="async">` : ""}
+              </span>
+              <p class="lp-activity-text"><strong>${esc(item.name)}</strong><span>${actionText}</span></p>
+            </div>
+            <div class="lp-activity-progress" role="img" aria-label="Tiến trình ${stage} trên 3 bước">
+              ${[1, 2, 3].map((step) => `<span class="${step <= stage ? "is-complete" : ""}"></span>`).join("")}
+            </div>
+          </article>
         `);
       }
       listContainer.innerHTML = rowsHtml.join("");
+      listContainer.querySelectorAll(".lp-activity-avatar").forEach((image) => {
+        image.addEventListener("error", () => { image.hidden = true; }, { once: true });
+      });
+      requestAnimationFrame(updateCarouselState);
     } else if (singleCard) {
       const item = activities[startIndex % activities.length];
       const text = singleCard.querySelector("[data-koc-activity-text]");
@@ -386,7 +441,7 @@ function bindKocActivityTicker(root) {
   };
 
   const rotate = () => {
-    if (!activities.length || stopped || pointerPaused || focusPaused) return;
+    if (!activities.length || stopped) return;
     const activeEl = listContainer || singleCard;
     if (!activeEl || !activeEl.isConnected) {
       stop();
@@ -434,14 +489,24 @@ function bindKocActivityTicker(root) {
     }
   };
 
-  const targetEl = listContainer || singleCard;
-  targetEl.addEventListener("mouseenter", () => { pointerPaused = true; });
-  targetEl.addEventListener("mouseleave", () => { pointerPaused = false; });
-  targetEl.addEventListener("focusin", () => { focusPaused = true; });
-  targetEl.addEventListener("focusout", () => { focusPaused = false; });
+  if (listContainer) {
+    const scroll = (direction) => listContainer.scrollBy({
+      left: direction * (getScrollStep() || listContainer.clientWidth),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+    prevButton?.addEventListener("click", () => scroll(-1), { signal: controller.signal });
+    nextButton?.addEventListener("click", () => scroll(1), { signal: controller.signal });
+    listContainer.addEventListener("scroll", updateCarouselState, { passive: true, signal: controller.signal });
+    listContainer.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      scroll(event.key === "ArrowLeft" ? -1 : 1);
+    }, { signal: controller.signal });
+    window.addEventListener("resize", updateCarouselState, { passive: true, signal: controller.signal });
+  }
 
   refresh();
-  rotateTimer = window.setInterval(rotate, 3200);
+  if (singleCard) rotateTimer = window.setInterval(rotate, 3200);
   pollTimer = window.setInterval(refresh, 18000);
   return stop;
 }

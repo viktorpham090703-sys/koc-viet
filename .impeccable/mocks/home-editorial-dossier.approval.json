@@ -1,0 +1,13 @@
+{
+  "approved": true,
+  "approvedAt": "2026-08-15",
+  "primaryComp": ".impeccable/mocks/home-editorial-dossier.png",
+  "decision": "Use Editorial Dossier as the spatial contract for the homepage.",
+  "buildPath": "comp-led",
+  "constraints": [
+    "Load exactly one homepage-specific stylesheet to prevent cascade conflicts.",
+    "Preserve all content, routes, links, live activity behavior, media, and product logic.",
+    "Match the navy 5/7 hero, coral headline accent, raised white metric dossier, and split activity/audience second fold.",
+    "Collapse the split fold into a stable single-column reading order on mobile."
+  ]
+}
