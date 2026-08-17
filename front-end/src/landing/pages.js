@@ -50,11 +50,11 @@ function pageHome() {
       </div>
       <div class="lp-hero-visual">
         <div class="lp-hero-brush-arc" aria-hidden="true"></div>
-        <img src="/images/home-hero-blended-v2.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchpriority="high" decoding="async">
+        <img src="/images/home-koc-hero.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchpriority="high" decoding="async">
       </div>
     </div>
     
-    <!-- Stats Strip inside Hero (Image 1) -->
+    <!-- Stats Strip directly on Hero background (Image 2) -->
     <div class="lp-hero-stats-wrap">
       <div class="lp-hero-stats-grid">
         <div class="lp-hero-stat-item">
@@ -96,10 +96,10 @@ function pageHome() {
       </div>
     </div>
 
-    <!-- Curve divider -->
-    <div class="lp-hero-curve-divider" aria-hidden="true">
-      <svg viewBox="0 0 1440 60" preserveAspectRatio="none" fill="#ffffff">
-        <path d="M0,0 C360,50 1080,70 1440,15 L1440,60 L0,60 Z"></path>
+    <!-- Organic Wave divider (đường lượn sóng) -->
+    <div class="lp-hero-wave-divider" aria-hidden="true">
+      <svg viewBox="0 0 1440 90" preserveAspectRatio="none" fill="#ffffff">
+        <path d="M0,45 C280,75 560,18 840,42 C1080,62 1280,72 1440,32 L1440,90 L0,90 Z"></path>
       </svg>
     </div>
   </section>`;

@@ -40,11 +40,11 @@ export function HomeLanding(){
           </div>
           <div className="lp-hero-visual">
             <div className="lp-hero-brush-arc" aria-hidden="true" />
-            <img src="/images/home-hero-blended-v2.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchPriority="high" />
+            <img src="/images/home-koc-hero.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchPriority="high" />
           </div>
         </div>
 
-        {/* Stats Strip inside Hero (Image 1) */}
+        {/* Stats Strip directly on Hero background (Image 2) */}
         <div className="lp-hero-stats-wrap">
           <div className="lp-hero-stats-grid">
             <div className="lp-hero-stat-item">
@@ -86,10 +86,10 @@ export function HomeLanding(){
           </div>
         </div>
 
-        {/* Curve divider */}
-        <div className="lp-hero-curve-divider" aria-hidden="true">
-          <svg viewBox="0 0 1440 60" preserveAspectRatio="none" fill="#ffffff">
-            <path d="M0,0 C360,50 1080,70 1440,15 L1440,60 L0,60 Z" />
+        {/* Organic Wave divider (đường lượn sóng) */}
+        <div className="lp-hero-wave-divider" aria-hidden="true">
+          <svg viewBox="0 0 1440 90" preserveAspectRatio="none" fill="#ffffff">
+            <path d="M0,45 C280,75 560,18 840,42 C1080,62 1280,72 1440,32 L1440,90 L0,90 Z" />
           </svg>
         </div>
       </section>
