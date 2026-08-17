@@ -112,7 +112,7 @@ export function CampaignVideoPlayer() {
       <video
         ref={videoRef}
         id="lp-campaign-video"
-        src="https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4"
+        src="/videos/how-it-works.mp4"
         playsInline
         preload="metadata"
         poster="https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg"
@@ -355,9 +355,7 @@ export function HomeLanding(){
           </div>
 
           <div className="lp-steps-video-wrap">
-            <div className="lp-desk-video-card">
-              <video src="https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4" controls playsInline poster="https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg" />
-            </div>
+            <CampaignVideoPlayer />
           </div>
 
           <div className="lp-grid-4 lp-steps-cards-grid">
