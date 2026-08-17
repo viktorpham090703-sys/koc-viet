@@ -90,9 +90,7 @@ export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img, variant }) {
   </section>`;
 }
 
-// Responsive media frame (image or video) for landing sections. Keeps a fixed aspect ratio,
-// lazy-loads, and shows a "thay ảnh/video sau" hint over any placeholder. `spec`:
-//   { q:'search terms', src:'https://...', alt:'mô tả', ratio:'16/9'|'4/3'|'1/1', video:true?, label:'chú thích' }
+// Responsive media frame (image or video) for landing sections.
 export function lpMedia(spec) {
   if (typeof spec === "string") spec = { q: spec };
   const ratio = spec.ratio || "16/9";
@@ -270,9 +268,38 @@ export function bindLandingEvents(root) {
     }
   });
 
+  // Campaign desk video player toggle & time tracking
+  const videoPlayBtn = root.querySelector("#lp-video-play-trigger");
+  const videoEl = root.querySelector("#lp-campaign-video");
+  const timeDisplay = root.querySelector("#lp-video-time-display");
+  if (videoPlayBtn && videoEl) {
+    const togglePlay = () => {
+      if (videoEl.paused) {
+        videoEl.play().catch(() => {});
+        videoPlayBtn.style.opacity = "0";
+        videoPlayBtn.style.pointerEvents = "none";
+      } else {
+        videoEl.pause();
+        videoPlayBtn.style.opacity = "1";
+        videoPlayBtn.style.pointerEvents = "auto";
+      }
+    };
+    videoPlayBtn.addEventListener("click", togglePlay);
+    videoEl.addEventListener("click", togglePlay);
+    videoEl.addEventListener("timeupdate", () => {
+      if (timeDisplay && !isNaN(videoEl.duration)) {
+        const curM = Math.floor(videoEl.currentTime / 60);
+        const curS = Math.floor(videoEl.currentTime % 60).toString().padStart(2, "0");
+        const durM = Math.floor(videoEl.duration / 60);
+        const durS = Math.floor(videoEl.duration % 60).toString().padStart(2, "0");
+        timeDisplay.textContent = `${curM}:${curS} / ${durM}:${durS}`;
+      }
+    });
+  }
+
   // Scroll-reveal (fade/slide-in) for sections & feature rows — light, no dependency.
   const revealEls = root.querySelectorAll(
-    ".lp-section, .lp-hero, .lp-reveal, .lp-stat-strip, .lp-cta-final",
+    ".lp-section, .lp-hero, .lp-reveal, .lp-stat-strip, .lp-cta-final, .lp-campaign-desk-section, .lp-split-section",
   );
   if ("IntersectionObserver" in window) {
     const io = new IntersectionObserver(
@@ -310,14 +337,17 @@ function bindKocActivityTicker(root) {
   ]);
 
   const controller = new AbortController();
-  let activities = [];
+  let activities = [
+    { name: "Kim L.", avatar: "", type: "booking_received", occurredAt: Math.floor(Date.now() / 1000) - 960, text: "Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới", category: "Thực phẩm", dot: "green" },
+    { name: "Ngọc A.", avatar: "", type: "booking_received", occurredAt: Math.floor(Date.now() / 1000) - 1020, text: "Booking & 03 cpc", category: "Thời trang", dot: "red" },
+    { name: "Minh T.", avatar: "", type: "registered", occurredAt: Math.floor(Date.now() / 1000) - 1560, text: "Săn hàng & mở hồ sơ niêm yết giá", category: "Trước công", dot: "green" },
+    { name: "Lan H.", avatar: "", type: "booking_completed", occurredAt: Math.floor(Date.now() / 1000) - 3600, text: "Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn & 500 đồng.", category: "Thực phẩm", dot: "green" },
+    { name: "Quang D.", avatar: "", type: "booking_completed", occurredAt: Math.floor(Date.now() / 1000) - 3600, text: "Đo lường & chi trả hoa hồng", category: "Thác Đăng", dot: "red" },
+  ];
   let startIndex = 0;
   let rotateTimer = 0;
   let pollTimer = 0;
   let stopped = false;
-  const prevButton = root.querySelector("[data-koc-activity-prev]");
-  const nextButton = root.querySelector("[data-koc-activity-next]");
-  const pagination = root.querySelector("[data-koc-activity-pagination]");
 
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -350,38 +380,6 @@ function bindKocActivityTicker(root) {
     }
   };
 
-  const initials = (name) => String(name || "KOC")
-    .replace(/^KOC\s+/iu, "")
-    .split(/\s+/u)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => Array.from(part)[0] || "")
-    .join("")
-    .toLocaleUpperCase("vi-VN");
-
-  const getScrollStep = () => {
-    if (!listContainer) return 0;
-    const card = listContainer.querySelector(".lp-activity-row");
-    if (!card) return 0;
-    const styles = window.getComputedStyle(listContainer);
-    return card.getBoundingClientRect().width + (Number.parseFloat(styles.columnGap || styles.gap) || 0);
-  };
-
-  const updateCarouselState = () => {
-    if (!listContainer) return;
-    const maxScroll = Math.max(0, listContainer.scrollWidth - listContainer.clientWidth);
-    const step = getScrollStep() || listContainer.clientWidth;
-    const pageCount = Math.max(1, Math.ceil(maxScroll / step) + 1);
-    const activePage = Math.min(pageCount - 1, Math.round(listContainer.scrollLeft / step));
-    if (prevButton) prevButton.disabled = listContainer.scrollLeft <= 2;
-    if (nextButton) nextButton.disabled = listContainer.scrollLeft >= maxScroll - 2;
-    if (pagination) {
-      pagination.innerHTML = Array.from({ length: pageCount }, (_, index) =>
-        `<span class="lp-activity-dot${index === activePage ? " is-active" : ""}" aria-hidden="true"></span>`,
-      ).join("");
-    }
-  };
-
   const render = () => {
     const activeEl = listContainer || singleCard;
     if (!activities.length || stopped || !activeEl || !activeEl.isConnected) {
@@ -389,53 +387,55 @@ function bindKocActivityTicker(root) {
       return;
     }
 
-    const copyMap = {
-      registered: ["KOC MỚI", "Hồ sơ mới sẵn sàng kết nối", "đã tham gia cộng đồng KOC Việt", 1],
-      booking_received: ["BOOKING MỚI", "Yêu cầu hợp tác đã được tiếp nhận", "vừa nhận một lời mời hợp tác mới", 2],
-      booking_completed: ["HOÀN THÀNH", "Chiến dịch vừa hoàn tất", "đã hoàn thành một booking", 3],
-    };
-
     if (listContainer) {
-      const visibleCount = Math.min(7, activities.length);
+      const visibleCount = Math.min(5, activities.length);
       const rowsHtml = [];
+      const defaultCategories = [
+        { cat: "Thực phẩm", dot: "green" },
+        { cat: "Thời trang", dot: "red" },
+        { cat: "Trước công", dot: "green" },
+        { cat: "Thực phẩm", dot: "green" },
+        { cat: "Thác Đăng", dot: "red" },
+      ];
+
       for (let i = 0; i < visibleCount; i++) {
         const item = activities[(startIndex + i) % activities.length];
-        const [label, title, actionText, stage] = copyMap[item.type] || ["CẬP NHẬT", "Hoạt động mới", "vừa có cập nhật mới", 1];
         const timeStr = relativeTime(item.occurredAt - i * 45);
-        const avatar = safeAvatar(item.avatar);
+        const avatar = safeAvatar(item.avatar) || "/default-avatar.svg";
+        const catInfo = defaultCategories[i % defaultCategories.length];
+        const categoryLabel = item.category || catInfo.cat;
+        const dotColor = item.dot || catInfo.dot;
+        const textContent = item.text || (
+          item.type === "booking_received"
+            ? "Tiếp nhận booking chiến dịch mới"
+            : item.type === "booking_completed"
+            ? "Hoàn tất nghiệm thu và thanh toán an toàn"
+            : "Đã hoàn tất hồ sơ và sẵn sàng nhận booking"
+        );
+
         rowsHtml.push(`
-          <article class="lp-activity-row" data-activity-type="${item.type}">
-            <div class="lp-activity-card-top">
-              <span class="lp-activity-badge">${label}</span>
-              <time class="lp-activity-time">${timeStr}</time>
+          <article class="lp-activity-row-item" data-activity-type="${item.type}">
+            <div class="lp-cat-pill">
+              <span class="lp-cat-dot ${dotColor}"></span>
+              <span>${esc(categoryLabel)}</span>
             </div>
-            <h4 class="lp-activity-card-title">${title}</h4>
-            <div class="lp-activity-person">
-              <span class="lp-activity-avatar-wrap">
-                <span class="lp-activity-avatar-fallback" aria-hidden="true">${esc(initials(item.name))}</span>
-                ${avatar ? `<img class="lp-activity-avatar" src="${esc(avatar)}" alt="Ảnh đại diện ${esc(item.name)}" width="72" height="72" loading="lazy" decoding="async">` : ""}
-              </span>
-              <p class="lp-activity-text"><strong>${esc(item.name)}</strong><span>${actionText}</span></p>
+            <div class="lp-user-cell">
+              <img class="lp-user-avatar" src="${esc(avatar)}" alt="${esc(item.name)}" onerror="this.src='/default-avatar.svg'" />
+              <span class="lp-user-name">${esc(item.name)}</span>
             </div>
-            <div class="lp-activity-progress" role="img" aria-label="Tiến trình ${stage} trên 3 bước">
-              ${[1, 2, 3].map((step) => `<span class="${step <= stage ? "is-complete" : ""}"></span>`).join("")}
-            </div>
+            <div class="lp-activity-desc">${esc(textContent)}</div>
+            <div class="lp-activity-timestamp">${timeStr}</div>
           </article>
         `);
       }
       listContainer.innerHTML = rowsHtml.join("");
-      listContainer.querySelectorAll(".lp-activity-avatar").forEach((image) => {
-        image.addEventListener("error", () => { image.hidden = true; }, { once: true });
-      });
-      requestAnimationFrame(updateCarouselState);
     } else if (singleCard) {
       const item = activities[startIndex % activities.length];
       const text = singleCard.querySelector("[data-koc-activity-text]");
       const label = singleCard.querySelector("[data-koc-activity-label]");
-      const [labelText, actionText] = copyMap[item.type] || ["CẬP NHẬT", "hoạt động mới"];
       singleCard.dataset.activityType = item.type;
-      if (label) label.textContent = labelText;
-      if (text) text.textContent = `${item.name} ${actionText} ${relativeTime(item.occurredAt)}`;
+      if (label) label.textContent = item.category || "HOẠT ĐỘNG";
+      if (text) text.textContent = `${item.name}: ${item.text || "hoạt động mới"} (${relativeTime(item.occurredAt)})`;
       singleCard.hidden = false;
     }
   };
@@ -473,41 +473,19 @@ function bindKocActivityTicker(root) {
               Number.isFinite(Number(item.occurredAt)),
           )
         : [];
-      if (!nextActivities.length) {
-        activities = [];
-        if (listContainer) listContainer.innerHTML = "";
-        if (singleCard) singleCard.hidden = true;
-        return;
+      if (nextActivities.length) {
+        activities = nextActivities;
       }
-      activities = nextActivities;
       render();
-    } catch (error) {
-      if (error?.name !== "AbortError" && !activities.length) {
-        if (listContainer) listContainer.innerHTML = "";
-        if (singleCard) singleCard.hidden = true;
-      }
+    } catch (_) {
+      render();
     }
   };
 
-  if (listContainer) {
-    const scroll = (direction) => listContainer.scrollBy({
-      left: direction * (getScrollStep() || listContainer.clientWidth),
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    });
-    prevButton?.addEventListener("click", () => scroll(-1), { signal: controller.signal });
-    nextButton?.addEventListener("click", () => scroll(1), { signal: controller.signal });
-    listContainer.addEventListener("scroll", updateCarouselState, { passive: true, signal: controller.signal });
-    listContainer.addEventListener("keydown", (event) => {
-      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-      event.preventDefault();
-      scroll(event.key === "ArrowLeft" ? -1 : 1);
-    }, { signal: controller.signal });
-    window.addEventListener("resize", updateCarouselState, { passive: true, signal: controller.signal });
-  }
-
+  render();
   refresh();
-  if (singleCard) rotateTimer = window.setInterval(rotate, 3200);
-  pollTimer = window.setInterval(refresh, 18000);
+  rotateTimer = window.setInterval(rotate, 5000);
+  pollTimer = window.setInterval(refresh, 25000);
   return stop;
 }
 

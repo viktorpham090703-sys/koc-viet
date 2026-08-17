@@ -8,26 +8,290 @@ const flow:Array<[string,string]>=[
   ['ĐO LƯỜNG & CHI TRẢ','Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.'],
 ]
 
-const activityItems=[
-  ['Booking mới','Thương hiệu mỹ phẩm vừa gửi yêu cầu đến một Micro KOC','2 phút trước'],
-  ['KOC mới tham gia','Một KOC ngành Ẩm thực tại TP. Hồ Chí Minh vừa hoàn tất hồ sơ','5 phút trước'],
-  ['Chiến dịch hoàn thành','Booking ngành Mẹ & Bé vừa được nghiệm thu và giải ngân','9 phút trước'],
+  ['ĐO LƯỜNG & CHI TRẢ','Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.'],
 ]
 
-function ActivitySection(){return <section className="lp-activity-section" aria-label="Hoạt động KOC thời gian thực"><div className="lp-activity-container"><div className="lp-activity-header"><div className="lp-activity-title-wrap"><span className="lp-activity-pulse-dot" aria-hidden="true"/><span className="lp-activity-header-tag">TRỰC TIẾP 24/7</span><h3 className="lp-activity-heading">Hoạt động Booking &amp; KOC mới nhất</h3></div><span className="lp-activity-sub">Cập nhật liên tục từ hệ thống KOC Việt</span></div><div className="lp-activity-list" tabIndex={0}>{activityItems.map(([label,body,time],index)=><article className="lp-activity-row" data-activity-type={['booking_received','registered','booking_completed'][index]} key={body}><span className="lp-activity-badge">{label}</span><span className="lp-activity-text">{body}</span><time className="lp-activity-time">{time}</time></article>)}</div></div></section>}
+export function HomeLanding(){
+  return (
+    <Shell className="lp-home">
+      {/* Hero Section (Image 1) */}
+      <section className="lp-hero-home">
+        <div className="lp-hero-home-inner">
+          <div className="lp-hero-content">
+            <div className="lp-hero-eyebrow-wrap">
+              <span className="lp-hero-eyebrow-dash" />
+              <span className="lp-hero-eyebrow">NỀN TẢNG CỔNG BOOKING KOC / KOC VIỆT</span>
+            </div>
+            <h1 className="lp-hero-title">
+              Booking KOC<br />
+              dễ như đặt xe.<br />
+              <span className="coral">Giá công khai.</span>
+              <span className="coral">Hiệu quả đo được.</span>
+            </h1>
+            <p className="lp-hero-sub">
+              KOC Việt kết nối doanh nghiệp với KOC/KOL phù hợp nhất.<br />
+              Giá công khai, minh bạch. Hiệu quả đo được –<br />
+              giá KOC cho chiến dịch của bạn.
+            </p>
+            <div className="lp-hero-cta">
+              <Link to="/tuyen-koc" className="btn btn-primary">Đăng ký KOC miễn phí</Link>
+              <Link to="/explore" className="btn btn-secondary">Tìm KOC cho chiến dịch</Link>
+            </div>
+          </div>
+          <div className="lp-hero-visual">
+            <div className="lp-hero-brush-arc" aria-hidden="true" />
+            <img src="/images/home-hero-blended-v2.png" alt="Booking KOC Việt minh bạch và dễ dàng" fetchPriority="high" />
+          </div>
+        </div>
 
-export function HomeLanding(){return <Shell className="lp-home">
-  <Hero variant="home" eyebrow="NỀN TẢNG BOOKING KOC/KOL MINH BẠCH" title="Booking KOC dễ như đặt xe. Giá công khai. Hiệu quả đo được." sub="Kết nối doanh nghiệp với KOC trên toàn quốc, xem giá trước khi đặt và chỉ thanh toán khi công việc hoàn thành." image="/images/home-hero-blended-v2.png" primary={['Đăng ký KOC miễn phí','/tuyen-koc']} secondary={['Tìm KOC cho chiến dịch','/explore']}/>
-  <div className="lp-stat-strip"><div className="lp-stat"><strong>300.000</strong> — KOC/KOLs mục tiêu trên toàn quốc</div><div className="lp-stat"><strong>200.000</strong> — Doanh nghiệp đồng hành</div><div className="lp-stat"><strong>34</strong> — Tỉnh thành phủ cộng đồng KOC</div><div className="lp-stat"><strong>5%</strong> — Mức phí dịch vụ duy nhất, không phí ẩn</div></div>
-  <ActivitySection/>
-  <Section title="Bạn là ai trong hệ sinh thái KOC Việt?"><div className="lp-grid-2"><article className="lp-card lp-card-big"><h3>DÀNH CHO KOC/KOL — Thu nhập của bạn, giá của bạn</h3><p>Tự niêm yết mức phí theo từng ngành hàng trong khung giá 4 hạng. Nhận booking từ doanh nghiệp cả nước, cộng thêm hoa hồng bán hàng trên mỗi đơn. Nhận 95% giá trị mỗi booking, đối soát rõ ràng và rút tiền về tài khoản.</p><Link to="/koc" className="btn primary">Trở thành KOC ngay</Link></article><article className="lp-card lp-card-big"><h3>DÀNH CHO DOANH NGHIỆP — Đúng người, đúng giá, đúng đơn hàng</h3><p>Khám phá hồ sơ KOC theo ngành hàng, tỉnh thành, mức giá và hiệu quả bán hàng thực tế. Đặt booking theo bảng giá niêm yết, không thương lượng lòng vòng. Khoản thanh toán được giữ an toàn và chỉ chuyển khi kết quả được xác nhận.</p><Link to="/doanh-nghiep" className="btn primary">Nhận tư vấn miễn phí</Link></article></div></Section>
-  <Section title="4 bước cho một chiến dịch trọn vẹn" tint><div className="lp-section-media lp-reveal lp-media-howitworks"><Media src="https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4" alt="Video giới thiệu quy trình chiến dịch KOC Việt" video ratio="21/9"/></div><Steps items={flow}/></Section>
-  <Section title="Điều mà thị trường booking KOC đang thiếu — chúng tôi làm trước tiên"><div className="lp-grid-4">{[['Giá niêm yết công khai','Phí booking KOC minh bạch, phân theo 4 hạng Nano – Micro – Mid – Macro.'],['Thanh toán an toàn','Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.'],['Hiệu quả bằng số thật','Khả năng tạo đơn của mỗi KOC được tính từ dữ liệu bán hàng thực tế, không dựa trên tự khai báo hoặc số người theo dõi ảo.'],['Đánh giá hai chiều','Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.']].map(([title,body])=><article className="lp-card" key={title}><p><strong>{title}</strong> — {body}</p></article>)}</div></Section>
-  <CategorySection/>
-  <section className="lp-section"><div className="lp-banner"><h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3><p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p><Link to="/ai-clone" className="btn grad">Tìm hiểu dịch vụ →</Link></div></section>
-  <section className="lp-section tint"><div className="lp-grid-2"><div className="lp-quote"><div className="stars">★★★★★</div><p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p></div><div className="lp-quote"><div className="stars">★★★★★</div><p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p></div></div></section>
-  <Cta title="Booking minh bạch. Thanh toán an tâm. Kết nối bền vững." primary={['Đăng ký làm KOC — miễn phí','/tuyen-koc']} secondary={['Booking KOC ngay hôm nay','/explore']}/>
-</Shell>}
+        {/* Stats Strip inside Hero (Image 1) */}
+        <div className="lp-hero-stats-wrap">
+          <div className="lp-hero-stats-grid">
+            <div className="lp-hero-stat-item">
+              <div className="lp-stat-icon-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div className="lp-stat-info">
+                <span className="lp-stat-num">300.000+</span>
+                <span className="lp-stat-lbl">KOC/KOL</span>
+              </div>
+            </div>
+            <div className="lp-hero-stat-item">
+              <div className="lp-stat-icon-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>
+              </div>
+              <div className="lp-stat-info">
+                <span className="lp-stat-num">200.000+</span>
+                <span className="lp-stat-lbl">Doanh nghiệp</span>
+              </div>
+            </div>
+            <div className="lp-hero-stat-item">
+              <div className="lp-stat-icon-circle">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <div className="lp-stat-info">
+                <span className="lp-stat-num">34</span>
+                <span className="lp-stat-lbl">Tỉnh thành</span>
+              </div>
+            </div>
+            <div className="lp-hero-stat-item">
+              <div className="lp-stat-icon-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+              </div>
+              <div className="lp-stat-info">
+                <span className="lp-stat-num">5%+</span>
+                <span className="lp-stat-lbl">Mức phí dịch vụ duy nhất</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Curve divider */}
+        <div className="lp-hero-curve-divider" aria-hidden="true">
+          <svg viewBox="0 0 1440 60" preserveAspectRatio="none" fill="#ffffff">
+            <path d="M0,0 C360,50 1080,70 1440,15 L1440,60 L0,60 Z" />
+          </svg>
+        </div>
+      </section>
+
+      {/* Split Section: Hoạt động & Dành cho doanh nghiệp / KOC (Image 2) */}
+      <section className="lp-split-section" aria-label="Hoạt động và Đối tượng KOC Việt">
+        <div className="lp-split-container">
+          {/* Left: Hoạt động Booking & KOC mới nhất */}
+          <div className="lp-activity-col">
+            <div className="lp-activity-head-bar">
+              <div className="lp-activity-title-wrap">
+                <h3 className="lp-activity-title">Hoạt động Booking &amp; KOC mới nhất</h3>
+                <span className="lp-activity-underline-accent" />
+              </div>
+              <Link to="/explore" className="lp-activity-all-link">Xem tất cả →</Link>
+            </div>
+            <div className="lp-activity-table">
+              <article className="lp-activity-row-item">
+                <div className="lp-cat-pill"><span className="lp-cat-dot green" /><span>Thực phẩm</span></div>
+                <div className="lp-user-cell"><img className="lp-user-avatar" src="/default-avatar.svg" alt="Kim L." /><span className="lp-user-name">Kim L.</span></div>
+                <div className="lp-activity-desc">Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới</div>
+                <div className="lp-activity-timestamp">16 phút trước</div>
+              </article>
+              <article className="lp-activity-row-item">
+                <div className="lp-cat-pill"><span className="lp-cat-dot red" /><span>Thời trang</span></div>
+                <div className="lp-user-cell"><img className="lp-user-avatar" src="/default-avatar.svg" alt="Ngọc A." /><span className="lp-user-name">Ngọc A.</span></div>
+                <div className="lp-activity-desc">Booking &amp; 03 cpc</div>
+                <div className="lp-activity-timestamp">17 phút trước</div>
+              </article>
+              <article className="lp-activity-row-item">
+                <div className="lp-cat-pill"><span className="lp-cat-dot green" /><span>Trước công</span></div>
+                <div className="lp-user-cell"><img className="lp-user-avatar" src="/default-avatar.svg" alt="Minh T." /><span className="lp-user-name">Minh T.</span></div>
+                <div className="lp-activity-desc">Săn hàng</div>
+                <div className="lp-activity-timestamp">26 phút trước</div>
+              </article>
+              <article className="lp-activity-row-item">
+                <div className="lp-cat-pill"><span className="lp-cat-dot green" /><span>Thực phẩm</span></div>
+                <div className="lp-user-cell"><img className="lp-user-avatar" src="/default-avatar.svg" alt="Lan H." /><span className="lp-user-name">Lan H.</span></div>
+                <div className="lp-activity-desc">Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn &amp; 500 đồng.</div>
+                <div className="lp-activity-timestamp">1 giờ trước</div>
+              </article>
+              <article className="lp-activity-row-item">
+                <div className="lp-cat-pill"><span className="lp-cat-dot red" /><span>Thác Đăng</span></div>
+                <div className="lp-user-cell"><img className="lp-user-avatar" src="/default-avatar.svg" alt="Quang D." /><span className="lp-user-name">Quang D.</span></div>
+                <div className="lp-activity-desc">Đo lường &amp; chi trả</div>
+                <div className="lp-activity-timestamp">1 giờ trước</div>
+              </article>
+            </div>
+          </div>
+
+          {/* Right: Dành cho doanh nghiệp & KOC */}
+          <div className="lp-audience-col">
+            <h2 className="lp-audience-heading">
+              Dành cho<br />
+              <span className="lp-coral-text">doanh nghiệp &amp; KOC</span>
+            </h2>
+            <p className="lp-audience-sub">
+              KOC Việt là cầu nối giúp chiến dịch hiệu quả hơn.<br />Minh bạch hơn. Dễ dàng hơn cho cả hai phía.
+            </p>
+            <div className="lp-audience-cards-grid">
+              <div className="lp-audience-box">
+                <div className="lp-audience-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h2M6 15h2M10 11h2M10 15h2M14 11h2M14 15h2M9 3h6v4H9z"/></svg>
+                </div>
+                <h3 className="lp-audience-box-title">Dành cho doanh nghiệp</h3>
+                <ul className="lp-audience-list">
+                  <li><span className="chk">✓</span> Tìm KOC phù hợp nhanh chóng</li>
+                  <li><span className="chk">✓</span> Giá công khai, dễ so sánh</li>
+                  <li><span className="chk">✓</span> Quản lý chiến dịch &amp; đo lường hiệu quả</li>
+                </ul>
+                <Link to="/doanh-nghiep" className="lp-audience-action-link">Tìm hiểu thêm →</Link>
+              </div>
+
+              <div className="lp-audience-box">
+                <div className="lp-audience-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8l2 2 4-4"/></svg>
+                </div>
+                <h3 className="lp-audience-box-title">Dành cho KOC</h3>
+                <ul className="lp-audience-list">
+                  <li><span className="chk">✓</span> Nhận chiến dịch phù hợp</li>
+                  <li><span className="chk">✓</span> Thu nhập minh bạch, thanh toán nhanh</li>
+                  <li><span className="chk">✓</span> Xây dựng thương hiệu cá nhân bền vững</li>
+                </ul>
+                <Link to="/koc" className="lp-audience-action-link">Trở thành KOC ngay →</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4 bước cho một chiến dịch trọn vẹn (Image 1) */}
+      <section className="lp-campaign-desk-section" aria-label="Quy trình Campaign Desk">
+        <div className="lp-campaign-desk-grid">
+          {/* Left: Intro */}
+          <div className="lp-desk-intro">
+            <div className="lp-desk-eyebrow-wrap">
+              <span className="lp-desk-eyebrow-dash" />
+              <span className="lp-desk-eyebrow">QUY TRÌNH CAMPAIGN DESK</span>
+            </div>
+            <h2 className="lp-desk-heading">
+              4 bước cho một<br />
+              chiến dịch <span className="lp-coral-text">trọn vẹn.</span>
+            </h2>
+            <p className="lp-desk-sub">
+              Từ brief đến báo cáo, Campaign Desk giúp bạn triển khai chiến dịch với KOC nhanh chóng, minh bạch và đo lường hiệu quả theo thời gian thực.
+            </p>
+            <Link to="/explore" className="lp-desk-link">
+              Xem quy trình chi tiết <span>→</span>
+            </Link>
+          </div>
+
+          {/* Center: Video Preview Card */}
+          <div className="lp-desk-media-col">
+            <div className="lp-desk-video-card">
+              <video src="https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4" controls playsInline poster="https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg" />
+            </div>
+          </div>
+
+          {/* Right: 4 Steps */}
+          <div className="lp-desk-steps-col">
+            <div className="lp-desk-timeline">
+              <div className="lp-desk-step-item">
+                <div className="lp-desk-step-num">1</div>
+                <div className="lp-desk-step-content">
+                  <h4>Brief &amp; Tư vấn</h4>
+                  <p>Hiểu mục tiêu, tư vấn chiến lược và lựa chọn KOC phù hợp.</p>
+                </div>
+              </div>
+              <div className="lp-desk-step-item">
+                <div className="lp-desk-step-num">2</div>
+                <div className="lp-desk-step-content">
+                  <h4>Triển khai chiến dịch</h4>
+                  <p>Campaign Desk hỗ trợ toàn diện từ nội dung, phê duyệt đến đăng tải.</p>
+                </div>
+              </div>
+              <div className="lp-desk-step-item">
+                <div className="lp-desk-step-num">3</div>
+                <div className="lp-desk-step-content">
+                  <h4>Theo dõi &amp; Tối ưu</h4>
+                  <p>Theo dõi hiệu suất theo thời gian thực và tối ưu trong quá trình chạy.</p>
+                </div>
+              </div>
+              <div className="lp-desk-step-item">
+                <div className="lp-desk-step-num">4</div>
+                <div className="lp-desk-step-content">
+                  <h4>Báo cáo &amp; Đo lường</h4>
+                  <p>Báo cáo minh bạch, đo lường hiệu quả để đánh giá và ra quyết định.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Điều mà thị trường booking KOC đang thiếu */}
+      <section className="lp-home-proof">
+        <div className="lp-section-head">
+          <h2>Điều mà thị trường booking KOC đang thiếu — chúng tôi làm trước tiên</h2>
+        </div>
+        <div className="lp-grid-4">
+          <article className="lp-card">
+            <p><strong>Giá niêm yết công khai</strong> — Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng Nano – Micro – Mid – Macro.</p>
+          </article>
+          <article className="lp-card">
+            <p><strong>Thanh toán an toàn</strong> — Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p>
+          </article>
+          <article className="lp-card">
+            <p><strong>Hiệu quả bằng số thật</strong> — Khả năng tạo đơn của mỗi KOC được tính từ dữ liệu bán hàng thực tế, không dựa trên tự khai báo hoặc số người theo dõi ảo.</p>
+          </article>
+          <article className="lp-card">
+            <p><strong>Đánh giá hai chiều</strong> — Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.</p>
+          </article>
+        </div>
+      </section>
+
+      <CategorySection />
+
+      <section className="lp-home-spotlight">
+        <div className="lp-banner">
+          <h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3>
+          <p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p>
+          <Link to="/ai-clone" className="btn">Tìm hiểu dịch vụ →</Link>
+        </div>
+      </section>
+
+      <section className="lp-home-stories">
+        <div className="lp-grid-2">
+          <div className="lp-quote">
+            <div className="stars">★★★★★</div>
+            <p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p>
+          </div>
+          <div className="lp-quote">
+            <div className="stars">★★★★★</div>
+            <p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p>
+          </div>
+        </div>
+      </section>
+
+      <Cta title="Booking minh bạch. Thanh toán an tâm. Kết nối bền vững." primary={['Đăng ký làm KOC — miễn phí','/tuyen-koc']} secondary={['Booking KOC ngay hôm nay','/explore']}/>
+    </Shell>
+  )
+}
 
 const homeCategories=['Mỹ phẩm & Làm đẹp','Mẹ & Bé','Ẩm thực F&B','Thời trang','Điện tử gia dụng','Sức khoẻ','Du lịch địa phương','Tài chính cá nhân','Giáo dục','Thương mại điện tử']
 function CategorySection(){return <Section title="Phủ mọi ngành hàng đang tăng trưởng" tint><div className="lp-section-media lp-reveal"><Media src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785488594/Thi%E1%BA%BFt_k%E1%BA%BF_ch%C6%B0a_c%C3%B3_t%C3%AAn_3_n84ryp.jpg" alt="Minh hoạ các ngành hàng đang tăng trưởng" ratio="21/9"/></div><div className="lp-chip-row">{homeCategories.map(category=><span className="lp-chip" key={category}>{category}</span>)}</div></Section>}
