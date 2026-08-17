@@ -70,19 +70,41 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 32px;
 }
 
-.lp-home .lp-logo {
-  display: flex;
-  align-items: center;
-  height: 38px;
-  text-decoration: none;
+.lp-home .lp-logo,
+.lp-logo {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 38px !important;
+  width: auto !important;
+  margin: 0 28px 0 0 !important;
+  padding: 0 !important;
+  text-indent: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  flex-shrink: 0 !important;
+  text-decoration: none !important;
 }
 
-.lp-home .lp-logo img {
-  height: 36px;
-  width: auto;
-  object-fit: contain;
+.lp-home .lp-logo picture,
+.lp-logo picture {
+  display: flex !important;
+  align-items: center !important;
+  height: 36px !important;
+}
+
+.lp-home .lp-logo img,
+.lp-logo img {
+  height: 36px !important;
+  width: auto !important;
+  max-width: 170px !important;
+  object-fit: contain !important;
+  display: block !important;
+  background: transparent !important;
+  background-image: none !important;
 }
 
 .lp-home .lp-nav {
@@ -1046,82 +1068,90 @@
 }
 
 /* ==========================================================================
-   7. SECTION 5: AI CLONE SPOTLIGHT (Full Width, Background: TRẮNG #ffffff)
+   7. SECTION 5: AI CLONE SPOTLIGHT (Full Width Background: Dark Navy Gradient)
    ========================================================================== */
 .lp-home .lp-home-spotlight {
   width: 100% !important;
-  background: #ffffff !important;
-  padding: 60px 24px;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, #091222 0%, #152642 100%) !important;
+  padding: 72px 24px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  color: #ffffff !important;
+  box-sizing: border-box !important;
+}
+
+.lp-home .lp-home-spotlight::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  right: -5%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(234, 88, 60, 0.35) 0%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
 }
 
 .lp-home .lp-home-spotlight-inner {
-  max-width: 1100px;
+  max-width: 1320px;
   margin: 0 auto;
   width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 .lp-home .lp-banner {
   width: 100%;
-  background: linear-gradient(135deg, #091222 0%, #152642 100%);
-  border-radius: 14px;
-  padding: 38px 44px;
+  max-width: 900px;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
   color: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 12px 36px rgba(9, 18, 34, 0.18);
-  box-sizing: border-box;
-}
-
-.lp-home .lp-banner::after {
-  content: "";
-  position: absolute;
-  top: -30%;
-  right: -10%;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(234, 88, 60, 0.35) 0%, transparent 70%);
-  filter: blur(40px);
+  box-shadow: none !important;
+  border: none !important;
 }
 
 .lp-home .lp-banner h3 {
   font-family: var(--font-display, "Lora", serif);
-  font-size: 24px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0 0 10px 0;
-  position: relative;
-  z-index: 2;
+  font-size: clamp(24px, 2.6vw, 32px);
+  font-weight: 700;
+  color: #ffffff !important;
+  margin: 0 0 14px 0;
+  line-height: 1.25;
 }
 
 .lp-home .lp-banner p {
-  font-size: 15px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
-  max-width: 700px;
-  margin: 0 0 20px 0;
-  position: relative;
-  z-index: 2;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.88) !important;
+  max-width: 780px;
+  margin: 0 0 24px 0;
 }
 
 .lp-home .lp-banner .btn {
   background: #ea583c;
-  color: #ffffff;
-  padding: 10px 22px;
+  color: #ffffff !important;
+  padding: 12px 26px;
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 700;
   text-decoration: none;
-  position: relative;
-  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(234, 88, 60, 0.35);
   transition: all 0.2s ease;
 }
 
 .lp-home .lp-banner .btn:hover {
   background: #f36c52;
   transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(234, 88, 60, 0.45);
 }
 
 /* ==========================================================================
