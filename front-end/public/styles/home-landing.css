@@ -1215,23 +1215,103 @@
 .lp-home .lp-quote {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 28px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  border-radius: 14px;
+  padding: 32px 28px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lp-home .lp-quote:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
 }
 
 .lp-home .lp-quote .stars {
   color: #ea583c;
   font-size: 16px;
   letter-spacing: 2px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
-.lp-home .lp-quote p {
-  font-size: 14.5px;
-  line-height: 1.65;
+.lp-home .lp-quote p,
+.lp-home .lp-quote-body {
+  font-size: 15px;
+  line-height: 1.68;
   color: #334155;
   margin: 0;
+  font-style: normal;
+}
+
+.lp-home .lp-quote-author {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.lp-home .lp-quote-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+}
+
+.lp-home .lp-quote-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.lp-home .lp-quote-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lp-home .lp-quote-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.lp-home .lp-quote-role {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.lp-home .lp-role-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.3;
+}
+
+.lp-home .lp-role-badge.koc {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.15);
+}
+
+.lp-home .lp-role-badge.business {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.15);
 }
 
 /* ==========================================================================

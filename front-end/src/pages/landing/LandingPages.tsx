@@ -301,11 +301,31 @@ export function HomeLanding(){
           <div className="lp-grid-2">
             <div className="lp-quote">
               <div className="stars">★★★★★</div>
-              <p>“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.” — Linh Chi, Micro KOC ngành Làm đẹp, Đà Nẵng</p>
+              <p className="lp-quote-body">“Trước đây mình mất cả tuần đàm phán giá với từng nhãn. Giờ nhãn tự đến vì giá của mình treo sẵn trên hồ sơ — tháng cao điểm mình nhận 11 booking.”</p>
+              <div className="lp-quote-author">
+                <img className="lp-quote-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80" alt="Linh Chi" loading="lazy" />
+                <div className="lp-quote-info">
+                  <div className="lp-quote-name-row">
+                    <strong className="lp-quote-name">Linh Chi</strong>
+                    <span className="lp-role-badge koc">KOC</span>
+                  </div>
+                  <span className="lp-quote-role">Micro KOC ngành Làm đẹp · Đà Nẵng</span>
+                </div>
+              </div>
             </div>
             <div className="lp-quote">
               <div className="stars">★★★★★</div>
-              <p>“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.” — Giám đốc Marketing, thương hiệu mỹ phẩm nội địa</p>
+              <p className="lp-quote-body">“Chi 30 triệu cho 8 KOC qua KOC Việt, chúng tôi biết chính xác từng đồng tạo ra bao nhiêu đơn. Điều đó chưa agency nào làm được cho chúng tôi.”</p>
+              <div className="lp-quote-author">
+                <img className="lp-quote-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80" alt="Trần Minh Hoàng" loading="lazy" />
+                <div className="lp-quote-info">
+                  <div className="lp-quote-name-row">
+                    <strong className="lp-quote-name">Trần Minh Hoàng</strong>
+                    <span className="lp-role-badge business">Doanh nghiệp</span>
+                  </div>
+                  <span className="lp-quote-role">Giám đốc Marketing · Thương hiệu Mỹ phẩm nội địa</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
