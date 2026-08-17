@@ -731,8 +731,9 @@
 }
 
 /* ==========================================================================
-   4. SECTION 2: 4 BƯỚC CHO MỘT CHIẾN DỊCH TRỌN VẸN (Full Width, Background: XÁM #f8fafc)
+   4. SECTION 3: 4 BƯỚC CHO MỘT CHIẾN DỊCH TRỌN VẸN
    ========================================================================== */
+.lp-home .lp-home-campaign-steps,
 .lp-home .lp-campaign-desk-section {
   width: 100% !important;
   background: #f8fafc;
@@ -741,84 +742,39 @@
   border-bottom: 1px solid #edf2f7;
 }
 
-.lp-home .lp-campaign-desk-grid {
-  max-width: 1320px;
+.lp-home .lp-home-campaign-steps-inner {
+  max-width: 1140px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1.35fr 1.1fr;
-  gap: 40px;
-  align-items: center;
+  width: 100%;
 }
 
-/* 4A. Left: Heading & Intro */
-.lp-home .lp-desk-intro {
-  max-width: 360px;
-}
-
-.lp-home .lp-desk-eyebrow-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.lp-home .lp-desk-eyebrow-dash {
-  width: 24px;
-  height: 2px;
-  background: #ea583c;
-  display: inline-block;
-}
-
-.lp-home .lp-desk-eyebrow {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #ea583c;
-}
-
-.lp-home .lp-desk-heading {
+.lp-home .lp-steps-heading {
   font-family: var(--font-display, "Lora", serif);
-  font-size: clamp(28px, 2.5vw, 36px);
-  font-weight: 600;
-  line-height: 1.22;
+  font-size: clamp(28px, 2.6vw, 36px);
+  font-weight: 700;
+  line-height: 1.25;
   color: #111827;
-  margin: 0 0 16px 0;
+  text-align: center;
+  margin: 0 0 36px 0;
 }
 
-.lp-home .lp-desk-sub {
-  font-size: 14.5px;
-  line-height: 1.65;
-  color: #4b5563;
-  margin: 0 0 24px 0;
+.lp-home .lp-steps-video-wrap {
+  max-width: 780px;
+  margin: 0 auto 36px auto;
+  width: 100%;
 }
 
-.lp-home .lp-desk-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #ea583c;
-  text-decoration: none;
-  transition: transform 0.15s ease;
-}
-
-.lp-home .lp-desk-link:hover {
-  transform: translateX(3px);
-}
-
-/* 4B. Center: Video Player Preview Card */
 .lp-home .lp-desk-video-card {
   position: relative;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   background: #000000;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
-  aspect-ratio: 16 / 10;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 .lp-home .lp-desk-video-card video {
@@ -894,60 +850,76 @@
   font-size: 13px;
 }
 
-/* 4C. Right: 4 Steps Timeline */
-.lp-home .lp-desk-timeline {
+/* 4C. Bottom: 4 Steps Cards Grid */
+.lp-home .lp-steps-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.lp-home .lp-step-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  position: relative;
-}
-
-.lp-home .lp-desk-timeline::before {
-  content: "";
-  position: absolute;
-  left: 17px;
-  top: 18px;
-  bottom: 18px;
-  width: 2px;
-  background: #e2e8f0;
-  z-index: 1;
-}
-
-.lp-home .lp-desk-step-item {
-  display: flex;
   align-items: flex-start;
-  gap: 16px;
-  position: relative;
-  z-index: 2;
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.lp-home .lp-desk-step-num {
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
+.lp-home .lp-step-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.lp-home .lp-step-badge {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #ea583c;
   color: #ffffff;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(234, 88, 60, 0.3);
+  margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
-.lp-home .lp-desk-step-content h4 {
-  font-size: 15px;
+.lp-home .lp-step-card h4 {
+  font-size: 14px;
   font-weight: 700;
   color: #111827;
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.lp-home .lp-desk-step-content p {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.5;
+.lp-home .lp-step-card p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #4b5563;
   margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .lp-home .lp-steps-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .lp-home .lp-steps-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
 }
 
 /* ==========================================================================

@@ -189,35 +189,20 @@ function pageHome() {
     </div>
   </section>`;
 
-  const campaignDeskSection = `<section class="lp-campaign-desk-section" aria-label="Quy trình Campaign Desk">
-    <div class="lp-campaign-desk-grid">
-      <!-- Left: Intro & Head (Image 1) -->
-      <div class="lp-desk-intro">
-        <div class="lp-desk-eyebrow-wrap">
-          <span class="lp-desk-eyebrow-dash"></span>
-          <span class="lp-desk-eyebrow">QUY TRÌNH CAMPAIGN DESK</span>
-        </div>
-        <h2 class="lp-desk-heading">
-          4 bước cho một<br>
-          chiến dịch <span class="lp-coral-text">trọn vẹn.</span>
-        </h2>
-        <p class="lp-desk-sub">
-          Từ brief đến báo cáo, Campaign Desk giúp bạn triển khai chiến dịch với KOC nhanh chóng, minh bạch và đo lường hiệu quả theo thời gian thực.
-        </p>
-        <a href="/#/explore" class="lp-desk-link">
-          Xem quy trình chi tiết <span>→</span>
-        </a>
+  const campaignDeskSection = `<section class="lp-home-campaign-steps" aria-label="4 bước cho một chiến dịch trọn vẹn">
+    <div class="lp-home-campaign-steps-inner">
+      <div class="lp-section-head">
+        <h2 class="lp-steps-heading">4 bước cho một chiến dịch trọn vẹn</h2>
       </div>
 
-      <!-- Center: Video Player Preview (Image 1) -->
-      <div class="lp-desk-media-col">
+      <div class="lp-steps-video-wrap">
         <div class="lp-desk-video-card" id="lp-video-player-box">
           <video id="lp-campaign-video" src="https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4" playsinline preload="metadata" poster="https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg"></video>
           <button type="button" class="lp-video-play-btn" id="lp-video-play-trigger" aria-label="Phát video quy trình">
             <span>▶</span>
           </button>
           <div class="lp-video-bottom-bar">
-            <span class="lp-video-time" id="lp-video-time-display">0:00 / 1:28</span>
+            <span class="lp-video-time" id="lp-video-time-display">0:00 / 1:47</span>
             <div class="lp-video-ctrls">
               <span title="Âm lượng">🔊</span>
               <span title="Cài đặt">⚙</span>
@@ -227,38 +212,27 @@ function pageHome() {
         </div>
       </div>
 
-      <!-- Right: 4 Steps (Image 1) -->
-      <div class="lp-desk-steps-col">
-        <div class="lp-desk-timeline">
-          <div class="lp-desk-step-item">
-            <div class="lp-desk-step-num">1</div>
-            <div class="lp-desk-step-content">
-              <h4>TÌM &amp; CHỌN</h4>
-              <p>Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.</p>
-            </div>
-          </div>
-          <div class="lp-desk-step-item">
-            <div class="lp-desk-step-num">2</div>
-            <div class="lp-desk-step-content">
-              <h4>BOOKING &amp; ĐẶT CỌC</h4>
-              <p>Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.</p>
-            </div>
-          </div>
-          <div class="lp-desk-step-item">
-            <div class="lp-desk-step-num">3</div>
-            <div class="lp-desk-step-content">
-              <h4>SẢN XUẤT &amp; ĐĂNG BÀI</h4>
-              <p>KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.</p>
-            </div>
-          </div>
-          <div class="lp-desk-step-item">
-            <div class="lp-desk-step-num">4</div>
-            <div class="lp-desk-step-content">
-              <h4>ĐO LƯỜNG &amp; CHI TRẢ</h4>
-              <p>Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.</p>
-            </div>
-          </div>
-        </div>
+      <div class="lp-grid-4 lp-steps-cards-grid">
+        <article class="lp-step-card">
+          <div class="lp-step-badge">1</div>
+          <h4>TÌM &amp; CHỌN</h4>
+          <p>Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.</p>
+        </article>
+        <article class="lp-step-card">
+          <div class="lp-step-badge">2</div>
+          <h4>BOOKING &amp; ĐẶT CỌC</h4>
+          <p>Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.</p>
+        </article>
+        <article class="lp-step-card">
+          <div class="lp-step-badge">3</div>
+          <h4>SẢN XUẤT &amp; ĐĂNG BÀI</h4>
+          <p>KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.</p>
+        </article>
+        <article class="lp-step-card">
+          <div class="lp-step-badge">4</div>
+          <h4>ĐO LƯỜNG &amp; CHI TRẢ</h4>
+          <p>Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.</p>
+        </article>
       </div>
     </div>
   </section>`;
