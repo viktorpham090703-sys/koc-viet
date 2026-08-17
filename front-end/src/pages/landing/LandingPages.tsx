@@ -384,45 +384,53 @@ export function HomeLanding(){
       </section>
 
       {/* Điều mà thị trường booking KOC đang thiếu */}
-      <section className="lp-home-proof">
+      <section className="lp-home-proof" aria-label="Điều mà thị trường booking KOC đang thiếu">
         <div className="lp-home-proof-inner">
           <div className="lp-section-head">
-            <div className="lp-proof-eyebrow-wrap">
-              <span className="lp-proof-eyebrow-dot" />
-              <span className="lp-proof-eyebrow">TIÊN PHONG ĐỘT PHÁ</span>
-            </div>
             <h2 className="lp-proof-heading">
               Điều mà thị trường booking KOC đang thiếu — <span className="lp-coral-text">chúng tôi làm trước tiên</span>
             </h2>
           </div>
           <div className="lp-grid-4 lp-proof-grid">
             <article className="lp-card lp-proof-card lp-proof-coral">
-              <div className="lp-proof-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              <div className="lp-proof-card-top">
+                <div className="lp-proof-icon-box">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                </div>
+                <span className="lp-proof-badge">Minh bạch 100%</span>
               </div>
               <h3 className="lp-proof-card-title">Giá niêm yết công khai</h3>
               <p className="lp-proof-card-desc">Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng Nano – Micro – Mid – Macro.</p>
             </article>
 
             <article className="lp-card lp-proof-card lp-proof-teal">
-              <div className="lp-proof-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M12 15h2"/></svg>
+              <div className="lp-proof-card-top">
+                <div className="lp-proof-icon-box">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M12 15h2"/></svg>
+                </div>
+                <span className="lp-proof-badge">Ví đảm bảo</span>
               </div>
               <h3 className="lp-proof-card-title">Thanh toán an toàn</h3>
               <p className="lp-proof-card-desc">Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p>
             </article>
 
             <article className="lp-card lp-proof-card lp-proof-blue">
-              <div className="lp-proof-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <div className="lp-proof-card-top">
+                <div className="lp-proof-icon-box">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <span className="lp-proof-badge">Dữ liệu thật</span>
               </div>
               <h3 className="lp-proof-card-title">Hiệu quả bằng số thật</h3>
               <p className="lp-proof-card-desc">Chỉ số chuyển đổi của mỗi KOC tính từ dữ liệu affiliate thực tế, không tự khai báo, không mua follower ảo.</p>
             </article>
 
             <article className="lp-card lp-proof-card lp-proof-amber">
-              <div className="lp-proof-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <div className="lp-proof-card-top">
+                <div className="lp-proof-icon-box">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <span className="lp-proof-badge">Đánh giá thật</span>
               </div>
               <h3 className="lp-proof-card-title">Đánh giá hai chiều</h3>
               <p className="lp-proof-card-desc">Doanh nghiệp chấm điểm KOC, KOC chấm điểm doanh nghiệp. Uy tín tích luỹ quyết định thứ hạng hiển thị.</p>

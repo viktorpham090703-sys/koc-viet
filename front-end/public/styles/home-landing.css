@@ -1012,44 +1012,23 @@
 /* ==========================================================================
    5. SECTION: ĐIỀU THỊ TRƯỜNG ĐANG THIẾU (Premium Gradient Surface & Rich Cards)
    ========================================================================== */
-.lp-home .lp-home-proof {
+.lp-home .lp-home-proof,
+.lp-home-proof {
   width: 100% !important;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 50%, #f8fafc 100%);
-  padding: 85px 24px;
-  position: relative;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%) !important;
+  padding: 85px 24px !important;
+  position: relative !important;
 }
 
-.lp-home .lp-home-proof-inner {
+.lp-home .lp-home-proof-inner,
+.lp-home-proof-inner {
   max-width: 1240px;
   margin: 0 auto;
   width: 100%;
 }
 
-.lp-home .lp-proof-eyebrow-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.lp-home .lp-proof-eyebrow-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ea583c;
-  display: inline-block;
-}
-
-.lp-home .lp-proof-eyebrow {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #ea583c;
-}
-
-.lp-home .lp-proof-heading {
+.lp-home .lp-proof-heading,
+.lp-home-proof .lp-section-head h2 {
   font-family: var(--font-display, "Lora", serif);
   font-size: clamp(26px, 2.6vw, 34px);
   font-weight: 700;
@@ -1060,131 +1039,200 @@
   line-height: 1.35;
 }
 
-.lp-home .lp-proof-grid {
+.lp-home .lp-proof-grid,
+.lp-home-proof .lp-grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 22px;
 }
 
-.lp-home .lp-proof-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 28px 22px 26px 22px;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+/* Card Base */
+.lp-home .lp-proof-card,
+.lp-home-proof .lp-card {
+  border-radius: 18px !important;
+  padding: 28px 22px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease !important;
+}
+
+.lp-proof-card-top {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 20px;
 }
 
-/* Top accent colored bar */
-.lp-home .lp-proof-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3.5px;
-  transition: height 0.2s ease;
+/* 4 Distinct Vibrant Color Themes */
+/* 1. Coral / Orange (Giá niêm yết công khai) */
+.lp-home .lp-proof-card.lp-proof-coral,
+.lp-proof-coral {
+  background: linear-gradient(145deg, #fff7f4 0%, #ffffff 100%) !important;
+  border: 1.5px solid #fed7aa !important;
+  box-shadow: 0 4px 20px -2px rgba(234, 88, 60, 0.08), 0 2px 6px -1px rgba(234, 88, 60, 0.04) !important;
 }
 
-.lp-home .lp-proof-card.lp-proof-coral::before {
-  background: linear-gradient(90deg, #ea583c, #ff7a59);
+.lp-proof-coral .lp-proof-icon-box {
+  background: linear-gradient(135deg, #ea583c 0%, #f97316 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(234, 88, 60, 0.32);
 }
 
-.lp-home .lp-proof-card.lp-proof-teal::before {
-  background: linear-gradient(90deg, #0d9488, #14b8a6);
+.lp-proof-coral .lp-proof-badge {
+  background: rgba(234, 88, 60, 0.12);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 60, 0.2);
 }
 
-.lp-home .lp-proof-card.lp-proof-blue::before {
-  background: linear-gradient(90deg, #3b82f6, #6366f1);
+.lp-proof-coral:hover {
+  border-color: #ea583c !important;
+  box-shadow: 0 16px 36px -4px rgba(234, 88, 60, 0.18), 0 6px 12px -2px rgba(234, 88, 60, 0.08) !important;
+  transform: translateY(-6px) !important;
 }
 
-.lp-home .lp-proof-card.lp-proof-amber::before {
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+/* 2. Teal / Emerald (Thanh toán an toàn) */
+.lp-home .lp-proof-card.lp-proof-teal,
+.lp-proof-teal {
+  background: linear-gradient(145deg, #f0fdfa 0%, #ffffff 100%) !important;
+  border: 1.5px solid #99f6e4 !important;
+  box-shadow: 0 4px 20px -2px rgba(13, 148, 136, 0.08), 0 2px 6px -1px rgba(13, 148, 136, 0.04) !important;
 }
 
-.lp-home .lp-proof-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.09), 0 6px 12px -2px rgba(15, 23, 42, 0.04);
+.lp-proof-teal .lp-proof-icon-box {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.32);
 }
 
-.lp-home .lp-proof-card:hover::before {
-  height: 5px;
+.lp-proof-teal .lp-proof-badge {
+  background: rgba(13, 148, 136, 0.12);
+  color: #0f766e;
+  border: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+.lp-proof-teal:hover {
+  border-color: #0d9488 !important;
+  box-shadow: 0 16px 36px -4px rgba(13, 148, 136, 0.18), 0 6px 12px -2px rgba(13, 148, 136, 0.08) !important;
+  transform: translateY(-6px) !important;
+}
+
+/* 3. Blue / Indigo (Hiệu quả bằng số thật) */
+.lp-home .lp-proof-card.lp-proof-blue,
+.lp-proof-blue {
+  background: linear-gradient(145deg, #eff6ff 0%, #ffffff 100%) !important;
+  border: 1.5px solid #bfdbfe !important;
+  box-shadow: 0 4px 20px -2px rgba(37, 99, 235, 0.08), 0 2px 6px -1px rgba(37, 99, 235, 0.04) !important;
+}
+
+.lp-proof-blue .lp-proof-icon-box {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.32);
+}
+
+.lp-proof-blue .lp-proof-badge {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.lp-proof-blue:hover {
+  border-color: #2563eb !important;
+  box-shadow: 0 16px 36px -4px rgba(37, 99, 235, 0.18), 0 6px 12px -2px rgba(37, 99, 235, 0.08) !important;
+  transform: translateY(-6px) !important;
+}
+
+/* 4. Amber / Gold (Đánh giá hai chiều) */
+.lp-home .lp-proof-card.lp-proof-amber,
+.lp-proof-amber {
+  background: linear-gradient(145deg, #fffbeb 0%, #ffffff 100%) !important;
+  border: 1.5px solid #fde68a !important;
+  box-shadow: 0 4px 20px -2px rgba(217, 119, 6, 0.08), 0 2px 6px -1px rgba(217, 119, 6, 0.04) !important;
+}
+
+.lp-proof-amber .lp-proof-icon-box {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.32);
+}
+
+.lp-proof-amber .lp-proof-badge {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.lp-proof-amber:hover {
+  border-color: #d97706 !important;
+  box-shadow: 0 16px 36px -4px rgba(217, 119, 6, 0.18), 0 6px 12px -2px rgba(217, 119, 6, 0.08) !important;
+  transform: translateY(-6px) !important;
 }
 
 /* Icon Box */
-.lp-home .lp-proof-icon-box {
-  width: 48px;
-  height: 48px;
+.lp-proof-icon-box {
+  width: 46px;
+  height: 46px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
   transition: transform 0.2s ease;
 }
 
-.lp-home .lp-proof-card:hover .lp-proof-icon-box {
-  transform: scale(1.08);
+.lp-proof-card:hover .lp-proof-icon-box {
+  transform: scale(1.1);
 }
 
-.lp-home .lp-proof-icon-box svg {
+.lp-proof-icon-box svg {
   width: 22px;
   height: 22px;
 }
 
-.lp-home .lp-proof-coral .lp-proof-icon-box {
-  background: rgba(234, 88, 60, 0.1);
-  color: #ea583c;
-}
-
-.lp-home .lp-proof-teal .lp-proof-icon-box {
-  background: rgba(13, 148, 136, 0.1);
-  color: #0d9488;
-}
-
-.lp-home .lp-proof-blue .lp-proof-icon-box {
-  background: rgba(59, 130, 246, 0.1);
-  color: #2563eb;
-}
-
-.lp-home .lp-proof-amber .lp-proof-icon-box {
-  background: rgba(245, 158, 11, 0.12);
-  color: #d97706;
+/* Badges */
+.lp-proof-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
 }
 
 /* Titles and Text */
-.lp-home .lp-proof-card-title {
-  font-size: 16.5px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 10px 0;
-  letter-spacing: -0.01em;
+.lp-home .lp-proof-card-title,
+.lp-proof-card-title {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  margin: 0 0 10px 0 !important;
+  letter-spacing: -0.01em !important;
 }
 
-.lp-home .lp-proof-card-desc {
-  font-size: 13.5px;
-  line-height: 1.62;
-  color: #64748b;
-  margin: 0;
+.lp-home .lp-proof-card-desc,
+.lp-proof-card-desc {
+  font-size: 13.8px !important;
+  line-height: 1.65 !important;
+  color: #475569 !important;
+  margin: 0 !important;
 }
 
 @media (max-width: 1024px) {
-  .lp-home .lp-proof-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
+  .lp-home .lp-proof-grid,
+  .lp-home-proof .lp-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 18px !important;
   }
 }
 
 @media (max-width: 640px) {
-  .lp-home .lp-proof-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .lp-home .lp-proof-grid,
+  .lp-home-proof .lp-grid-4 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
   }
 }
 
