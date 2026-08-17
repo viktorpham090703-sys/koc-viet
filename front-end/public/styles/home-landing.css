@@ -1068,90 +1068,112 @@
 }
 
 /* ==========================================================================
-   7. SECTION 5: AI CLONE SPOTLIGHT (Full Width Background: Dark Navy Gradient)
+   7. SECTION 5: AI CLONE SPOTLIGHT (Full Width Background & Centered Content)
    ========================================================================== */
 .lp-home .lp-home-spotlight {
   width: 100% !important;
   max-width: 100% !important;
   background: linear-gradient(135deg, #091222 0%, #152642 100%) !important;
-  padding: 72px 24px !important;
+  padding: 80px 24px !important;
   position: relative !important;
   overflow: hidden !important;
   color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
   box-sizing: border-box !important;
 }
 
 .lp-home .lp-home-spotlight::after {
   content: "";
   position: absolute;
-  top: -30%;
-  right: -5%;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(234, 88, 60, 0.35) 0%, transparent 70%);
-  filter: blur(50px);
+  top: -40%;
+  right: 15%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(234, 88, 60, 0.28) 0%, transparent 70%);
+  filter: blur(60px);
   pointer-events: none;
 }
 
 .lp-home .lp-home-spotlight-inner {
-  max-width: 1320px;
-  margin: 0 auto;
-  width: 100%;
-  position: relative;
-  z-index: 2;
+  max-width: 900px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 
+.lp-home .lp-home-spotlight .lp-banner,
 .lp-home .lp-banner {
-  width: 100%;
-  max-width: 900px;
+  width: 100% !important;
+  max-width: 860px !important;
+  margin: 0 auto !important;
   background: transparent !important;
   border-radius: 0 !important;
   padding: 0 !important;
   color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
   box-shadow: none !important;
   border: none !important;
 }
 
+.lp-home .lp-home-spotlight h3,
 .lp-home .lp-banner h3 {
   font-family: var(--font-display, "Lora", serif);
-  font-size: clamp(24px, 2.6vw, 32px);
+  font-size: clamp(24px, 2.8vw, 34px);
   font-weight: 700;
   color: #ffffff !important;
-  margin: 0 0 14px 0;
-  line-height: 1.25;
+  margin: 0 auto 16px auto !important;
+  text-align: center !important;
+  line-height: 1.3;
 }
 
+.lp-home .lp-home-spotlight p,
 .lp-home .lp-banner p {
-  font-size: 15.5px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.7;
   color: rgba(255, 255, 255, 0.88) !important;
-  max-width: 780px;
-  margin: 0 0 24px 0;
+  max-width: 720px !important;
+  margin: 0 auto 28px auto !important;
+  text-align: center !important;
 }
 
+.lp-home .lp-home-spotlight .btn,
 .lp-home .lp-banner .btn {
-  background: #ea583c;
+  background: #ea583c !important;
   color: #ffffff !important;
-  padding: 12px 26px;
-  border-radius: 6px;
-  font-size: 14.5px;
-  font-weight: 700;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 16px rgba(234, 88, 60, 0.35);
-  transition: all 0.2s ease;
+  padding: 13px 32px !important;
+  border-radius: 6px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  max-width: fit-content !important;
+  margin: 0 auto !important;
+  box-shadow: 0 4px 16px rgba(234, 88, 60, 0.4) !important;
+  transition: all 0.2s ease !important;
 }
 
+.lp-home .lp-home-spotlight .btn:hover,
 .lp-home .lp-banner .btn:hover {
-  background: #f36c52;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(234, 88, 60, 0.45);
+  background: #f36c52 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(234, 88, 60, 0.5) !important;
 }
 
 /* ==========================================================================
