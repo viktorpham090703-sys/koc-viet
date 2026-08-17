@@ -38,7 +38,7 @@ export function renderOnboarding(el) {
     bio: "",
     prices: {},
     tier: "Nano",
-    files: { front: "", back: "", selfie: "" },
+    files: { front: "", back: "", selfie: "", frontPreview: "", backPreview: "", selfiePreview: "" },
     dob: "",
     cccd: "",
     cccdDate: "",
@@ -757,6 +757,7 @@ export function renderOnboarding(el) {
     return `<div class="field"><label>${label}</label>
       <input type="file" accept="image/*" id="${inputId}">
       <div class="muted" id="${inputId}-name" style="font-size:11px;margin-top:4px">${d.files[key] ? "✅ " + esc(d.files[key]) : "Chưa chọn ảnh"}</div>
+      <img id="${inputId}-preview" alt="${label}" style="display:${d.files[key + "Preview"] ? "block" : "none"};margin-top:6px;width:140px;height:96px;object-fit:cover;border-radius:8px" ${d.files[key + "Preview"] ? `src="${d.files[key + "Preview"]}"` : ""}>
     </div>`;
   }
   function renderStep3() {
@@ -807,19 +808,29 @@ export function renderOnboarding(el) {
       inp.addEventListener("change", () => {
         const f = inp.files && inp.files[0];
         if (!f) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type) || f.size > 2_000_000) {
+          inp.value = '';
+          toast('Ảnh phải là JPEG, PNG hoặc WebP và không vượt quá 2 MB', 'err');
+          return;
+        }
         d.files[key] = f.name;
         const nameEl = el.querySelector(
           key === "selfie" ? "#o-file-selfie-name" : inputId + "-name",
         );
         if (nameEl) nameEl.textContent = "✅ " + f.name;
-        if (key === "selfie") {
-          const reader = new FileReader();
-          reader.onload = () => {
-            d.files.selfiePreview = reader.result;
-            showSelfiePreview(reader.result);
-          };
-          reader.readAsDataURL(f);
-        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          d.files[key + "Preview"] = reader.result;
+          if (key === "selfie") showSelfiePreview(reader.result);
+          else {
+            const preview = el.querySelector(inputId + "-preview");
+            if (preview) {
+              preview.src = reader.result;
+              preview.style.display = "block";
+            }
+          }
+        };
+        reader.readAsDataURL(f);
       });
     };
     wireFile("#o-file-front", "front");

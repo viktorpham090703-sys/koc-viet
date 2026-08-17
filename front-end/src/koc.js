@@ -16,6 +16,7 @@ import {
   closeModal,
   fmtDate,
   copyToClipboard,
+  avatarUrl,
 } from "./ui.js";
 import { state, logout } from "./app.js";
 import { icon } from "./icons.js";
@@ -53,7 +54,7 @@ export async function renderKoc(el, hash) {
       <div><h2>${activeNav ? activeNav[2] : "KOC Portal"}</h2></div>
       <div class="koc-desktop-actions">
         <a href="#/notifications" class="koc-top-icon" aria-label="Thông báo">${icon("notification", "nav-icon")}<span class="badge-num notification-count" hidden></span></a>
-        <a href="#/profile" class="koc-top-profile" aria-label="Hồ sơ ${esc(shellKoc.name)}"><img src="${esc(shellKoc.avatar || "")}" alt=""><span>${esc(shellKoc.name)}</span></a>
+        <a href="#/profile" class="koc-top-profile" aria-label="Hồ sơ ${esc(shellKoc.name)}"><img src="${esc(avatarUrl(shellKoc.avatar))}" alt=""><span>${esc(shellKoc.name)}</span></a>
       </div>
     </div>
     <div id="koc-view">${skeletonKocView()}</div>${bottomNav("#/" + p)}</div>`;
@@ -1362,7 +1363,7 @@ async function profile(el, editing = false) {
       <div class="m-body koc-profile-body">
         <div class="profile-hero">
           <div class="profile-cover ${k.cover ? "has-image" : ""}">${k.cover ? `<img src="${esc(k.cover)}" alt="Ảnh bìa của ${esc(k.name)}">` : "<span>Ảnh bìa</span>"}</div>
-          <div class="profile-identity"><img class="profile-avatar" src="${esc(k.avatar || "")}" alt="Ảnh đại diện">
+          <div class="profile-identity"><img class="profile-avatar" src="${esc(avatarUrl(k.avatar))}" alt="Ảnh đại diện">
             <div><h2>${esc(k.name)}</h2><div>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div>
             <div class="muted" style="font-size:12px;margin-top:3px">📧 ${esc(k.email || "Chưa cập nhật")}</div></div></div>
           <p class="profile-bio">${esc(k.bio || "Chưa có phần giới thiệu.")}</p>

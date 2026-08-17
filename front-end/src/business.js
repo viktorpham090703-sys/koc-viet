@@ -1,5 +1,5 @@
 import { api, post } from './api.js';
-import { money, num, esc, fmtDate, stars, statusChip, spinner, empty, toast, modal, closeModal, tierBadge, skeletonPortal, skeletonStatCards, skeletonTable, skeletonKocGrid } from './ui.js';
+import { money, num, esc, fmtDate, stars, statusChip, spinner, empty, toast, modal, closeModal, tierBadge, skeletonPortal, skeletonStatCards, skeletonTable, skeletonKocGrid, avatarUrl } from './ui.js';
 import { state, logout, enhancePortal } from './app.js';
 import { renderMarketplaceEmbed } from './public.js';
 import { icon } from './icons.js';
@@ -133,7 +133,7 @@ async function aiCloneBooking(el) {
   const list = el.querySelector('#ac-kocs');
   const renderKocs = () => {
     list.innerHTML = catalog.kocs.map(k => `<button type="button" class="card ${selected.has(k.id)?'selected':''}" data-koc="${k.id}" style="text-align:left;padding:10px;border:${selected.has(k.id)?'2px solid var(--primary)':'1px solid var(--border)'}">
-      <div class="row" style="gap:8px"><img class="avatar" src="${esc(k.avatar||'')}" style="width:40px;height:40px"><div><b style="font-size:13px">${esc(k.name)}</b><div>${tierBadge(k.tier)}</div></div></div>
+      <div class="row" style="gap:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}" style="width:40px;height:40px"><div><b style="font-size:13px">${esc(k.name)}</b><div>${tierBadge(k.tier)}</div></div></div>
       <div class="muted" style="font-size:11px;margin-top:6px">${esc(k.province||'')} · ${num(k.followers)} người theo dõi</div>
       <div class="muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.categories.map(esc).join(', ')}</div>
       <div style="margin-top:6px"><span class="chip g" style="font-size:10px">✅ AI Clone Ready</span></div></button>`).join('') || empty('','Không tìm thấy KOC đã đăng ký AI Clone');
@@ -240,7 +240,7 @@ async function openBookingForm(kocId, el) {
   const prices = koc.prices.filter(p => koc.accepting[p.category] !== false);
   if (!prices.length) return toast('KOC này đang tạm ngưng nhận booking','err');
   const m = modal(`
-    <div class="row"><img class="avatar" src="${esc(koc.avatar)}"><div><h2>${esc(koc.name)}</h2><div>${tierBadge(koc.tier)} ${stars(koc.rating)}</div></div></div>
+    <div class="row"><img class="avatar" src="${esc(avatarUrl(koc.avatar))}"><div><h2>${esc(koc.name)}</h2><div>${tierBadge(koc.tier)} ${stars(koc.rating)}</div></div></div>
     <div class="field" style="margin-top:14px"><label>Kiểu booking</label>
       <select id="bf-type">
         <option value="review">Review sản phẩm — phí cố định</option>

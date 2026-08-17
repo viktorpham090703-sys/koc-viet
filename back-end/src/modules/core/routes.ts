@@ -5,6 +5,8 @@ import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
 import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword } from './lib/password.js';
+import { signJwt, verifyJwt } from './lib/jwt.js';
+import { deleteKocIdentityImages, signedKocIdentityUrl, uploadKocIdentityImages } from './lib/s3Identity.js';
 import { analyzeFollowerOcrEvidence } from './lib/followerOcr.js';
 import {
   createPayOSPaymentLink,
@@ -24,7 +26,6 @@ import {
 const J = (data, status = 200, headers = undefined) => Response.json(data, { status, headers });
 const err = (msg, status = 400, headers = undefined) => Response.json({ error: msg }, { status, headers });
 const SESSION_COOKIE = 'kv_session';
-const SESSION_ABSOLUTE_SECONDS = 7 * 24 * 60 * 60;
 const SESSION_IDLE_SECONDS = 12 * 60 * 60;
 const FOLLOWER_CHALLENGE_TTL_SECONDS = 30 * 60;
 const FOLLOWER_PROOF_TTL_SECONDS = 24 * 60 * 60;
@@ -146,61 +147,47 @@ async function sha256Hex(value) {
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function sessionCookie(request, token = '', maxAge = SESSION_ABSOLUTE_SECONDS) {
+function sessionCookie(request, token = '', maxAge = SESSION_IDLE_SECONDS) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
   return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure}`;
 }
 
-async function createSession(env, request, user, demo = false) {
-  const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
-  const token = Array.from(tokenBytes, byte => byte.toString(16).padStart(2, '0')).join('');
-  const createdAt = now();
-  await env.KV.put(`sess:${await sha256Hex(token)}`, JSON.stringify({
-    userId: user.id,
-    sessionVersion: Number(user.session_version || 0),
-    createdAt,
-    lastSeen: createdAt,
-    demo: !!demo,
-  }), { expirationTtl: SESSION_IDLE_SECONDS });
-  return sessionCookie(request, token);
+function jwtSecret(env) {
+  return String(env.JWT_SECRET || env.SESSION_SECRET || '');
 }
 
-async function deleteSession(env, request) {
-  const token = cookieValue(request, SESSION_COOKIE);
-  if (token) await env.KV.delete(`sess:${await sha256Hex(token)}`);
+async function createSession(env, request, user, demo = false) {
+  const createdAt = now();
+  const token = await signJwt({
+    iss: 'koc-viet',
+    aud: 'koc-viet-web',
+    sub: user.id,
+    role: user.role,
+    sv: Number(user.session_version || 0),
+    iat: createdAt,
+    exp: createdAt + SESSION_IDLE_SECONDS,
+    jti: uid(),
+    demo: !!demo,
+  }, jwtSecret(env));
+  return sessionCookie(request, token, SESSION_IDLE_SECONDS);
 }
+
+async function deleteSession() {}
 
 async function sessionUser(env, req) {
   const token = cookieValue(req, SESSION_COOKIE);
   if (!token) return null;
-  const key = `sess:${await sha256Hex(token)}`;
-  let session = null;
-  try { session = JSON.parse((await env.KV.get(key)) || 'null'); } catch (_) {}
-  if (!session?.userId) return null;
-  const currentTime = now();
-  if (
-    currentTime - Number(session.createdAt || 0) > SESSION_ABSOLUTE_SECONDS ||
-    currentTime - Number(session.lastSeen || 0) > SESSION_IDLE_SECONDS ||
-    (session.demo && !demoAccountsEnabled(env))
-  ) {
-    await env.KV.delete(key);
-    return null;
-  }
+  const session = await verifyJwt(token, jwtSecret(env));
+  if (!session?.sub || (session.demo && !demoAccountsEnabled(env))) return null;
   const user = await env.DB.prepare("SELECT * FROM users WHERE id=?")
-    .bind(session.userId)
+    .bind(session.sub)
     .first();
   if (
     !user ||
     user.status !== "active" ||
-    Number(user.session_version || 0) !== Number(session.sessionVersion || 0)
-  ) {
-    await env.KV.delete(key);
-    return null;
-  }
-  if (currentTime - Number(session.lastSeen || 0) >= 60) {
-    session.lastSeen = currentTime;
-    await env.KV.put(key, JSON.stringify(session), { expirationTtl: SESSION_IDLE_SECONDS });
-  }
+    user.role !== session.role ||
+    Number(user.session_version || 0) !== Number(session.sv || 0)
+  ) return null;
   user._sessionDemo = !!session.demo;
   return user;
 }
@@ -1619,6 +1606,20 @@ export async function route(request, env, url) {
     if (!emailOk) return err("Email chưa được xác thực OTP");
     const kyc = await eKYC.verify(body.kyc || {});
     if (!kyc.ok) return err("Xác minh danh tính chưa thành công");
+    const kycFiles = body.kyc?.files || {};
+    const identityImage = (value) => {
+      const image = String(value || "");
+      return /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) && image.length <= 3_000_000
+        ? image
+        : "";
+    };
+    const identityImages = {
+      front: identityImage(kycFiles.frontPreview),
+      back: identityImage(kycFiles.backPreview),
+      selfie: identityImage(kycFiles.selfiePreview),
+    };
+    if (!identityImages.front || !identityImages.back || !identityImages.selfie)
+      return err("Ảnh xác minh không hợp lệ hoặc vượt quá dung lượng cho phép");
     const followerProofToken = String(
       body.followerVerificationToken || "",
     ).trim();
@@ -1711,6 +1712,13 @@ export async function route(request, env, url) {
     );
     const id = uid();
     const userId = uid();
+    let identityObjectKeys = {};
+    try {
+      identityObjectKeys = await uploadKocIdentityImages(env, id, identityImages);
+    } catch (error) {
+      console.error('S3 identity upload failed:', error?.message || error);
+      return err('Không thể tải ảnh xác minh lên kho lưu trữ. Vui lòng thử lại.', 502);
+    }
     const passwordHash = await hashPassword(password);
     const cats = body.categories || [];
     const accepting = {};
@@ -1726,7 +1734,7 @@ export async function route(request, env, url) {
         email,
         tier,
         body.province,
-        `https://i.pravatar.cc/150?u=${id}`,
+        "",
         body.bio || "",
         followers,
         1,
@@ -1760,11 +1768,21 @@ export async function route(request, env, url) {
       `INSERT INTO users (id,email,password,role,name,koc_id,status,created_at,updated_at)
        VALUES (?,?,?,'koc',?,?,'pending',?,?)`,
     ).bind(userId, email, passwordHash, name, id, now(), now());
+    const createIdentityDocuments = env.DB.prepare(
+      `INSERT INTO koc_identity_documents
+       (koc_id,front_image,back_image,selfie_image,front_object_key,back_object_key,selfie_object_key,created_at,updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+    ).bind(id, '', '', '', identityObjectKeys.front, identityObjectKeys.back, identityObjectKeys.selfie, now(), now());
     const consumeOtp = env.DB.prepare(
       `UPDATE email_otp SET expires_at=?
        WHERE email=? AND purpose='onboard' AND verified=1`,
     ).bind(now(), email);
-    await env.DB.batch([createKoc, createUser, ...stmts, consumeOtp]);
+    try {
+      await env.DB.batch([createKoc, createUser, createIdentityDocuments, ...stmts, consumeOtp]);
+    } catch (error) {
+      await deleteKocIdentityImages(env, identityObjectKeys).catch(() => {});
+      throw error;
+    }
     try {
       await env.KV.delete(`follower-proof:${followerProofToken}`);
     } catch (_) {}
@@ -3568,17 +3586,18 @@ export async function route(request, env, url) {
         pending = 0;
       const commissionSummary = { expected: 0, reconciled: 0, paid: 0 };
       for (const t of results) {
+        const transactionAmount = Number(t.amount || 0);
         if (t.type === "withdraw") {
-          avail -= t.amount;
+          avail -= transactionAmount;
         } else if (["pending", "expected"].includes(t.status))
-          pending += t.amount;
-        else if (!["cancelled", "refunded"].includes(t.status)) avail += t.amount;
+          pending += transactionAmount;
+        else if (!["cancelled", "refunded"].includes(t.status)) avail += transactionAmount;
         if (t.type === "commission") {
           if (["pending", "expected"].includes(t.status))
-            commissionSummary.expected += t.amount;
+            commissionSummary.expected += transactionAmount;
           else if (["settled", "reconciled"].includes(t.status))
-            commissionSummary.reconciled += t.amount;
-          else if (t.status === "paid") commissionSummary.paid += t.amount;
+            commissionSummary.reconciled += transactionAmount;
+          else if (t.status === "paid") commissionSummary.paid += transactionAmount;
         }
       }
       const koc = await env.DB.prepare(
@@ -3731,9 +3750,10 @@ export async function route(request, env, url) {
       .all();
     let avail = 0;
     for (const t of results) {
-      if (t.type === "withdraw") avail -= t.amount;
+      const transactionAmount = Number(t.amount || 0);
+      if (t.type === "withdraw") avail -= transactionAmount;
       else if (["settled", "reconciled", "paid"].includes(t.status))
-        avail += t.amount;
+        avail += transactionAmount;
     }
     if (amount > avail) return err("Số dư khả dụng không đủ");
 
@@ -4260,6 +4280,10 @@ export async function route(request, env, url) {
       platformFee = 0;
     for (const r of results) {
       const bt = r.booking_type || "ad";
+      r.price = Number(r.price) || 0;
+      r.legacy_clicks = Number(r.legacy_clicks) || 0;
+      r.legacy_orders = Number(r.legacy_orders) || 0;
+      r.legacy_commission = Number(r.legacy_commission) || 0;
       if (r.status !== "rejected" && (bt === "ad" || bt === "combo"))
         spend += r.price;
       // new affiliate_orders (exclude cancelled)
@@ -4278,9 +4302,9 @@ export async function route(request, env, url) {
       r.aff_orders = Number(agg.o) || 0;
       r.aff_commission = Number(agg.c) || 0;
       r.platform_fee = Number(agg.f) || 0;
-      r.clicks = (Number(cl) || 0) + (r.legacy_clicks || 0);
-      r.orders = r.aff_orders + (r.legacy_orders || 0);
-      r.commission = r.aff_commission + (r.legacy_commission || 0);
+      r.clicks = (Number(cl) || 0) + r.legacy_clicks;
+      r.orders = r.aff_orders + r.legacy_orders;
+      r.commission = r.aff_commission + r.legacy_commission;
       r.roi = r.price + r.commission > 0 ? r.gmv / (r.price + r.commission) : 0;
       clicks += r.clicks;
       orders += r.orders;
@@ -4582,9 +4606,23 @@ export async function route(request, env, url) {
     }
     if (p === "/api/admin/queue") {
       const { results } = await env.DB.prepare(
-        `SELECT * FROM kocs WHERE status IN ('pending','leader_ok') ORDER BY created_at DESC, rowid DESC`,
+        `SELECT * FROM kocs WHERE status IN ('pending','leader_ok') ORDER BY created_at DESC,rowid DESC`,
       ).all();
       return J({ kocs: results.map(parseKoc) });
+    }
+    if (p.startsWith("/api/admin/koc-identity/") && m === "GET") {
+      const kocId = p.split("/")[4];
+      const identity = await env.DB.prepare(
+        `SELECT front_image,back_image,selfie_image,front_object_key,back_object_key,selfie_object_key
+         FROM koc_identity_documents WHERE koc_id=?`,
+      ).bind(kocId).first();
+      if (!identity) return J({ identity: null });
+      const [frontUrl, backUrl, selfieUrl] = await Promise.all([
+        identity.front_object_key ? signedKocIdentityUrl(env, identity.front_object_key) : identity.front_image,
+        identity.back_object_key ? signedKocIdentityUrl(env, identity.back_object_key) : identity.back_image,
+        identity.selfie_object_key ? signedKocIdentityUrl(env, identity.selfie_object_key) : identity.selfie_image,
+      ]);
+      return J({ identity: { front_url: frontUrl, back_url: backUrl, selfie_url: selfieUrl } });
     }
     if (p === "/api/admin/approve" && m === "POST") {
       const status = body.approve ? "active" : "rejected";
@@ -4692,7 +4730,7 @@ export async function route(request, env, url) {
             `UPDATE wallet_tx SET status='reconciled' WHERE id=?`,
           ).bind(t.id),
         );
-        total += t.amount;
+        total += Number(t.amount || 0);
       }
       // settle affiliate_orders that are pending/confirmed and not cancelled/refunded
       const ords = await env.DB.prepare(
@@ -4706,8 +4744,8 @@ export async function route(request, env, url) {
             `UPDATE affiliate_orders SET status='settled', settled_at=? WHERE id=?`,
           ).bind(now(), o.id),
         );
-        platformFeeTotal += o.platform_fee;
-        gmvTotal += o.gmv;
+        platformFeeTotal += Number(o.platform_fee || 0);
+        gmvTotal += Number(o.gmv || 0);
         stmts.push(
           env.DB.prepare(
             `INSERT INTO affiliate_settlements (id,kind,koc_id,booking_id,order_id,amount,note,created_at) VALUES (?,?,?,?,?,?,?,?)`,
