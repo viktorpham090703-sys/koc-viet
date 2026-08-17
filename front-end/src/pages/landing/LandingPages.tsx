@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Cards,Cta,Faq,Hero,LeadForm,Media,Section,Shell,Steps } from './LandingComponents'
 const img={koc:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785312036/BANNER_TRANG_KOC_qjho2n.jpg',business:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg',market:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/c%E1%BA%A3_m%E1%BB%99t_th%E1%BB%8B_tr%C6%B0%E1%BB%9Dng_koc_trong_b%E1%BB%99_l%E1%BB%8Dc_ynzysz.jpg',ai:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/banner_ai_clone_av_i0rjqx.jpg',price:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313899/b%E1%BA%A3ng_gi%C3%A1_u79tuy.jpg',community:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313892/kh%C3%A1ch_h%C3%A0ng_t%E1%BB%89nh_n%C3%A0o-koc_t%E1%BB%89nh_%C4%91%C3%B3_psuq1g.jpg'}
@@ -7,6 +8,141 @@ const flow:Array<[string,string]>=[
   ['SẢN XUẤT & ĐĂNG BÀI','KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.'],
   ['ĐO LƯỜNG & CHI TRẢ','Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.'],
 ]
+
+export function CampaignVideoPlayer() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(107);
+  const [muted, setMuted] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setPlaying(false);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!videoRef.current) return;
+    const cur = videoRef.current.currentTime;
+    const dur = videoRef.current.duration || duration;
+    setCurrentTime(cur);
+    setDuration(dur);
+    if (dur > 0) {
+      setProgress((cur / dur) * 100);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!videoRef.current) return;
+    const val = parseFloat(e.target.value);
+    const dur = videoRef.current.duration || duration;
+    const newTime = (val / 100) * dur;
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+    setProgress(val);
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setMuted(videoRef.current.muted);
+  };
+
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const card = cardRef.current;
+    if (!card) return;
+    if (!document.fullscreenElement) {
+      card.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  };
+
+  const formatTime = (sec: number) => {
+    if (isNaN(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  return (
+    <div className="lp-desk-video-card" id="lp-video-player-box" ref={cardRef} onClick={togglePlay}>
+      <video
+        ref={videoRef}
+        id="lp-campaign-video"
+        src="https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4"
+        playsInline
+        preload="metadata"
+        poster="https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg"
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={() => {
+          if (videoRef.current?.duration) setDuration(videoRef.current.duration);
+        }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+
+      <button
+        type="button"
+        className="lp-video-play-btn"
+        id="lp-video-play-trigger"
+        aria-label="Phát video"
+        style={{ opacity: playing ? 0 : 1, pointerEvents: playing ? 'none' : 'auto' }}
+        onClick={togglePlay}
+      >
+        <span>▶</span>
+      </button>
+
+      <div className="lp-video-bottom-bar" id="lp-video-controls" onClick={(e) => e.stopPropagation()}>
+        <div className="lp-video-progress-wrap">
+          <div className="lp-video-progress-played" style={{ width: `${progress}%` }} />
+          <input
+            type="range"
+            className="lp-video-seekbar"
+            min="0"
+            max="100"
+            step="0.1"
+            value={progress}
+            onChange={handleSeek}
+            aria-label="Thanh thời gian video"
+          />
+        </div>
+
+        <div className="lp-video-controls-row">
+          <div className="lp-video-ctrls-left">
+            <button type="button" className="lp-ctrl-btn" onClick={togglePlay} aria-label="Phát/Tạm dừng">
+              {playing ? <span>❚❚</span> : <span>▶</span>}
+            </button>
+            <span className="lp-video-time">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          </div>
+
+          <div className="lp-video-ctrls-right">
+            <button type="button" className="lp-ctrl-btn" onClick={toggleMute} aria-label="Bật/Tắt âm lượng">
+              {muted ? <span>🔇</span> : <span>🔊</span>}
+            </button>
+            <button type="button" className="lp-ctrl-btn" onClick={toggleFullscreen} aria-label="Toàn màn hình">
+              <span>⛶</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function HomeLanding(){
   return (

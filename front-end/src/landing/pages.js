@@ -198,15 +198,31 @@ function pageHome() {
       <div class="lp-steps-video-wrap">
         <div class="lp-desk-video-card" id="lp-video-player-box">
           <video id="lp-campaign-video" src="https://quankle2004.quankle2004.workers.dev/videos/how-it-works.mp4" playsinline preload="metadata" poster="https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg"></video>
-          <button type="button" class="lp-video-play-btn" id="lp-video-play-trigger" aria-label="Phát video quy trình">
+          <button type="button" class="lp-video-play-btn" id="lp-video-play-trigger" aria-label="Phát video">
             <span>▶</span>
           </button>
-          <div class="lp-video-bottom-bar">
-            <span class="lp-video-time" id="lp-video-time-display">0:00 / 1:47</span>
-            <div class="lp-video-ctrls">
-              <span title="Âm lượng">🔊</span>
-              <span title="Cài đặt">⚙</span>
-              <span title="Toàn màn hình">⛶</span>
+          <div class="lp-video-bottom-bar" id="lp-video-controls">
+            <div class="lp-video-progress-wrap" id="lp-video-progress-container">
+              <div class="lp-video-progress-played" id="lp-video-played-bar"></div>
+              <input type="range" class="lp-video-seekbar" id="lp-video-seekbar" min="0" max="100" step="0.1" value="0" aria-label="Thanh thời gian video" />
+            </div>
+            <div class="lp-video-controls-row">
+              <div class="lp-video-ctrls-left">
+                <button type="button" class="lp-ctrl-btn" id="lp-ctrl-play-pause" aria-label="Phát/Tạm dừng">
+                  <span class="lp-icon-play">▶</span>
+                  <span class="lp-icon-pause" style="display:none">❚❚</span>
+                </button>
+                <span class="lp-video-time" id="lp-video-time-display">0:00 / 1:47</span>
+              </div>
+              <div class="lp-video-ctrls-right">
+                <button type="button" class="lp-ctrl-btn" id="lp-ctrl-volume" aria-label="Bật/Tắt âm lượng">
+                  <span class="lp-icon-vol">🔊</span>
+                  <span class="lp-icon-muted" style="display:none">🔇</span>
+                </button>
+                <button type="button" class="lp-ctrl-btn" id="lp-ctrl-fullscreen" aria-label="Toàn màn hình">
+                  <span>⛶</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
