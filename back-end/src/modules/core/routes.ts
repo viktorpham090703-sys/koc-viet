@@ -2565,6 +2565,11 @@ export async function route(request, env, url) {
       cond.push("k.name LIKE ?");
       bind.push("%" + kocName + "%");
     }
+    const bookingId = url.searchParams.get("id");
+    if (bookingId) {
+      cond.push("b.id=?");
+      bind.push(bookingId);
+    }
     const from = url.searchParams.get("from");
     if (from) {
       cond.push("b.created_at>=?");
@@ -2575,10 +2580,25 @@ export async function route(request, env, url) {
       cond.push("b.created_at<=?");
       bind.push(Number(to));
     }
-    if (cond.length) sql += " WHERE " + cond.join(" AND ");
-    sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT 200";
+    const whereSql = cond.length ? " WHERE " + cond.join(" AND ") : "";
+    sql += whereSql;
+    let page = 1;
+    let per = 200;
+    let total = 0;
+    const paginated = me.role === "business" || me.role === "admin";
+    if (paginated) {
+      const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
+      per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
+      total = Number(await env.DB.prepare(
+        `SELECT COUNT(*) c FROM bookings b JOIN businesses bz ON bz.id=b.business_id JOIN kocs k ON k.id=b.koc_id${whereSql}`,
+      ).bind(...bind).first("c")) || 0;
+      page = Math.min(requestedPage, Math.max(1, Math.ceil(total / per)));
+      sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT ? OFFSET ?";
+    } else {
+      sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT 200";
+    }
     const { results } = await env.DB.prepare(sql)
-      .bind(...bind)
+      .bind(...bind, ...(paginated ? [per, (page - 1) * per] : []))
       .all();
     for (const r of results) {
       const aff = await env.DB.prepare(
@@ -2590,6 +2610,10 @@ export async function route(request, env, url) {
     }
     return J({
       bookings: results,
+      page,
+      per,
+      total: paginated ? total : results.length,
+      pages: paginated ? Math.max(1, Math.ceil(total / per)) : 1,
       demoPaymentAllowed: me.role === "business" && canUseDemoPayment(env, me, url),
     });
   }
@@ -4276,7 +4300,7 @@ export async function route(request, env, url) {
   if (p === "/api/business/report") {
     if (me.role !== "business") return err("403", 403);
     const { results } = await env.DB.prepare(
-      `SELECT b.id,b.code,b.category,b.price,b.status,b.booking_type,b.content_type,b.commission_rate,b.platform, k.name kocname,
+      `SELECT b.id,b.code,b.category,b.price,b.status,b.booking_type,b.content_type,b.commission_rate,b.platform,b.created_at, k.name kocname,
               a.clicks legacy_clicks, a.orders legacy_orders, a.commission legacy_commission
        FROM bookings b JOIN kocs k ON k.id=b.koc_id LEFT JOIN affiliate a ON a.booking_id=b.id
        WHERE b.business_id=? ORDER BY b.created_at DESC, b.rowid DESC`,
@@ -4324,8 +4348,17 @@ export async function route(request, env, url) {
       platformFee += r.platform_fee;
     }
     const adFee = Math.round(spend * 0.05);
+    const per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
+    const total = results.length;
+    const pages = Math.max(1, Math.ceil(total / per));
+    const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
+    const page = Math.min(requestedPage, pages);
     return J({
-      rows: results,
+      rows: results.slice((page - 1) * per, page * per),
+      page,
+      per,
+      total,
+      pages,
       totals: {
         spend,
         clicks,

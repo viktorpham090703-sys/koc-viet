@@ -42,10 +42,10 @@ export async function renderAdmin(el, hash) {
   const active = "#/" + (keys.includes(page) ? page : "dashboard");
   el.innerHTML = `<div class="portal admin-portal">
     <div class="sidebar"><div class="brand">${icon("admin", "brand-icon")}<span class="brand-name">KOC Viet <span>Admin</span></span></div>
-      <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav></div>
+      <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav><button class="btn ghost sm portal-sidebar-logout" id="ad-logout">Đăng xuất</button></div>
     <div class="main"><div class="topbar portal-topbar" style="background:var(--navy);color:#fff">
       <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2 style="color:#fff">Trang quản trị</h2></div>
-      <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'A').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Quản trị viên</span></div><button class="btn ghost sm portal-logout" id="ad-logout">Đăng xuất</button></div></div>
+      <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'A').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Quản trị viên</span></div></div></div>
       <div class="content" id="ad-view">${skeletonPage(active.slice(2))}</div></div></div>`;
   document.getElementById("ad-logout").addEventListener("click", logout);
   enhancePortal();
@@ -486,7 +486,7 @@ function buildContractPrintDocument(c) {
     </style></body></html>`;
 }
 
-let abFilters = {};
+let abFilters = { page: 1 };
 async function allBookings(el) {
   const cfg = state.config;
   el.innerHTML = `<h1>Booking toàn sàn</h1>
@@ -511,7 +511,8 @@ async function allBookings(el) {
       <div class="field"><label>Đến ngày</label><input id="ab-to" type="date" value="${abFilters.toD || ""}"></div>
       <button class="btn primary sm" id="ab-go">Lọc</button>
     </div>
-    <div class="table-wrap" id="ab-table">${skeletonTable(5)}</div>`;
+    <div class="table-wrap" id="ab-table">${skeletonTable(5)}</div>
+    <div id="ab-pager"></div>`;
   document.getElementById("ab-go").addEventListener("click", () => {
     abFilters = {
       q: document.getElementById("ab-q").value.trim(),
@@ -521,6 +522,7 @@ async function allBookings(el) {
       koc: document.getElementById("ab-koc").value.trim(),
       fromD: document.getElementById("ab-from").value,
       toD: document.getElementById("ab-to").value,
+      page: 1,
     };
     loadAllBookings(el);
   });
@@ -530,6 +532,8 @@ async function loadAllBookings(el) {
   const tbl = document.getElementById("ab-table");
   tbl.innerHTML = skeletonTable(5);
   const qs = new URLSearchParams();
+  qs.set("page", String(abFilters.page || 1));
+  qs.set("per", "10");
   if (abFilters.q) qs.set("q", abFilters.q);
   if (abFilters.status) qs.set("status", abFilters.status);
   if (abFilters.type) qs.set("type", abFilters.type);
@@ -550,6 +554,7 @@ async function loadAllBookings(el) {
       ),
     );
   const r = await api("/api/bookings?" + qs.toString());
+  abFilters.page = r.page;
   tbl.innerHTML = r.bookings.length
     ? `<table><thead><tr><th>Mã</th><th>Thời gian</th><th>DN</th><th>KOC</th><th>Giá</th><th>Loại</th><th>Trạng thái</th><th style="width:1%;white-space:nowrap"></th></tr></thead><tbody>
     ${r.bookings
@@ -576,6 +581,17 @@ async function loadAllBookings(el) {
       loadAllBookings(el);
     }),
   );
+  const pager = document.getElementById("ab-pager");
+  if (pager) {
+    pager.innerHTML = pagerHtml(r.page, r.pages);
+    pager.querySelectorAll("[data-pg]").forEach((button) =>
+      button.addEventListener("click", () => {
+        abFilters.page = Number(button.dataset.pg);
+        loadAllBookings(el);
+        tbl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }),
+    );
+  }
 }
 
 // ---------- Complaints (tiếp nhận → xem chi tiết → xử lý → cập nhật trạng thái, gắn với hoàn tiền) ----------

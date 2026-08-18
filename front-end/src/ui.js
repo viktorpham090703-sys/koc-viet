@@ -1,3 +1,5 @@
+import { notify } from './notifications.jsx';
+
 // Shared UI helpers + components for all 3 portals.
 export const money = (n) => (Number(n)||0).toLocaleString('vi-VN') + 'đ';
 export const num = (n) => (Number(n)||0).toLocaleString('vi-VN');
@@ -73,20 +75,12 @@ export function statusChip(s) {
 export function tierBadge(t) { return `<span class="tier-badge tier-${esc(t)}">${esc(t)}</span>`; }
 
 export function toast(msg, type = '') {
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.textContent = msg;
-  document.getElementById('toast-wrap').appendChild(el);
-  setTimeout(() => el.remove(), 2600);
+  return notify(msg, type);
 }
 
 // Add a subtle shake animation to error toasts for better visual feedback.
 export function toastError(msg) {
-  const el = document.createElement('div');
-  el.className = 'toast err nv-anim-shake';
-  el.textContent = msg;
-  document.getElementById('toast-wrap').appendChild(el);
-  setTimeout(() => el.remove(), 2600);
+  return notify(msg, 'error');
 }
 
 export function spinner() { return '<div class="spin"></div>'; }

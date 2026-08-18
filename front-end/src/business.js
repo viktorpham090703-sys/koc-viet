@@ -19,7 +19,7 @@ export async function renderBusiness(el, hash) {
     ${sidebar(active)}
     <div class="main"><div class="topbar portal-topbar">
       <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2>Trang doanh nghiệp</h2></div>
-      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ doanh nghiệp"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'D').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Doanh nghiệp</span></div></a><button class="btn ghost sm portal-logout" id="bz-logout">Đăng xuất</button></div></div>
+      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ doanh nghiệp"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'D').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Doanh nghiệp</span></div></a></div></div>
       <div class="content" id="bz-view">${skeletonPage(active.slice(2))}</div></div></div>`;
   document.getElementById('bz-logout').addEventListener('click', logout);
   void hydrateBusinessAccount(el);
@@ -41,7 +41,7 @@ export async function renderBusiness(el, hash) {
 
 function sidebar(active) {
   return `<div class="sidebar"><div class="brand"><img class="brand-icon" src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785140673/business_ft0lrg.png" alt=""><span class="brand-name">KOC Viet <span>Business</span></span></div>
-    <nav class="portal-nav">${NAV.map(n=>`<a href="${n[0]}" class="${n[0]===active?'active':''}">${n[1]}<span>${n[2]}</span></a>`).join('')}</nav></div>`;
+    <nav class="portal-nav">${NAV.map(n=>`<a href="${n[0]}" class="${n[0]===active?'active':''}">${n[1]}<span>${n[2]}</span></a>`).join('')}</nav><button class="btn ghost sm portal-sidebar-logout" id="bz-logout">Đăng xuất</button></div>`;
 }
 
 async function hydrateBusinessAccount(root) {
@@ -350,7 +350,9 @@ async function openBookingForm(kocId, el) {
   syncType();
 }
 
-async function orders(el) {
+let businessOrdersPage = 1;
+async function orders(el, page = businessOrdersPage) {
+  businessOrdersPage = Math.max(1, Number(page) || 1);
   const params = new URLSearchParams(location.search);
   const payOSResult = params.get('payos');
   const orderCode = Number(params.get('orderCode'));
@@ -372,8 +374,14 @@ async function orders(el) {
       history.replaceState({}, '', `${location.pathname}${location.hash}`);
     }
   }
-  const r = await api('/api/bookings');
-  el.innerHTML = `<h1>Booking đã đặt</h1><div class="table-wrap" style="margin-top:16px">${r.bookings.length?tableBookings(r.bookings):empty('📋','Chưa có booking')}</div>`;
+  const r = await api(`/api/bookings?page=${businessOrdersPage}&per=10`);
+  businessOrdersPage = r.page || businessOrdersPage;
+  el.innerHTML = `<div class="between"><div><h1>Booking đã đặt</h1><p class="muted">${num(r.total || 0)} booking</p></div></div><div class="table-wrap" style="margin-top:16px">${r.bookings.length?tableBookings(r.bookings):empty('📋','Chưa có booking')}</div><div class="pager" id="business-orders-pager"></div>`;
+  const pager = el.querySelector('#business-orders-pager');
+  if (r.pages > 1) {
+    pager.innerHTML = `<button data-orders-page="${r.page - 1}" ${r.page <= 1 ? 'disabled' : ''}>‹</button><span class="muted" style="padding:7px 6px">${r.page} / ${r.pages}</span><button data-orders-page="${r.page + 1}" ${r.page >= r.pages ? 'disabled' : ''}>›</button>`;
+    pager.querySelectorAll('[data-orders-page]').forEach(button => button.addEventListener('click', () => orders(el, Number(button.dataset.ordersPage))));
+  }
   bindOrderRows(el);
 }
 
@@ -401,7 +409,7 @@ function businessVideoBlock(b) {
 }
 
 async function openOrder(id, el) {
-  const r = await api('/api/bookings');
+  const r = await api('/api/bookings?id=' + encodeURIComponent(id));
   const b = r.bookings.find(x=>x.id===id);
   if (!b) return;
   if (
@@ -915,8 +923,11 @@ async function campaigns(el) {
   });
 }
 
-async function report(el) {
-  const r = await api('/api/business/report');
+let businessReportPage = 1;
+async function report(el, page = businessReportPage) {
+  businessReportPage = Math.max(1, Number(page) || 1);
+  const r = await api(`/api/business/report?page=${businessReportPage}&per=10`);
+  businessReportPage = r.page || businessReportPage;
   const t = r.totals;
   el.innerHTML = `<h1>Báo cáo hiệu quả & đối soát</h1>
     <div class="stat-cards" style="margin:16px 0">
@@ -933,7 +944,13 @@ async function report(el) {
       ${r.rows.map(x=>`<tr><td>${esc(x.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(x.created_at)}</td><td>${esc(x.kocname)}</td><td><span class="chip n">${btLabel(x.booking_type,x.content_type)}</span></td><td class="money">${money(x.price)}</td>
         <td class="money">${money(x.gmv||0)}</td><td>${num(x.orders||0)}</td><td class="money">${money(x.commission||0)}</td><td class="money">${money(x.platform_fee||0)}</td><td>${statusChip(x.status)}</td></tr>`).join('')}
     </tbody></table></div>
+    <div class="pager" id="business-report-pager"></div>
     <button class="btn navy sm" id="r-invoice" style="margin-top:16px;width:auto">🧾 Xuất hoá đơn phí dịch vụ</button>`;
+  const pager = el.querySelector('#business-report-pager');
+  if (r.pages > 1) {
+    pager.innerHTML = `<button data-report-page="${r.page - 1}" ${r.page <= 1 ? 'disabled' : ''}>‹</button><span class="muted" style="padding:7px 6px">${r.page} / ${r.pages} · ${num(r.total || 0)} booking</span><button data-report-page="${r.page + 1}" ${r.page >= r.pages ? 'disabled' : ''}>›</button>`;
+    pager.querySelectorAll('[data-report-page]').forEach(button => button.addEventListener('click', () => report(el, Number(button.dataset.reportPage))));
+  }
   document.getElementById('r-invoice').addEventListener('click', () => {
     modal(`<h2>Hoá đơn phí dịch vụ</h2><div class="tint-box">
       <div class="between"><span>① Phí quảng cáo cố định</span><b class="money">${money(t.spend)}</b></div>
