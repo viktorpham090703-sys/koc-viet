@@ -1,8 +1,14 @@
+import { notify } from './notifications.jsx';
+
 // Shared UI helpers + components for all 3 portals.
 export const money = (n) => (Number(n)||0).toLocaleString('vi-VN') + 'đ';
 export const num = (n) => (Number(n)||0).toLocaleString('vi-VN');
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const avatarUrl = (value) => String(value || '').trim() || '/default-avatar.svg';
+export function provinceOptions(provinces = [], current = '') {
+  const values = [...new Set([...(provinces || []), current].map(value => String(value || '').trim()).filter(Boolean))];
+  return values.map(value => `<option value="${esc(value)}"${value === current ? ' selected' : ''}>${esc(value)}</option>`).join('');
+}
 export const fmtDate = (ts) => {
   if (!ts) return '—';
   const num = Number(ts);
@@ -69,20 +75,12 @@ export function statusChip(s) {
 export function tierBadge(t) { return `<span class="tier-badge tier-${esc(t)}">${esc(t)}</span>`; }
 
 export function toast(msg, type = '') {
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.textContent = msg;
-  document.getElementById('toast-wrap').appendChild(el);
-  setTimeout(() => el.remove(), 2600);
+  return notify(msg, type);
 }
 
 // Add a subtle shake animation to error toasts for better visual feedback.
 export function toastError(msg) {
-  const el = document.createElement('div');
-  el.className = 'toast err nv-anim-shake';
-  el.textContent = msg;
-  document.getElementById('toast-wrap').appendChild(el);
-  setTimeout(() => el.remove(), 2600);
+  return notify(msg, 'error');
 }
 
 export function spinner() { return '<div class="spin"></div>'; }
@@ -124,6 +122,45 @@ export function skeletonKocGrid(count = 6) {
     </div>`;
   }
   return `<div class="sk-grid">${cards}</div>`;
+}
+
+const SKELETON_PRESETS = {
+  home: 'dashboard', dashboard: 'dashboard', report: 'report', tiers: 'report',
+  bookings: 'cards', orders: 'table', allbookings: 'table', content: 'cards',
+  affiliate: 'table', notifications: 'notifications', businesses: 'table',
+  complaints: 'table', contracts: 'table', campaigns: 'table', settle: 'table',
+  kol: 'table', leads: 'table', queue: 'cards', aiclone: 'workflow',
+  'aiclone-booking': 'workflow', find: 'grid', products: 'grid', wallet: 'wallet',
+  profile: 'profile',
+};
+
+const skLine = (width = 'w-75', height = '') =>
+  `<div class="nv-skeleton sk-line ${width}"${height ? ` style="height:${height}"` : ''}></div>`;
+
+function skeletonHeading(withAction = true) {
+  return `<div class="sk-page-heading"><div>${skLine('w-50', '26px')}${skLine('w-75')}</div>${withAction ? skLine('w-25', '38px') : ''}</div>`;
+}
+
+function skeletonCards(count = 5) {
+  return `<div class="sk-list">${Array.from({ length: count }, () => `<div class="sk-card sk-list-card"><div class="nv-skeleton sk-circle sm"></div><div class="sk-grow">${skLine('w-75', '16px')}${skLine('w-50')}</div>${skLine('w-25', '28px')}</div>`).join('')}</div>`;
+}
+
+function skeletonDataTable(rows = 6, columns = 5) {
+  const cells = () => Array.from({ length: columns }, (_, i) => `<div>${skLine(i === 0 ? 'w-75' : 'w-50')}</div>`).join('');
+  return `<div class="sk-data-table"><div class="sk-data-row sk-data-head">${cells()}</div>${Array.from({ length: rows }, () => `<div class="sk-data-row">${cells()}</div>`).join('')}</div>`;
+}
+
+/** Route-aware loading state used by all authenticated portals. */
+export function skeletonPage(page = 'dashboard') {
+  const preset = SKELETON_PRESETS[page] || 'table';
+  if (preset === 'dashboard') return `<div class="sk-page" aria-hidden="true">${skeletonHeading(false)}${skeletonStatCards(4)}<div class="sk-dashboard-panels"><div class="sk-card">${skLine('w-50','20px')}${skeletonCards(3)}</div><div class="sk-card">${skLine('w-50','20px')}${skeletonCards(3)}</div></div></div>`;
+  if (preset === 'report') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}${skeletonStatCards(4)}<div class="sk-dashboard-panels"><div class="sk-card sk-chart">${skLine('w-50','20px')}<div class="nv-skeleton sk-chart-area"></div></div><div class="sk-card">${skLine('w-50','20px')}${skeletonCards(4)}</div></div></div>`;
+  if (preset === 'grid') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-toolbar">${skLine('w-50','38px')}${skLine('w-25','38px')}</div>${skeletonKocGrid(6)}</div>`;
+  if (preset === 'cards' || preset === 'notifications') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}${preset === 'cards' ? `<div class="sk-tabs">${skLine('w-25','34px')}${skLine('w-25','34px')}${skLine('w-25','34px')}</div>` : ''}${skeletonCards(preset === 'notifications' ? 7 : 5)}</div>`;
+  if (preset === 'wallet') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-wallet-summary"><div class="sk-card">${skLine('w-50')}${skLine('w-75','30px')}</div><div class="sk-card">${skLine('w-50')}${skLine('w-75','30px')}</div></div><div class="sk-card">${skLine('w-25','20px')}${skeletonCards(5)}</div></div>`;
+  if (preset === 'profile') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-profile"><div class="sk-card sk-profile-aside"><div class="nv-skeleton sk-circle lg"></div>${skLine('w-75','20px')}${skLine('w-50')}</div><div class="sk-card sk-form-grid">${Array.from({length: 8}, () => `<div>${skLine('w-50')}${skLine('w-100','40px')}</div>`).join('')}</div></div></div>`;
+  if (preset === 'workflow') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-workflow"><div class="sk-card">${skLine('w-50','20px')}<div class="sk-toolbar">${skLine('w-50','38px')}${skLine('w-25','38px')}</div>${skeletonCards(5)}</div><div class="sk-card sk-form-grid">${Array.from({length: 7}, () => `<div>${skLine('w-50')}${skLine('w-100','40px')}</div>`).join('')}</div></div></div>`;
+  return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-toolbar">${skLine('w-50','38px')}${skLine('w-25','38px')}</div>${skeletonDataTable()}</div>`;
 }
 
 export function skeletonPortal() {

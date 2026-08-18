@@ -1,5 +1,5 @@
 import { post } from "./api.js";
-import { money, esc, toast, modal, closeModal } from "./ui.js";
+import { money, esc, toast, modal, closeModal, provinceOptions } from "./ui.js";
 import { state } from "./app.js";
 import Tesseract from "tesseract.js";
 
@@ -461,7 +461,7 @@ export function renderOnboarding(el) {
     const social = d.socials[0] || { platform: "TikTok", handle: "" };
     const verification = d.followerVerification;
     el.innerHTML = wrap(`
-      <div class="field"><label>Tỉnh/Thành phố</label><select id="o-prov">${cfg.provinces.map((p) => `<option ${p === d.province ? "selected" : ""}>${esc(p)}</option>`).join("")}</select></div>
+      <div class="field"><label>Tỉnh/Thành phố</label><select id="o-prov">${provinceOptions(cfg.provinces, d.province)}</select></div>
       <div class="field"><label>Ngành hàng (chọn nhiều)</label>
         <div id="o-cats" style="display:flex;flex-wrap:wrap;gap:8px">${catList.map((c) => `<button type="button" class="chip" data-c="${esc(c)}" style="cursor:pointer;padding:8px 14px;${d.categories.includes(c) ? "background:var(--primary);color:#fff" : ""}">${esc(c)}</button>`).join("")}</div>
         ${d.categories.includes("Khác") ? `<div class="field" style="margin-top:8px"><input id="o-cat-other" value="${esc(d.customCategory)}" placeholder="Nhập tên ngành hàng khác"></div>` : ""}

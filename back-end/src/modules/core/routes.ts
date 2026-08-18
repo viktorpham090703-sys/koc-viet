@@ -1,6 +1,6 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
-import { TIERS, CATEGORIES, PROVINCES, tierOf, getDemoAccounts, getDemoAccount, isDemoUser, demoAccountsEnabled } from './seed.js';
+import { TIERS, CATEGORIES, tierOf, getDemoAccounts, getDemoAccount, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword } f
 import { signJwt, verifyJwt } from './lib/jwt.js';
 import { deleteKocIdentityImages, signedKocIdentityUrl, uploadKocIdentityImages } from './lib/s3Identity.js';
 import { analyzeFollowerOcrEvidence } from './lib/followerOcr.js';
+import { canonicalProvinceName, getAddressKitProvinces, provinceFilterAliases } from './lib/addressKit.js';
 import {
   createPayOSPaymentLink,
   getPayOSPaymentLink,
@@ -218,9 +219,11 @@ function parseKoc(r) {
     categories: JSON.parse(r.categories || "[]"),
     socials: JSON.parse(r.socials || "[]"),
     accepting: JSON.parse(r.accepting || "{}"),
-    ai_clone: !!r.ai_clone,
-    leader: !!r.leader,
-    followers_verified: !!r.followers_verified,
+    // PostgreSQL returns BIGINT flags as strings; Boolean("0") is true.
+    // Normalize numerically so zero-valued flags stay false in API responses.
+    ai_clone: Number(r.ai_clone || 0) > 0,
+    leader: Number(r.leader || 0) > 0,
+    followers_verified: Number(r.followers_verified || 0) > 0,
   };
 }
 
@@ -1291,7 +1294,8 @@ export async function route(request, env, url) {
   if (p === "/api/config") {
     const tiers = await getTiers(env);
     const demoAccounts = await getDemoAccounts(env);
-    return J({ tiers, categories: CATEGORIES, provinces: PROVINCES, demoAccounts });
+    const provinces = await getAddressKitProvinces();
+    return J({ tiers, categories: CATEGORIES, provinces, demoAccounts });
   }
 
   // ---------- PUBLIC privacy-safe landing activity ----------
@@ -1506,8 +1510,9 @@ export async function route(request, env, url) {
       bind.push('%"' + q.get("category") + '"%');
     }
     if (q.get("province")) {
-      where.push(`province=?`);
-      bind.push(q.get("province"));
+      const provinceAliases = provinceFilterAliases(q.get("province"));
+      where.push(`province IN (${provinceAliases.map(() => "?").join(",")})`);
+      bind.push(...provinceAliases);
     }
     if (q.get("tier")) {
       where.push(`tier=?`);
@@ -2170,8 +2175,9 @@ export async function route(request, env, url) {
       binds.push(tier);
     }
     if (province) {
-      where.push("k.province=?");
-      binds.push(province);
+      const provinceAliases = provinceFilterAliases(province);
+      where.push(`k.province IN (${provinceAliases.map(() => "?").join(",")})`);
+      binds.push(...provinceAliases);
     }
     if (category) {
       where.push("EXISTS(SELECT 1 FROM koc_prices fp WHERE fp.koc_id=k.id AND fp.category=?)");
@@ -2225,7 +2231,7 @@ export async function route(request, env, url) {
       pages: Math.max(1, Math.ceil(total / per)),
       filters: {
         tiers: TIERS.map(item => item.name),
-        provinces: PROVINCES,
+        provinces: await getAddressKitProvinces(),
         categories: CATEGORIES,
       },
       aiProductionPricing: AI_VIDEO_PRICING,
@@ -2383,7 +2389,12 @@ export async function route(request, env, url) {
         .bind(body.koc_id, body.category)
         .first();
       if (!priceRow) return err("Ngành hàng không có bảng giá");
-      price = priceRow.price;
+      // PostgreSQL returns BIGINT columns as strings.  Wallet transfers require
+      // an actual safe integer, so normalize the listed price before comparing
+      // balances or creating the available -> escrow ledger entry.
+      price = Number(priceRow.price);
+      if (!Number.isSafeInteger(price) || price <= 0)
+        return err("Giá booking không hợp lệ");
     }
     let commission_rate = 0,
       platform = null,
@@ -2554,6 +2565,11 @@ export async function route(request, env, url) {
       cond.push("k.name LIKE ?");
       bind.push("%" + kocName + "%");
     }
+    const bookingId = url.searchParams.get("id");
+    if (bookingId) {
+      cond.push("b.id=?");
+      bind.push(bookingId);
+    }
     const from = url.searchParams.get("from");
     if (from) {
       cond.push("b.created_at>=?");
@@ -2564,10 +2580,25 @@ export async function route(request, env, url) {
       cond.push("b.created_at<=?");
       bind.push(Number(to));
     }
-    if (cond.length) sql += " WHERE " + cond.join(" AND ");
-    sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT 200";
+    const whereSql = cond.length ? " WHERE " + cond.join(" AND ") : "";
+    sql += whereSql;
+    let page = 1;
+    let per = 200;
+    let total = 0;
+    const paginated = me.role === "business" || me.role === "admin";
+    if (paginated) {
+      const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
+      per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
+      total = Number(await env.DB.prepare(
+        `SELECT COUNT(*) c FROM bookings b JOIN businesses bz ON bz.id=b.business_id JOIN kocs k ON k.id=b.koc_id${whereSql}`,
+      ).bind(...bind).first("c")) || 0;
+      page = Math.min(requestedPage, Math.max(1, Math.ceil(total / per)));
+      sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT ? OFFSET ?";
+    } else {
+      sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT 200";
+    }
     const { results } = await env.DB.prepare(sql)
-      .bind(...bind)
+      .bind(...bind, ...(paginated ? [per, (page - 1) * per] : []))
       .all();
     for (const r of results) {
       const aff = await env.DB.prepare(
@@ -2579,6 +2610,10 @@ export async function route(request, env, url) {
     }
     return J({
       bookings: results,
+      page,
+      per,
+      total: paginated ? total : results.length,
+      pages: paginated ? Math.max(1, Math.ceil(total / per)) : 1,
       demoPaymentAllowed: me.role === "business" && canUseDemoPayment(env, me, url),
     });
   }
@@ -4265,7 +4300,7 @@ export async function route(request, env, url) {
   if (p === "/api/business/report") {
     if (me.role !== "business") return err("403", 403);
     const { results } = await env.DB.prepare(
-      `SELECT b.id,b.code,b.category,b.price,b.status,b.booking_type,b.content_type,b.commission_rate,b.platform, k.name kocname,
+      `SELECT b.id,b.code,b.category,b.price,b.status,b.booking_type,b.content_type,b.commission_rate,b.platform,b.created_at, k.name kocname,
               a.clicks legacy_clicks, a.orders legacy_orders, a.commission legacy_commission
        FROM bookings b JOIN kocs k ON k.id=b.koc_id LEFT JOIN affiliate a ON a.booking_id=b.id
        WHERE b.business_id=? ORDER BY b.created_at DESC, b.rowid DESC`,
@@ -4313,8 +4348,17 @@ export async function route(request, env, url) {
       platformFee += r.platform_fee;
     }
     const adFee = Math.round(spend * 0.05);
+    const per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
+    const total = results.length;
+    const pages = Math.max(1, Math.ceil(total / per));
+    const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
+    const page = Math.min(requestedPage, pages);
     return J({
-      rows: results,
+      rows: results.slice((page - 1) * per, page * per),
+      page,
+      per,
+      total,
+      pages,
       totals: {
         spend,
         clicks,
@@ -4689,6 +4733,12 @@ export async function route(request, env, url) {
       const prov = await env.DB.prepare(
         `SELECT province, COUNT(*) c FROM kocs WHERE status='active' GROUP BY province ORDER BY c DESC, province ASC`,
       ).all();
+      const officialProvinces = await getAddressKitProvinces();
+      const provinceCounts = new Map(officialProvinces.map(province => [province, 0]));
+      for (const row of prov.results || []) {
+        const province = canonicalProvinceName(row.province, officialProvinces);
+        if (province) provinceCounts.set(province, (provinceCounts.get(province) || 0) + Number(row.c || 0));
+      }
       const pendingWithdraw = await env.DB.prepare(
         `SELECT COALESCE(SUM(amount),0) s FROM wallet_tx WHERE status IN ('pending','expected')`,
       ).first("s");
@@ -4707,7 +4757,7 @@ export async function route(request, env, url) {
         gmv: Number(gmv),
         fee: Number(fee),
         funnel,
-        provinces: prov.results,
+        provinces: officialProvinces.map(province => ({ province, c: provinceCounts.get(province) || 0 })),
         targetKoc: 300000,
         targetBiz: 200000,
         pendingSettle: Number(pendingWithdraw),
@@ -4820,12 +4870,51 @@ export async function route(request, env, url) {
       });
     }
     if (p === "/api/admin/ledger") {
+      const per = Math.min(20, Math.max(5, Number(url.searchParams.get("per") || 8)));
+      const distributionPage = Math.max(1, Number(url.searchParams.get("distributionPage") || 1));
+      const ledgerPage = Math.max(1, Number(url.searchParams.get("ledgerPage") || 1));
+      const auditPage = Math.max(1, Number(url.searchParams.get("auditPage") || 1));
+      const auditSearch = String(url.searchParams.get("auditSearch") || "").trim().toLowerCase();
+      const auditCategory = String(url.searchParams.get("auditCategory") || "").trim();
+      const auditWhere = [];
+      const auditBinds = [];
+      const auditCategories = {
+        booking: "a.action LIKE 'booking.%'",
+        aiclone: "a.action LIKE 'aiclone.%'",
+        payment: "(a.action LIKE 'payment.%' OR a.action LIKE 'wallet.%' OR a.action LIKE 'settle.%' OR a.action LIKE 'affiliate_order.%')",
+        account: "(a.action LIKE 'business.%' OR a.action LIKE 'koc.%' OR a.action LIKE 'account.%')",
+        other: "NOT (a.action LIKE 'booking.%' OR a.action LIKE 'aiclone.%' OR a.action LIKE 'payment.%' OR a.action LIKE 'wallet.%' OR a.action LIKE 'settle.%' OR a.action LIKE 'affiliate_order.%' OR a.action LIKE 'business.%' OR a.action LIKE 'koc.%' OR a.action LIKE 'account.%')",
+      };
+      if (auditCategories[auditCategory]) auditWhere.push(auditCategories[auditCategory]);
+      if (auditSearch) {
+        auditWhere.push("LOWER(COALESCE(a.action,'') || ' ' || COALESCE(a.ref,'') || ' ' || COALESCE(a.detail,'') || ' ' || COALESCE(u.name,'')) LIKE ?");
+        auditBinds.push(`%${auditSearch}%`);
+      }
+      const auditWhereSql = auditWhere.length ? `WHERE ${auditWhere.join(" AND ")}` : "";
+      const ledgerTotal = Number(await env.DB.prepare("SELECT COUNT(*) c FROM ledger").first("c")) || 0;
+      const auditTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM audit_log a LEFT JOIN users u ON u.id=a.actor ${auditWhereSql}`).bind(...auditBinds).first("c")) || 0;
+      const settlementWhere = "WHERE b.status IN ('completed', 'settling', 'video_approved', 'posted', 'brief_review', 'producing')";
+      const settlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM bookings b ${settlementWhere}`).first("c")) || 0;
+      const settlementTotals = await env.DB.prepare(
+        `SELECT COALESCE(SUM(price),0) escrow,COALESCE(SUM(koc_fee),0) koc,COALESCE(SUM(price-koc_fee),0) netviet
+         FROM (
+           SELECT price,CASE
+             WHEN type='aiclone' AND COALESCE(aiclone_quote_koc,0)>0 THEN aiclone_quote_koc
+             WHEN type='aiclone' AND price>(COALESCE(aiclone_quote_production,aiclone_production_fee,0)+COALESCE(aiclone_quote_platform,aiclone_platform_fee,0)+COALESCE(aiclone_quote_additional,0))
+               THEN price-(COALESCE(aiclone_quote_production,aiclone_production_fee,0)+COALESCE(aiclone_quote_platform,aiclone_platform_fee,0)+COALESCE(aiclone_quote_additional,0))
+             WHEN type='aiclone' THEN ROUND(price*0.85)
+             ELSE price-ROUND(price*0.05)
+           END koc_fee FROM bookings WHERE status='completed'
+         ) summary`,
+      ).first();
       const { results } = await env.DB.prepare(
-        "SELECT * FROM ledger ORDER BY created_at DESC, rowid DESC LIMIT 100",
-      ).all();
+        "SELECT * FROM ledger ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?",
+      ).bind(per, (ledgerPage - 1) * per).all();
       const audit = await env.DB.prepare(
-        "SELECT * FROM audit_log ORDER BY created_at DESC, rowid DESC LIMIT 60",
-      ).all();
+        `SELECT a.*,u.name actor_name,u.role actor_role
+         FROM audit_log a LEFT JOIN users u ON u.id=a.actor
+         ${auditWhereSql} ORDER BY a.created_at DESC,a.id DESC LIMIT ? OFFSET ?`,
+      ).bind(...auditBinds, per, (auditPage - 1) * per).all();
       const settlements = await env.DB.prepare(
         `SELECT b.id, b.code, b.type, b.price, b.status, b.created_at, b.updated_at,
                 b.aiclone_quote_production, b.aiclone_quote_koc, b.aiclone_quote_platform, b.aiclone_quote_additional,
@@ -4834,10 +4923,23 @@ export async function route(request, env, url) {
          FROM bookings b
          LEFT JOIN kocs k ON k.id=b.koc_id
          LEFT JOIN businesses bz ON bz.id=b.business_id
-         WHERE b.status IN ('completed', 'settling', 'video_approved', 'posted', 'brief_review', 'producing')
-         ORDER BY b.updated_at DESC, b.rowid DESC LIMIT 50`,
-      ).all();
-      return J({ ledger: results, audit: audit.results, settlements: settlements.results || [] });
+         ${settlementWhere}
+         ORDER BY b.updated_at DESC, b.rowid DESC LIMIT ? OFFSET ?`,
+      ).bind(per, (distributionPage - 1) * per).all();
+      const pagination = (page, total) => ({ page, per, total, pages: Math.max(1, Math.ceil(total / per)) });
+      return J({
+        ledger: results, audit: audit.results, settlements: settlements.results || [],
+        pagination: {
+          distribution: pagination(distributionPage, settlementTotal),
+          ledger: pagination(ledgerPage, ledgerTotal),
+          audit: pagination(auditPage, auditTotal),
+        },
+        totals: {
+          escrow: Number(settlementTotals.escrow || 0),
+          koc: Number(settlementTotals.koc || 0),
+          netviet: Number(settlementTotals.netviet || 0),
+        },
+      });
     }
     // Admin: all affiliate orders (reconciliation with sàn)
     if (p === "/api/admin/affiliate") {
@@ -5663,7 +5765,10 @@ export async function route(request, env, url) {
         me.koc_id,
       )
       .run();
-    await env.DB.prepare("UPDATE users SET email=?,session_version=session_version+1,updated_at=? WHERE id=?")
+    // Profile edits (including avatar/cover changes) must not revoke the
+    // current login session. session_version is reserved for security events
+    // such as changing or resetting a password.
+    await env.DB.prepare("UPDATE users SET email=?,updated_at=? WHERE id=?")
       .bind(email, now(), me.id)
       .run();
     const stmts = [

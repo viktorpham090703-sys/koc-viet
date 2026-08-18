@@ -10,6 +10,7 @@ import {
   skeletonKocView,
   skeletonStatCards,
   skeletonTable,
+  skeletonPage,
   empty,
   toast,
   modal,
@@ -17,6 +18,7 @@ import {
   fmtDate,
   copyToClipboard,
   avatarUrl,
+  provinceOptions,
 } from "./ui.js";
 import { state, logout } from "./app.js";
 import { icon } from "./icons.js";
@@ -44,10 +46,6 @@ export async function renderKoc(el, hash) {
   ];
   const p = known.includes(page) ? page : "home";
   let shellKoc = { name: state.user.name, avatar: "" };
-  try {
-    const profileData = await api("/api/koc/profile");
-    if (profileData?.koc) shellKoc = profileData.koc;
-  } catch (_) {}
   const activeNav = NAV.find((item) => item[0] === "#/" + p);
   el.innerHTML = `<div class="mobile koc-portal">
     <div class="koc-desktop-topbar">
@@ -57,10 +55,20 @@ export async function renderKoc(el, hash) {
         <a href="#/profile" class="koc-top-profile" aria-label="Hồ sơ ${esc(shellKoc.name)}"><img src="${esc(avatarUrl(shellKoc.avatar))}" alt=""><span>${esc(shellKoc.name)}</span></a>
       </div>
     </div>
-    <div id="koc-view">${skeletonKocView()}</div>${bottomNav("#/" + p)}</div>`;
+    <div id="koc-view">${skeletonPage(p)}</div>${bottomNav("#/" + p)}</div>`;
   document.getElementById("koc-shell-logout").addEventListener("click", logout);
   const view = document.getElementById("koc-view");
   try {
+    const profileData = await api("/api/koc/profile");
+    if (profileData?.koc) {
+      shellKoc = profileData.koc;
+      const shellProfile = el.querySelector('.koc-top-profile');
+      const shellAvatar = shellProfile?.querySelector('img');
+      const shellName = shellProfile?.querySelector('span');
+      if (shellAvatar) shellAvatar.src = avatarUrl(shellKoc.avatar);
+      if (shellName) shellName.textContent = shellKoc.name;
+      if (shellProfile) shellProfile.setAttribute('aria-label', `Há»“ sÆ¡ ${shellKoc.name}`);
+    }
     if (p === "home") await home(view);
     else if (p === "bookings") await bookings(view);
     else if (p === "content") await content(view);
@@ -1409,7 +1417,7 @@ async function profile(el, editing = false) {
       </div>
       <div class="field"><label>Giới thiệu</label><textarea id="pf-bio" rows="3">${esc(k.bio || "")}</textarea></div>
       <div class="field"><label>Email liên hệ / đăng nhập</label><input id="pf-email" type="email" value="${esc(k.email || "")}" placeholder="email@domain.com"></div>
-      <div class="field"><label>Tỉnh/Thành phố</label><select id="pf-prov">${cfg.provinces.map((p) => `<option ${p === k.province ? "selected" : ""}>${esc(p)}</option>`).join("")}</select></div>
+      <div class="field"><label>Tỉnh/Thành phố</label><select id="pf-prov">${provinceOptions(cfg.provinces, k.province)}</select></div>
       <div class="field"><label>Kênh MXH chính ${k.followers_verified ? '<span class="chip g">✓ Đã xác minh</span>' : ""}</label><input id="pf-social" value="${esc((k.socials[0] && k.socials[0].platform + " " + k.socials[0].handle) || "")}" placeholder="TikTok @handle" ${k.followers_verified ? "readonly" : ""}>${k.followers_verified ? '<small class="hint">Liên hệ admin nếu cần đổi kênh và xác minh lại.</small>' : ""}</div>
       ${tierPanel(k, cfg)}
       <div class="field"><label>Ngành hàng & bảng giá</label>
@@ -1560,6 +1568,8 @@ async function profile(el, editing = false) {
         prices,
         bank: { name: bankName, bin: bankBin, account: bankAccount, owner: bankOwner },
       });
+      const topAvatar = document.querySelector(".koc-top-profile img");
+      if (topAvatar) topAvatar.src = avatarUrl(avatarSource);
       toast("Đã lưu và cập nhật trang hồ sơ", "ok");
       profile(el);
     } catch (e) {

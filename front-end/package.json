@@ -10,11 +10,12 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "tesseract.js": "^7.0.0",
-    "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "react-router-dom": "latest"
+    "react-router-dom": "latest",
+    "sonner": "^2.0.8",
+    "tesseract.js": "^7.0.0",
+    "vite": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
