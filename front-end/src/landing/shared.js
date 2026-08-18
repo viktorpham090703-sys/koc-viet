@@ -72,42 +72,89 @@ export function lpFooter() {
 
 export function lpCtaFinal(headline, ctas) {
   return `<section class="lp-cta-final">
-    <h2>${headline}</h2>
-    <div class="lp-hero-cta">${ctas.map((c) => `<a href="${c.href}" class="btn ${c.ghost ? "ghost" : "navy"} nv-lift">${c.label}</a>`).join("")}</div>
+    <div class="lp-cta-final-inner">
+      <h2>${headline}</h2>
+      <div class="lp-hero-cta">${ctas.map((c) => `<a href="${c.href}" class="btn ${c.ghost ? "ghost" : "navy"} nv-lift">${c.label}</a>`).join("")}</div>
+    </div>
   </section>`;
 }
 
-export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img, variant }) {
-  const variantClass = variant ? ` lp-hero-${escAttr(variant)}` : "";
-  return `<section class="lp-hero${img ? " has-media" : ""}${variantClass}">
-    <div class="lp-hero-inner">
-      ${eyebrow ? `<span class="lp-eyebrow">${eyebrow}</span>` : ""}
-      <h1>${h1}</h1>
-      <p class="lp-sub">${sub}</p>
-      ${ctas ? `<div class="lp-hero-cta">${ctas.map((c) => `<a href="${c.href}" class="btn ${c.cls} nv-lift">${c.label}</a>`).join("")}</div>` : ""}
-      ${trust ? `<p class="lp-trust">${trust}</p>` : ""}
-      ${extra || ""}
+export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img, waveFill = "#ffffff" }) {
+  return `<section class="lp-hero-home">
+    <div class="lp-hero-home-inner">
+      <div class="lp-hero-content">
+        ${eyebrow ? `<div class="lp-hero-eyebrow-wrap">
+          <span class="lp-hero-eyebrow-dash"></span>
+          <span class="lp-hero-eyebrow">${eyebrow}</span>
+        </div>` : ""}
+        <h1 class="lp-hero-title">${h1}</h1>
+        <p class="lp-hero-sub">${sub}</p>
+        ${ctas && ctas.length ? `<div class="lp-hero-cta">
+          ${ctas.map(c => `<a href="${c.href}" class="btn ${c.cls === "outline-white" || c.ghost ? "btn-secondary" : "btn-primary"} nv-lift">${c.label}</a>`).join("")}
+        </div>` : ""}
+        ${trust ? `<div class="lp-hero-trust-bar">${trust.split("·").map(t => `<span class="pill">${t.trim()}</span>`).join("")}</div>` : ""}
+        ${extra || ""}
+      </div>
+      ${img ? `<div class="lp-hero-visual">
+        <div class="lp-hero-brush-arc" aria-hidden="true"></div>
+        <img src="${escAttr(img.src)}" alt="${escAttr(img.alt || '')}" fetchpriority="high" decoding="async">
+      </div>` : ""}
     </div>
-    ${img ? `<div class="lp-hero-media">${lpMedia(img)}</div>` : ""}
+    <div class="lp-hero-wave-divider" aria-hidden="true">
+      <svg viewBox="0 0 1440 90" preserveAspectRatio="none" fill="${waveFill}">
+        <path d="M0,45 C280,75 560,18 840,42 C1080,62 1280,72 1440,32 L1440,90 L0,90 Z"></path>
+      </svg>
+    </div>
   </section>`;
 }
 
 // Responsive media frame (image or video) for landing sections.
+export function lpVideoPlayer({ src, poster, alt = "Video giới thiệu" }) {
+  return `<div class="lp-desk-video-card">
+    <video src="${escAttr(src)}" poster="${escAttr(poster || "")}" playsinline preload="metadata" aria-label="${escAttr(alt)}"></video>
+    <button type="button" class="lp-video-play-btn" aria-label="Phát video">
+      <span>▶</span>
+    </button>
+    <div class="lp-video-bottom-bar">
+      <div class="lp-video-progress-wrap" aria-label="Thanh thời gian video">
+        <div class="lp-video-progress-track"></div>
+        <div class="lp-video-progress-played">
+          <span class="lp-video-progress-thumb"></span>
+        </div>
+      </div>
+      <div class="lp-video-controls-row">
+        <div class="lp-video-ctrls-left">
+          <button type="button" class="lp-ctrl-btn lp-ctrl-play-pause" aria-label="Phát/Tạm dừng">
+            <span class="lp-icon-play">▶</span>
+            <span class="lp-icon-pause" style="display:none">❚❚</span>
+          </button>
+          <span class="lp-video-time">0:00 / 0:00</span>
+        </div>
+        <div class="lp-video-ctrls-right">
+          <button type="button" class="lp-ctrl-btn lp-ctrl-volume" aria-label="Bật/Tắt âm lượng">
+            <span class="lp-icon-vol">🔊</span>
+            <span class="lp-icon-muted" style="display:none">🔇</span>
+          </button>
+          <button type="button" class="lp-ctrl-btn lp-ctrl-fullscreen" aria-label="Toàn màn hình">
+            <span>⛶</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 export function lpMedia(spec) {
   if (typeof spec === "string") spec = { q: spec };
   const ratio = spec.ratio || "16/9";
   const label = spec.label || "Khung ảnh minh hoạ — thay ảnh/video thật sau";
+  if (spec.src && spec.video) {
+    return lpVideoPlayer({ src: spec.src, poster: spec.poster, alt: spec.alt });
+  }
   if (spec.src && !spec.video) {
     return `<figure class="lp-media" style="--ratio:${ratio}">
       <div class="lp-media-inner">
         <img src="${escAttr(spec.src)}" alt="${escAttr(spec.alt || "")}" loading="${spec.priority ? "eager" : "lazy"}"${spec.priority ? ' fetchpriority="high"' : ""} decoding="async">
-      </div>
-    </figure>`;
-  }
-  if (spec.src && spec.video) {
-    return `<figure class="lp-media lp-media-video" style="--ratio:${ratio}">
-      <div class="lp-media-inner">
-        <video src="${escAttr(spec.src)}" controls playsinline preload="metadata" aria-label="${escAttr(spec.alt || "Video minh hoạ")}"></video>
       </div>
     </figure>`;
   }
@@ -270,18 +317,18 @@ export function bindLandingEvents(root) {
     }
   });
 
-  // Campaign desk interactive video player
-  const videoPlayerBox = root.querySelector("#lp-video-player-box");
-  const videoPlayBtn = root.querySelector("#lp-video-play-trigger");
-  const videoEl = root.querySelector("#lp-campaign-video");
-  const timeDisplay = root.querySelector("#lp-video-time-display");
-  const progressWrap = root.querySelector("#lp-video-progress-wrap");
-  const playedBar = root.querySelector("#lp-video-played-bar");
-  const ctrlPlayBtn = root.querySelector("#lp-ctrl-play-pause");
-  const ctrlVolBtn = root.querySelector("#lp-ctrl-volume");
-  const ctrlFsBtn = root.querySelector("#lp-ctrl-fullscreen");
+  // Interactive video players
+  root.querySelectorAll(".lp-desk-video-card").forEach((card) => {
+    const videoEl = card.querySelector("video");
+    const videoPlayBtn = card.querySelector(".lp-video-play-btn");
+    const timeDisplay = card.querySelector(".lp-video-time");
+    const progressWrap = card.querySelector(".lp-video-progress-wrap");
+    const playedBar = card.querySelector(".lp-video-progress-played");
+    const ctrlPlayBtn = card.querySelector(".lp-ctrl-play-pause") || card.querySelector("#lp-ctrl-play-pause");
+    const ctrlVolBtn = card.querySelector(".lp-ctrl-volume") || card.querySelector("#lp-ctrl-volume");
+    const ctrlFsBtn = card.querySelector(".lp-ctrl-fullscreen") || card.querySelector("#lp-ctrl-fullscreen");
 
-  if (videoEl) {
+    if (!videoEl) return;
     let isSeeking = false;
 
     const formatTime = (sec) => {
@@ -292,6 +339,7 @@ export function bindLandingEvents(root) {
     };
 
     const updatePlayState = (isPlaying) => {
+      card.classList.toggle("is-playing", isPlaying);
       if (videoPlayBtn) {
         videoPlayBtn.style.opacity = isPlaying ? "0" : "1";
         videoPlayBtn.style.pointerEvents = isPlaying ? "none" : "auto";
@@ -397,17 +445,23 @@ export function bindLandingEvents(root) {
       });
     }
 
-    if (ctrlFsBtn && videoPlayerBox) {
+    if (ctrlFsBtn) {
       ctrlFsBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         if (!document.fullscreenElement) {
-          videoPlayerBox.requestFullscreen?.().catch(() => {});
+          if (card.requestFullscreen) {
+            card.requestFullscreen().catch(() => {});
+          } else if (videoEl.webkitEnterFullscreen) {
+            videoEl.webkitEnterFullscreen();
+          }
         } else {
-          document.exitFullscreen?.().catch(() => {});
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
         }
       });
     }
-  }
+  });
 
   // Scroll-reveal (fade/slide-in) for sections & feature rows — light, no dependency.
   const revealEls = root.querySelectorAll(

@@ -1,7 +1,14 @@
 import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Cards,Cta,Faq,Hero,LeadForm,Media,Section,Shell,Steps } from './LandingComponents'
-const img={koc:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785312036/BANNER_TRANG_KOC_qjho2n.jpg',business:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg',market:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/c%E1%BA%A3_m%E1%BB%99t_th%E1%BB%8B_tr%C6%B0%E1%BB%9Dng_koc_trong_b%E1%BB%99_l%E1%BB%8Dc_ynzysz.jpg',ai:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/banner_ai_clone_av_i0rjqx.jpg',price:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313899/b%E1%BA%A3ng_gi%C3%A1_u79tuy.jpg',community:'https://res.cloudinary.com/drxum5uxt/image/upload/v1785313892/kh%C3%A1ch_h%C3%A0ng_t%E1%BB%89nh_n%C3%A0o-koc_t%E1%BB%89nh_%C4%91%C3%B3_psuq1g.jpg'}
+const img={
+  koc: '/images/koc-hero-seamless.png',
+  business: '/images/business-hero-seamless.png',
+  market: '/images/marketplace-hero-seamless.png',
+  ai: '/images/aiclone-hero-seamless.png',
+  price: '/images/pricing-hero-seamless.png',
+  community: '/images/community-hero-seamless.png',
+}
 const flow:Array<[string,string]>=[
   ['TÌM & CHỌN','Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.'],
   ['BOOKING & ĐẶT CỌC','Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.'],
@@ -9,7 +16,15 @@ const flow:Array<[string,string]>=[
   ['ĐO LƯỜNG & CHI TRẢ','Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.'],
 ]
 
-export function CampaignVideoPlayer() {
+export function CampaignVideoPlayer({
+  src = "/videos/how-it-works.mp4",
+  poster = "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg",
+  alt = "Video minh hoạ",
+}: {
+  src?: string;
+  poster?: string;
+  alt?: string;
+} = {}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const progressWrapRef = useRef<HTMLDivElement>(null);
@@ -108,14 +123,15 @@ export function CampaignVideoPlayer() {
   };
 
   return (
-    <div className="lp-desk-video-card" id="lp-video-player-box" ref={cardRef} onClick={togglePlay}>
+    <div className={`lp-desk-video-card ${playing ? 'is-playing' : ''}`} id="lp-video-player-box" ref={cardRef} onClick={togglePlay}>
       <video
         ref={videoRef}
         id="lp-campaign-video"
-        src="/videos/how-it-works.mp4"
+        src={src}
         playsInline
         preload="metadata"
-        poster="https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg"
+        poster={poster}
+        aria-label={alt}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
           if (videoRef.current?.duration) setDuration(videoRef.current.duration);
