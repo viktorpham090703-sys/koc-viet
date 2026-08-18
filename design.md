@@ -57,6 +57,14 @@ Thang khoảng cách có tên từ `--space-3xs` đến `--space-4xl` trong
 
 ## Per-page allowances
 
+- `/trang-chu` uses a split-surface editorial variant: the header, hero, stats,
+  activity rail, and footer use the locked midnight tokens already defined in
+  `front-end/tokens.css`: `--color-home-paper`, `--color-home-paper-2`,
+  `--color-home-paper-3`, `--color-home-ink`, `--color-home-muted`,
+  `--color-home-rule`, and `--color-home-accent`. Content sections below the
+  activity rail return to the warm-paper tokens with coral hairlines, matching
+  the supplied homepage reference. Other routes remain on the warm-paper system.
+
 - Marketing được dùng video thật trong `front-end/public/videos`.
 - Portal không thêm hình trang trí; chức năng là trọng tâm.
 - Content dùng typography, card, table và form chuẩn.

@@ -6,8 +6,8 @@
   --r-btn:10px; --r-card:16px;
 }
 
-/* ===== Responsive brand logo (Desktop/Tablet/Mobile) — overrides any text-based .logo/.lp-logo ===== */
-.logo,.lp-logo{
+/* ===== Responsive brand logo (Desktop/Tablet/Mobile) — only for text-based .logo in portals ===== */
+.logo:not(.lp-logo){
   display:inline-block!important;
   overflow:hidden!important;
   text-indent:-9999px!important;
@@ -21,13 +21,13 @@
   background-image:url('https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/6a18ab41-180a-42a8-ba4e-90efcac40d23.png')!important;
 }
 @media (min-width:601px) and (max-width:1024px){
-  .logo,.lp-logo{
+  .logo:not(.lp-logo){
     width:140px!important;height:44px!important;background-position:left center!important;
     background-image:url('https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/abea88e7-9e70-4745-8083-4216d38fb726.png')!important;
   }
 }
 @media (min-width:1025px){
-  .logo,.lp-logo{
+  .logo:not(.lp-logo){
     width:220px!important;height:46px!important;background-position:left center!important;
     background-image:url('https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/fb11b10e-ea2d-443d-aeae-47b2e560095e.png')!important;
   }
