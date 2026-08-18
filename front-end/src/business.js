@@ -1,5 +1,5 @@
 import { api, post } from './api.js';
-import { money, num, esc, fmtDate, stars, statusChip, spinner, empty, toast, modal, closeModal, tierBadge, skeletonPortal, skeletonStatCards, skeletonTable, skeletonKocGrid, avatarUrl } from './ui.js';
+import { money, num, esc, fmtDate, stars, statusChip, spinner, empty, toast, modal, closeModal, tierBadge, skeletonPage, skeletonStatCards, skeletonTable, skeletonKocGrid, avatarUrl } from './ui.js';
 import { state, logout, enhancePortal } from './app.js';
 import { renderMarketplaceEmbed } from './public.js';
 import { icon } from './icons.js';
@@ -15,12 +15,14 @@ const NAV = [
 export async function renderBusiness(el, hash) {
   const page = hash.replace('#/','') || 'dashboard';
   const active = '#/' + (['dashboard','find','orders','products','aiclone-booking','wallet','kol','campaigns','report','profile'].includes(page)?page:'dashboard');
-  el.innerHTML = `<div class="portal">
+  el.innerHTML = `<div class="portal business-portal">
     ${sidebar(active)}
-    <div class="main"><div class="topbar"><h2>Trang doanh nghiệp</h2>
-      <div class="row"><span class="muted">${esc(state.user.name)}</span><button class="btn ghost sm" id="bz-logout">Đăng xuất</button></div></div>
-      <div class="content" id="bz-view">${skeletonStatCards(4) + skeletonTable(4)}</div></div></div>`;
+    <div class="main"><div class="topbar portal-topbar">
+      <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2>Trang doanh nghiệp</h2></div>
+      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ doanh nghiệp"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'D').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Doanh nghiệp</span></div></a><button class="btn ghost sm portal-logout" id="bz-logout">Đăng xuất</button></div></div>
+      <div class="content" id="bz-view">${skeletonPage(active.slice(2))}</div></div></div>`;
   document.getElementById('bz-logout').addEventListener('click', logout);
+  void hydrateBusinessAccount(el);
   enhancePortal();
   const view = document.getElementById('bz-view');
   try {
@@ -39,7 +41,26 @@ export async function renderBusiness(el, hash) {
 
 function sidebar(active) {
   return `<div class="sidebar"><div class="brand"><img class="brand-icon" src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785140673/business_ft0lrg.png" alt=""><span class="brand-name">KOC Viet <span>Business</span></span></div>
-    ${NAV.map(n=>`<a href="${n[0]}" class="${n[0]===active?'active':''}">${n[1]}<span>${n[2]}</span></a>`).join('')}</div>`;
+    <nav class="portal-nav">${NAV.map(n=>`<a href="${n[0]}" class="${n[0]===active?'active':''}">${n[1]}<span>${n[2]}</span></a>`).join('')}</nav></div>`;
+}
+
+async function hydrateBusinessAccount(root) {
+  try {
+    const { business } = await api('/api/business/profile');
+    const account = root.querySelector('.portal-account-identity');
+    const avatar = account?.querySelector('.portal-account-avatar');
+    const name = account?.querySelector('.portal-account-meta strong');
+    if (!account || !avatar || !business) return;
+    if (name) name.textContent = business.name || state.user.name;
+    account.setAttribute('aria-label', `Mở hồ sơ doanh nghiệp ${business.name || state.user.name}`);
+    if (business.avatar) {
+      const image = document.createElement('img');
+      image.src = business.avatar;
+      image.alt = `Logo ${business.name || 'doanh nghiệp'}`;
+      image.addEventListener('error', () => image.remove(), { once: true });
+      avatar.replaceChildren(image);
+    }
+  } catch (_) {}
 }
 
 async function dashboard(el) {
@@ -1116,7 +1137,9 @@ async function profile(el, editing = false) {
         avatar: avatarSource, cover: coverSource,
         bank: { name: el.querySelector('#pf-bank-name').value.trim(), account: el.querySelector('#pf-bank-account').value.trim(), owner: el.querySelector('#pf-bank-owner').value.trim() },
       });
-      toast('Đã lưu hồ sơ','ok'); profile(el);
+      toast('Đã lưu hồ sơ','ok');
+      void hydrateBusinessAccount(document.getElementById('app'));
+      profile(el);
     } catch (e) { toast(e.message,'err'); btn.disabled = false; btn.textContent = '💾 Lưu hồ sơ'; }
   });
 }

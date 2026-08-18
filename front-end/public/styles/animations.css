@@ -973,3 +973,44 @@ input:focus, select:focus, textarea:focus {
     transform: none !important;
   }
 }
+
+.sk-page { display:flex; flex-direction:column; gap:18px; width:100%; }
+.sk-page-heading { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:54px; }
+.sk-page-heading>div { flex:1; max-width:620px; }
+.sk-page-heading>.sk-line { margin:0; max-width:150px; }
+.sk-toolbar { display:flex; gap:12px; padding:14px; background:#fff; border:1px solid var(--border,#e8e8e8); border-radius:12px; }
+.sk-toolbar>.sk-line { margin:0; }
+.sk-tabs { display:flex; gap:8px; }
+.sk-tabs>.sk-line { max-width:150px; margin:0; border-radius:999px; }
+.sk-list { display:flex; flex-direction:column; gap:10px; width:100%; }
+.sk-list-card { flex-direction:row; align-items:center; padding:14px; }
+.sk-list-card .sk-line { margin-bottom:0; }
+.sk-grow { flex:1; min-width:0; }
+.sk-grow .sk-line:last-child { margin-bottom:0; }
+.sk-dashboard-panels,.sk-workflow,.sk-profile,.sk-wallet-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.sk-chart-area { height:190px; width:100%; margin-top:12px; border-radius:12px; }
+.sk-data-table { overflow:hidden; background:#fff; border:1px solid var(--border,#e8e8e8); border-radius:14px; }
+.sk-data-row { display:grid; grid-template-columns:1.25fr repeat(4,1fr); gap:18px; padding:16px; border-bottom:1px solid var(--border,#e8e8e8); }
+.sk-data-row:last-child { border-bottom:0; }
+.sk-data-row .sk-line { margin:0; }
+.sk-data-head { background:#f8fafc; }
+.sk-profile { grid-template-columns:minmax(180px,.35fr) minmax(0,1fr); }
+.sk-profile-aside { align-items:center; text-align:center; }
+.sk-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; }
+.sk-form-grid>div>.sk-line:last-child { margin-bottom:0; }
+.sk-workflow>div { min-width:0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-skeleton::after { animation:none; display:none; }
+}
+
+@media (max-width: 720px) {
+  .sk-page { gap:12px; }
+  .sk-page-heading { min-height:42px; }
+  .sk-page-heading>.sk-line { display:none; }
+  .sk-dashboard-panels,.sk-workflow,.sk-profile,.sk-wallet-summary { grid-template-columns:1fr; }
+  .sk-form-grid { grid-template-columns:1fr; }
+  .sk-data-row { grid-template-columns:1.4fr 1fr 1fr; }
+  .sk-data-row>div:nth-child(n+4) { display:none; }
+  .sk-list-card>.sk-line:last-child { display:none; }
+}

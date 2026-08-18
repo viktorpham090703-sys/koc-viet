@@ -7,6 +7,7 @@ import {
   spinner,
   skeletonStatCards,
   skeletonTable,
+  skeletonPage,
   empty,
   toast,
   modal,
@@ -39,12 +40,13 @@ export async function renderAdmin(el, hash) {
   const page = hash.replace("#/", "") || "dashboard";
   const keys = NAV.map((n) => n[0].replace("#/", ""));
   const active = "#/" + (keys.includes(page) ? page : "dashboard");
-  el.innerHTML = `<div class="portal">
+  el.innerHTML = `<div class="portal admin-portal">
     <div class="sidebar"><div class="brand">${icon("admin", "brand-icon")}<span class="brand-name">KOC Viet <span>Admin</span></span></div>
-      ${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</div>
-    <div class="main"><div class="topbar" style="background:var(--navy);color:#fff"><h2 style="color:#fff">Trang quản trị</h2>
-      <div class="row"><span style="color:#cdd6e4">${esc(state.user.name)}</span><button class="btn ghost sm" id="ad-logout">Đăng xuất</button></div></div>
-      <div class="content" id="ad-view">${skeletonStatCards(4) + skeletonTable(5)}</div></div></div>`;
+      <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav></div>
+    <div class="main"><div class="topbar portal-topbar" style="background:var(--navy);color:#fff">
+      <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2 style="color:#fff">Trang quản trị</h2></div>
+      <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'A').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Quản trị viên</span></div><button class="btn ghost sm portal-logout" id="ad-logout">Đăng xuất</button></div></div>
+      <div class="content" id="ad-view">${skeletonPage(active.slice(2))}</div></div></div>`;
   document.getElementById("ad-logout").addEventListener("click", logout);
   enhancePortal();
   const view = document.getElementById("ad-view");
@@ -288,16 +290,27 @@ async function kpi(el) {
               `<div class="between" style="padding:6px 0">${statusChip(s)}<b>${c}</b></div>`,
           )
           .join("")}</div></div>
-      <div class="card"><h2>Phân bố theo tỉnh</h2><div style="margin-top:12px">
-        ${k.provinces
-          .map(
-            (
-              p,
-            ) => `<div class="between" style="padding:5px 0"><span>${esc(p.province)}</span>
-          <div class="row" style="flex:1;margin-left:10px"><div class="progress" style="flex:1"><i style="width:${(p.c / k.kocs) * 100}%"></i></div><b style="margin-left:8px">${p.c}</b></div></div>`,
-          )
-          .join("")}</div></div>
+      <div class="card"><div class="between"><h2>Phân bố theo tỉnh</h2><span class="muted" style="font-size:12px">34 tỉnh/thành</span></div>
+        <div id="province-distribution" style="margin-top:12px"></div>
+        <div class="pager" id="province-pager" style="margin-top:12px"></div></div>
     </div>`;
+  const provinces = [...(k.provinces || [])].sort((a, b) => Number(b.c || 0) - Number(a.c || 0) || String(a.province).localeCompare(String(b.province), 'vi'));
+  const provincePerPage = 8;
+  const provincePages = Math.max(1, Math.ceil(provinces.length / provincePerPage));
+  let provincePage = 1;
+  const drawProvinces = () => {
+    const start = (provincePage - 1) * provincePerPage;
+    const rows = provinces.slice(start, start + provincePerPage);
+    el.querySelector('#province-distribution').innerHTML = rows.map(p => `<div class="between" style="padding:5px 0"><span>${esc(p.province)}</span>
+      <div class="row" style="flex:1;margin-left:10px"><div class="progress" style="flex:1"><i style="width:${k.kocs ? (p.c / k.kocs) * 100 : 0}%"></i></div><b style="margin-left:8px">${p.c}</b></div></div>`).join('');
+    const pager = el.querySelector('#province-pager');
+    pager.innerHTML = `<button data-province-page="${provincePage - 1}" ${provincePage === 1 ? 'disabled' : ''} aria-label="Trang tỉnh thành trước">‹</button><span class="muted" style="padding:7px 6px">${provincePage} / ${provincePages}</span><button data-province-page="${provincePage + 1}" ${provincePage === provincePages ? 'disabled' : ''} aria-label="Trang tỉnh thành sau">›</button>`;
+    pager.querySelectorAll('[data-province-page]').forEach(button => button.addEventListener('click', () => {
+      provincePage = Number(button.dataset.provincePage);
+      drawProvinces();
+    }));
+  };
+  drawProvinces();
 }
 
 async function queue(el) {
@@ -569,7 +582,7 @@ async function loadAllBookings(el) {
 async function complaintsAdmin(el) {
   el.innerHTML = `<div class="between"><h1 class="icon-heading">${icon("complaint", "teaser-icon")} Khiếu nại booking</h1>
     <select id="cp-status"><option value="">Tất cả</option><option value="open">Mới tiếp nhận</option><option value="in_review">Đang xử lý</option><option value="resolved">Đã xử lý</option><option value="rejected">Từ chối</option></select></div>
-    <div style="margin-top:16px" id="cp-list">${spinner()}</div>`;
+    <div style="margin-top:16px" id="cp-list">${skeletonPage('complaints')}</div>`;
   document
     .getElementById("cp-status")
     .addEventListener("change", () => loadComplaints(el));
@@ -659,7 +672,7 @@ async function contractsAdmin(el) {
       <div class="field"><label>Trạng thái</label><select id="ct-status"><option value="">Tất cả</option><option value="pending">Chờ duyệt</option><option value="leader_ok">Trưởng nhóm duyệt</option><option value="active">Đã kích hoạt</option><option value="rejected">Từ chối</option></select></div>
       <button class="btn primary sm" id="ct-go">Tìm</button>
     </div>
-    <div id="ct-list">${spinner()}</div>`;
+    <div id="ct-list">${skeletonPage('contracts')}</div>`;
   document.getElementById("ct-go").addEventListener("click", () => {
     ctrFilters = {
       page: 1,
@@ -672,7 +685,7 @@ async function contractsAdmin(el) {
 }
 async function loadContracts(el) {
   const box = document.getElementById("ct-list");
-  box.innerHTML = spinner();
+  box.innerHTML = skeletonPage('contracts');
   const qs = new URLSearchParams({ page: ctrFilters.page || 1 });
   if (ctrFilters.search) qs.set("search", ctrFilters.search);
   if (ctrFilters.status) qs.set("status", ctrFilters.status);
@@ -806,15 +819,21 @@ async function adminCampaigns(el) {
   );
 }
 
-async function settle(el) {
+let settleView = { activeTab: 'distribution', distributionPage: 1, ledgerPage: 1, auditPage: 1, auditSearch: '', auditCategory: '' };
+async function settle(el, changes = {}) {
+  settleView = { ...settleView, ...changes };
+  const ledgerParams = new URLSearchParams({
+    per: '8', distributionPage: settleView.distributionPage, ledgerPage: settleView.ledgerPage,
+    auditPage: settleView.auditPage, auditSearch: settleView.auditSearch, auditCategory: settleView.auditCategory,
+  });
   const [kpiData, led] = await Promise.all([
     api("/api/admin/kpi"),
-    api("/api/admin/ledger"),
+    api("/api/admin/ledger?" + ledgerParams.toString()),
   ]);
   const list = led.settlements || [];
-  let totalNetviet = 0;
-  let totalKoc = 0;
-  let totalEscrow = 0;
+  const totalNetviet = Number(led.totals?.netviet || 0);
+  const totalKoc = Number(led.totals?.koc || 0);
+  const totalEscrow = Number(led.totals?.escrow || 0);
 
   const rows = list
     .map((s) => {
@@ -842,12 +861,6 @@ async function settle(el) {
       }
       const netvietFee = Math.max(0, Number(s.price) - kocFee);
 
-      if (s.status === "completed") {
-        totalEscrow += Number(s.price);
-        totalKoc += kocFee;
-        totalNetviet += netvietFee;
-      }
-
       return `<tr>
       <td><b>${esc(s.code)}</b><div class="muted" style="font-size:11px">${esc(s.business_name || "Doanh nghiệp")}</div></td>
       <td><b>${esc(s.koc_name || "KOC")}</b></td>
@@ -869,22 +882,45 @@ async function settle(el) {
       ${scard("Tổng khoản đảm bảo đã hoàn tất", money(totalEscrow))}
       ${scard("Hoa hồng chờ đối soát", money(kpiData.pendingSettle))}
     </div>
-    <div class="card" style="margin-bottom:16px">
+    <div class="settle-tabs" role="tablist" aria-label="Chi tiết đối soát">
+      <button class="${settleView.activeTab === 'distribution' ? 'active' : ''}" role="tab" aria-selected="${settleView.activeTab === 'distribution'}" data-settle-tab="distribution">🏛️ Phân bổ tiền</button>
+      <button class="${settleView.activeTab === 'ledger' ? 'active' : ''}" role="tab" aria-selected="${settleView.activeTab === 'ledger'}" data-settle-tab="ledger">📒 Sổ thu chi</button>
+      <button class="${settleView.activeTab === 'audit' ? 'active' : ''}" role="tab" aria-selected="${settleView.activeTab === 'audit'}" data-settle-tab="audit">🕘 Nhật ký hệ thống</button>
+    </div>
+    <div class="card settle-panel ${settleView.activeTab === 'distribution' ? 'active' : ''}" data-settle-panel="distribution" role="tabpanel" ${settleView.activeTab !== 'distribution' ? 'hidden' : ''}>
       <h2>🏛️ Lịch sử phân bổ tiền</h2>
       <div class="table-wrap" style="margin-top:12px;border:none">
         <table><thead><tr><th>Mã đơn &amp; Doanh nghiệp</th><th>KOC nhận tiền</th><th>Tổng khoản đảm bảo</th><th>Tiền vào Ví KOC</th><th>Doanh thu NetViet</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
         ${rows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Chưa có đơn hàng đối soát</td></tr>'}
         </tbody></table>
       </div>
+      <div class="pager" id="distribution-pager"></div>
     </div>
-    <div class="card"><h2>Sổ thu chi toàn hệ thống</h2><div class="table-wrap" style="margin-top:12px;border:none">
+    <div class="card settle-panel ${settleView.activeTab === 'ledger' ? 'active' : ''}" data-settle-panel="ledger" role="tabpanel" ${settleView.activeTab !== 'ledger' ? 'hidden' : ''}><h2>Sổ thu chi toàn hệ thống</h2><div class="table-wrap" style="margin-top:12px;border:none">
       <table><thead><tr><th>Loại</th><th>Số tiền</th><th>Ghi chú</th><th>Thời gian</th></tr></thead><tbody>
       ${led.ledger.length ? led.ledger.map((l) => `<tr><td>${ledgerKind(l.kind)}</td><td class="money">${money(l.amount)}</td><td>${esc(l.note || "")}</td><td class="muted">${fmtDate(l.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có giao dịch</td></tr>'}
-      </tbody></table></div></div>
-    <div class="card" style="margin-top:16px"><h2>Lịch sử thao tác quản trị</h2><div class="table-wrap" style="margin-top:12px;border:none">
-      <table><thead><tr><th>Hành động</th><th>Tham chiếu</th><th>Chi tiết</th><th>Thời gian</th></tr></thead><tbody>
-      ${led.audit && led.audit.length ? led.audit.map((a) => `<tr><td><span class="chip n">${esc(a.action)}</span></td><td class="muted">${esc((a.ref || "").slice(0, 16))}</td><td class="muted" style="max-width:220px">${esc(a.detail || "")}</td><td class="muted">${fmtDate(a.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có thao tác nào</td></tr>'}
-      </tbody></table></div></div>`;
+      </tbody></table></div><div class="pager" id="ledger-pager"></div></div>
+    <div class="card audit-card settle-panel ${settleView.activeTab === 'audit' ? 'active' : ''}" data-settle-panel="audit" role="tabpanel" ${settleView.activeTab !== 'audit' ? 'hidden' : ''}>
+      <div class="between audit-heading"><div><h2>Nhật ký hoạt động hệ thống</h2><p class="muted">Theo dõi các thay đổi quan trọng liên quan đến booking, AI Clone, thanh toán và tài khoản.</p></div><span class="chip n">${num(led.pagination?.audit?.total || 0)} hoạt động</span></div>
+      <div class="audit-toolbar"><input id="audit-search" value="${esc(settleView.auditSearch)}" placeholder="Tìm hành động, người thực hiện, mã tham chiếu…"><select id="audit-category"><option value="">Tất cả nghiệp vụ</option><option value="booking" ${settleView.auditCategory === 'booking' ? 'selected' : ''}>Booking</option><option value="aiclone" ${settleView.auditCategory === 'aiclone' ? 'selected' : ''}>AI Clone</option><option value="payment" ${settleView.auditCategory === 'payment' ? 'selected' : ''}>Thanh toán & ví</option><option value="account" ${settleView.auditCategory === 'account' ? 'selected' : ''}>Tài khoản & hồ sơ</option><option value="other" ${settleView.auditCategory === 'other' ? 'selected' : ''}>Khác</option></select></div>
+      <div id="audit-list"></div><div class="pager" id="audit-pager"></div>
+    </div>`;
+  bindServerPager(el, '#distribution-pager', led.pagination?.distribution, page => settle(el, { distributionPage: page, activeTab: 'distribution' }));
+  bindServerPager(el, '#ledger-pager', led.pagination?.ledger, page => settle(el, { ledgerPage: page, activeTab: 'ledger' }));
+  initAuditLog(el, led.audit || [], led.pagination?.audit);
+  el.querySelectorAll('[data-settle-tab]').forEach(tab => tab.addEventListener('click', () => {
+    settleView.activeTab = tab.dataset.settleTab;
+    el.querySelectorAll('[data-settle-tab]').forEach(item => {
+      const active = item === tab;
+      item.classList.toggle('active', active);
+      item.setAttribute('aria-selected', String(active));
+    });
+    el.querySelectorAll('[data-settle-panel]').forEach(panel => {
+      const active = panel.dataset.settlePanel === tab.dataset.settleTab;
+      panel.classList.toggle('active', active);
+      panel.hidden = !active;
+    });
+  }));
   document.getElementById("s-run").addEventListener("click", async () => {
     const r = await post("/api/admin/settle", {});
     toast(
@@ -894,6 +930,56 @@ async function settle(el) {
     settle(el);
   });
 }
+
+const AUDIT_LABELS = {
+  'booking.complete': ['Hoàn tất booking', 'booking'], 'booking.create': ['Tạo booking', 'booking'],
+  'booking.delete': ['Xóa booking', 'booking'], 'aiclone.booking_create': ['Tạo booking AI Clone', 'aiclone'],
+  'aiclone.video_approve': ['Duyệt video AI Clone', 'aiclone'], 'aiclone.deliver': ['Giao video AI Clone', 'aiclone'],
+  'aiclone.script_approved': ['Duyệt kịch bản', 'aiclone'], 'aiclone.quote_sent': ['Gửi báo giá AI Clone', 'aiclone'],
+  'aiclone.quote_accepted': ['Chấp nhận báo giá', 'aiclone'], 'payment.paid': ['Xác nhận thanh toán', 'payment'],
+  'payment.checkout_created': ['Tạo yêu cầu thanh toán', 'payment'], 'settle.run': ['Chạy đối soát', 'payment'],
+  'wallet.deposit.demo': ['Nạp tiền vào ví', 'payment'], 'business.profile_update': ['Cập nhật hồ sơ doanh nghiệp', 'account'],
+  'koc.profile_update': ['Cập nhật hồ sơ KOC', 'account'], 'business.lock': ['Khóa doanh nghiệp', 'account'],
+  'business.unlock': ['Mở khóa doanh nghiệp', 'account'], 'business.reject': ['Từ chối doanh nghiệp', 'account'],
+};
+
+function auditMeta(action) {
+  if (AUDIT_LABELS[action]) return AUDIT_LABELS[action];
+  const prefix = String(action || '').split('.')[0];
+  const category = ['booking'].includes(prefix) ? 'booking' : prefix === 'aiclone' ? 'aiclone' : ['payment', 'wallet', 'settle', 'affiliate_order'].includes(prefix) ? 'payment' : ['business', 'koc', 'account'].includes(prefix) ? 'account' : 'other';
+  return [String(action || 'system.event').replaceAll('_', ' '), category];
+}
+
+function auditActor(entry) {
+  if (entry.actor_name) return { name: entry.actor_name, role: entry.actor_role || 'Người dùng' };
+  if (entry.actor === 'payos') return { name: 'PayOS', role: 'Cổng thanh toán' };
+  if (entry.actor === 'system') return { name: 'Hệ thống', role: 'Tự động' };
+  if (entry.actor === 'guest') return { name: 'Khách truy cập', role: 'Công khai' };
+  return { name: 'Tài khoản hệ thống', role: 'Không xác định' };
+}
+
+function bindServerPager(el, selector, meta, onPage) {
+  const pager = el.querySelector(selector);
+  if (!pager || !meta || meta.pages <= 1) { if (pager) pager.innerHTML = ''; return; }
+  pager.innerHTML = `<button data-server-page="${meta.page - 1}" ${meta.page <= 1 ? 'disabled' : ''}>‹</button><span class="muted" style="padding:7px 6px">${meta.page} / ${meta.pages}</span><button data-server-page="${meta.page + 1}" ${meta.page >= meta.pages ? 'disabled' : ''}>›</button>`;
+  pager.querySelectorAll('[data-server-page]').forEach(button => button.addEventListener('click', () => onPage(Number(button.dataset.serverPage))));
+}
+
+function initAuditLog(el, entries, meta) {
+  const search = el.querySelector('#audit-search');
+  const category = el.querySelector('#audit-category');
+  const list = el.querySelector('#audit-list');
+  list.innerHTML = entries.length ? `<div class="audit-list">${entries.map(entry => {
+      const [label, group] = auditMeta(entry.action);
+      const actor = auditActor(entry);
+      return `<article class="audit-item"><span class="audit-dot ${group}"></span><div class="audit-main"><div class="audit-title"><strong>${esc(label)}</strong><code>${esc(entry.action)}</code></div><div class="audit-detail">${entry.detail ? esc(entry.detail) : 'Không có thông tin bổ sung'}</div></div><div class="audit-actor"><strong>${esc(actor.name)}</strong><span>${esc(actor.role)}</span></div><div class="audit-ref" title="${esc(entry.ref || '')}"><span>Tham chiếu</span><code>${esc((entry.ref || '—').slice(0, 14))}${entry.ref?.length > 14 ? '…' : ''}</code></div><time>${fmtDate(entry.created_at)}</time></article>`;
+    }).join('')}</div>` : empty('🔎', 'Không tìm thấy hoạt động phù hợp');
+  bindServerPager(el, '#audit-pager', meta, page => settle(el, { auditPage: page, activeTab: 'audit' }));
+  const applyFilter = () => settle(el, { auditPage: 1, auditSearch: search.value.trim(), auditCategory: category.value, activeTab: 'audit' });
+  search.addEventListener('keydown', event => { if (event.key === 'Enter') applyFilter(); });
+  category.addEventListener('change', applyFilter);
+}
+
 function ledgerKind(k) {
   const map = {
     service_fee: ["Phí dịch vụ 5%", "g"],

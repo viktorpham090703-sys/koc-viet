@@ -416,6 +416,111 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
 .grid-fill-260{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px}
 .grid-fill-150{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:10px}
 
+/* ===== Business & Admin portal layout refresh =====
+   Structural rules only: brand assets and the existing color tokens stay unchanged. */
+.business-portal,.admin-portal{min-height:100dvh;align-items:stretch}
+.business-portal .sidebar,.admin-portal .sidebar{
+  width:272px;padding:24px 14px 18px;display:flex;flex-direction:column;gap:12px
+}
+.business-portal .sidebar .brand,.admin-portal .sidebar .brand{
+  min-height:52px;padding:0 12px 18px;margin-bottom:2px;border-bottom:1px solid rgba(255,255,255,.1)
+}
+.business-portal .portal-nav,.admin-portal .portal-nav{
+  display:flex;flex:1;flex-direction:column;gap:4px;padding:4px 0 12px
+}
+.business-portal .sidebar a,.admin-portal .sidebar a{
+  min-height:46px;padding:10px 13px;border-left:0;border-radius:10px;line-height:1.3
+}
+.business-portal .sidebar a.active,.admin-portal .sidebar a.active{
+  border-left:0;box-shadow:inset 3px 0 0 var(--grad-b)
+}
+.business-portal .main,.admin-portal .main{display:flex;min-height:100dvh;flex-direction:column}
+.business-portal .topbar,.admin-portal .topbar{
+  min-height:72px;padding:12px clamp(20px,3vw,40px);gap:20px
+}
+.business-portal .topbar>.row,.admin-portal .topbar>.row{margin-left:auto;gap:12px}
+.portal-topbar{isolation:isolate}
+.portal-context{display:flex;min-width:0;flex-direction:column;gap:1px}
+.portal-context-label{font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.11em;text-transform:uppercase;opacity:.68}
+.portal-context h2{font-family:var(--font-body,'Be Vietnam Pro',system-ui,sans-serif);font-size:17px;line-height:1.35;white-space:nowrap}
+.portal-account{display:flex;min-width:0;align-items:center;gap:10px;margin-left:auto}
+.portal-account-identity{display:flex;min-width:0;align-items:center;gap:10px;border-radius:10px;cursor:pointer}
+.portal-account-identity:focus-visible{outline:2px solid currentColor;outline-offset:4px}
+.portal-account-avatar{display:grid;width:36px;height:36px;flex:0 0 36px;place-items:center;border:2px solid var(--card);border-radius:50%;box-shadow:0 0 0 2px var(--primary);font-size:13px;font-weight:800;opacity:.9}
+.portal-account-avatar img{width:100%;height:100%;border-radius:inherit;object-fit:cover}
+.portal-account-meta{display:flex;min-width:0;flex-direction:column;line-height:1.25}
+.portal-account-meta strong{max-width:180px;overflow:hidden;font-size:13px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.portal-account-meta span{font-size:11px;opacity:.68}
+.portal-logout{height:36px;margin-left:8px;padding:0 13px;font-size:12px;white-space:nowrap}
+.admin-portal .portal-account{padding-left:18px;border-left:1px solid rgba(255,255,255,.16)}
+.business-portal .portal-account{padding-left:18px;border-left:1px solid var(--border)}
+.business-portal .content,.admin-portal .content{
+  width:100%;max-width:1600px;margin:0 auto;padding:clamp(22px,3vw,40px);flex:1
+}
+.business-portal .content>h1,.admin-portal .content>h1,
+.business-portal .content>.between:first-child,.admin-portal .content>.between:first-child{margin-bottom:20px}
+.business-portal .content>h1+.muted,.admin-portal .content>h1+.muted{margin-top:-14px;margin-bottom:22px}
+.business-portal .content>.between:first-child{align-items:flex-start}
+.admin-portal .content>.between:first-child{align-items:flex-start}
+.business-portal .stat-cards,.admin-portal .stat-cards{gap:18px}
+.business-portal .stat-cards>.card,.admin-portal .stat-cards>.card{min-height:112px;padding:20px}
+.business-portal .card,.admin-portal .card{box-shadow:0 1px 2px rgba(11,31,58,.04)}
+.business-portal .grid,.admin-portal .grid{gap:18px}
+.business-portal .filters,.admin-portal .filters{
+  gap:14px 16px;margin:18px 0 20px;padding:18px;border-radius:var(--r-card)
+}
+.business-portal .filters .field,.admin-portal .filters .field{min-width:160px}
+.business-portal .filters .field:first-child,.admin-portal .filters .field:first-child{flex-grow:2}
+.business-portal .table-wrap,.admin-portal .table-wrap{overflow:auto}
+.business-portal table,.admin-portal table{min-width:760px}
+.business-portal th,.admin-portal th{height:48px;padding:12px 16px;white-space:nowrap}
+.business-portal td,.admin-portal td{padding:14px 16px}
+.business-portal tbody tr:last-child td,.admin-portal tbody tr:last-child td{border-bottom:0}
+.business-portal .pager,.admin-portal .pager{justify-content:flex-end;margin-top:18px}
+.settle-tabs{display:flex;gap:6px;margin:18px 0 12px;padding:5px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow-x:auto}
+.settle-tabs button{min-height:38px;padding:8px 14px;border-radius:8px;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+.settle-tabs button:hover{color:var(--text)}
+.settle-tabs button.active{background:var(--navy);color:#fff}
+.settle-panel{margin:0!important}
+.settle-panel[hidden]{display:none!important}
+.audit-heading{align-items:flex-start;gap:20px}
+.audit-heading p{max-width:720px;margin-top:4px}
+.audit-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) 240px;gap:12px;margin:18px 0 12px}
+.audit-list{border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.audit-item{display:grid;grid-template-columns:10px minmax(260px,1.7fr) minmax(150px,.8fr) minmax(130px,.65fr) 90px;gap:14px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)}
+.audit-item:last-child{border-bottom:0}
+.audit-dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.audit-dot.booking{background:var(--info)}.audit-dot.aiclone{background:var(--primary)}.audit-dot.payment{background:var(--success)}.audit-dot.account{background:var(--warning)}
+.audit-main{min-width:0}.audit-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.audit-title strong{font-size:13px}.audit-title code{color:var(--muted);font-size:10px}
+.audit-detail{margin-top:4px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.audit-actor,.audit-ref{display:flex;min-width:0;flex-direction:column}.audit-actor strong{overflow:hidden;font-size:12px;text-overflow:ellipsis;white-space:nowrap}.audit-actor span,.audit-ref span{color:var(--muted);font-size:10px}.audit-ref code{overflow:hidden;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.audit-item time{color:var(--muted);font-size:11px;white-space:nowrap}
+
+@media (min-width:1025px) and (max-width:1280px){
+  .business-portal .sidebar,.admin-portal .sidebar{width:244px}
+  .business-portal .content,.admin-portal .content{padding:28px}
+}
+@media (max-width:1024px){
+  .business-portal .sidebar,.admin-portal .sidebar{padding:20px 14px 16px}
+  .business-portal .topbar,.admin-portal .topbar{min-height:64px}
+  .business-portal .content>.between,.admin-portal .content>.between{flex-wrap:wrap}
+}
+@media (max-width:640px){
+  .business-portal .topbar,.admin-portal .topbar{gap:8px}
+  .business-portal .topbar>.row,.admin-portal .topbar>.row{gap:8px;min-width:0}
+  .business-portal .topbar>.row>.muted,.admin-portal .topbar>.row>span:first-child{display:none}
+  .portal-context-label,.portal-account-meta{display:none}
+  .portal-account{gap:6px;padding-left:0!important;border-left:0!important}
+  .portal-account-avatar{width:34px;height:34px;flex-basis:34px}
+  .portal-logout{width:auto;margin-left:0;padding:0 10px}
+  .business-portal .content>h1,.admin-portal .content>h1,
+  .business-portal .content>.between:first-child,.admin-portal .content>.between:first-child{margin-bottom:16px}
+  .business-portal .stat-cards,.admin-portal .stat-cards{gap:10px}
+  .business-portal .stat-cards>.card,.admin-portal .stat-cards>.card{min-height:92px}
+  .business-portal .filters,.admin-portal .filters{margin:14px 0 16px}
+  .business-portal .pager,.admin-portal .pager{justify-content:center}
+  .audit-heading>.chip{display:none}.audit-toolbar{grid-template-columns:1fr}.audit-item{grid-template-columns:10px 1fr 72px;gap:10px}.audit-actor,.audit-ref{display:none}.audit-item time{text-align:right}
+}
+
 /* table */
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:10px 12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.02em}
