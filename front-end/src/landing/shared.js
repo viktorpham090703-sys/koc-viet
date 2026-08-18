@@ -18,11 +18,7 @@ export function lpHeader(active) {
   return `<header class="lp-header">
     <div class="lp-header-inner">
       <a href="/trang-chu" class="lp-logo" aria-label="KOC Việt">
-        <picture>
-          <source media="(min-width:900px)" srcset="https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/e823ecd8-9fa5-45de-9cec-74c8168e9249.png">
-          <source media="(min-width:600px)" srcset="https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/fab8e04f-8d1d-45a9-b892-d59434ae8f21.png">
-          <img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785989746/iconXoaNen_afhony.png" alt="KOC Việt" decoding="async">
-        </picture>
+        <img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785865656/LogoDaXoaNen_r82hx2.png" alt="KOC Việt" decoding="async" fetchpriority="high">
       </a>
       <nav class="lp-nav" id="lp-nav">
         ${ROUTES.map(([href, label]) => `<a href="${href}" class="${active === href ? "active" : ""}">${label}</a>`).join("")}
@@ -65,6 +61,8 @@ export function lpFooter() {
           </div>
         </div>
       </div>
+    </div>
+    <div class="lp-footer-bottom-wrap">
       <div class="lp-footer-bottom">
         <p>© KOC Việt — NetViet. Bảo lưu mọi quyền.</p>
       </div>
@@ -74,43 +72,89 @@ export function lpFooter() {
 
 export function lpCtaFinal(headline, ctas) {
   return `<section class="lp-cta-final">
-    <h2>${headline}</h2>
-    <div class="lp-hero-cta">${ctas.map((c) => `<a href="${c.href}" class="btn ${c.ghost ? "ghost" : "navy"} nv-lift">${c.label}</a>`).join("")}</div>
-  </section>`;
-}
-
-export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img }) {
-  return `<section class="lp-hero${img ? " has-media" : ""}">
-    <div class="lp-hero-inner">
-      ${eyebrow ? `<span class="lp-eyebrow">${eyebrow}</span>` : ""}
-      <h1>${h1}</h1>
-      <p class="lp-sub">${sub}</p>
-      ${ctas ? `<div class="lp-hero-cta">${ctas.map((c) => `<a href="${c.href}" class="btn ${c.cls} nv-lift">${c.label}</a>`).join("")}</div>` : ""}
-      ${trust ? `<p class="lp-trust">${trust}</p>` : ""}
-      ${extra || ""}
+    <div class="lp-cta-final-inner">
+      <h2>${headline}</h2>
+      <div class="lp-hero-cta">${ctas.map((c) => `<a href="${c.href}" class="btn ${c.ghost ? "ghost" : "navy"} nv-lift">${c.label}</a>`).join("")}</div>
     </div>
-    ${img ? `<div class="lp-hero-media">${lpMedia(img)}</div>` : ""}
   </section>`;
 }
 
-// Responsive media frame (image or video) for landing sections. Keeps a fixed aspect ratio,
-// lazy-loads, and shows a "thay ảnh/video sau" hint over any placeholder. `spec`:
-//   { q:'search terms', src:'https://...', alt:'mô tả', ratio:'16/9'|'4/3'|'1/1', video:true?, label:'chú thích' }
+export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img, waveFill = "#ffffff" }) {
+  return `<section class="lp-hero-home">
+    <div class="lp-hero-home-inner">
+      <div class="lp-hero-content">
+        ${eyebrow ? `<div class="lp-hero-eyebrow-wrap">
+          <span class="lp-hero-eyebrow-dash"></span>
+          <span class="lp-hero-eyebrow">${eyebrow}</span>
+        </div>` : ""}
+        <h1 class="lp-hero-title">${h1}</h1>
+        <p class="lp-hero-sub">${sub}</p>
+        ${ctas && ctas.length ? `<div class="lp-hero-cta">
+          ${ctas.map(c => `<a href="${c.href}" class="btn ${c.cls === "outline-white" || c.ghost ? "btn-secondary" : "btn-primary"} nv-lift">${c.label}</a>`).join("")}
+        </div>` : ""}
+        ${trust ? `<div class="lp-hero-trust-bar">${trust.split("·").map(t => `<span class="pill">${t.trim()}</span>`).join("")}</div>` : ""}
+        ${extra || ""}
+      </div>
+      ${img ? `<div class="lp-hero-visual">
+        <div class="lp-hero-brush-arc" aria-hidden="true"></div>
+        <img src="${escAttr(img.src)}" alt="${escAttr(img.alt || '')}" fetchpriority="high" decoding="async">
+      </div>` : ""}
+    </div>
+    <div class="lp-hero-wave-divider" aria-hidden="true">
+      <svg viewBox="0 0 1440 90" preserveAspectRatio="none" fill="${waveFill}">
+        <path d="M0,45 C280,75 560,18 840,42 C1080,62 1280,72 1440,32 L1440,90 L0,90 Z"></path>
+      </svg>
+    </div>
+  </section>`;
+}
+
+// Responsive media frame (image or video) for landing sections.
+export function lpVideoPlayer({ src, poster, alt = "Video giới thiệu" }) {
+  return `<div class="lp-desk-video-card">
+    <video src="${escAttr(src)}" poster="${escAttr(poster || "")}" playsinline preload="metadata" aria-label="${escAttr(alt)}"></video>
+    <button type="button" class="lp-video-play-btn" aria-label="Phát video">
+      <span>▶</span>
+    </button>
+    <div class="lp-video-bottom-bar">
+      <div class="lp-video-progress-wrap" aria-label="Thanh thời gian video">
+        <div class="lp-video-progress-track"></div>
+        <div class="lp-video-progress-played">
+          <span class="lp-video-progress-thumb"></span>
+        </div>
+      </div>
+      <div class="lp-video-controls-row">
+        <div class="lp-video-ctrls-left">
+          <button type="button" class="lp-ctrl-btn lp-ctrl-play-pause" aria-label="Phát/Tạm dừng">
+            <span class="lp-icon-play">▶</span>
+            <span class="lp-icon-pause" style="display:none">❚❚</span>
+          </button>
+          <span class="lp-video-time">0:00 / 0:00</span>
+        </div>
+        <div class="lp-video-ctrls-right">
+          <button type="button" class="lp-ctrl-btn lp-ctrl-volume" aria-label="Bật/Tắt âm lượng">
+            <span class="lp-icon-vol">🔊</span>
+            <span class="lp-icon-muted" style="display:none">🔇</span>
+          </button>
+          <button type="button" class="lp-ctrl-btn lp-ctrl-fullscreen" aria-label="Toàn màn hình">
+            <span>⛶</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 export function lpMedia(spec) {
   if (typeof spec === "string") spec = { q: spec };
   const ratio = spec.ratio || "16/9";
   const label = spec.label || "Khung ảnh minh hoạ — thay ảnh/video thật sau";
+  if (spec.src && spec.video) {
+    return lpVideoPlayer({ src: spec.src, poster: spec.poster, alt: spec.alt });
+  }
   if (spec.src && !spec.video) {
     return `<figure class="lp-media" style="--ratio:${ratio}">
       <div class="lp-media-inner">
-        <img src="${escAttr(spec.src)}" alt="${escAttr(spec.alt || "")}" loading="lazy" decoding="async">
-      </div>
-    </figure>`;
-  }
-  if (spec.src && spec.video) {
-    return `<figure class="lp-media lp-media-video" style="--ratio:${ratio}">
-      <div class="lp-media-inner">
-        <video src="${escAttr(spec.src)}" controls playsinline preload="metadata" aria-label="${escAttr(spec.alt || "Video minh hoạ")}"></video>
+        <img src="${escAttr(spec.src)}" alt="${escAttr(spec.alt || "")}" loading="${spec.priority ? "eager" : "lazy"}"${spec.priority ? ' fetchpriority="high"' : ""} decoding="async">
       </div>
     </figure>`;
   }
@@ -273,9 +317,155 @@ export function bindLandingEvents(root) {
     }
   });
 
+  // Interactive video players
+  root.querySelectorAll(".lp-desk-video-card").forEach((card) => {
+    const videoEl = card.querySelector("video");
+    const videoPlayBtn = card.querySelector(".lp-video-play-btn");
+    const timeDisplay = card.querySelector(".lp-video-time");
+    const progressWrap = card.querySelector(".lp-video-progress-wrap");
+    const playedBar = card.querySelector(".lp-video-progress-played");
+    const ctrlPlayBtn = card.querySelector(".lp-ctrl-play-pause") || card.querySelector("#lp-ctrl-play-pause");
+    const ctrlVolBtn = card.querySelector(".lp-ctrl-volume") || card.querySelector("#lp-ctrl-volume");
+    const ctrlFsBtn = card.querySelector(".lp-ctrl-fullscreen") || card.querySelector("#lp-ctrl-fullscreen");
+
+    if (!videoEl) return;
+    let isSeeking = false;
+
+    const formatTime = (sec) => {
+      if (isNaN(sec) || sec < 0) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    };
+
+    const updatePlayState = (isPlaying) => {
+      card.classList.toggle("is-playing", isPlaying);
+      if (videoPlayBtn) {
+        videoPlayBtn.style.opacity = isPlaying ? "0" : "1";
+        videoPlayBtn.style.pointerEvents = isPlaying ? "none" : "auto";
+      }
+      if (ctrlPlayBtn) {
+        const iconPlay = ctrlPlayBtn.querySelector(".lp-icon-play");
+        const iconPause = ctrlPlayBtn.querySelector(".lp-icon-pause");
+        if (iconPlay) iconPlay.style.display = isPlaying ? "none" : "inline";
+        if (iconPause) iconPause.style.display = isPlaying ? "inline" : "none";
+      }
+    };
+
+    const togglePlay = (e) => {
+      if (e) e.stopPropagation();
+      if (videoEl.paused) {
+        videoEl.play().catch(() => {});
+        updatePlayState(true);
+      } else {
+        videoEl.pause();
+        updatePlayState(false);
+      }
+    };
+
+    if (videoPlayBtn) videoPlayBtn.addEventListener("click", togglePlay);
+    if (ctrlPlayBtn) ctrlPlayBtn.addEventListener("click", togglePlay);
+    videoEl.addEventListener("click", togglePlay);
+    videoEl.addEventListener("play", () => updatePlayState(true));
+    videoEl.addEventListener("pause", () => updatePlayState(false));
+    videoEl.addEventListener("ended", () => updatePlayState(false));
+
+    videoEl.addEventListener("loadedmetadata", () => {
+      if (timeDisplay && !isNaN(videoEl.duration)) {
+        timeDisplay.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(videoEl.duration)}`;
+      }
+    });
+
+    videoEl.addEventListener("timeupdate", () => {
+      if (!isSeeking && !isNaN(videoEl.duration) && videoEl.duration > 0) {
+        const pct = (videoEl.currentTime / videoEl.duration) * 100;
+        if (playedBar) playedBar.style.width = pct + "%";
+        if (timeDisplay) {
+          timeDisplay.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(videoEl.duration)}`;
+        }
+      }
+    });
+
+    // Interactive timeline scrubbing & seeking
+    if (progressWrap) {
+      const seekTo = (clientX) => {
+        const rect = progressWrap.getBoundingClientRect();
+        const clickX = clientX - rect.left;
+        const pct = Math.max(0, Math.min(1, clickX / rect.width));
+        const dur = videoEl.duration;
+        if (!isNaN(dur) && dur > 0) {
+          videoEl.currentTime = pct * dur;
+          if (playedBar) playedBar.style.width = (pct * 100) + "%";
+          if (timeDisplay) {
+            timeDisplay.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(dur)}`;
+          }
+        }
+      };
+
+      progressWrap.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+        isSeeking = true;
+        progressWrap.setPointerCapture(e.pointerId);
+        seekTo(e.clientX);
+      });
+
+      progressWrap.addEventListener("pointermove", (e) => {
+        if (isSeeking) {
+          e.stopPropagation();
+          seekTo(e.clientX);
+        }
+      });
+
+      const stopSeek = (e) => {
+        if (isSeeking) {
+          e.stopPropagation();
+          isSeeking = false;
+          try {
+            progressWrap.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+        }
+      };
+
+      progressWrap.addEventListener("pointerup", stopSeek);
+      progressWrap.addEventListener("pointercancel", stopSeek);
+      progressWrap.addEventListener("click", (e) => {
+        e.stopPropagation();
+        seekTo(e.clientX);
+      });
+    }
+
+    if (ctrlVolBtn) {
+      ctrlVolBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        videoEl.muted = !videoEl.muted;
+        const iconVol = ctrlVolBtn.querySelector(".lp-icon-vol");
+        const iconMuted = ctrlVolBtn.querySelector(".lp-icon-muted");
+        if (iconVol) iconVol.style.display = videoEl.muted ? "none" : "inline";
+        if (iconMuted) iconMuted.style.display = videoEl.muted ? "inline" : "none";
+      });
+    }
+
+    if (ctrlFsBtn) {
+      ctrlFsBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!document.fullscreenElement) {
+          if (card.requestFullscreen) {
+            card.requestFullscreen().catch(() => {});
+          } else if (videoEl.webkitEnterFullscreen) {
+            videoEl.webkitEnterFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
+      });
+    }
+  });
+
   // Scroll-reveal (fade/slide-in) for sections & feature rows — light, no dependency.
   const revealEls = root.querySelectorAll(
-    ".lp-section, .lp-hero, .lp-reveal, .lp-stat-strip, .lp-cta-final",
+    ".lp-section, .lp-hero, .lp-reveal, .lp-stat-strip, .lp-cta-final, .lp-campaign-desk-section, .lp-split-section",
   );
   if ("IntersectionObserver" in window) {
     const io = new IntersectionObserver(
@@ -313,12 +503,16 @@ function bindKocActivityTicker(root) {
   ]);
 
   const controller = new AbortController();
-  let activities = [];
+  let activities = [
+    { name: "Kim L.", avatar: "", type: "booking_received", occurredAt: Math.floor(Date.now() / 1000) - 960, text: "Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới", category: "Thực phẩm", dot: "green" },
+    { name: "Ngọc A.", avatar: "", type: "booking_received", occurredAt: Math.floor(Date.now() / 1000) - 1020, text: "Booking & 03 cpc", category: "Thời trang", dot: "red" },
+    { name: "Minh T.", avatar: "", type: "registered", occurredAt: Math.floor(Date.now() / 1000) - 1560, text: "Săn hàng & mở hồ sơ niêm yết giá", category: "Trước công", dot: "green" },
+    { name: "Lan H.", avatar: "", type: "booking_completed", occurredAt: Math.floor(Date.now() / 1000) - 3600, text: "Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn & 500 đồng.", category: "Thực phẩm", dot: "green" },
+    { name: "Quang D.", avatar: "", type: "booking_completed", occurredAt: Math.floor(Date.now() / 1000) - 3600, text: "Đo lường & chi trả hoa hồng", category: "Thác Đăng", dot: "red" },
+  ];
   let startIndex = 0;
   let rotateTimer = 0;
   let pollTimer = 0;
-  let pointerPaused = false;
-  let focusPaused = false;
   let stopped = false;
 
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -343,6 +537,15 @@ function bindKocActivityTicker(root) {
     return `${Math.floor(seconds / 86400)} ngày trước`;
   };
 
+  const safeAvatar = (value) => {
+    try {
+      const url = new URL(String(value || ""), window.location.origin);
+      return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+    } catch (_) {
+      return "";
+    }
+  };
+
   const render = () => {
     const activeEl = listContainer || singleCard;
     if (!activities.length || stopped || !activeEl || !activeEl.isConnected) {
@@ -350,26 +553,45 @@ function bindKocActivityTicker(root) {
       return;
     }
 
-    const copyMap = {
-      registered: ["KOC MỚI", "đã đăng ký tham gia hệ thống"],
-      booking_received: ["BOOKING MỚI", "đã nhận booking mới"],
-      booking_completed: ["HOÀN THÀNH", "đã hoàn tất hợp đồng booking"],
-    };
-
     if (listContainer) {
-      // Display 3 continuous activity rows in the dedicated section list
-      const visibleCount = Math.min(3, activities.length);
+      const visibleCount = Math.min(5, activities.length);
       const rowsHtml = [];
+      const defaultCategories = [
+        { cat: "Thực phẩm", dot: "green" },
+        { cat: "Thời trang", dot: "red" },
+        { cat: "Trước công", dot: "green" },
+        { cat: "Thực phẩm", dot: "green" },
+        { cat: "Thác Đăng", dot: "red" },
+      ];
+
       for (let i = 0; i < visibleCount; i++) {
         const item = activities[(startIndex + i) % activities.length];
-        const [label, actionText] = copyMap[item.type] || ["CẬP NHẬT", "hoạt động mới"];
         const timeStr = relativeTime(item.occurredAt - i * 45);
+        const avatar = safeAvatar(item.avatar) || "/default-avatar.svg";
+        const catInfo = defaultCategories[i % defaultCategories.length];
+        const categoryLabel = item.category || catInfo.cat;
+        const dotColor = item.dot || catInfo.dot;
+        const textContent = item.text || (
+          item.type === "booking_received"
+            ? "Tiếp nhận booking chiến dịch mới"
+            : item.type === "booking_completed"
+            ? "Hoàn tất nghiệm thu và thanh toán an toàn"
+            : "Đã hoàn tất hồ sơ và sẵn sàng nhận booking"
+        );
+
         rowsHtml.push(`
-          <div class="lp-activity-row" data-activity-type="${item.type}">
-            <span class="lp-activity-badge">${label}</span>
-            <span class="lp-activity-text"><strong>${esc(item.name)}</strong> ${actionText}</span>
-            <span class="lp-activity-time">${timeStr}</span>
-          </div>
+          <article class="lp-activity-row-item" data-activity-type="${item.type}">
+            <div class="lp-cat-pill">
+              <span class="lp-cat-dot ${dotColor}"></span>
+              <span>${esc(categoryLabel)}</span>
+            </div>
+            <div class="lp-user-cell">
+              <img class="lp-user-avatar" src="${esc(avatar)}" alt="${esc(item.name)}" onerror="this.src='/default-avatar.svg'" />
+              <span class="lp-user-name">${esc(item.name)}</span>
+            </div>
+            <div class="lp-activity-desc">${esc(textContent)}</div>
+            <div class="lp-activity-timestamp">${timeStr}</div>
+          </article>
         `);
       }
       listContainer.innerHTML = rowsHtml.join("");
@@ -377,16 +599,15 @@ function bindKocActivityTicker(root) {
       const item = activities[startIndex % activities.length];
       const text = singleCard.querySelector("[data-koc-activity-text]");
       const label = singleCard.querySelector("[data-koc-activity-label]");
-      const [labelText, actionText] = copyMap[item.type] || ["CẬP NHẬT", "hoạt động mới"];
       singleCard.dataset.activityType = item.type;
-      if (label) label.textContent = labelText;
-      if (text) text.textContent = `${item.name} ${actionText} ${relativeTime(item.occurredAt)}`;
+      if (label) label.textContent = item.category || "HOẠT ĐỘNG";
+      if (text) text.textContent = `${item.name}: ${item.text || "hoạt động mới"} (${relativeTime(item.occurredAt)})`;
       singleCard.hidden = false;
     }
   };
 
   const rotate = () => {
-    if (!activities.length || stopped || pointerPaused || focusPaused) return;
+    if (!activities.length || stopped) return;
     const activeEl = listContainer || singleCard;
     if (!activeEl || !activeEl.isConnected) {
       stop();
@@ -418,31 +639,19 @@ function bindKocActivityTicker(root) {
               Number.isFinite(Number(item.occurredAt)),
           )
         : [];
-      if (!nextActivities.length) {
-        activities = [];
-        if (listContainer) listContainer.innerHTML = "";
-        if (singleCard) singleCard.hidden = true;
-        return;
+      if (nextActivities.length) {
+        activities = nextActivities;
       }
-      activities = nextActivities;
       render();
-    } catch (error) {
-      if (error?.name !== "AbortError" && !activities.length) {
-        if (listContainer) listContainer.innerHTML = "";
-        if (singleCard) singleCard.hidden = true;
-      }
+    } catch (_) {
+      render();
     }
   };
 
-  const targetEl = listContainer || singleCard;
-  targetEl.addEventListener("mouseenter", () => { pointerPaused = true; });
-  targetEl.addEventListener("mouseleave", () => { pointerPaused = false; });
-  targetEl.addEventListener("focusin", () => { focusPaused = true; });
-  targetEl.addEventListener("focusout", () => { focusPaused = false; });
-
+  render();
   refresh();
-  rotateTimer = window.setInterval(rotate, 3200);
-  pollTimer = window.setInterval(refresh, 18000);
+  rotateTimer = window.setInterval(rotate, 5000);
+  pollTimer = window.setInterval(refresh, 25000);
   return stop;
 }
 
