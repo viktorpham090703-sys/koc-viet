@@ -172,6 +172,11 @@
   animation-delay: var(--nv-delay, 0ms);
 }
 
+/* ---------- Page entrance ---------- */
+.nv-page-enter {
+  animation: nvFadeInUp .45s cubic-bezier(.22,1,.36,1) both;
+}
+
 /* ---------- Micro-interactions ---------- */
 /* Button press */
 .btn:active:not(:disabled) {
@@ -316,15 +321,19 @@
   animation: nvBadgePop .3s cubic-bezier(.22,1,.36,1) both;
 }
 
-/* ---------- Sidebar nav items ---------- */
-.sidebar a {
-  transition: background .2s ease, color .2s ease, border-color .2s ease, padding-left .2s ease;
+/* ---------- Sidebar nav items (Admin, Business, KOC Desktop) ---------- */
+.sidebar a,
+.koc-portal .bottom-nav a {
+  transition: background .2s ease, color .2s ease, border-color .2s ease, padding-left .2s ease, box-shadow .2s ease;
 }
-.sidebar a:hover {
+.sidebar a:hover,
+.koc-portal .bottom-nav a:hover {
   padding-left: 24px;
 }
-.sidebar a.active {
+.sidebar a.active,
+.koc-portal .bottom-nav a.active {
   padding-left: 24px;
+  box-shadow: inset 3px 0 0 var(--grad-b);
 }
 
 

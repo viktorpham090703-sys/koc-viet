@@ -22,6 +22,7 @@ import {
 } from "./ui.js";
 import { state, logout } from "./app.js";
 import { icon } from "./icons.js";
+import { autoAnimate } from "./animations.js";
 
 const NAV = [
   ["#/home", icon("home", "nav-icon"), "Trang chủ"],
@@ -55,7 +56,7 @@ export async function renderKoc(el, hash) {
         <a href="#/profile" class="koc-top-profile" aria-label="Hồ sơ ${esc(shellKoc.name)}"><img src="${esc(avatarUrl(shellKoc.avatar))}" alt=""><span>${esc(shellKoc.name)}</span></a>
       </div>
     </div>
-    <div id="koc-view">${skeletonPage(p)}</div>${bottomNav("#/" + p)}</div>`;
+    <div id="koc-view"></div>${bottomNav("#/" + p)}</div>`;
   document.getElementById("koc-shell-logout").addEventListener("click", logout);
   const view = document.getElementById("koc-view");
   try {
@@ -67,7 +68,7 @@ export async function renderKoc(el, hash) {
       const shellName = shellProfile?.querySelector('span');
       if (shellAvatar) shellAvatar.src = avatarUrl(shellKoc.avatar);
       if (shellName) shellName.textContent = shellKoc.name;
-      if (shellProfile) shellProfile.setAttribute('aria-label', `Há»“ sÆ¡ ${shellKoc.name}`);
+      if (shellProfile) shellProfile.setAttribute('aria-label', `Hồ sơ ${shellKoc.name}`);
     }
     if (p === "home") await home(view);
     else if (p === "bookings") await bookings(view);
@@ -77,6 +78,7 @@ export async function renderKoc(el, hash) {
     else if (p === "aiclone") await aiclone(view);
     else if (p === "profile") await profile(view);
     else if (p === "notifications") await notifications(view);
+    autoAnimate(view);
     await refreshNotificationBadges();
   } catch (e) {
     view.innerHTML = empty(icon("complaint", "teaser-icon"), e.message);

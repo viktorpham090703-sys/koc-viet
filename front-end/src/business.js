@@ -3,6 +3,7 @@ import { money, num, esc, fmtDate, stars, statusChip, spinner, empty, toast, mod
 import { state, logout, enhancePortal } from './app.js';
 import { renderMarketplaceEmbed } from './public.js';
 import { icon } from './icons.js';
+import { autoAnimate } from './animations.js';
 
 const NAV = [
   ['#/dashboard',icon('overview', 'sidebar-icon'),'Tổng quan'],['#/find',icon('search', 'sidebar-icon'),'Tìm KOC'],['#/orders',icon('booking', 'sidebar-icon'),'Booking'],
@@ -20,7 +21,7 @@ export async function renderBusiness(el, hash) {
     <div class="main"><div class="topbar portal-topbar">
       <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2>Trang doanh nghiệp</h2></div>
       <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ doanh nghiệp"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'D').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Doanh nghiệp</span></div></a></div></div>
-      <div class="content" id="bz-view">${skeletonPage(active.slice(2))}</div></div></div>`;
+      <div class="content" id="bz-view"></div></div></div>`;
   document.getElementById('bz-logout').addEventListener('click', logout);
   void hydrateBusinessAccount(el);
   enhancePortal();
@@ -36,6 +37,7 @@ export async function renderBusiness(el, hash) {
     else if (active==='#/campaigns') await campaigns(view);
     else if (active==='#/report') await report(view);
     else if (active==='#/profile') await profile(view);
+    autoAnimate(view);
   } catch (e) { view.innerHTML = empty(icon('complaint','teaser-icon'), e.message); }
 }
 

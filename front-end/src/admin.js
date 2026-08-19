@@ -19,6 +19,7 @@ import {
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
 import { icon } from "./icons.js";
+import { autoAnimate } from "./animations.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
@@ -46,7 +47,7 @@ export async function renderAdmin(el, hash) {
     <div class="main"><div class="topbar portal-topbar" style="background:var(--navy);color:#fff">
       <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2 style="color:#fff">Trang quản trị</h2></div>
       <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'A').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Quản trị viên</span></div></div></div>
-      <div class="content" id="ad-view">${skeletonPage(active.slice(2))}</div></div></div>`;
+      <div class="content" id="ad-view"></div></div></div>`;
   document.getElementById("ad-logout").addEventListener("click", logout);
   enhancePortal();
   const view = document.getElementById("ad-view");
@@ -64,6 +65,7 @@ export async function renderAdmin(el, hash) {
     else if (active === "#/settle") await settle(view);
     else if (active === "#/aiclone") await aiclone(view);
     else if (active === "#/tiers") await tiers(view);
+    autoAnimate(view);
   } catch (e) {
     view.innerHTML = empty(icon("complaint", "teaser-icon"), e.message);
   }

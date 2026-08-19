@@ -180,8 +180,8 @@ export function autoAnimate(root) {
   // Page enter
   pageEnter(root);
 
-  // Card entrance for grids (stat cards are handled by CSS)
-  animateCards(root, '.grid > .card, .lp-grid-2 > .lp-card, .lp-grid-3 > .lp-card, .lp-grid-4 > .lp-card', { stagger: 50 });
+  // Card entrance for grids & portal cards
+  animateCards(root, '.grid > .card, .stat-cards > .card, .stat-tile, .booking-grid-card, .koc-content-card, .koc-affiliate-card, .list-item, .lp-grid-2 > .lp-card, .lp-grid-3 > .lp-card, .lp-grid-4 > .lp-card', { stagger: 40 });
 
   // Row entrance for tables
   animateRows(root, 'tbody tr', { stagger: 30 });
