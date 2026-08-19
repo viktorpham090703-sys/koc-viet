@@ -1241,29 +1241,98 @@ function pagePricing() {
     waveFill: "#ffffff",
   });
 
-  const feeMechanism = `<section class="lp-section" aria-label="Cơ chế phí">
+  const feeMechanism = `<section class="lp-section lp-money-flow-section" aria-label="Cơ chế phí">
     <div class="lp-section-inner">
       <div class="lp-section-head">
+        <span class="lp-statement-tag" style="margin-bottom:12px;display:inline-block">DÒNG TIỀN MINH BẠCH</span>
         <h2>Tiền đi đường nào, ai nhận bao nhiêu</h2>
+        <p>Phí dịch vụ 5% duy nhất — không phí ẩn, không phí duy trì. Mọi luồng tiền được bảo chứng qua ví an toàn.</p>
       </div>
-      
-      <!-- Highlighted Fee Flow Banner -->
-      <div class="lp-flow-banner" style="max-width:920px;margin:0 auto">
-        <div class="lp-flow-banner-header">
-          <span class="lp-statement-tag">DÒNG TIỀN MINH BẠCH</span>
-          <span class="lp-flow-caption">Phí dịch vụ 5% duy nhất — không phí ẩn</span>
+
+      <!-- 4-Step Connected Money Flow Pipeline (Full Width) -->
+      <div class="lp-money-pipeline">
+        <div class="lp-money-step">
+          <div class="lp-money-step-head">
+            <span class="lp-money-step-badge">1</span>
+            <span class="lp-money-step-tag">Ký quỹ an toàn</span>
+          </div>
+          <h3 class="lp-money-step-title">Doanh nghiệp cọc 100%</h3>
+          <p class="lp-money-step-desc">Tạm giữ an toàn trong ví đảm bảo ngay khi chốt hợp đồng booking, đảm bảo khả năng thanh toán.</p>
+          <div class="lp-money-step-pill">Ví ký quỹ 100%</div>
         </div>
-        <div class="lp-flow-steps-row">
-          <div class="lp-flow-step-item"><span class="step-idx">1</span><span>Doanh nghiệp cọc 100% ví đảm bảo</span></div>
-          <div class="lp-flow-arrow">→</div>
-          <div class="lp-flow-step-item"><span class="step-idx">2</span><span>Hoàn thành: KOC nhận 95%</span></div>
-          <div class="lp-flow-arrow">→</div>
-          <div class="lp-flow-step-item"><span class="step-idx">3</span><span>Nền tảng giữ 5% phí dịch vụ</span></div>
-          <div class="lp-flow-arrow">→</div>
-          <div class="lp-flow-step-item"><span class="step-idx">4</span><span>Hoa hồng affiliate đối soát theo kỳ</span></div>
+
+        <div class="lp-money-step-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </div>
-        <div class="lp-statement-example-box">
-          <strong>Ví dụ minh họa:</strong> Booking 2.500.000đ → KOC nhận <strong>2.375.000đ</strong>, phí dịch vụ <strong>125.000đ</strong> (đã gồm hoá đơn điện tử).
+
+        <div class="lp-money-step">
+          <div class="lp-money-step-head">
+            <span class="lp-money-step-badge">2</span>
+            <span class="lp-money-step-tag">Thu nhập KOC</span>
+          </div>
+          <h3 class="lp-money-step-title">Hoàn thành: KOC nhận 95%</h3>
+          <p class="lp-money-step-desc">Giải ngân tự động về ví KOC ngay sau khi doanh nghiệp nghiệm thu bài đăng đạt chuẩn.</p>
+          <div class="lp-money-step-pill pill-koc">KOC nhận 95%</div>
+        </div>
+
+        <div class="lp-money-step-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
+
+        <div class="lp-money-step">
+          <div class="lp-money-step-head">
+            <span class="lp-money-step-badge">3</span>
+            <span class="lp-money-step-tag">Phí dịch vụ</span>
+          </div>
+          <h3 class="lp-money-step-title">Nền tảng giữ 5%</h3>
+          <p class="lp-money-step-desc">Phí duy nhất cho vận hành, kiểm duyệt &amp; bảo hộ hợp đồng, đã bao gồm hoá đơn VAT điện tử.</p>
+          <div class="lp-money-step-pill pill-fee">Nền tảng 5%</div>
+        </div>
+
+        <div class="lp-money-step-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
+
+        <div class="lp-money-step">
+          <div class="lp-money-step-head">
+            <span class="lp-money-step-badge">4</span>
+            <span class="lp-money-step-tag">Hoa hồng thêm</span>
+          </div>
+          <h3 class="lp-money-step-title">Hoa hồng affiliate</h3>
+          <p class="lp-money-step-desc">Doanh thu bán hàng phát sinh từ link tiếp thị được hệ thống đối soát độc lập và cộng thưởng theo kỳ.</p>
+          <div class="lp-money-step-pill pill-affiliate">Đối soát theo kỳ</div>
+        </div>
+      </div>
+
+      <!-- Visual Example Box (Full Width) -->
+      <div class="lp-money-calc-box">
+        <div class="lp-money-calc-head">
+          <span class="lp-money-calc-icon">💡</span>
+          <strong>Ví dụ minh họa giao dịch thực tế:</strong>
+          <span class="lp-money-calc-badge">Minh bạch 100%</span>
+        </div>
+        <div class="lp-money-calc-flow">
+          <div class="calc-card total">
+            <span class="calc-lbl">Booking hợp đồng mẫu</span>
+            <span class="calc-num">2.500.000đ</span>
+          </div>
+          <span class="calc-sym">➔</span>
+          <div class="calc-card koc">
+            <span class="calc-lbl">KOC thực nhận (95%)</span>
+            <span class="calc-num">2.375.000đ</span>
+            <span class="calc-note green">Rút về tài khoản 24/7</span>
+          </div>
+          <span class="calc-sym">+</span>
+          <div class="calc-card platform">
+            <span class="calc-lbl">Phí dịch vụ sàn (5%)</span>
+            <span class="calc-num">125.000đ</span>
+            <span class="calc-note">Đã gồm hoá đơn VAT điện tử</span>
+          </div>
+        </div>
+        <div class="lp-money-calc-footer">
+          <span>✓ Không phí đăng ký tài khoản</span>
+          <span>✓ Không phí duy trì hàng tháng</span>
+          <span>✓ Không thu phụ phí ẩn</span>
         </div>
       </div>
     </div>

@@ -104,6 +104,40 @@
   color: var(--navy);
 }
 
+/* --- Logo responsive swap via <picture> element --- */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .lp-logo {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    flex: 0 0 140px !important;
+  }
+  .lp-logo picture,
+  .lp-logo img {
+    width: 140px !important;
+    max-width: 140px !important;
+    height: 36px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .lp-logo {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    flex: 0 0 40px !important;
+    height: 40px !important;
+    margin-right: 10px !important;
+  }
+  .lp-logo picture,
+  .lp-logo img {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px !important;
+    object-fit: contain !important;
+  }
+}
+
 @media (min-width: 1181px) and (max-width: 1360px) {
   .lp-header-inner {
     padding: 10px 18px;

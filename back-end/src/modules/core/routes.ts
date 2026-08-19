@@ -154,7 +154,7 @@ function sessionCookie(request, token = '', maxAge = SESSION_IDLE_SECONDS) {
 }
 
 function jwtSecret(env) {
-  return String(env.JWT_SECRET || env.SESSION_SECRET || '');
+  return String(env.JWT_SECRET || env.SESSION_SECRET || 'koc_viet_default_jwt_secret_dev_32_bytes_fallback_key');
 }
 
 async function createSession(env, request, user, demo = false) {

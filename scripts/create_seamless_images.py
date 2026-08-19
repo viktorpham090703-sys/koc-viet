@@ -2,7 +2,9 @@ import os
 from PIL import Image, ImageFilter
 import numpy as np
 
-os.makedirs('front-end/public/images/seamless', exist_ok=True)
+# Output must match the paths referenced by front-end/src/landing/pages.js
+# (e.g. /images/koc-hero-seamless.png), so write directly into public/images.
+os.makedirs('front-end/public/images', exist_ok=True)
 
 def create_seamless_hero_image(input_path, output_path, target_size=(1450, 1085), fade_margin=(120, 120, 120, 120)):
     img = Image.open(input_path).convert('RGBA')
@@ -72,9 +74,16 @@ def create_seamless_hero_image(input_path, output_path, target_size=(1450, 1085)
 
 if __name__ == '__main__':
     for key in ['koc', 'business', 'marketplace', 'aiclone', 'pricing', 'community']:
+        source = f'front-end/public/images/raw/{key}.jpg'
+        if not os.path.exists(source):
+            raise SystemExit(
+                f'Missing source image: {source}\n'
+                'Put the original screenshots here (they are not committed to the repo), '
+                'then re-run this script to regenerate the seamless hero PNGs.'
+            )
         create_seamless_hero_image(
-            f'front-end/public/images/raw/{key}.jpg',
-            f'front-end/public/images/seamless/{key}-hero-seamless.png',
+            source,
+            f'front-end/public/images/{key}-hero-seamless.png',
             target_size=(1450, 1085),
             fade_margin=(140, 140, 140, 140)
         )
