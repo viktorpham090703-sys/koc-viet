@@ -3012,6 +3012,86 @@
 /* ==========================================================================
    RESPONSIVE BREAKPOINTS
    ========================================================================== */
+
+/* --- Logo responsive swap via <picture> element --- */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .lp-home .lp-logo {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    flex: 0 0 140px !important;
+  }
+  .lp-home .lp-logo picture,
+  .lp-home .lp-logo img {
+    width: 140px !important;
+    max-width: 140px !important;
+    height: 36px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .lp-home .lp-logo {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    flex: 0 0 40px !important;
+    height: 40px !important;
+    margin-right: 10px !important;
+  }
+  .lp-home .lp-logo picture,
+  .lp-home .lp-logo img {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px !important;
+    object-fit: contain !important;
+  }
+}
+
+/* --- Hero centering on tablet --- */
+@media (max-width: 1024px) {
+  .lp-home .lp-hero-content {
+    text-align: center;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .lp-home .lp-hero-eyebrow-wrap {
+    justify-content: center;
+  }
+  .lp-home .lp-hero-title {
+    font-size: clamp(2rem, 3.8vw, 3rem);
+  }
+  .lp-home .lp-hero-sub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .lp-home .lp-hero-cta {
+    justify-content: center;
+  }
+  .lp-home .lp-hero-trust-bar {
+    justify-content: center;
+  }
+}
+
+/* On mobile keep hero left-aligned for readability */
+@media (max-width: 768px) {
+  .lp-home .lp-hero-content {
+    text-align: left;
+  }
+  .lp-home .lp-hero-eyebrow-wrap {
+    justify-content: flex-start;
+  }
+  .lp-home .lp-hero-sub {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .lp-home .lp-hero-cta {
+    justify-content: flex-start;
+  }
+  .lp-home .lp-hero-trust-bar {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 1200px) {
   .lp-home .lp-grid-5,
   .lp-home .lp-steps.n5 {

@@ -18,7 +18,11 @@ export function lpHeader(active) {
   return `<header class="lp-header">
     <div class="lp-header-inner">
       <a href="/trang-chu" class="lp-logo" aria-label="KOC Việt">
-        <img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785865656/LogoDaXoaNen_r82hx2.png" alt="KOC Việt" decoding="async" fetchpriority="high">
+        <picture>
+          <source media="(max-width: 768px)" srcset="https://res.cloudinary.com/drxum5uxt/image/upload/v1785989746/iconXoaNen_afhony.png">
+          <source media="(max-width: 1024px)" srcset="https://res.cloudinary.com/drxum5uxt/image/upload/v1787124004/ChatGPT_Image_13_04_51_20_thg_7__2026__3_-removebg-preview_olgnwa.png">
+          <img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785865656/LogoDaXoaNen_r82hx2.png" alt="KOC Việt" decoding="async" fetchpriority="high">
+        </picture>
       </a>
       <nav class="lp-nav" id="lp-nav">
         ${ROUTES.map(([href, label]) => `<a href="${href}" class="${active === href ? "active" : ""}">${label}</a>`).join("")}
