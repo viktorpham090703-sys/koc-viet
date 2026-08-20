@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-08-14-koc-identity-s3-v1';
+const SCHEMA_GUARD_VERSION = '2026-08-20-campaign-workflow-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -223,6 +223,17 @@ const MIGRATIONS = [
   `ALTER TABLE campaigns ADD COLUMN cancelled_at INTEGER`,
   `CREATE TABLE IF NOT EXISTS campaign_allocations (id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,koc_id TEXT NOT NULL,amount INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'pending',settled_at INTEGER,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,UNIQUE(campaign_id,koc_id))`,
   `CREATE INDEX IF NOT EXISTS idx_campaign_allocations_campaign ON campaign_allocations(campaign_id,status)`,
+  `ALTER TABLE campaigns ADD COLUMN quote_note TEXT`,
+  `ALTER TABLE campaigns ADD COLUMN quoted_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN deadline TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN deadline TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN submission_url TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN submission_note TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN business_note TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN accepted_at INTEGER`,
+  `ALTER TABLE campaign_allocations ADD COLUMN declined_at INTEGER`,
+  `ALTER TABLE campaign_allocations ADD COLUMN submitted_at INTEGER`,
+  `ALTER TABLE campaign_allocations ADD COLUMN approved_at INTEGER`,
   `UPDATE campaigns SET management_rate=0.15,
      management_fee=CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END,
      total_amount=COALESCE(budget,0)+(CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END)
@@ -309,6 +320,56 @@ async function ensureV14Schema(env) {
   for (const [name, sql] of requiredBusinessColumns) {
     if (!existingBusinessColumns.has(name)) await env.DB.prepare(sql).run();
   }
+
+  // Campaign migrations used to ignore individual ALTER failures while still
+  // advancing schema_version. Repair the real table shape on every guard bump.
+  const campaignColumns = await env.DB.prepare(`PRAGMA table_info(campaigns)`).all();
+  const existingCampaignColumns = new Set(
+    (campaignColumns.results || []).map(column => column.name),
+  );
+  const requiredCampaignColumns = [
+    ['management_rate', `ALTER TABLE campaigns ADD COLUMN management_rate REAL NOT NULL DEFAULT 0.15`],
+    ['management_fee', `ALTER TABLE campaigns ADD COLUMN management_fee INTEGER NOT NULL DEFAULT 0`],
+    ['total_amount', `ALTER TABLE campaigns ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`],
+    ['upfront_fee_released', `ALTER TABLE campaigns ADD COLUMN upfront_fee_released INTEGER NOT NULL DEFAULT 0`],
+    ['funded_at', `ALTER TABLE campaigns ADD COLUMN funded_at INTEGER`],
+    ['started_at', `ALTER TABLE campaigns ADD COLUMN started_at INTEGER`],
+    ['completed_at', `ALTER TABLE campaigns ADD COLUMN completed_at INTEGER`],
+    ['cancelled_at', `ALTER TABLE campaigns ADD COLUMN cancelled_at INTEGER`],
+    ['quote_note', `ALTER TABLE campaigns ADD COLUMN quote_note TEXT`],
+    ['quoted_at', `ALTER TABLE campaigns ADD COLUMN quoted_at INTEGER`],
+    ['deadline', `ALTER TABLE campaigns ADD COLUMN deadline TEXT`],
+  ];
+  for (const [name, sql] of requiredCampaignColumns) {
+    if (!existingCampaignColumns.has(name)) await env.DB.prepare(sql).run();
+  }
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS campaign_allocations (
+       id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,koc_id TEXT NOT NULL,
+       amount INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'pending',
+       settled_at INTEGER,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,
+       UNIQUE(campaign_id,koc_id))`,
+  ).run();
+  const allocationColumns = await env.DB.prepare(`PRAGMA table_info(campaign_allocations)`).all();
+  const existingAllocationColumns = new Set(
+    (allocationColumns.results || []).map(column => column.name),
+  );
+  const requiredAllocationColumns = [
+    ['deadline', `ALTER TABLE campaign_allocations ADD COLUMN deadline TEXT`],
+    ['submission_url', `ALTER TABLE campaign_allocations ADD COLUMN submission_url TEXT`],
+    ['submission_note', `ALTER TABLE campaign_allocations ADD COLUMN submission_note TEXT`],
+    ['business_note', `ALTER TABLE campaign_allocations ADD COLUMN business_note TEXT`],
+    ['accepted_at', `ALTER TABLE campaign_allocations ADD COLUMN accepted_at INTEGER`],
+    ['declined_at', `ALTER TABLE campaign_allocations ADD COLUMN declined_at INTEGER`],
+    ['submitted_at', `ALTER TABLE campaign_allocations ADD COLUMN submitted_at INTEGER`],
+    ['approved_at', `ALTER TABLE campaign_allocations ADD COLUMN approved_at INTEGER`],
+  ];
+  for (const [name, sql] of requiredAllocationColumns) {
+    if (!existingAllocationColumns.has(name)) await env.DB.prepare(sql).run();
+  }
+  await env.DB.prepare(
+    `CREATE INDEX IF NOT EXISTS idx_campaign_allocations_campaign ON campaign_allocations(campaign_id,status)`,
+  ).run();
 
   // Older databases may report the latest schema version even though an
   // idempotent ALTER TABLE was previously swallowed. Repair contract columns

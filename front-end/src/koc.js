@@ -29,6 +29,7 @@ import { autoAnimate } from "./animations.js";
 const NAV = [
   ["#/home", icon("home", "nav-icon"), "Trang chủ"],
   ["#/bookings", icon("booking", "nav-icon"), "Booking"],
+  ["#/campaigns", icon("campaign", "nav-icon"), "Chiến dịch"],
   ["#/content", icon("content", "nav-icon"), "Nội dung"],
   ["#/affiliate", icon("affiliate", "nav-icon"), "Hoa hồng bán hàng"],
   ["#/wallet", icon("wallet", "nav-icon"), "Ví"],
@@ -40,6 +41,7 @@ export async function renderKoc(el, hash) {
   const known = [
     "home",
     "bookings",
+    "campaigns",
     "content",
     "affiliate",
     "wallet",
@@ -74,6 +76,7 @@ export async function renderKoc(el, hash) {
     }
     if (p === "home") await home(view);
     else if (p === "bookings") await bookings(view);
+    else if (p === "campaigns") await campaigns(view);
     else if (p === "content") await content(view);
     else if (p === "affiliate") await affiliate(view);
     else if (p === "wallet") await wallet(view);
@@ -152,6 +155,29 @@ async function home(el) {
       home(el);
     }),
   );
+}
+
+let kocCampaignPage = 1;
+async function campaigns(el, page = kocCampaignPage) {
+  kocCampaignPage = Math.max(1, Number(page) || 1);
+  const r = await api(`/api/koc/campaigns?page=${kocCampaignPage}&per=6`);
+  kocCampaignPage = r.page || 1;
+  el.innerHTML = `<div class="m-body"><div class="campaign-koc-grid">${r.campaigns.length?r.campaigns.map(c=>`<article class="card campaign-koc-card campaign-koc-card--${esc(c.status)}">
+      <div class="campaign-koc-card-head"><div class="campaign-koc-company"><span>Doanh nghiệp</span><h3>${esc(c.business_name)}</h3></div>${statusChip(c.status)}</div>
+      <div class="campaign-koc-money"><span>Khoản nhận sau nghiệm thu</span><strong>${money(c.amount)}</strong></div>
+      <div class="campaign-koc-meta"><div><span>Ngành hàng</span><b>${esc(c.category)}</b></div><div><span>Hạng KOC</span>${tierBadge(c.tier)}</div><div><span>Hạn hoàn thành</span><b>${c.deadline||c.campaign_deadline?esc(c.deadline||c.campaign_deadline):'Chưa đặt'}</b></div></div>
+      ${c.campaign_note?`<div class="campaign-koc-brief"><span>Yêu cầu chiến dịch</span><p>${esc(c.campaign_note)}</p></div>`:''}
+      ${c.business_note?`<div class="campaign-koc-feedback"><b>Phản hồi doanh nghiệp</b><p>${esc(c.business_note)}</p></div>`:''}
+      ${c.submission_url?`<a class="campaign-submission-link" href="${esc(c.submission_url)}" target="_blank" rel="noopener">↗ Mở nội dung đã nộp</a>`:''}
+      <div class="campaign-koc-card-footer">${c.status==='invited'?`<div class="campaign-koc-actions"><button class="btn primary sm" data-campaign-accept="${c.id}">Nhận chiến dịch</button><button class="btn ghost sm" data-campaign-decline="${c.id}">Từ chối</button></div>`:''}
+      ${['accepted','revision_requested'].includes(c.status)?`<div class="campaign-submit-form"><div class="field"><label>Link bài đăng / video</label><input data-campaign-url="${c.id}" value="${esc(c.submission_url||'')}" placeholder="https://..."></div><div class="field"><label>Ghi chú bàn giao</label><textarea data-campaign-note="${c.id}" rows="2">${esc(c.submission_note||'')}</textarea></div><button class="btn primary sm" data-campaign-submit="${c.id}">Gửi doanh nghiệp duyệt</button></div>`:''}
+      ${!['invited','accepted','revision_requested'].includes(c.status)?`<div class="campaign-koc-waiting">${c.status==='submitted'?'Đang chờ doanh nghiệp duyệt':c.status==='approved'?'Đã duyệt · Chờ Admin giải ngân':c.status==='settled'?'Khoản tiền đã vào Ví KOC':c.status==='declined'?'Bạn đã từ chối lời mời này':'Đang xử lý'}</div>`:''}</div>
+    </article>`).join(''):empty('📣','Chưa có lời mời chiến dịch lớn')}</div>
+    ${r.pages>1?`<nav class="campaign-koc-pager" aria-label="Phân trang chiến dịch"><button class="btn ghost sm" data-campaign-page="${r.page-1}" ${r.page<=1?'disabled':''}>← Trước</button><span>Trang <b>${r.page}</b> / ${r.pages}</span><button class="btn ghost sm" data-campaign-page="${r.page+1}" ${r.page>=r.pages?'disabled':''}>Sau →</button></nav>`:''}</div>`;
+  el.querySelectorAll('[data-campaign-page]').forEach(b=>b.addEventListener('click',()=>campaigns(el,Number(b.dataset.campaignPage))));
+  el.querySelectorAll('[data-campaign-accept]').forEach(b=>b.addEventListener('click',async()=>{try{await post('/api/campaign/allocation/action',{id:b.dataset.campaignAccept,action:'accept'});toast('Đã nhận chiến dịch','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
+  el.querySelectorAll('[data-campaign-decline]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Xác nhận từ chối chiến dịch này?')))return;const note=await promptDialog('Lý do từ chối (không bắt buộc):')||'';try{await post('/api/campaign/allocation/action',{id:b.dataset.campaignDecline,action:'decline',note});toast('Đã từ chối lời mời','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
+  el.querySelectorAll('[data-campaign-submit]').forEach(b=>b.addEventListener('click',async()=>{const id=b.dataset.campaignSubmit,url=el.querySelector(`[data-campaign-url="${id}"]`).value.trim(),note=el.querySelector(`[data-campaign-note="${id}"]`).value.trim();try{await post('/api/campaign/allocation/action',{id,action:'submit',url,note});toast('Đã gửi nội dung cho doanh nghiệp duyệt','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
 }
 
 async function bookings(el) {
@@ -481,7 +507,7 @@ async function openBooking(id, el) {
     <div class="field"><label>${icon("productData")} Link dữ liệu sản phẩm (kiểm tra trước khi xác nhận)</label>
       <div class="copybox"><a href="${esc(b.product_link)}" target="_blank" style="color:var(--info)">${esc(b.product_link || "—")}</a></div></div>
     ${b.product_url ? `<div class="field"><label>🛒 Link sản phẩm gốc trên sàn (${esc(b.platform)})</label><div class="copybox"><a href="${esc(b.product_url)}" target="_blank" style="color:var(--info)">${esc(b.product_url)}</a></div></div>` : ""}
-    ${b.affLink ? `<div class="field"><label>🔗 Đường dẫn sản phẩm dành riêng cho bạn</label><div class="copybox"><span style="flex:1;word-break:break-all;font-size:12px">${esc(b.affLink)}</span><button class="btn primary sm" id="bk-copyaff">Sao chép</button></div></div>` : ""}
+    ${b.affLink ? `<div class="field"><label>🔗 Đường dẫn sản phẩm dành riêng cho bạn</label><div class="copybox affiliate-link-copy"><span title="${esc(b.affLink)}">${esc(b.affLink)}</span><button class="btn primary sm" id="bk-copyaff">Sao chép</button></div></div>` : ""}
     <div class="field"><label>Yêu cầu</label><div class="tint-box">${esc(b.requirements || "—")}</div></div>
     ${b.type === "aiclone" && b.aiclone_script ? `<div class="field"><label>Kịch bản AI Clone</label><div class="tint-box" style="white-space:pre-wrap">${esc(b.aiclone_script)}</div></div>` : ""}
     ${(b.koc_video_link || b.video_link) && (b.type !== "aiclone" || ["pending_koc_review", "video_approved", "posted", "completed"].includes(b.status)) ? `<div class="field"><label>🎥 Video AI Clone Avatar admin giao KOC</label><div class="copybox" style="flex-wrap:wrap"><span style="flex:1;min-width:180px">${esc(b.koc_video_link || b.video_link)}</span><a class="btn ok sm" href="${esc(b.koc_video_link || b.video_link)}" target="_blank" rel="noopener">Mở / tải video</a></div></div>` : ""}
@@ -732,7 +758,7 @@ async function affiliate(el) {
       return `<div class="list-item koc-affiliate-card">
       <div class="between"><strong>${esc(a.code)}</strong><span class="chip b">${esc(a.platform)} · ${esc(a.category)}</span></div>
       <div class="muted" style="font-size:12px">${esc(a.bizname)} · Hoa hồng ${a.commission_rate}%</div>
-      <div class="copybox" style="margin:8px 0"><span style="flex:1;word-break:break-all;font-size:12px">${esc(a.generated_url)}</span><button class="btn primary sm" data-copy="${esc(a.generated_url)}">Sao chép</button></div>
+      <div class="copybox affiliate-link-copy" style="margin:8px 0"><span title="${esc(a.generated_url)}">${esc(a.generated_url)}</span><button class="btn primary sm" data-copy="${esc(a.generated_url)}">Sao chép</button></div>
       <div class="row" style="gap:14px;flex-wrap:wrap">
         <div><div class="v" style="font-weight:800">${num(a.clicks)}</div><div class="muted" style="font-size:11px">Click</div></div>
         <div><div class="v" style="font-weight:800">${num(s.orders || 0)}</div><div class="muted" style="font-size:11px">Đơn</div></div>
@@ -779,7 +805,7 @@ async function affiliate(el) {
       const url = location.origin + "/r/" + a.short_code;
       return `<div class="list-item koc-affiliate-card">
       <div class="between"><strong>${esc(a.code)}</strong><span class="chip b">${esc(a.category)}</span></div>
-      <div class="copybox" style="margin:8px 0"><span style="flex:1">${esc(url)}</span><button class="btn primary sm" data-copy="${esc(url)}">Sao chép</button></div>
+      <div class="copybox affiliate-link-copy" style="margin:8px 0"><span title="${esc(url)}">${esc(url)}</span><button class="btn primary sm" data-copy="${esc(url)}">Sao chép</button></div>
       <div class="row" style="gap:16px">
         <div><div class="v" style="font-weight:800">${num(a.clicks)}</div><div class="muted" style="font-size:11px">Click</div></div>
         <div><div class="v" style="font-weight:800">${num(a.orders)}</div><div class="muted" style="font-size:11px">Đơn</div></div>
