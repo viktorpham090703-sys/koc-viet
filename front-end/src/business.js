@@ -1,8 +1,9 @@
 import { api, post } from './api.js';
-import { money, num, esc, fmtDate, stars, statusChip, spinner, empty, toast, modal, closeModal, tierBadge, skeletonPage, skeletonStatCards, skeletonTable, skeletonKocGrid, avatarUrl } from './ui.js';
+import { money, num, esc, fmtDate, stars, statusChip, spinner, empty, toast, modal, closeModal, confirmDialog, promptDialog, tierBadge, skeletonPage, skeletonStatCards, skeletonTable, skeletonKocGrid, avatarUrl } from './ui.js';
 import { state, logout, enhancePortal } from './app.js';
 import { renderMarketplaceEmbed } from './public.js';
 import { icon } from './icons.js';
+import { autoAnimate } from './animations.js';
 
 const NAV = [
   ['#/dashboard',icon('overview', 'sidebar-icon'),'Tổng quan'],['#/find',icon('search', 'sidebar-icon'),'Tìm KOC'],['#/orders',icon('booking', 'sidebar-icon'),'Booking'],
@@ -20,7 +21,7 @@ export async function renderBusiness(el, hash) {
     <div class="main"><div class="topbar portal-topbar">
       <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2>Trang doanh nghiệp</h2></div>
       <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ doanh nghiệp"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'D').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Doanh nghiệp</span></div></a></div></div>
-      <div class="content" id="bz-view">${skeletonPage(active.slice(2))}</div></div></div>`;
+      <div class="content" id="bz-view"></div></div></div>`;
   document.getElementById('bz-logout').addEventListener('click', logout);
   void hydrateBusinessAccount(el);
   enhancePortal();
@@ -36,6 +37,7 @@ export async function renderBusiness(el, hash) {
     else if (active==='#/campaigns') await campaigns(view);
     else if (active==='#/report') await report(view);
     else if (active==='#/profile') await profile(view);
+    autoAnimate(view);
   } catch (e) { view.innerHTML = empty(icon('complaint','teaser-icon'), e.message); }
 }
 
@@ -78,7 +80,8 @@ async function dashboard(el) {
       <div id="bz-recent" style="margin-top:12px">${skeletonTable(3)}</div>
     </div>`;
   const rec = await api('/api/bookings');
-  document.getElementById('bz-recent').innerHTML = rec.bookings.length ? tableBookings(rec.bookings.slice(0,6)) : empty('📋','Chưa có booking');
+  const recentBookings = groupBusinessBookings(rec.bookings || []).slice(0, 6);
+  document.getElementById('bz-recent').innerHTML = recentBookings.length ? tableBookings(recentBookings) : empty('📋','Chưa có booking');
   bindOrderRows(el);
 }
 function stat(l,v){ return `<div class="card"><div class="muted">${l}</div><div style="font-size:24px;font-weight:800;margin-top:4px" class="money">${v}</div></div>`; }
@@ -374,9 +377,10 @@ async function orders(el, page = businessOrdersPage) {
       history.replaceState({}, '', `${location.pathname}${location.hash}`);
     }
   }
-  const r = await api(`/api/bookings?page=${businessOrdersPage}&per=10`);
+  const r = await api(`/api/bookings?page=${businessOrdersPage}&per=50`);
   businessOrdersPage = r.page || businessOrdersPage;
-  el.innerHTML = `<div class="between"><div><h1>Booking đã đặt</h1><p class="muted">${num(r.total || 0)} booking</p></div></div><div class="table-wrap" style="margin-top:16px">${r.bookings.length?tableBookings(r.bookings):empty('📋','Chưa có booking')}</div><div class="pager" id="business-orders-pager"></div>`;
+  const bookings = groupBusinessBookings(r.bookings || []);
+  el.innerHTML = `<div class="between"><div><h1>Booking đã đặt</h1><p class="muted">${num(bookings.length)} booking${r.total > r.per ? ` trên trang này` : ''}</p></div></div><div class="table-wrap" style="margin-top:16px">${bookings.length?tableBookings(bookings):empty('📋','Chưa có booking')}</div><div class="pager" id="business-orders-pager"></div>`;
   const pager = el.querySelector('#business-orders-pager');
   if (r.pages > 1) {
     pager.innerHTML = `<button data-orders-page="${r.page - 1}" ${r.page <= 1 ? 'disabled' : ''}>‹</button><span class="muted" style="padding:7px 6px">${r.page} / ${r.pages}</span><button data-orders-page="${r.page + 1}" ${r.page >= r.pages ? 'disabled' : ''}>›</button>`;
@@ -385,9 +389,33 @@ async function orders(el, page = businessOrdersPage) {
   bindOrderRows(el);
 }
 
+function groupBusinessBookings(list) {
+  const grouped = new Map();
+  for (const booking of list) {
+    const key = booking.type === 'aiclone' && booking.aiclone_batch_id
+      ? `aiclone:${booking.aiclone_batch_id}`
+      : `booking:${booking.id}`;
+    const current = grouped.get(key);
+    if (!current) {
+      grouped.set(key, { ...booking, batch_kocs: [booking.kocname], batch_size: 1 });
+      continue;
+    }
+    current.batch_kocs.push(booking.kocname);
+    current.batch_size += 1;
+    const bookingHasTotal = Number(booking.price) > 0 || ['quote_sent','quoted','payment_pending'].includes(booking.status);
+    const currentHasTotal = Number(current.price) > 0 || ['quote_sent','quoted','payment_pending'].includes(current.status);
+    if (bookingHasTotal && !currentHasTotal) {
+      const names = current.batch_kocs;
+      const size = current.batch_size;
+      Object.assign(current, booking, { batch_kocs: names, batch_size: size });
+    }
+  }
+  return [...grouped.values()];
+}
+
 function tableBookings(list) {
   return `<table><thead><tr><th>Mã</th><th>Thời gian</th><th>KOC</th><th>Ngành</th><th>Giá</th><th>Trạng thái</th><th style="width:1%;white-space:nowrap"></th></tr></thead><tbody>
-    ${list.map(b=>`<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(b.created_at)}</td><td>${esc(b.kocname)}</td><td>${esc(b.category)}</td>
+    ${list.map(b=>`<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(b.created_at)}</td><td>${b.batch_size > 1 ? `<b>${b.batch_size} KOC</b><div class="muted" style="font-size:11px">${esc(b.batch_kocs.slice(0,2).join(', '))}${b.batch_size > 2 ? '…' : ''}</div>` : esc(b.kocname)}</td><td>${esc(b.category)}</td>
       <td class="money">${b.status==='quote_pending'?'Chờ báo giá':['quote_grouped','payment_grouped'].includes(b.status)?'Báo giá chung':money(b.price)}</td><td style="white-space:nowrap">${statusChip(b.status)}</td>
       <td style="width:1%;white-space:nowrap;text-align:right"><button class="btn ghost sm" data-order="${b.id}">Chi tiết</button></td></tr>`).join('')}
   </tbody></table>`;
@@ -412,6 +440,15 @@ async function openOrder(id, el) {
   const r = await api('/api/bookings?id=' + encodeURIComponent(id));
   const b = r.bookings.find(x=>x.id===id);
   if (!b) return;
+  let batchMembers = [b];
+  if (b.type === 'aiclone' && b.aiclone_batch_id) {
+    const batchResult = await api('/api/bookings?batch=' + encodeURIComponent(b.aiclone_batch_id) + '&per=50');
+    batchMembers = batchResult.bookings || batchMembers;
+  }
+  const batchKocTotal = batchMembers.reduce((sum, member) => sum + Number(member.aiclone_quote_koc || 0), 0);
+  const batchReadyToSettle = b.type === 'aiclone'
+    ? batchMembers.filter(member => ['posted', 'settling'].includes(member.status))
+    : [];
   if (
     b.video_submission_id &&
     ['video_processing', 'pending_review', 'video_approved', 'revision_requested'].includes(b.status)
@@ -432,7 +469,8 @@ async function openOrder(id, el) {
   const m = modal(`
     <div class="between"><h2>${esc(b.code)}</h2>${statusChip(b.status)}</div>
     <div class="tint-box" style="margin:12px 0">
-      <div class="between"><span>KOC</span><b>${esc(b.kocname)}</b></div>
+      <div class="between"><span>KOC tham gia</span><b>${batchMembers.length} KOC</b></div>
+      <div class="booking-batch-kocs" style="display:grid;gap:7px;margin-top:10px">${batchMembers.map((member,index)=>`<div class="between" style="padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#fff"><span>${index+1}. ${esc(member.kocname)}</span><span class="row" style="justify-content:flex-end"><b class="money">${money(member.aiclone_quote_koc || 0)}</b>${statusChip(["quote_grouped", "payment_grouped"].includes(member.status) ? b.status : member.status)}</span></div>`).join('')}</div>
       <div class="between"><span>Ngành</span><b>${esc(b.category)}</b></div>
       <div class="between"><span>Giá booking</span><b class="money">${b.status==='quote_pending'?'Chờ Admin báo giá':['quote_grouped','payment_grouped'].includes(b.status)?'Nằm trong báo giá chung':money(b.price)}</b></div>
       ${Number(b.escrow) > 0 && Number(b.legacy_paid_escrow) ? `<div class="between"><span>Khoản tiền đang được đảm bảo</span><b class="money">${money(b.escrow)}</b></div>` : ''}
@@ -444,7 +482,7 @@ async function openOrder(id, el) {
     )>0?`<div class="tint-box" style="margin-bottom:12px">
       <b>Chi tiết báo giá AI Clone Avatar</b>
       <div class="between" style="margin-top:8px"><span>Phí sản xuất video</span><b>${money(b.aiclone_quote_production||0)}</b></div>
-      <div class="between"><span>Phí KOC</span><b>${money(b.aiclone_quote_koc||0)}</b></div>
+      <div class="between"><span>Tổng phí KOC</span><b>${money(batchKocTotal)}</b></div>
       <div class="between"><span>Phí nền tảng</span><b>${money(b.aiclone_quote_platform||0)}</b></div>
       <div class="between"><span>Chi phí bổ sung</span><b>${money(b.aiclone_quote_additional||0)}</b></div>
       <div class="between" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px"><b>Tổng thanh toán</b><b class="money">${money(b.price)}</b></div>
@@ -476,35 +514,36 @@ async function openOrder(id, el) {
     act.innerHTML = `<div class="card" style="padding:14px;border:1px solid var(--primary);margin-top:10px;background:var(--card-bg)">
         <div class="between" style="align-items:center;flex-wrap:wrap;gap:8px">
           <div>
-            <b style="font-size:15px;color:var(--primary)">💳 Báo giá và thanh toán</b>
-            <div class="muted" style="font-size:12px;margin-top:2px">Báo giá đã được duyệt. Hãy thanh toán để chuyển sang bước sản xuất video.</div>
+            <b style="font-size:15px;color:var(--primary)">🛡️ Xác nhận báo giá & ký quỹ</b>
+            <div class="muted" style="font-size:12px;margin-top:2px">Số tiền sẽ được chuyển từ Ví doanh nghiệp sang Escrow và chỉ giải ngân theo tiến độ đã thống nhất.</div>
           </div>
           <b class="money" style="font-size:20px">${money(b.price)}</b>
         </div>
-        <div class="row" style="gap:10px;margin-top:14px;flex-wrap:wrap">
-          <button class="btn primary" id="o-pay-wallet" style="flex:1;min-width:200px;padding:12px;white-space:normal;line-height:1.3;height:auto;text-align:center">💼 Thanh toán / Ký quỹ từ Ví doanh nghiệp</button>
-          <button class="btn ghost" id="o-pay-payos" style="flex:1;min-width:200px;padding:12px;white-space:normal;line-height:1.3;height:auto;text-align:center">🏦 Thanh toán trực tuyến / Mã QR</button>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px">
+          <button class="btn primary" id="o-pay-wallet" style="width:100%;min-height:64px;padding:12px;white-space:normal;line-height:1.3;text-align:center">Chấp nhận báo giá & ký quỹ vào Escrow</button>
+          <button class="btn danger" id="o-reject-quote" style="width:100%;min-height:64px;padding:12px;white-space:normal;line-height:1.3;text-align:center">Từ chối báo giá</button>
         </div>
       </div>`;
     const payWallet = act.querySelector('#o-pay-wallet');
     if (payWallet) payWallet.addEventListener('click', async () => {
-      if (!confirm(`Xác nhận thanh toán ${money(b.price)} từ Ví doanh nghiệp để bắt đầu sản xuất video?`)) return;
+      if (!(await confirmDialog(`Chấp nhận báo giá và ký quỹ ${money(b.price)} từ Ví doanh nghiệp vào Escrow?`, { confirmText: 'Chấp nhận & ký quỹ' }))) return;
       payWallet.disabled = true;
       try {
         await post('/api/aiclone/quote-response', { id: b.id, action: 'accept' });
-        toast('Thanh toán thành công · Đơn đã chuyển sang sản xuất', 'ok');
+        toast('Đã chấp nhận báo giá và ký quỹ vào Escrow', 'ok');
         closeModal(); orders(el);
       } catch (e) { toast(e.message, 'err'); payWallet.disabled = false; }
     });
-    const payPayOS = act.querySelector('#o-pay-payos');
-    if (payPayOS) payPayOS.addEventListener('click', async () => {
-      payPayOS.disabled = true;
+    const rejectQuote = act.querySelector('#o-reject-quote');
+    if (rejectQuote) rejectQuote.addEventListener('click', async () => {
+      const reason = await promptDialog('Vui lòng cho biết lý do từ chối báo giá:', { title: 'Từ chối báo giá', confirmText: 'Xác nhận từ chối', placeholder: 'Ví dụ: Chi phí chưa phù hợp với ngân sách…' });
+      if (!reason) return;
+      rejectQuote.disabled = true;
       try {
-        const res = await post('/api/booking/payment-link', { booking_id: b.id });
-        if (res.checkoutUrl) window.open(res.checkoutUrl, '_blank');
-        toast('Đã tạo yêu cầu thanh toán', 'ok');
+        await post('/api/aiclone/quote-response', { id: b.id, action: 'reject', reason });
+        toast('Đã từ chối báo giá', 'ok');
         closeModal(); orders(el);
-      } catch (e) { toast(e.message, 'err'); payPayOS.disabled = false; }
+      } catch (e) { toast(e.message, 'err'); rejectQuote.disabled = false; }
     });
   } else if (b.status === 'pending_business_review' && b.type === 'aiclone') {
     act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa</label><textarea id="o-ai-note" rows="3" placeholder="Nêu rõ đoạn cần chỉnh sửa…"></textarea></div>
@@ -562,7 +601,7 @@ async function openOrder(id, el) {
     });
     const demoPaid = act.querySelector('#o-demo-paid');
     if (demoPaid) demoPaid.addEventListener('click', async () => {
-      if (!confirm('Xác nhận mô phỏng booking này đã thanh toán thành công?')) return;
+      if (!(await confirmDialog('Xác nhận mô phỏng booking này đã thanh toán thành công?'))) return;
       demoPaid.disabled = true;
       try {
         await post('/api/booking/payment/demo-paid', { booking_id: b.id });
@@ -609,7 +648,7 @@ async function openOrder(id, el) {
     act.innerHTML = `<div class="chip g">✅ Video đã duyệt · đang chờ KOC đăng lên mạng xã hội và nộp link.</div>`;
   } else if (b.status === 'revision_requested') {
     act.innerHTML = `<div class="chip r">Đang chờ KOC tải phiên bản chỉnh sửa.</div>`;
-  } else if (['posted', 'settling', 'video_approved'].includes(b.status)) {
+  } else if (batchReadyToSettle.length || ['posted', 'settling', 'video_approved'].includes(b.status)) {
     const isAi = b.type === 'aiclone';
     const quoteKoc = Number(b.aiclone_quote_koc || 0);
     const prodFee = Number(b.aiclone_quote_production || b.aiclone_production_fee || 0);
@@ -618,25 +657,32 @@ async function openOrder(id, el) {
 
     let kocFee = 0;
     if (isAi) {
-      if (quoteKoc > 0) kocFee = quoteKoc;
-      else if (Number(b.price) > (prodFee + platFee + addFee)) kocFee = Number(b.price) - prodFee - platFee - addFee;
-      else kocFee = Math.round(Number(b.price) * 0.85);
+      kocFee = quoteKoc;
     } else {
       kocFee = Math.max(0, Number(b.price) - Math.round(Number(b.price) * 0.05));
     }
 
+    const settlements = isAi && batchMembers.length > 1
+      ? batchReadyToSettle.map(member => ({ id: member.id, name: member.kocname, amount: Number(member.aiclone_quote_koc || 0) }))
+      : [{ id: b.id, name: b.kocname, amount: kocFee }];
+    const settlementTotal = settlements.reduce((sum, item) => sum + item.amount, 0);
+
     act.innerHTML = `<div class="tint-box" style="margin-bottom:10px">
         <b>Theo dõi & Đối soát nghiệm thu</b>
-        <p class="muted" style="margin-top:4px">KOC đã đăng tải bài review. Bấm nút bên dưới để giải ngân <b>+${money(kocFee)}</b> về Ví của KOC (5% chuyển vào Tài khoản NetViet).</p>
+        <p class="muted" style="margin-top:4px">${settlements.length} KOC đã đăng bài và sẵn sàng nghiệm thu. Hệ thống sẽ chuyển đúng khoản phí Admin đã xác nhận vào Ví của từng KOC.</p>
+        ${settlements.map(item => `<div class="between" style="margin-top:7px"><span>${esc(item.name)}</span><b class="money">+${money(item.amount)}</b></div>`).join('')}
+        <div class="between" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--border)"><b>Tổng giải ngân</b><b class="money">+${money(settlementTotal)}</b></div>
       </div>
-      <button class="btn ok" id="o-complete" style="width:100%;padding:12px;font-size:15px;font-weight:700">💸 Duyệt bài & Giải ngân ngay cho KOC (+${money(kocFee)})</button>`;
+      <button class="btn ok" id="o-complete" style="width:100%;padding:12px;font-size:15px;font-weight:700">💸 Duyệt bài & Giải ngân cho ${settlements.length} KOC (+${money(settlementTotal)})</button>`;
     act.querySelector('#o-complete').addEventListener('click', async () => {
-      if (!confirm(`Xác nhận duyệt bài đăng và giải ngân +${money(kocFee)} cho KOC ${b.kocname}?`)) return;
+      if (!(await confirmDialog(`Xác nhận nghiệm thu và giải ngân tổng cộng ${money(settlementTotal)} cho ${settlements.length} KOC?`))) return;
       const button = act.querySelector('#o-complete');
       button.disabled = true;
       try {
-        await post('/api/booking/action', { id: b.id, action: 'complete' });
-        toast(`Đã giải ngân thành công +${money(kocFee)} vào Ví của KOC ${b.kocname}`, 'ok');
+        for (const settlement of settlements) {
+          await post('/api/booking/action', { id: settlement.id, action: 'complete' });
+        }
+        toast(`Đã giải ngân tổng cộng ${money(settlementTotal)} vào Ví của ${settlements.length} KOC`, 'ok');
         closeModal();
         orders(el);
       } catch (e) {
@@ -645,9 +691,13 @@ async function openOrder(id, el) {
       }
     });
   } else if (b.status === 'completed' && !b.rating) {
-    act.innerHTML = `<div class="field"><label>Đánh giá sao</label><select id="o-rating"><option value="5">★★★★★ (5)</option><option value="4">★★★★ (4)</option><option value="3">★★★ (3)</option></select></div>
-      <div class="field"><label>Nhận xét</label><textarea id="o-review" rows="2"></textarea></div>
-      <button class="btn primary" id="o-rate">Gửi đánh giá</button>`;
+    act.innerHTML = `<div class="field"><label id="o-rating-label">Đánh giá sao</label><div class="rating-picker" role="radiogroup" aria-labelledby="o-rating-label">${[1,2,3,4,5].map(value => `<button type="button" class="rating-star" data-rating="${value}" role="radio" aria-checked="false" aria-label="${value} sao">★</button>`).join('')}</div><input id="o-rating" type="hidden" value=""></div>
+      <div class="field"><label>Nhận xét</label><textarea id="o-review" rows="2" placeholder="Chia sẻ trải nghiệm của bạn về KOC..."></textarea></div>
+      <button class="btn primary" id="o-rate" disabled>Gửi đánh giá</button>`;
+    const ratingInput=act.querySelector('#o-rating'),ratingButtons=[...act.querySelectorAll('.rating-star')];
+    const paintStars=value=>ratingButtons.forEach(button=>button.classList.toggle('active',Number(button.dataset.rating)<=value));
+    ratingButtons.forEach(button=>{button.addEventListener('mouseenter',()=>paintStars(Number(button.dataset.rating)));button.addEventListener('focus',()=>paintStars(Number(button.dataset.rating)));button.addEventListener('click',()=>{const value=Number(button.dataset.rating);ratingInput.value=String(value);ratingButtons.forEach(item=>item.setAttribute('aria-checked',String(item===button)));paintStars(value);act.querySelector('#o-rate').disabled=false;});});
+    act.querySelector('.rating-picker').addEventListener('mouseleave',()=>paintStars(Number(ratingInput.value||0)));
     act.querySelector('#o-rate').addEventListener('click', async () => {
       try { await post('/api/booking/action', { id: b.id, action:'rate', rating: act.querySelector('#o-rating').value, review: act.querySelector('#o-review').value.trim() }); toast('Đã đánh giá','ok'); closeModal(); orders(el); }
       catch (e) { toast(e.message,'err'); }
@@ -662,7 +712,7 @@ async function openOrder(id, el) {
     complainBtn.className = 'btn ghost sm'; complainBtn.style.marginTop = '8px'; complainBtn.style.width = '100%';
     complainBtn.innerHTML = `${icon('complaint','btn-icon')} Gửi khiếu nại về booking này`;
     complainBtn.addEventListener('click', async () => {
-      const reason = prompt('Mô tả vấn đề bạn gặp phải với booking này:');
+      const reason = await promptDialog('Mô tả vấn đề bạn gặp phải với booking này:');
       if (!reason || !reason.trim()) return;
       try { await post('/api/complaints', { booking_id: b.id, reason: reason.trim() }); toast('Đã gửi khiếu nại — NetViet sẽ xem xét','ok'); } catch (e) { toast(e.message,'err'); }
     });
@@ -791,7 +841,7 @@ function renderBusinessProducts(list, products, reload) {
         await navigator.clipboard.writeText(product.product_url);
         toast('Đã sao chép link sản phẩm', 'ok');
       } catch (_) {
-        window.prompt('Sao chép link sản phẩm:', product.product_url);
+        await promptDialog('Sao chép link sản phẩm:', { value: product.product_url, required: false, confirmText: 'Đóng' });
       }
       return;
     }
@@ -816,7 +866,7 @@ function renderBusinessProducts(list, products, reload) {
       return;
     }
     if (action === 'delete') {
-      if (!confirm(`Xóa sản phẩm “${product.name}” khỏi danh mục?`)) return;
+      if (!(await confirmDialog(`Xóa sản phẩm “${product.name}” khỏi danh mục?`, { confirmText: 'Xóa sản phẩm', tone: 'danger' }))) return;
       button.disabled = true;
       try {
         await api(`/api/business/products/${product.id}`, { method: 'DELETE' });
@@ -898,19 +948,23 @@ async function campaigns(el) {
   const r = await api('/api/campaigns');
   const cfg = state.config;
   el.innerHTML = `<div class="between"><h1>Chiến dịch lớn (NetViet điều phối)</h1><button class="btn primary sm" id="c-new">+ Tạo yêu cầu</button></div>
-    <div class="table-wrap" style="margin-top:16px">${r.campaigns.length?`<table><thead><tr><th>Thời gian</th><th>Ngân sách</th><th>SL KOC</th><th>Hạng</th><th>Ngành</th><th>Trạng thái</th><th>KOC đã gán</th></tr></thead><tbody>
-      ${r.campaigns.map(c=>{ let assigned=[]; try{assigned=JSON.parse(c.assigned||'[]');}catch(e){} return `<tr><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(c.created_at)}</td><td class="money">${money(c.budget)}</td><td>${c.qty}</td><td>${tierBadge(c.tier)}</td><td>${esc(c.category)}</td><td>${statusChip(c.status)}</td>
-      <td>${assigned.length?assigned.map(k=>`<span class="chip b" style="margin:2px">${esc(k.name)}</span>`).join(''):'<span class="muted">Chưa gán</span>'}</td></tr>`; }).join('')}
+    <div class="table-wrap" style="margin-top:16px">${r.campaigns.length?`<table><thead><tr><th>Thời gian</th><th>Ngân sách</th><th>SL KOC</th><th>Hạng</th><th>Ngành</th><th>Trạng thái</th><th>KOC đã gán</th><th>Thao tác</th></tr></thead><tbody>
+      ${r.campaigns.map(c=>{let assigned=[];try{assigned=JSON.parse(c.assigned||'[]')}catch(e){}const fee=Number(c.management_fee)||Math.max(2000000,Math.round(Number(c.budget||0)*.15)),total=Number(c.total_amount)||Number(c.budget||0)+fee;return `<tr><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(c.created_at)}</td><td><b class="money">${money(c.budget)}</b><div class="muted" style="font-size:11px">Phí ${money(fee)} · Tổng ${money(total)}</div></td><td>${c.qty}</td><td>${tierBadge(c.tier)}</td><td>${esc(c.category)}</td><td>${statusChip(c.status)}</td><td>${assigned.length?assigned.map(k=>`<span class="chip b" style="margin:2px">${esc(k.name)}</span>`).join(''):'<span class="muted">Chưa gán</span>'}</td><td><div class="row" style="min-width:150px;flex-wrap:wrap">${c.status==='pending'?`<button class="btn primary sm" data-campaign-fund="${c.id}">Ký quỹ</button>`:''}${['pending','funded'].includes(c.status)?`<button class="btn ghost sm" data-campaign-cancel="${c.id}">Hủy</button>`:''}</div></td></tr>`}).join('')}
     </tbody></table>`:empty('📣','Chưa có chiến dịch. NetViet sẽ phân bổ KOC cho bạn.')}</div>`;
+  el.querySelectorAll('[data-campaign-fund]').forEach(button=>button.addEventListener('click',async()=>{const c=r.campaigns.find(x=>x.id===button.dataset.campaignFund),total=Number(c.total_amount)||Number(c.budget)+Number(c.management_fee);if(!(await confirmDialog(`Xác nhận khóa ${money(total)} từ Ví doanh nghiệp?`)))return;button.disabled=true;try{await post('/api/campaign/action',{id:c.id,action:'fund'});toast('Đã ký quỹ chiến dịch','ok');campaigns(el)}catch(e){toast(e.message,'err');button.disabled=false}}));
+  el.querySelectorAll('[data-campaign-cancel]').forEach(button=>button.addEventListener('click',async()=>{if(!(await confirmDialog('Hủy chiến dịch và hoàn phần tiền chưa sử dụng?', { confirmText: 'Hủy chiến dịch', tone: 'danger' })))return;try{const x=await post('/api/campaign/action',{id:button.dataset.campaignCancel,action:'cancel'});toast(`Đã hủy${x.refundAmount?` · hoàn ${money(x.refundAmount)}`:''}`,'ok');campaigns(el)}catch(e){toast(e.message,'err')}}));
   document.getElementById('c-new').addEventListener('click', () => {
     const m = modal(`<h2>Yêu cầu chiến dịch lớn</h2>
-      <div class="field"><label>Ngân sách (đ)</label><input id="cf-budget" type="number"></div>
+      <p class="muted" style="margin:6px 0 16px">NetViet tuyển chọn KOC, điều phối tiến độ và hỗ trợ nghiệm thu chiến dịch.</p>
+      <div class="field"><label>Ngân sách trả KOC (đ)</label><input id="cf-budget" type="number" min="1" placeholder="Ví dụ: 50.000.000"></div>
       <div class="field"><label>Số lượng KOC</label><input id="cf-qty" type="number" value="5"></div>
       <div class="field"><label>Hạng KOC</label><select id="cf-tier">${cfg.tiers.map(t=>`<option>${t.name}</option>`).join('')}</select></div>
-      <div class="field"><label>Ngành hàng</label><select id="cf-cat">${cfg.categories.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+      <div class="field"><label>Ngành hàng</label><select id="cf-cat"><option value="Tất cả">Tất cả</option>${cfg.categories.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
       <div class="field"><label>Ghi chú</label><textarea id="cf-note" rows="2"></textarea></div>
+      <div class="campaign-pricing"><div><span>Ngân sách dành cho KOC</span><b id="cf-creator-budget">0đ</b></div><div><span>Phí điều phối <small>15% · tối thiểu 2.000.000đ</small></span><b id="cf-management-fee">2.000.000đ</b></div><div class="campaign-pricing-total"><span>Tổng dự kiến</span><strong id="cf-total">2.000.000đ</strong></div><p>Chưa bao gồm phí thanh toán, thuế và chi phí phát sinh được xác nhận riêng.</p></div>
       <button class="btn primary" id="cf-go">Gửi cho NetViet</button>
       <button class="btn ghost" id="cf-cancel" style="margin-top:8px">Hủy</button>`);
+    const updatePricing=()=>{const budget=Math.max(0,Number(m.querySelector('#cf-budget').value)||0),fee=Math.max(2000000,Math.round(budget*.15));m.querySelector('#cf-creator-budget').textContent=money(budget);m.querySelector('#cf-management-fee').textContent=money(fee);m.querySelector('#cf-total').textContent=money(budget+fee)};m.querySelector('#cf-budget').addEventListener('input',updatePricing);updatePricing();
     m.querySelector('#cf-cancel').addEventListener('click', closeModal);
     m.querySelector('#cf-go').addEventListener('click', async () => {
       const budget = Number(m.querySelector('#cf-budget').value);

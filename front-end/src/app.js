@@ -109,7 +109,7 @@ document.addEventListener('click', (e) => {
   const href = a.getAttribute('href') || '';
   if (LANDING_ROUTES.includes(href)) {
     e.preventDefault();
-    if (location.pathname !== href) history.pushState(null, '', href);
+    history.pushState(null, '', href);
     route();
   }
 });
@@ -145,27 +145,34 @@ async function renderLogin() {
     </div>`;
   }).join('');
   appEl.innerHTML = `
-  <div class="auth">
-    <div class="auth-card">
+  <div class="auth auth-login">
+    <div class="auth-login-shell">
+      <a href="/trang-chu" class="auth-home-link" aria-label="Về trang chủ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 10v9h13v-9M9.5 19v-5h5v5"/></svg><span>Trang chủ</span></a>
+      <section class="auth-intro" aria-label="Giới thiệu KOC Việt">
+        <span class="auth-eyebrow">NỀN TẢNG BOOKING KOC / KOL</span>
+        <h1>Kết nối đúng KOC.<br><span>Tạo nên chiến dịch hiệu quả.</span></h1>
+        <p>Tìm kiếm, booking và quản lý chiến dịch trên một nền tảng minh bạch, chuyên nghiệp.</p>
+        <div class="auth-benefits">
+          <div><span>✓</span><p><b>Hệ sinh thái đa dạng</b><small>Kết nối KOC/KOL trên toàn quốc</small></p></div>
+          <div><span>✓</span><p><b>Chi phí minh bạch</b><small>Dễ dàng lựa chọn theo ngân sách</small></p></div>
+          <div><span>✓</span><p><b>Quản lý tập trung</b><small>Theo dõi tiến độ ngay trên nền tảng</small></p></div>
+        </div>
+      </section>
+      <div class="auth-card">
       <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
-      <p class="muted" style="text-align:center;margin-bottom:18px">Sàn booking KOC/KOLs · NetViet</p>
+      <div class="auth-card-heading"><span>ĐĂNG NHẬP TÀI KHOẢN</span><h2>Chào mừng bạn trở lại</h2><p>Tiếp tục hành trình cùng KOC Việt</p></div>
       <form id="li-form">
-        <div class="field"><label for="li-email">Email</label><input id="li-email" name="email" type="email" autocomplete="username" placeholder="email@demo.vn" value="${esc(defaultAccount.email)}"></div>
-        <div class="field"><label for="li-pass">Mật khẩu</label><input id="li-pass" name="password" type="password" autocomplete="current-password"></div>
-        <button class="btn primary nv-lift" id="li-btn" type="submit">Đăng nhập</button>
-        <div class="row" style="margin-top:8px"><a href="#/forgot-password" class="muted" style="font-size:12px;text-align:center;width:100%">Quên mật khẩu?</a></div>
+        <div class="field"><label for="li-email">Email</label><input id="li-email" name="email" type="email" autocomplete="username" placeholder="Nhập địa chỉ email" value="${esc(defaultAccount.email)}" required></div>
+        <div class="field"><div class="auth-label-row"><label for="li-pass">Mật khẩu</label><a href="#/forgot-password">Quên mật khẩu?</a></div><input id="li-pass" name="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required></div>
+        <button class="btn primary nv-lift" id="li-btn" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
       </form>
-      ${demoList ? `<p class="muted" style="text-align:center;margin:14px 0 8px;font-size:12px">Tài khoản demo (bấm để đăng nhập):</p>${demoList}` : ''}
-      <div class="row" style="margin-top:14px;gap:8px">
-        <a href="#/explore" class="btn ghost sm" style="flex:1">Khám phá KOC</a>
-        <a href="#/tuyen-koc" class="btn ghost sm" style="flex:1">Trở thành KOC</a>
+      ${demoList ? `<div class="auth-divider"><span>Hoặc trải nghiệm nhanh</span></div><div class="auth-demo-list">${demoList}</div>` : ''}
+      <div class="auth-quick-links">
+        <a href="#/explore" class="btn ghost sm">Khám phá KOC</a>
+        <a href="#/tuyen-koc" class="btn ghost sm">Trở thành KOC</a>
+        <a href="#/business-register" class="btn ghost sm auth-business-register">Đăng ký doanh nghiệp</a>
       </div>
-      <div class="row" style="margin-top:8px">
-        <a href="#/business-register" class="btn ghost sm" style="width:100%">Đăng ký tài khoản doanh nghiệp</a>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <a href="/trang-chu" class="muted" style="font-size:12px;text-align:center;width:100%">← Về trang giới thiệu KOC Việt</a>
-      </div>
+    </div>
     </div>
   </div>`;
   document.querySelectorAll('.demo-acc').forEach(el => el.addEventListener('click', async () => {

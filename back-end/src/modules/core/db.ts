@@ -213,6 +213,20 @@ const MIGRATIONS = [
   `ALTER TABLE koc_identity_documents ADD COLUMN front_object_key TEXT`,
   `ALTER TABLE koc_identity_documents ADD COLUMN back_object_key TEXT`,
   `ALTER TABLE koc_identity_documents ADD COLUMN selfie_object_key TEXT`,
+  `ALTER TABLE campaigns ADD COLUMN management_rate REAL NOT NULL DEFAULT 0.15`,
+  `ALTER TABLE campaigns ADD COLUMN management_fee INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE campaigns ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE campaigns ADD COLUMN upfront_fee_released INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE campaigns ADD COLUMN funded_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN started_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN completed_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN cancelled_at INTEGER`,
+  `CREATE TABLE IF NOT EXISTS campaign_allocations (id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,koc_id TEXT NOT NULL,amount INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'pending',settled_at INTEGER,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,UNIQUE(campaign_id,koc_id))`,
+  `CREATE INDEX IF NOT EXISTS idx_campaign_allocations_campaign ON campaign_allocations(campaign_id,status)`,
+  `UPDATE campaigns SET management_rate=0.15,
+     management_fee=CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END,
+     total_amount=COALESCE(budget,0)+(CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END)
+     WHERE COALESCE(total_amount,0)=0`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version

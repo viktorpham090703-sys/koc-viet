@@ -27,8 +27,8 @@ export function lpHeader(active) {
       <nav class="lp-nav" id="lp-nav">
         ${ROUTES.map(([href, label]) => `<a href="${href}" class="${active === href ? "active" : ""}">${label}</a>`).join("")}
         <div class="lp-auth-btns">
-          <a href="/#/login" class="btn ghost sm">Đăng nhập</a>
-          <a href="/#/tuyen-koc" class="btn primary sm">Đăng ký</a>
+          <a href="/#/tuyen-koc" class="btn ghost sm">Đăng ký</a>
+          <a href="#/login" class="btn primary sm">Đăng nhập</a>
         </div>
       </nav>
       <button class="lp-burger" id="lp-burger" aria-label="Menu">☰</button>
