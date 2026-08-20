@@ -786,7 +786,9 @@ function pagerHtml(page, pages) {
 async function adminCampaigns(el) {
   const r = await api("/api/campaigns");
   const campaignStatus = {
-    pending: "Chờ ký quỹ",
+    pending: "Chờ Admin báo giá",
+    quote_pending: "Chờ Admin báo giá",
+    quoted: "Đã gửi báo giá",
     funded: "Đã ký quỹ",
     coordinating: "Đang tuyển chọn",
     assigned: "Đã phân bổ",
@@ -807,17 +809,22 @@ async function adminCampaigns(el) {
                 ? c.allocations
                 : [];
               return `<div class="card" style="margin-bottom:12px">
-      <div class="between"><div><strong>${esc(c.bizname)}</strong> <span class="chip ${c.status === "completed" ? "g" : c.status === "cancelled" ? "r" : c.status === "pending" ? "w" : "b"}">${campaignStatus[c.status] || esc(c.status)}</span></div><div class="row" style="flex-wrap:wrap">${c.status === "funded" ? `<button class="btn primary sm" data-campaign-start="${c.id}">Bắt đầu điều phối</button>` : ""}${["coordinating", "assigned"].includes(c.status) ? `<button class="btn primary sm" data-assign="${c.id}">Phân bổ KOC</button>` : ""}${["assigned", "in_progress"].includes(c.status) && allocations.length && allocations.every((x) => x.status === "settled") ? `<button class="btn ok sm" data-campaign-complete="${c.id}">Hoàn tất</button>` : ""}${!["completed", "cancelled"].includes(c.status) ? `<button class="btn ghost sm" data-admin-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div>
+      <div class="between"><div><strong>${esc(c.bizname)}</strong> <span class="chip ${c.status === "completed" ? "g" : c.status === "cancelled" ? "r" : ["pending","quote_pending"].includes(c.status) ? "w" : "b"}">${campaignStatus[c.status] || esc(c.status)}</span></div><div class="row" style="flex-wrap:wrap">${["pending","quote_pending","quoted"].includes(c.status) ? `<button class="btn primary sm" data-campaign-quote="${c.id}">Gửi báo giá</button>` : ""}${c.status === "funded" ? `<button class="btn primary sm" data-campaign-start="${c.id}">Bắt đầu điều phối</button>` : ""}${["coordinating", "assigned"].includes(c.status) && allocations.every(a=>['invited','declined'].includes(a.status)) ? `<button class="btn primary sm" data-assign="${c.id}">Phân bổ KOC</button>` : ""}${["assigned", "in_progress"].includes(c.status) && allocations.length && allocations.every((x) => x.status === "settled") ? `<button class="btn ok sm" data-campaign-complete="${c.id}">Hoàn tất</button>` : ""}${!["completed", "cancelled"].includes(c.status) ? `<button class="btn ghost sm" data-admin-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div>
       <div class="muted" style="margin-top:6px">Ngân sách KOC ${money(c.budget)} · Phí điều phối ${money(Number(c.management_fee) || Math.max(2000000, Math.round(Number(c.budget) * 0.15)))} · Tổng ${money(Number(c.total_amount) || Number(c.budget) + Number(c.management_fee))}</div><div class="muted" style="margin-top:3px">${c.qty} KOC hạng ${esc(c.tier)} · ngành ${esc(c.category)}</div>
       ${c.note ? `<div class="tint-box" style="margin-top:8px;font-size:13px">${esc(c.note)}</div>` : ""}
       <div style="margin-top:8px"><span class="chip ${assigned.length > Number(c.qty) ? "r" : assigned.length === Number(c.qty) ? "g" : "n"}">${assigned.length}/${c.qty} KOC đã gán</span>
         ${assigned.length ? assigned.map((k) => `<span class="chip g" style="margin:2px">${esc(k.name)}</span>`).join("") : '<span class="muted" style="font-size:12px">Chưa gán KOC nào</span>'}
-        ${assigned.length > Number(c.qty) ? '<div style="color:var(--error);font-size:12px;margin-top:6px">Số KOC đang gán vượt yêu cầu.</div>' : ""}</div>${allocations.length ? `<div class="campaign-allocation-list">${allocations.map((a) => `<div><span><b>${esc(a.koc_name)}</b><small>${a.status === "settled" ? "Đã nghiệm thu" : "Chờ nghiệm thu"}</small></span><strong>${money(a.amount)}</strong>${a.status === "pending" ? `<button class="btn ok sm" data-settle-allocation="${a.id}" data-campaign-id="${c.id}">Nghiệm thu & giải ngân</button>` : '<span class="chip g">Đã trả</span>'}</div>`).join("")}</div>` : ""}
+        ${assigned.length > Number(c.qty) ? '<div style="color:var(--error);font-size:12px;margin-top:6px">Số KOC đang gán vượt yêu cầu.</div>' : ""}</div>${allocations.length ? `<div class="campaign-allocation-list">${allocations.map((a) => `<div><span><b>${esc(a.koc_name)}</b><small>${statusChip(a.status)}${a.submission_url?` · <a href="${esc(a.submission_url)}" target="_blank" rel="noopener">Xem nội dung</a>`:''}</small></span><strong>${money(a.amount)}</strong>${a.status === "approved" ? `<button class="btn ok sm" data-settle-allocation="${a.id}" data-campaign-id="${c.id}">Giải ngân đúng khoản</button>` : a.status === "settled"?'<span class="chip g">Đã trả</span>':a.status==='declined'?`<button class="btn ghost sm" data-replace-allocation="${a.id}" data-campaign-id="${c.id}">Chọn KOC thay thế</button>`:'<span class="muted">Chưa đủ điều kiện</span>'}</div>`).join("")}</div>` : ""}
     </div>`;
             })
             .join("")
         : empty("📣", "Chưa có yêu cầu chiến dịch")
     }</div>`;
+  el.querySelectorAll('[data-campaign-quote]').forEach(button=>button.addEventListener('click',()=>{
+    const c=r.campaigns.find(x=>x.id===button.dataset.campaignQuote),suggested=Number(c.management_fee)||Math.max(2000000,Math.round(Number(c.budget)*.15));
+    const m=modal(`<h2>Báo giá chiến dịch lớn</h2><div class="tint-box" style="margin:12px 0"><div class="between"><span>Ngân sách trả KOC</span><b>${money(c.budget)}</b></div></div><div class="field"><label>Phí điều phối NetViet</label><input id="cq-fee" type="number" min="0" step="1000" value="${suggested}"></div><div class="field"><label>Ghi chú báo giá</label><textarea id="cq-note" rows="3">${esc(c.quote_note||'')}</textarea></div><button class="btn primary" id="cq-send">Gửi doanh nghiệp xác nhận</button><button class="btn ghost" id="cq-close" style="margin-top:8px">Đóng</button>`);
+    m.querySelector('#cq-close').addEventListener('click',closeModal);m.querySelector('#cq-send').addEventListener('click',async()=>{try{await post('/api/campaign/action',{id:c.id,action:'quote',managementFee:Number(m.querySelector('#cq-fee').value),note:m.querySelector('#cq-note').value.trim()});toast('Đã gửi báo giá','ok');closeModal();adminCampaigns(el)}catch(e){toast(e.message,'err')}});
+  }));
   el.querySelectorAll("[data-campaign-start]").forEach((b) =>
     b.addEventListener("click", async () => {
       if (!(await confirmDialog("Bắt đầu điều phối và ghi nhận 20% phí?")))
@@ -850,6 +857,12 @@ async function adminCampaigns(el) {
       }
     }),
   );
+  el.querySelectorAll('[data-replace-allocation]').forEach(button=>button.addEventListener('click',async()=>{
+    const c=r.campaigns.find(x=>x.id===button.dataset.campaignId),categoryQuery=c.category==='Tất cả'?'':`&category=${encodeURIComponent(c.category)}`,kocs=await api(`/api/kocs?tier=${encodeURIComponent(c.tier)}${categoryQuery}`),used=new Set((c.allocations||[]).map(a=>a.koc_id));
+    const candidates=kocs.kocs.filter(k=>!used.has(k.id));
+    const m=modal(`<h2>Chọn KOC thay thế</h2><p class="muted" style="margin:6px 0 12px">Khoản phân bổ được giữ nguyên để không làm lệch ngân sách.</p>${candidates.length?candidates.map(k=>`<button class="btn ghost" data-replacement-koc="${k.id}" style="margin-bottom:8px;justify-content:flex-start"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><span>${esc(k.name)} · ${esc(k.tier)}</span></button>`).join(''):empty('🔍','Không còn KOC phù hợp')}<button class="btn ghost" id="replace-close">Đóng</button>`);
+    m.querySelector('#replace-close').addEventListener('click',closeModal);m.querySelectorAll('[data-replacement-koc]').forEach(k=>k.addEventListener('click',async()=>{try{await post('/api/admin/campaign-allocation-replace',{allocationId:button.dataset.replaceAllocation,kocId:k.dataset.replacementKoc});toast('Đã mời KOC thay thế','ok');closeModal();adminCampaigns(el)}catch(e){toast(e.message,'err')}}));
+  }));
   el.querySelectorAll("[data-campaign-complete]").forEach((b) =>
     b.addEventListener("click", async () => {
       if (!(await confirmDialog("Hoàn tất và ghi nhận phí còn lại?"))) return;
@@ -1057,6 +1070,7 @@ async function settle(el, changes = {}) {
   const rows = list
     .map((s) => {
       const isAi = s.type === "aiclone";
+      const isCampaign = s.type === "campaign" || String(s.code || '').startsWith('CD-');
       const quoteKoc = Number(s.aiclone_quote_koc || 0);
       const prodFee = Number(
         s.aiclone_quote_production || s.aiclone_production_fee || 0,
@@ -1067,7 +1081,9 @@ async function settle(el, changes = {}) {
       const addFee = Number(s.aiclone_quote_additional || 0);
 
       let kocFee = 0;
-      if (isAi) {
+      if (isCampaign) {
+        kocFee = Number(s.campaign_koc_paid || 0);
+      } else if (isAi) {
         kocFee = quoteKoc;
       } else {
         kocFee = Math.max(
@@ -1075,15 +1091,25 @@ async function settle(el, changes = {}) {
           Number(s.price) - Math.round(Number(s.price) * 0.05),
         );
       }
-      const netvietFee = Math.max(0, Number(s.price) - kocFee);
+      const netvietFee = isCampaign
+        ? Number(s.campaign_netviet_paid || 0)
+        : Math.max(0, Number(s.price) - kocFee);
+      const campaignStatus = {
+        funded: 'Đã ký quỹ', coordinating: 'Đang điều phối', assigned: 'Đã phân bổ',
+        in_progress: 'Đang giải ngân', completed: 'Đã hoàn tất', cancelled: 'Đã hủy',
+      };
+      const kocNames = isCampaign
+        ? String(s.koc_name || '').split(' · ').filter(name => name && name !== 'Chưa phân bổ')
+        : (s.koc_names || [s.koc_name]).filter(Boolean);
+      const kocCount = isCampaign ? kocNames.length : Number(s.batch_count || kocNames.length);
 
       return `<tr>
-      <td><b>${esc(s.code)}</b><div class="muted" style="font-size:11px">${esc(s.business_name || "Doanh nghiệp")}</div></td>
-      <td><b>${s.batch_count > 1 ? `${s.batch_count} KOC` : esc(s.koc_name || "KOC")}</b>${s.batch_count > 1 ? `<div class="muted" style="font-size:11px">${s.koc_names.map((name) => esc(name)).join(" · ")}</div>` : ""}</td>
-      <td class="money" style="font-weight:700">${money(s.price)}</td>
+      <td><b>${esc(s.code)}</b>${isCampaign?'<span class="chip n" style="margin-left:6px">Chiến dịch lớn</span>':''}<div class="muted" style="font-size:11px">${esc(s.business_name || "Doanh nghiệp")}</div></td>
+      <td>${kocCount>1?`<div class="settlement-koc-group"><b>${kocCount} KOC</b><button class="settlement-koc-detail" data-settlement-kocs="${esc(s.id)}">Xem chi tiết</button></div>`:`<b>${esc(kocNames[0]||'Chưa phân bổ')}</b>`}</td>
+      <td class="money" style="font-weight:700">${money(s.price)}${isCampaign?`<div class="muted" style="font-size:10px">Còn Escrow ${money(s.campaign_remaining||0)}</div>`:''}</td>
       <td class="money" style="color:var(--success);font-weight:700">+${money(kocFee)}</td>
-      <td class="money" style="color:var(--primary);font-weight:700">+${money(netvietFee)}<div class="muted" style="font-size:10px">Sản xuất AI + Phí NT</div></td>
-      <td class="settlement-status">${s.status === "completed" ? '<span class="chip g">✓ Đã giải ngân</span>' : '<span class="chip b">Đang xử lý</span>'}</td>
+      <td class="money" style="color:var(--primary);font-weight:700">+${money(netvietFee)}<div class="muted" style="font-size:10px">${isCampaign?'Phí điều phối đã ghi nhận':'Sản xuất AI + Phí NT'}</div></td>
+      <td class="settlement-status">${isCampaign?`<span class="chip ${s.status==='completed'?'g':s.status==='cancelled'?'r':'b'}">${campaignStatus[s.status]||esc(s.status)}</span>`:s.status === "completed" ? '<span class="chip g">✓ Đã giải ngân</span>' : '<span class="chip b">Đang xử lý</span>'}</td>
       <td class="muted" style="font-size:11px">${fmtDate(s.updated_at || s.created_at)}</td>
     </tr>`;
     })
@@ -1121,6 +1147,14 @@ async function settle(el, changes = {}) {
       <div class="audit-toolbar"><input id="audit-search" value="${esc(settleView.auditSearch)}" placeholder="Tìm hành động, người thực hiện, mã tham chiếu…"><select id="audit-category"><option value="">Tất cả nghiệp vụ</option><option value="booking" ${settleView.auditCategory === "booking" ? "selected" : ""}>Booking</option><option value="aiclone" ${settleView.auditCategory === "aiclone" ? "selected" : ""}>AI Clone</option><option value="payment" ${settleView.auditCategory === "payment" ? "selected" : ""}>Thanh toán & ví</option><option value="account" ${settleView.auditCategory === "account" ? "selected" : ""}>Tài khoản & hồ sơ</option><option value="other" ${settleView.auditCategory === "other" ? "selected" : ""}>Khác</option></select></div>
       <div id="audit-list"></div><div class="pager" id="audit-pager"></div>
     </div>`;
+  el.querySelectorAll('[data-settlement-kocs]').forEach(button=>button.addEventListener('click',()=>{
+    const settlement=list.find(item=>String(item.id)===button.dataset.settlementKocs);
+    if(!settlement)return;
+    const campaign=settlement.type==='campaign'||String(settlement.code||'').startsWith('CD-');
+    const names=campaign?String(settlement.koc_name||'').split(' · ').filter(name=>name&&name!=='Chưa phân bổ'):(settlement.koc_names||[settlement.koc_name]).filter(Boolean);
+    const m=modal(`<div class="between"><div><h2>Danh sách KOC</h2><p class="muted" style="margin-top:4px">${esc(settlement.code)} · ${esc(settlement.business_name||'Doanh nghiệp')}</p></div><span class="chip n">${names.length} KOC</span></div><div class="settlement-koc-detail-list">${names.map((name,index)=>`<div><span>${index+1}</span><b>${esc(name)}</b></div>`).join('')}</div><button class="btn ghost" id="settlement-koc-close" style="margin-top:14px">Đóng</button>`);
+    m.querySelector('#settlement-koc-close').addEventListener('click',closeModal);
+  }));
   bindServerPager(
     el,
     "#distribution-pager",
@@ -2030,7 +2064,7 @@ async function tiers(el) {
       toast(e.message, "err");
     } finally {
       btn.disabled = false;
-      btn.textContent = "💾 Lưu khung giá";
+      btn.textContent = "Lưu khung giá";
     }
   });
 }
