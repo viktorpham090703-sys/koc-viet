@@ -1,5 +1,5 @@
 import { post } from "./api.js";
-import { money, esc, toast, modal, closeModal, provinceOptions } from "./ui.js";
+import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions } from "./ui.js";
 import { state } from "./app.js";
 import Tesseract from "tesseract.js";
 
@@ -97,11 +97,11 @@ export function renderOnboarding(el) {
       verifiedAt: 0,
     };
   };
-  function onCancel() {
+  async function onCancel() {
     if (
-      !confirm(
+      !(await confirmDialog(
         "Bạn có chắc chắn muốn hủy đăng ký?\nToàn bộ thông tin đã nhập sẽ bị xoá và không thể khôi phục.",
-      )
+      ))
     )
       return;
     stopOtpTimer();
@@ -119,22 +119,29 @@ export function renderOnboarding(el) {
     opts = opts || {};
     const showCancel = step < 5;
     const showNav = step < 4 && !opts.hideNav;
-    return `<div style="max-width:520px;margin:0 auto;min-height:100vh;background:#fff;padding:20px;position:relative">
+    return `<div class="onboard-page">
+      <aside class="onboard-aside">
+        <div class="onboard-aside-top"><button type="button" class="onboard-return onboard-return-desktop" aria-label="Trở về trang giới thiệu KOC">← Trở về</button><span class="onboard-kicker">GIA NHẬP KOC VIỆT</span></div>
+        <h2>Xây dựng hồ sơ.<br><span>Mở rộng cơ hội.</span></h2>
+        <p>Hoàn thiện thông tin để kết nối với các chiến dịch phù hợp và bắt đầu hành trình chuyên nghiệp.</p>
+        <div class="onboard-aside-progress"><b>${String(step + 1).padStart(2, "0")}</b><span>/ 06</span></div>
+        <div class="onboard-aside-steps">${steps.map((label, i) => `<div class="${i === step ? "current" : i < step ? "done" : ""}"><i>${i < step ? "✓" : i + 1}</i><span>${label}</span></div>`).join("")}</div>
+      </aside>
+      <main class="onboard-panel">
+      <button type="button" class="onboard-return onboard-return-mobile" aria-label="Trở về trang giới thiệu KOC">← Trở về</button>
       ${
         showCancel
-          ? `<button type="button" id="o-cancel" title="Hủy đăng ký" aria-label="Hủy đăng ký"
-        style="position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:9999px;border:1px solid var(--border);background:#fff;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;z-index:5">✕</button>`
+          ? `<button type="button" id="o-cancel" class="onboard-close" title="Hủy đăng ký" aria-label="Hủy đăng ký">✕</button>`
           : ""
       }
-      <div class="between" style="padding-right:${showCancel ? "44px" : "0"}">
+      <div class="between onboard-header" style="padding-right:${showCancel ? "44px" : "0"}">
         <div class="row" style="gap:10px;min-width:0">
-          <button type="button" id="o-return" class="btn ghost sm" style="width:auto;flex-shrink:0" aria-label="Trở về trang giới thiệu KOC">← Trở về</button>
           <a href="#/tuyen-koc" class="logo" style="font-size:18px">KOC<span style="color:var(--navy)"> Viet</span></a>
         </div>
-        <span class="muted">${step < 5 ? `Bước ${step + 1}/6` : ""}</span>
+        <span class="onboard-step-count">${step < 5 ? `Bước ${step + 1}/6` : ""}</span>
       </div>
       <div class="step-dots">${steps.map((_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("")}</div>
-      <h1 style="margin-bottom:14px">${steps[step]}</h1>${inner}
+      <div class="onboard-title"><span>THÔNG TIN ĐĂNG KÝ</span><h1>${steps[step]}</h1></div>${inner}
       ${
         showNav
           ? `<div class="row" style="gap:10px;margin-top:18px">
@@ -143,14 +150,14 @@ export function renderOnboarding(el) {
       </div>`
           : ""
       }
+      </main>
     </div>`;
   }
 
   function bindChrome() {
     const cancelBtn = el.querySelector("#o-cancel");
     if (cancelBtn) cancelBtn.addEventListener("click", onCancel);
-    const returnBtn = el.querySelector("#o-return");
-    if (returnBtn) returnBtn.addEventListener("click", onCancel);
+    el.querySelectorAll(".onboard-return").forEach(returnBtn => returnBtn.addEventListener("click", onCancel));
     const next = el.querySelector("#o-next");
     if (next) next.addEventListener("click", () => goNext());
     const prev = el.querySelector("#o-prev");

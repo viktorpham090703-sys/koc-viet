@@ -38,6 +38,9 @@ const STATUS = {
   payment_cancelled: ['DN đã hủy thanh toán','r'],
   refund_pending: ['Đang chờ hoàn tiền','w'],
   pending:   ['Chờ xác nhận','w'],
+  funded:    ['Đã ký quỹ','b'],
+  coordinating: ['Đang tuyển chọn','b'],
+  in_progress: ['Đang nghiệm thu','w'],
   confirmed: ['Đã xác nhận','b'],
   brief_review: ['NetViet duyệt brief','w'],
   script_drafting: ['Đang soạn kịch bản','w'],
@@ -208,6 +211,80 @@ export function modal(html) {
 }
 export function modalClose() { closeModal(); }
 export function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+export function confirmDialog(message, options = {}) {
+  return decisionDialog({
+    title: options.title || 'Xác nhận thao tác',
+    message,
+    confirmText: options.confirmText || 'Xác nhận',
+    cancelText: options.cancelText || 'Để sau',
+    tone: options.tone || 'primary',
+  });
+}
+
+export function promptDialog(message, options = {}) {
+  return decisionDialog({
+    title: options.title || 'Nhập thông tin',
+    message,
+    confirmText: options.confirmText || 'Tiếp tục',
+    cancelText: options.cancelText || 'Hủy',
+    input: true,
+    inputValue: options.value || '',
+    placeholder: options.placeholder || 'Nhập nội dung…',
+    required: options.required !== false,
+  });
+}
+
+function decisionDialog(options) {
+  const root = document.getElementById('modal-root');
+  if (!root) return Promise.resolve(options.input ? null : false);
+  return new Promise(resolve => {
+    root.innerHTML = `<div class="modal-bg decision-backdrop" role="presentation">
+      <section class="modal decision-modal" role="dialog" aria-modal="true" aria-labelledby="decision-title">
+        <button class="decision-close" type="button" aria-label="Đóng">×</button>
+        <div class="decision-icon" aria-hidden="true">?</div>
+        <h2 id="decision-title">${esc(options.title)}</h2>
+        <p>${esc(options.message).replace(/\n/g, '<br>')}</p>
+        ${options.input ? `<textarea class="decision-input" rows="4" placeholder="${esc(options.placeholder)}">${esc(options.inputValue)}</textarea><small class="decision-error" hidden>Vui lòng nhập nội dung trước khi tiếp tục.</small>` : ''}
+        <div class="decision-actions">
+          <button class="btn ghost decision-cancel" type="button">${esc(options.cancelText)}</button>
+          <button class="btn ${options.tone === 'danger' ? 'danger' : 'primary'} decision-confirm" type="button">${esc(options.confirmText)}</button>
+        </div>
+      </section>
+    </div>`;
+    const backdrop = root.querySelector('.decision-backdrop');
+    const input = root.querySelector('.decision-input');
+    let settled = false;
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKeydown);
+      root.innerHTML = '';
+      resolve(value);
+    };
+    const cancel = () => finish(options.input ? null : false);
+    const accept = () => {
+      if (!options.input) return finish(true);
+      const value = input.value.trim();
+      if (options.required && !value) {
+        root.querySelector('.decision-error').hidden = false;
+        input.focus();
+        return;
+      }
+      finish(value);
+    };
+    const onKeydown = event => {
+      if (event.key === 'Escape') cancel();
+      if (event.key === 'Enter' && (!options.input || (!event.shiftKey && event.ctrlKey))) accept();
+    };
+    backdrop.addEventListener('click', event => { if (event.target === backdrop) cancel(); });
+    root.querySelector('.decision-close').addEventListener('click', cancel);
+    root.querySelector('.decision-cancel').addEventListener('click', cancel);
+    root.querySelector('.decision-confirm').addEventListener('click', accept);
+    document.addEventListener('keydown', onKeydown);
+    setTimeout(() => (input || root.querySelector('.decision-confirm')).focus(), 0);
+  });
+}
 
 export function pager(page, pages, onGo) {
   if (pages <= 1) return '';

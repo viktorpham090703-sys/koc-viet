@@ -15,6 +15,8 @@ import {
   toast,
   modal,
   closeModal,
+  confirmDialog,
+  promptDialog,
   fmtDate,
   copyToClipboard,
   avatarUrl,
@@ -512,8 +514,8 @@ async function openBooking(id, el) {
       </div>
       <a class="btn primary" href="#/aiclone">Đăng ký AI Clone Avatar</a>
       <button class="btn danger" id="a-reject" style="margin-top:8px">Từ chối booking</button>`;
-    act.querySelector("#a-reject").addEventListener("click", () => {
-      const reason = prompt("Lý do từ chối booking:");
+    act.querySelector("#a-reject").addEventListener("click", async () => {
+      const reason = await promptDialog("Lý do từ chối booking:");
       if (reason) doAction(b.id, "reject", { reason }, el);
     });
   } else if (b.status === "pending") {
@@ -522,8 +524,8 @@ async function openBooking(id, el) {
     act
       .querySelector("#a-confirm")
       .addEventListener("click", () => doAction(b.id, "confirm", {}, el));
-    act.querySelector("#a-reject").addEventListener("click", () => {
-      const reason = prompt("Lý do từ chối booking:");
+    act.querySelector("#a-reject").addEventListener("click", async () => {
+      const reason = await promptDialog("Lý do từ chối booking:");
       if (reason) doAction(b.id, "reject", { reason }, el);
     });
   } else if (
@@ -647,7 +649,7 @@ async function openBooking(id, el) {
     complainBtn.style.width = "100%";
     complainBtn.innerHTML = `${icon("complaint", "btn-icon")} Gửi khiếu nại về booking này`;
     complainBtn.addEventListener("click", async () => {
-      const reason = prompt("Mô tả vấn đề bạn gặp phải với booking này:");
+      const reason = await promptDialog("Mô tả vấn đề bạn gặp phải với booking này:");
       if (!reason || !reason.trim()) return;
       try {
         await post("/api/complaints", {
@@ -830,9 +832,9 @@ async function affiliate(el) {
     button.addEventListener("click", async () => {
       const actionLabel = button.dataset.to === "refunded" ? "hoàn" : "hủy";
       if (
-        !confirm(
+        !(await confirmDialog(
           `Giả lập ${actionLabel} đơn này? Hoa hồng sẽ được cập nhật tương ứng.`,
-        )
+        ))
       )
         return;
       try {

@@ -12,6 +12,8 @@ import {
   toast,
   modal,
   closeModal,
+  confirmDialog,
+  promptDialog,
   tierBadge,
   stars,
   fmtDate,
@@ -46,7 +48,7 @@ export async function renderAdmin(el, hash) {
       <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav><button class="btn ghost sm portal-sidebar-logout" id="ad-logout">Đăng xuất</button></div>
     <div class="main"><div class="topbar portal-topbar" style="background:var(--navy);color:#fff">
       <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2 style="color:#fff">Trang quản trị</h2></div>
-      <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || 'A').charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Quản trị viên</span></div></div></div>
+      <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "A").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Quản trị viên</span></div></div></div>
       <div class="content" id="ad-view"></div></div></div>`;
   document.getElementById("ad-logout").addEventListener("click", logout);
   enhancePortal();
@@ -231,7 +233,7 @@ async function businessDetail(id) {
 async function businessStatus(id, action, el) {
   let reason = "";
   if (action === "lock" || action === "reject") {
-    reason = prompt(
+    reason = await promptDialog(
       action === "lock"
         ? "Nhập lý do khóa tài khoản:"
         : "Nhập lý do từ chối đăng ký:",
@@ -249,7 +251,7 @@ async function businessStatus(id, action, el) {
       action === "approve"
         ? "Duyệt và kích hoạt tài khoản doanh nghiệp này?"
         : "Mở khóa tài khoản doanh nghiệp này?";
-    if (!confirm(message)) return;
+    if (!(await confirmDialog(message))) return;
   }
   try {
     await post("/api/admin/businesses/status", { id, action, reason });
@@ -296,21 +298,36 @@ async function kpi(el) {
         <div id="province-distribution" style="margin-top:12px"></div>
         <div class="pager" id="province-pager" style="margin-top:12px"></div></div>
     </div>`;
-  const provinces = [...(k.provinces || [])].sort((a, b) => Number(b.c || 0) - Number(a.c || 0) || String(a.province).localeCompare(String(b.province), 'vi'));
+  const provinces = [...(k.provinces || [])].sort(
+    (a, b) =>
+      Number(b.c || 0) - Number(a.c || 0) ||
+      String(a.province).localeCompare(String(b.province), "vi"),
+  );
   const provincePerPage = 8;
-  const provincePages = Math.max(1, Math.ceil(provinces.length / provincePerPage));
+  const provincePages = Math.max(
+    1,
+    Math.ceil(provinces.length / provincePerPage),
+  );
   let provincePage = 1;
   const drawProvinces = () => {
     const start = (provincePage - 1) * provincePerPage;
     const rows = provinces.slice(start, start + provincePerPage);
-    el.querySelector('#province-distribution').innerHTML = rows.map(p => `<div class="between" style="padding:5px 0"><span>${esc(p.province)}</span>
-      <div class="row" style="flex:1;margin-left:10px"><div class="progress" style="flex:1"><i style="width:${k.kocs ? (p.c / k.kocs) * 100 : 0}%"></i></div><b style="margin-left:8px">${p.c}</b></div></div>`).join('');
-    const pager = el.querySelector('#province-pager');
-    pager.innerHTML = `<button data-province-page="${provincePage - 1}" ${provincePage === 1 ? 'disabled' : ''} aria-label="Trang tỉnh thành trước">‹</button><span class="muted" style="padding:7px 6px">${provincePage} / ${provincePages}</span><button data-province-page="${provincePage + 1}" ${provincePage === provincePages ? 'disabled' : ''} aria-label="Trang tỉnh thành sau">›</button>`;
-    pager.querySelectorAll('[data-province-page]').forEach(button => button.addEventListener('click', () => {
-      provincePage = Number(button.dataset.provincePage);
-      drawProvinces();
-    }));
+    el.querySelector("#province-distribution").innerHTML = rows
+      .map(
+        (
+          p,
+        ) => `<div class="between" style="padding:5px 0"><span>${esc(p.province)}</span>
+      <div class="row" style="flex:1;margin-left:10px"><div class="progress" style="flex:1"><i style="width:${k.kocs ? (p.c / k.kocs) * 100 : 0}%"></i></div><b style="margin-left:8px">${p.c}</b></div></div>`,
+      )
+      .join("");
+    const pager = el.querySelector("#province-pager");
+    pager.innerHTML = `<button data-province-page="${provincePage - 1}" ${provincePage === 1 ? "disabled" : ""} aria-label="Trang tỉnh thành trước">‹</button><span class="muted" style="padding:7px 6px">${provincePage} / ${provincePages}</span><button data-province-page="${provincePage + 1}" ${provincePage === provincePages ? "disabled" : ""} aria-label="Trang tỉnh thành sau">›</button>`;
+    pager.querySelectorAll("[data-province-page]").forEach((button) =>
+      button.addEventListener("click", () => {
+        provincePage = Number(button.dataset.provincePage);
+        drawProvinces();
+      }),
+    );
   };
   drawProvinces();
 }
@@ -323,8 +340,8 @@ async function queue(el) {
     b.addEventListener("click", () => act(b.dataset.approve, true, el)),
   );
   el.querySelectorAll("[data-reject]").forEach((b) =>
-    b.addEventListener("click", () => {
-      const rr = prompt("Lý do từ chối:");
+    b.addEventListener("click", async () => {
+      const rr = await promptDialog("Lý do từ chối:");
       if (rr !== null) act(b.dataset.reject, false, el);
     }),
   );
@@ -362,7 +379,9 @@ async function act(id, approve, el) {
 }
 async function kocDetail(k) {
   try {
-    const result = await api(`/api/admin/koc-identity/${encodeURIComponent(k.id)}`);
+    const result = await api(
+      `/api/admin/koc-identity/${encodeURIComponent(k.id)}`,
+    );
     k = {
       ...k,
       kyc_front_image: result.identity?.front_url || "",
@@ -394,10 +413,19 @@ async function kocDetail(k) {
       ["Mặt trước CCCD", k.kyc_front_image],
       ["Mặt sau CCCD", k.kyc_back_image],
       ["Ảnh chân dung", k.kyc_selfie_image],
-    ].map(([label, image], index) => `<div class="tint-box" style="text-align:center;flex:1;padding:8px;min-width:0">${image
-      ? `<button type="button" data-kyc-image="${index}" style="display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in"><img src="${esc(image)}" alt="${label}" style="display:block;width:100%;height:120px;object-fit:cover;border-radius:8px"></button>`
-      : `<div style="height:120px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.55)">📷</div>`}
-      <div style="font-size:11px;margin-top:6px">${label}</div><span class="chip ${image ? "g" : "w"}" style="margin-top:4px">${image ? "Đạt" : "Chưa lưu ảnh"}</span></div>`).join("")}</div>
+    ]
+      .map(
+        (
+          [label, image],
+          index,
+        ) => `<div class="tint-box" style="text-align:center;flex:1;padding:8px;min-width:0">${
+          image
+            ? `<button type="button" data-kyc-image="${index}" style="display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in"><img src="${esc(image)}" alt="${label}" style="display:block;width:100%;height:120px;object-fit:cover;border-radius:8px"></button>`
+            : `<div style="height:120px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.55)">📷</div>`
+        }
+      <div style="font-size:11px;margin-top:6px">${label}</div><span class="chip ${image ? "g" : "w"}" style="margin-top:4px">${image ? "Đạt" : "Chưa lưu ảnh"}</span></div>`,
+      )
+      .join("")}</div>
     <div class="row">
       ${k.contract_html ? '<button class="btn primary" id="admin-view-contract">📜 Xem hợp đồng đã ký</button>' : ""}
       <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
@@ -405,12 +433,18 @@ async function kocDetail(k) {
   document
     .getElementById("admin-view-contract")
     ?.addEventListener("click", () => showSignedContract(k));
-  const identityImages = [k.kyc_front_image, k.kyc_back_image, k.kyc_selfie_image];
+  const identityImages = [
+    k.kyc_front_image,
+    k.kyc_back_image,
+    k.kyc_selfie_image,
+  ];
   document.querySelectorAll("[data-kyc-image]").forEach((button) =>
     button.addEventListener("click", () => {
       const image = identityImages[Number(button.dataset.kycImage)];
       if (image)
-        modal(`<img src="${esc(image)}" alt="Ảnh xác minh danh tính" style="display:block;max-width:100%;max-height:82vh;margin:auto;border-radius:10px">`);
+        modal(
+          `<img src="${esc(image)}" alt="Ảnh xác minh danh tính" style="display:block;max-width:100%;max-height:82vh;margin:auto;border-radius:10px">`,
+        );
     }),
   );
 }
@@ -573,7 +607,8 @@ async function loadAllBookings(el) {
   tbl.querySelectorAll("[data-refund]").forEach((b) =>
     b.addEventListener("click", async () => {
       const reason =
-        prompt("Lý do hoàn tiền/khiếu nại:") || "Admin xử lý khiếu nại";
+        (await promptDialog("Lý do hoàn tiền/khiếu nại:")) ||
+        "Admin xử lý khiếu nại";
       await post("/api/booking/action", {
         id: b.dataset.refund,
         action: "reject",
@@ -600,7 +635,7 @@ async function loadAllBookings(el) {
 async function complaintsAdmin(el) {
   el.innerHTML = `<div class="between"><h1 class="icon-heading">${icon("complaint", "teaser-icon")} Khiếu nại booking</h1>
     <select id="cp-status"><option value="">Tất cả</option><option value="open">Mới tiếp nhận</option><option value="in_review">Đang xử lý</option><option value="resolved">Đã xử lý</option><option value="rejected">Từ chối</option></select></div>
-    <div style="margin-top:16px" id="cp-list">${skeletonPage('complaints')}</div>`;
+    <div style="margin-top:16px" id="cp-list">${skeletonPage("complaints")}</div>`;
   document
     .getElementById("cp-status")
     .addEventListener("change", () => loadComplaints(el));
@@ -671,8 +706,12 @@ function complaintDetail(c, el) {
   if (rv) rv.addEventListener("click", () => doAct("review"));
   const rf = m.querySelector("#cp-refund");
   if (rf)
-    rf.addEventListener("click", () => {
-      if (confirm("Xác nhận hoàn khoản tiền đang được đảm bảo cho doanh nghiệp?"))
+    rf.addEventListener("click", async () => {
+      if (
+        await confirmDialog(
+          "Xác nhận hoàn khoản tiền đang được đảm bảo cho doanh nghiệp?",
+        )
+      )
         doAct("refund");
     });
   const rs = m.querySelector("#cp-resolve");
@@ -690,7 +729,7 @@ async function contractsAdmin(el) {
       <div class="field"><label>Trạng thái</label><select id="ct-status"><option value="">Tất cả</option><option value="pending">Chờ duyệt</option><option value="leader_ok">Trưởng nhóm duyệt</option><option value="active">Đã kích hoạt</option><option value="rejected">Từ chối</option></select></div>
       <button class="btn primary sm" id="ct-go">Tìm</button>
     </div>
-    <div id="ct-list">${skeletonPage('contracts')}</div>`;
+    <div id="ct-list">${skeletonPage("contracts")}</div>`;
   document.getElementById("ct-go").addEventListener("click", () => {
     ctrFilters = {
       page: 1,
@@ -703,7 +742,7 @@ async function contractsAdmin(el) {
 }
 async function loadContracts(el) {
   const box = document.getElementById("ct-list");
-  box.innerHTML = skeletonPage('contracts');
+  box.innerHTML = skeletonPage("contracts");
   const qs = new URLSearchParams({ page: ctrFilters.page || 1 });
   if (ctrFilters.search) qs.set("search", ctrFilters.search);
   if (ctrFilters.status) qs.set("status", ctrFilters.status);
@@ -746,6 +785,15 @@ function pagerHtml(page, pages) {
 
 async function adminCampaigns(el) {
   const r = await api("/api/campaigns");
+  const campaignStatus = {
+    pending: "Chờ ký quỹ",
+    funded: "Đã ký quỹ",
+    coordinating: "Đang tuyển chọn",
+    assigned: "Đã phân bổ",
+    in_progress: "Đang nghiệm thu",
+    completed: "Hoàn tất",
+    cancelled: "Đã hủy",
+  };
   el.innerHTML = `<h1>Điều phối chiến dịch lớn</h1>
     <div style="margin-top:16px">${
       r.campaigns.length
@@ -755,19 +803,83 @@ async function adminCampaigns(el) {
               try {
                 assigned = JSON.parse(c.assigned || "[]");
               } catch (e) {}
+              const allocations = Array.isArray(c.allocations)
+                ? c.allocations
+                : [];
               return `<div class="card" style="margin-bottom:12px">
-      <div class="between"><div><strong>${esc(c.bizname)}</strong> ${statusChip(c.status)}</div>
-        <button class="btn primary sm" data-assign="${c.id}">Gán / chỉnh KOC</button></div>
-      <div class="muted" style="margin-top:6px">Ngân sách ${money(c.budget)} · ${c.qty} KOC hạng ${esc(c.tier)} · ngành ${esc(c.category)}</div>
+      <div class="between"><div><strong>${esc(c.bizname)}</strong> <span class="chip ${c.status === "completed" ? "g" : c.status === "cancelled" ? "r" : c.status === "pending" ? "w" : "b"}">${campaignStatus[c.status] || esc(c.status)}</span></div><div class="row" style="flex-wrap:wrap">${c.status === "funded" ? `<button class="btn primary sm" data-campaign-start="${c.id}">Bắt đầu điều phối</button>` : ""}${["coordinating", "assigned"].includes(c.status) ? `<button class="btn primary sm" data-assign="${c.id}">Phân bổ KOC</button>` : ""}${["assigned", "in_progress"].includes(c.status) && allocations.length && allocations.every((x) => x.status === "settled") ? `<button class="btn ok sm" data-campaign-complete="${c.id}">Hoàn tất</button>` : ""}${!["completed", "cancelled"].includes(c.status) ? `<button class="btn ghost sm" data-admin-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div>
+      <div class="muted" style="margin-top:6px">Ngân sách KOC ${money(c.budget)} · Phí điều phối ${money(Number(c.management_fee) || Math.max(2000000, Math.round(Number(c.budget) * 0.15)))} · Tổng ${money(Number(c.total_amount) || Number(c.budget) + Number(c.management_fee))}</div><div class="muted" style="margin-top:3px">${c.qty} KOC hạng ${esc(c.tier)} · ngành ${esc(c.category)}</div>
       ${c.note ? `<div class="tint-box" style="margin-top:8px;font-size:13px">${esc(c.note)}</div>` : ""}
       <div style="margin-top:8px"><span class="chip ${assigned.length > Number(c.qty) ? "r" : assigned.length === Number(c.qty) ? "g" : "n"}">${assigned.length}/${c.qty} KOC đã gán</span>
         ${assigned.length ? assigned.map((k) => `<span class="chip g" style="margin:2px">${esc(k.name)}</span>`).join("") : '<span class="muted" style="font-size:12px">Chưa gán KOC nào</span>'}
-        ${assigned.length > Number(c.qty) ? '<div style="color:var(--error);font-size:12px;margin-top:6px">Số KOC đang gán vượt yêu cầu. Hãy bớt KOC để lưu lại.</div>' : ""}</div>
+        ${assigned.length > Number(c.qty) ? '<div style="color:var(--error);font-size:12px;margin-top:6px">Số KOC đang gán vượt yêu cầu.</div>' : ""}</div>${allocations.length ? `<div class="campaign-allocation-list">${allocations.map((a) => `<div><span><b>${esc(a.koc_name)}</b><small>${a.status === "settled" ? "Đã nghiệm thu" : "Chờ nghiệm thu"}</small></span><strong>${money(a.amount)}</strong>${a.status === "pending" ? `<button class="btn ok sm" data-settle-allocation="${a.id}" data-campaign-id="${c.id}">Nghiệm thu & giải ngân</button>` : '<span class="chip g">Đã trả</span>'}</div>`).join("")}</div>` : ""}
     </div>`;
             })
             .join("")
         : empty("📣", "Chưa có yêu cầu chiến dịch")
     }</div>`;
+  el.querySelectorAll("[data-campaign-start]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      if (!(await confirmDialog("Bắt đầu điều phối và ghi nhận 20% phí?")))
+        return;
+      try {
+        await post("/api/campaign/action", {
+          id: b.dataset.campaignStart,
+          action: "start",
+        });
+        toast("Đã bắt đầu điều phối", "ok");
+        adminCampaigns(el);
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    }),
+  );
+  el.querySelectorAll("[data-settle-allocation]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      if (!(await confirmDialog("Nghiệm thu và giải ngân vào Ví KOC?"))) return;
+      try {
+        await post("/api/campaign/action", {
+          id: b.dataset.campaignId,
+          action: "settle_koc",
+          allocationId: b.dataset.settleAllocation,
+        });
+        toast("Đã giải ngân", "ok");
+        adminCampaigns(el);
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    }),
+  );
+  el.querySelectorAll("[data-campaign-complete]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      if (!(await confirmDialog("Hoàn tất và ghi nhận phí còn lại?"))) return;
+      try {
+        await post("/api/campaign/action", {
+          id: b.dataset.campaignComplete,
+          action: "complete",
+        });
+        toast("Đã hoàn tất", "ok");
+        adminCampaigns(el);
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    }),
+  );
+  el.querySelectorAll("[data-admin-campaign-cancel]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      if (!(await confirmDialog("Hủy và hoàn phần tiền chưa sử dụng?"))) return;
+      try {
+        const x = await post("/api/campaign/action", {
+          id: b.dataset.adminCampaignCancel,
+          action: "cancel",
+        });
+        toast(`Đã hoàn ${money(x.refundAmount || 0)}`, "ok");
+        adminCampaigns(el);
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    }),
+  );
   el.querySelectorAll("[data-assign]").forEach((b) =>
     b.addEventListener("click", async () => {
       const c = r.campaigns.find((x) => x.id === b.dataset.assign);
@@ -776,8 +888,15 @@ async function adminCampaigns(el) {
         assigned = JSON.parse(c.assigned || "[]");
       } catch (e) {}
       const assignedIds = new Set(assigned.map((k) => k.id));
+      const existingAmounts = new Map(
+        (c.allocations || []).map((a) => [a.koc_id, Number(a.amount)]),
+      );
+      const categoryQuery =
+        c.category === "Tất cả"
+          ? ""
+          : `&category=${encodeURIComponent(c.category)}`;
       const kocs = await api(
-        `/api/kocs?tier=${encodeURIComponent(c.tier)}&category=${encodeURIComponent(c.category)}`,
+        `/api/kocs?tier=${encodeURIComponent(c.tier)}${categoryQuery}`,
       );
       const byId = new Map();
       assigned.forEach((k) => byId.set(k.id, k));
@@ -790,8 +909,8 @@ async function adminCampaigns(el) {
         candidates.length
           ? candidates
               .map(
-                (k) => `<label class="between list-item" style="cursor:pointer">
-        <div class="row"><input type="checkbox" data-kid="${k.id}" ${assignedIds.has(k.id) ? "checked" : ""} style="width:auto;margin-right:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div><b>${esc(k.name)}</b><div class="muted" style="font-size:12px">${num(k.followers)} · ${stars(k.rating)}</div></div></div><span class="chip g">Phù hợp</span></label>`,
+                (k) =>
+                  `<div class="between list-item campaign-candidate"><label class="row" style="cursor:pointer;flex:1"><input type="checkbox" data-kid="${k.id}" ${assignedIds.has(k.id) ? "checked" : ""} style="width:auto;margin-right:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div><b>${esc(k.name)}</b><div class="muted" style="font-size:12px">${num(k.followers)} · ${stars(k.rating)}</div></div></label><div class="campaign-allocation-input"><span>Chi phí KOC</span><input type="number" min="1" step="1000" data-allocation-for="${k.id}" value="${existingAmounts.get(k.id) || ""}" ${assignedIds.has(k.id) ? "" : "disabled"}></div></div>`,
               )
               .join("")
           : empty("🔍", "Không có KOC phù hợp")
@@ -799,6 +918,9 @@ async function adminCampaigns(el) {
       <button class="btn primary" id="asg-go" style="margin-top:10px">Xác nhận phân bổ</button>
       <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:8px">Đóng</button>`);
       const boxes = [...document.querySelectorAll("[data-kid]")];
+      const allocationInputs = [
+        ...document.querySelectorAll("[data-allocation-for]"),
+      ];
       const updateSelection = () => {
         const count = boxes.filter((x) => x.checked).length;
         const over = count > Number(c.qty);
@@ -808,25 +930,61 @@ async function adminCampaigns(el) {
         counter.className = `chip ${over ? "r" : count === Number(c.qty) ? "g" : "n"}`;
         boxes.forEach((x) => {
           if (!x.checked) x.disabled = full;
+          document.querySelector(
+            `[data-allocation-for="${x.dataset.kid}"]`,
+          ).disabled = !x.checked;
         });
         const warning = document.getElementById("asg-warning");
-        warning.style.display = over ? "block" : "none";
+        const allocated = allocationInputs
+            .filter((x) => !x.disabled)
+            .reduce((sum, x) => sum + (Number(x.value) || 0), 0),
+          bad = count !== Number(c.qty) || allocated !== Number(c.budget);
+        warning.style.display = over || bad ? "block" : "none";
         warning.textContent = over
-          ? `Đang vượt ${count - Number(c.qty)} KOC. Hãy bỏ bớt trước khi lưu.`
-          : "";
-        document.getElementById("asg-go").disabled = over;
+          ? "Đang chọn quá số KOC."
+          : count !== Number(c.qty)
+            ? `Cần chọn đúng ${c.qty} KOC.`
+            : `Tổng phân bổ ${money(allocated)}, phải bằng ${money(c.budget)}.`;
+        document.getElementById("asg-go").disabled = over || bad;
       };
-      boxes.forEach((x) => x.addEventListener("change", updateSelection));
+      const splitEvenly = () => {
+        const selected = boxes.filter((x) => x.checked);
+        if (!selected.length) return;
+        const base =
+          Math.floor(Number(c.budget) / selected.length / 1000) * 1000;
+        let left = Number(c.budget);
+        selected.forEach((box, i) => {
+          const input = document.querySelector(
+              `[data-allocation-for="${box.dataset.kid}"]`,
+            ),
+            amount = i === selected.length - 1 ? left : base;
+          input.value = String(amount);
+          left -= amount;
+        });
+      };
+      boxes.forEach((x) =>
+        x.addEventListener("change", () => {
+          splitEvenly();
+          updateSelection();
+        }),
+      );
+      allocationInputs.forEach((x) =>
+        x.addEventListener("input", updateSelection),
+      );
       updateSelection();
       document.getElementById("asg-go").addEventListener("click", async () => {
-        const kocIds = [...document.querySelectorAll("[data-kid]:checked")].map(
-          (x) => x.dataset.kid,
-        );
-        if (kocIds.length > Number(c.qty))
-          return toast(`Chỉ được gán tối đa ${c.qty} KOC`, "err");
+        const allocations = [
+          ...document.querySelectorAll("[data-kid]:checked"),
+        ].map((x) => ({
+          kocId: x.dataset.kid,
+          amount: Number(
+            document.querySelector(`[data-allocation-for="${x.dataset.kid}"]`)
+              .value,
+          ),
+        }));
         try {
-          await post("/api/admin/campaign-assign", { id: c.id, kocIds });
-          toast(`Đã phân bổ ${kocIds.length} KOC`, "ok");
+          await post("/api/admin/campaign-assign", { id: c.id, allocations });
+          toast(`Đã phân bổ ${allocations.length} KOC`, "ok");
           closeModal();
           adminCampaigns(el);
         } catch (e) {
@@ -837,21 +995,64 @@ async function adminCampaigns(el) {
   );
 }
 
-let settleView = { activeTab: 'distribution', distributionPage: 1, ledgerPage: 1, auditPage: 1, auditSearch: '', auditCategory: '' };
+let settleView = {
+  activeTab: "distribution",
+  distributionPage: 1,
+  ledgerPage: 1,
+  auditPage: 1,
+  auditSearch: "",
+  auditCategory: "",
+};
 async function settle(el, changes = {}) {
   settleView = { ...settleView, ...changes };
   const ledgerParams = new URLSearchParams({
-    per: '8', distributionPage: settleView.distributionPage, ledgerPage: settleView.ledgerPage,
-    auditPage: settleView.auditPage, auditSearch: settleView.auditSearch, auditCategory: settleView.auditCategory,
+    per: "20",
+    distributionPage: settleView.distributionPage,
+    ledgerPage: settleView.ledgerPage,
+    auditPage: settleView.auditPage,
+    auditSearch: settleView.auditSearch,
+    auditCategory: settleView.auditCategory,
   });
   const [kpiData, led] = await Promise.all([
     api("/api/admin/kpi"),
     api("/api/admin/ledger?" + ledgerParams.toString()),
   ]);
-  const list = led.settlements || [];
+  const rawSettlements = led.settlements || [];
+  const settlementGroups = new Map();
+  for (const settlement of rawSettlements) {
+    const key =
+      settlement.type === "aiclone" && settlement.aiclone_batch_id
+        ? `aiclone:${settlement.aiclone_batch_id}`
+        : `booking:${settlement.id}`;
+    const current = settlementGroups.get(key);
+    if (!current) {
+      settlementGroups.set(key, {
+        ...settlement,
+        koc_names: [settlement.koc_name],
+        batch_count: 1,
+      });
+      continue;
+    }
+    current.koc_names.push(settlement.koc_name);
+    current.batch_count += 1;
+    current.aiclone_quote_koc =
+      Number(current.aiclone_quote_koc || 0) +
+      Number(settlement.aiclone_quote_koc || 0);
+    if (Number(settlement.price) > Number(current.price)) {
+      current.price = settlement.price;
+      current.code = settlement.code;
+    }
+    if (settlement.status !== "completed") current.status = settlement.status;
+    current.updated_at = Math.max(
+      Number(current.updated_at || 0),
+      Number(settlement.updated_at || 0),
+    );
+  }
+  const list = [...settlementGroups.values()];
   const totalNetviet = Number(led.totals?.netviet || 0);
   const totalKoc = Number(led.totals?.koc || 0);
   const totalEscrow = Number(led.totals?.escrow || 0);
+  const platformWalletRevenue = Number(led.totals?.platformWalletRevenue || 0);
 
   const rows = list
     .map((s) => {
@@ -867,10 +1068,7 @@ async function settle(el, changes = {}) {
 
       let kocFee = 0;
       if (isAi) {
-        if (quoteKoc > 0) kocFee = quoteKoc;
-        else if (Number(s.price) > prodFee + platFee + addFee)
-          kocFee = Number(s.price) - prodFee - platFee - addFee;
-        else kocFee = Math.round(Number(s.price) * 0.85);
+        kocFee = quoteKoc;
       } else {
         kocFee = Math.max(
           0,
@@ -881,11 +1079,11 @@ async function settle(el, changes = {}) {
 
       return `<tr>
       <td><b>${esc(s.code)}</b><div class="muted" style="font-size:11px">${esc(s.business_name || "Doanh nghiệp")}</div></td>
-      <td><b>${esc(s.koc_name || "KOC")}</b></td>
+      <td><b>${s.batch_count > 1 ? `${s.batch_count} KOC` : esc(s.koc_name || "KOC")}</b>${s.batch_count > 1 ? `<div class="muted" style="font-size:11px">${s.koc_names.map((name) => esc(name)).join(" · ")}</div>` : ""}</td>
       <td class="money" style="font-weight:700">${money(s.price)}</td>
       <td class="money" style="color:var(--success);font-weight:700">+${money(kocFee)}</td>
       <td class="money" style="color:var(--primary);font-weight:700">+${money(netvietFee)}<div class="muted" style="font-size:10px">Sản xuất AI + Phí NT</div></td>
-      <td>${s.status === "completed" ? '<span class="chip g">✅ Đã giải ngân</span>' : '<span class="chip b">Đang xử lý</span>'}</td>
+      <td class="settlement-status">${s.status === "completed" ? '<span class="chip g">✓ Đã giải ngân</span>' : '<span class="chip b">Đang xử lý</span>'}</td>
       <td class="muted" style="font-size:11px">${fmtDate(s.updated_at || s.created_at)}</td>
     </tr>`;
     })
@@ -895,17 +1093,17 @@ async function settle(el, changes = {}) {
       <p class="muted">Theo dõi cách khoản thanh toán được chia vào Ví KOC và doanh thu nền tảng sau khi doanh nghiệp giải ngân.</p></div>
     <button class="btn primary sm" id="s-run">▶ Chạy đối soát kỳ này</button></div>
     <div class="stat-cards" style="margin:16px 0">
-      ${scard("Doanh thu NetViet", money(totalNetviet))}
+      ${scard("Doanh thu NetViet đã ghi sổ", money(platformWalletRevenue || totalNetviet))}
       ${scard("Giải ngân về Ví KOC (Phí KOC)", money(totalKoc))}
       ${scard("Tổng khoản đảm bảo đã hoàn tất", money(totalEscrow))}
       ${scard("Hoa hồng chờ đối soát", money(kpiData.pendingSettle))}
     </div>
     <div class="settle-tabs" role="tablist" aria-label="Chi tiết đối soát">
-      <button class="${settleView.activeTab === 'distribution' ? 'active' : ''}" role="tab" aria-selected="${settleView.activeTab === 'distribution'}" data-settle-tab="distribution">🏛️ Phân bổ tiền</button>
-      <button class="${settleView.activeTab === 'ledger' ? 'active' : ''}" role="tab" aria-selected="${settleView.activeTab === 'ledger'}" data-settle-tab="ledger">📒 Sổ thu chi</button>
-      <button class="${settleView.activeTab === 'audit' ? 'active' : ''}" role="tab" aria-selected="${settleView.activeTab === 'audit'}" data-settle-tab="audit">🕘 Nhật ký hệ thống</button>
+      <button class="${settleView.activeTab === "distribution" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "distribution"}" data-settle-tab="distribution">🏛️ Phân bổ tiền</button>
+      <button class="${settleView.activeTab === "ledger" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "ledger"}" data-settle-tab="ledger">📒 Sổ thu chi</button>
+      <button class="${settleView.activeTab === "audit" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "audit"}" data-settle-tab="audit">🕘 Nhật ký hệ thống</button>
     </div>
-    <div class="card settle-panel ${settleView.activeTab === 'distribution' ? 'active' : ''}" data-settle-panel="distribution" role="tabpanel" ${settleView.activeTab !== 'distribution' ? 'hidden' : ''}>
+    <div class="card settle-panel ${settleView.activeTab === "distribution" ? "active" : ""}" data-settle-panel="distribution" role="tabpanel" ${settleView.activeTab !== "distribution" ? "hidden" : ""}>
       <h2>🏛️ Lịch sử phân bổ tiền</h2>
       <div class="table-wrap" style="margin-top:12px;border:none">
         <table><thead><tr><th>Mã đơn &amp; Doanh nghiệp</th><th>KOC nhận tiền</th><th>Tổng khoản đảm bảo</th><th>Tiền vào Ví KOC</th><th>Doanh thu NetViet</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
@@ -914,31 +1112,40 @@ async function settle(el, changes = {}) {
       </div>
       <div class="pager" id="distribution-pager"></div>
     </div>
-    <div class="card settle-panel ${settleView.activeTab === 'ledger' ? 'active' : ''}" data-settle-panel="ledger" role="tabpanel" ${settleView.activeTab !== 'ledger' ? 'hidden' : ''}><h2>Sổ thu chi toàn hệ thống</h2><div class="table-wrap" style="margin-top:12px;border:none">
+    <div class="card settle-panel ${settleView.activeTab === "ledger" ? "active" : ""}" data-settle-panel="ledger" role="tabpanel" ${settleView.activeTab !== "ledger" ? "hidden" : ""}><h2>Sổ thu chi toàn hệ thống</h2><div class="table-wrap" style="margin-top:12px;border:none">
       <table><thead><tr><th>Loại</th><th>Số tiền</th><th>Ghi chú</th><th>Thời gian</th></tr></thead><tbody>
       ${led.ledger.length ? led.ledger.map((l) => `<tr><td>${ledgerKind(l.kind)}</td><td class="money">${money(l.amount)}</td><td>${esc(l.note || "")}</td><td class="muted">${fmtDate(l.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có giao dịch</td></tr>'}
       </tbody></table></div><div class="pager" id="ledger-pager"></div></div>
-    <div class="card audit-card settle-panel ${settleView.activeTab === 'audit' ? 'active' : ''}" data-settle-panel="audit" role="tabpanel" ${settleView.activeTab !== 'audit' ? 'hidden' : ''}>
+    <div class="card audit-card settle-panel ${settleView.activeTab === "audit" ? "active" : ""}" data-settle-panel="audit" role="tabpanel" ${settleView.activeTab !== "audit" ? "hidden" : ""}>
       <div class="between audit-heading"><div><h2>Nhật ký hoạt động hệ thống</h2><p class="muted">Theo dõi các thay đổi quan trọng liên quan đến booking, AI Clone, thanh toán và tài khoản.</p></div><span class="chip n">${num(led.pagination?.audit?.total || 0)} hoạt động</span></div>
-      <div class="audit-toolbar"><input id="audit-search" value="${esc(settleView.auditSearch)}" placeholder="Tìm hành động, người thực hiện, mã tham chiếu…"><select id="audit-category"><option value="">Tất cả nghiệp vụ</option><option value="booking" ${settleView.auditCategory === 'booking' ? 'selected' : ''}>Booking</option><option value="aiclone" ${settleView.auditCategory === 'aiclone' ? 'selected' : ''}>AI Clone</option><option value="payment" ${settleView.auditCategory === 'payment' ? 'selected' : ''}>Thanh toán & ví</option><option value="account" ${settleView.auditCategory === 'account' ? 'selected' : ''}>Tài khoản & hồ sơ</option><option value="other" ${settleView.auditCategory === 'other' ? 'selected' : ''}>Khác</option></select></div>
+      <div class="audit-toolbar"><input id="audit-search" value="${esc(settleView.auditSearch)}" placeholder="Tìm hành động, người thực hiện, mã tham chiếu…"><select id="audit-category"><option value="">Tất cả nghiệp vụ</option><option value="booking" ${settleView.auditCategory === "booking" ? "selected" : ""}>Booking</option><option value="aiclone" ${settleView.auditCategory === "aiclone" ? "selected" : ""}>AI Clone</option><option value="payment" ${settleView.auditCategory === "payment" ? "selected" : ""}>Thanh toán & ví</option><option value="account" ${settleView.auditCategory === "account" ? "selected" : ""}>Tài khoản & hồ sơ</option><option value="other" ${settleView.auditCategory === "other" ? "selected" : ""}>Khác</option></select></div>
       <div id="audit-list"></div><div class="pager" id="audit-pager"></div>
     </div>`;
-  bindServerPager(el, '#distribution-pager', led.pagination?.distribution, page => settle(el, { distributionPage: page, activeTab: 'distribution' }));
-  bindServerPager(el, '#ledger-pager', led.pagination?.ledger, page => settle(el, { ledgerPage: page, activeTab: 'ledger' }));
+  bindServerPager(
+    el,
+    "#distribution-pager",
+    led.pagination?.distribution,
+    (page) => settle(el, { distributionPage: page, activeTab: "distribution" }),
+  );
+  bindServerPager(el, "#ledger-pager", led.pagination?.ledger, (page) =>
+    settle(el, { ledgerPage: page, activeTab: "ledger" }),
+  );
   initAuditLog(el, led.audit || [], led.pagination?.audit);
-  el.querySelectorAll('[data-settle-tab]').forEach(tab => tab.addEventListener('click', () => {
-    settleView.activeTab = tab.dataset.settleTab;
-    el.querySelectorAll('[data-settle-tab]').forEach(item => {
-      const active = item === tab;
-      item.classList.toggle('active', active);
-      item.setAttribute('aria-selected', String(active));
-    });
-    el.querySelectorAll('[data-settle-panel]').forEach(panel => {
-      const active = panel.dataset.settlePanel === tab.dataset.settleTab;
-      panel.classList.toggle('active', active);
-      panel.hidden = !active;
-    });
-  }));
+  el.querySelectorAll("[data-settle-tab]").forEach((tab) =>
+    tab.addEventListener("click", () => {
+      settleView.activeTab = tab.dataset.settleTab;
+      el.querySelectorAll("[data-settle-tab]").forEach((item) => {
+        const active = item === tab;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-selected", String(active));
+      });
+      el.querySelectorAll("[data-settle-panel]").forEach((panel) => {
+        const active = panel.dataset.settlePanel === tab.dataset.settleTab;
+        panel.classList.toggle("active", active);
+        panel.hidden = !active;
+      });
+    }),
+  );
   document.getElementById("s-run").addEventListener("click", async () => {
     const r = await post("/api/admin/settle", {});
     toast(
@@ -950,52 +1157,95 @@ async function settle(el, changes = {}) {
 }
 
 const AUDIT_LABELS = {
-  'booking.complete': ['Hoàn tất booking', 'booking'], 'booking.create': ['Tạo booking', 'booking'],
-  'booking.delete': ['Xóa booking', 'booking'], 'aiclone.booking_create': ['Tạo booking AI Clone', 'aiclone'],
-  'aiclone.video_approve': ['Duyệt video AI Clone', 'aiclone'], 'aiclone.deliver': ['Giao video AI Clone', 'aiclone'],
-  'aiclone.script_approved': ['Duyệt kịch bản', 'aiclone'], 'aiclone.quote_sent': ['Gửi báo giá AI Clone', 'aiclone'],
-  'aiclone.quote_accepted': ['Chấp nhận báo giá', 'aiclone'], 'payment.paid': ['Xác nhận thanh toán', 'payment'],
-  'payment.checkout_created': ['Tạo yêu cầu thanh toán', 'payment'], 'settle.run': ['Chạy đối soát', 'payment'],
-  'wallet.deposit.demo': ['Nạp tiền vào ví', 'payment'], 'business.profile_update': ['Cập nhật hồ sơ doanh nghiệp', 'account'],
-  'koc.profile_update': ['Cập nhật hồ sơ KOC', 'account'], 'business.lock': ['Khóa doanh nghiệp', 'account'],
-  'business.unlock': ['Mở khóa doanh nghiệp', 'account'], 'business.reject': ['Từ chối doanh nghiệp', 'account'],
+  "booking.complete": ["Hoàn tất booking", "booking"],
+  "booking.create": ["Tạo booking", "booking"],
+  "booking.delete": ["Xóa booking", "booking"],
+  "aiclone.booking_create": ["Tạo booking AI Clone", "aiclone"],
+  "aiclone.video_approve": ["Duyệt video AI Clone", "aiclone"],
+  "aiclone.deliver": ["Giao video AI Clone", "aiclone"],
+  "aiclone.script_approved": ["Duyệt kịch bản", "aiclone"],
+  "aiclone.quote_sent": ["Gửi báo giá AI Clone", "aiclone"],
+  "aiclone.quote_accepted": ["Chấp nhận báo giá", "aiclone"],
+  "payment.paid": ["Xác nhận thanh toán", "payment"],
+  "payment.checkout_created": ["Tạo yêu cầu thanh toán", "payment"],
+  "settle.run": ["Chạy đối soát", "payment"],
+  "wallet.deposit.demo": ["Nạp tiền vào ví", "payment"],
+  "business.profile_update": ["Cập nhật hồ sơ doanh nghiệp", "account"],
+  "koc.profile_update": ["Cập nhật hồ sơ KOC", "account"],
+  "business.lock": ["Khóa doanh nghiệp", "account"],
+  "business.unlock": ["Mở khóa doanh nghiệp", "account"],
+  "business.reject": ["Từ chối doanh nghiệp", "account"],
 };
 
 function auditMeta(action) {
   if (AUDIT_LABELS[action]) return AUDIT_LABELS[action];
-  const prefix = String(action || '').split('.')[0];
-  const category = ['booking'].includes(prefix) ? 'booking' : prefix === 'aiclone' ? 'aiclone' : ['payment', 'wallet', 'settle', 'affiliate_order'].includes(prefix) ? 'payment' : ['business', 'koc', 'account'].includes(prefix) ? 'account' : 'other';
-  return [String(action || 'system.event').replaceAll('_', ' '), category];
+  const prefix = String(action || "").split(".")[0];
+  const category = ["booking"].includes(prefix)
+    ? "booking"
+    : prefix === "aiclone"
+      ? "aiclone"
+      : ["payment", "wallet", "settle", "affiliate_order"].includes(prefix)
+        ? "payment"
+        : ["business", "koc", "account"].includes(prefix)
+          ? "account"
+          : "other";
+  return [String(action || "system.event").replaceAll("_", " "), category];
 }
 
 function auditActor(entry) {
-  if (entry.actor_name) return { name: entry.actor_name, role: entry.actor_role || 'Người dùng' };
-  if (entry.actor === 'payos') return { name: 'PayOS', role: 'Cổng thanh toán' };
-  if (entry.actor === 'system') return { name: 'Hệ thống', role: 'Tự động' };
-  if (entry.actor === 'guest') return { name: 'Khách truy cập', role: 'Công khai' };
-  return { name: 'Tài khoản hệ thống', role: 'Không xác định' };
+  if (entry.actor_name)
+    return { name: entry.actor_name, role: entry.actor_role || "Người dùng" };
+  if (entry.actor === "payos")
+    return { name: "PayOS", role: "Cổng thanh toán" };
+  if (entry.actor === "system") return { name: "Hệ thống", role: "Tự động" };
+  if (entry.actor === "guest")
+    return { name: "Khách truy cập", role: "Công khai" };
+  return { name: "Tài khoản hệ thống", role: "Không xác định" };
 }
 
 function bindServerPager(el, selector, meta, onPage) {
   const pager = el.querySelector(selector);
-  if (!pager || !meta || meta.pages <= 1) { if (pager) pager.innerHTML = ''; return; }
-  pager.innerHTML = `<button data-server-page="${meta.page - 1}" ${meta.page <= 1 ? 'disabled' : ''}>‹</button><span class="muted" style="padding:7px 6px">${meta.page} / ${meta.pages}</span><button data-server-page="${meta.page + 1}" ${meta.page >= meta.pages ? 'disabled' : ''}>›</button>`;
-  pager.querySelectorAll('[data-server-page]').forEach(button => button.addEventListener('click', () => onPage(Number(button.dataset.serverPage))));
+  if (!pager || !meta || meta.pages <= 1) {
+    if (pager) pager.innerHTML = "";
+    return;
+  }
+  pager.innerHTML = `<button data-server-page="${meta.page - 1}" ${meta.page <= 1 ? "disabled" : ""}>‹</button><span class="muted" style="padding:7px 6px">${meta.page} / ${meta.pages}</span><button data-server-page="${meta.page + 1}" ${meta.page >= meta.pages ? "disabled" : ""}>›</button>`;
+  pager
+    .querySelectorAll("[data-server-page]")
+    .forEach((button) =>
+      button.addEventListener("click", () =>
+        onPage(Number(button.dataset.serverPage)),
+      ),
+    );
 }
 
 function initAuditLog(el, entries, meta) {
-  const search = el.querySelector('#audit-search');
-  const category = el.querySelector('#audit-category');
-  const list = el.querySelector('#audit-list');
-  list.innerHTML = entries.length ? `<div class="audit-list">${entries.map(entry => {
-      const [label, group] = auditMeta(entry.action);
-      const actor = auditActor(entry);
-      return `<article class="audit-item"><span class="audit-dot ${group}"></span><div class="audit-main"><div class="audit-title"><strong>${esc(label)}</strong><code>${esc(entry.action)}</code></div><div class="audit-detail">${entry.detail ? esc(entry.detail) : 'Không có thông tin bổ sung'}</div></div><div class="audit-actor"><strong>${esc(actor.name)}</strong><span>${esc(actor.role)}</span></div><div class="audit-ref" title="${esc(entry.ref || '')}"><span>Tham chiếu</span><code>${esc((entry.ref || '—').slice(0, 14))}${entry.ref?.length > 14 ? '…' : ''}</code></div><time>${fmtDate(entry.created_at)}</time></article>`;
-    }).join('')}</div>` : empty('🔎', 'Không tìm thấy hoạt động phù hợp');
-  bindServerPager(el, '#audit-pager', meta, page => settle(el, { auditPage: page, activeTab: 'audit' }));
-  const applyFilter = () => settle(el, { auditPage: 1, auditSearch: search.value.trim(), auditCategory: category.value, activeTab: 'audit' });
-  search.addEventListener('keydown', event => { if (event.key === 'Enter') applyFilter(); });
-  category.addEventListener('change', applyFilter);
+  const search = el.querySelector("#audit-search");
+  const category = el.querySelector("#audit-category");
+  const list = el.querySelector("#audit-list");
+  list.innerHTML = entries.length
+    ? `<div class="audit-list">${entries
+        .map((entry) => {
+          const [label, group] = auditMeta(entry.action);
+          const actor = auditActor(entry);
+          return `<article class="audit-item"><span class="audit-dot ${group}"></span><div class="audit-main"><div class="audit-title"><strong>${esc(label)}</strong><code>${esc(entry.action)}</code></div><div class="audit-detail">${entry.detail ? esc(entry.detail) : "Không có thông tin bổ sung"}</div></div><div class="audit-actor"><strong>${esc(actor.name)}</strong><span>${esc(actor.role)}</span></div><div class="audit-ref" title="${esc(entry.ref || "")}"><span>Tham chiếu</span><code>${esc((entry.ref || "—").slice(0, 14))}${entry.ref?.length > 14 ? "…" : ""}</code></div><time>${fmtDate(entry.created_at)}</time></article>`;
+        })
+        .join("")}</div>`
+    : empty("🔎", "Không tìm thấy hoạt động phù hợp");
+  bindServerPager(el, "#audit-pager", meta, (page) =>
+    settle(el, { auditPage: page, activeTab: "audit" }),
+  );
+  const applyFilter = () =>
+    settle(el, {
+      auditPage: 1,
+      auditSearch: search.value.trim(),
+      auditCategory: category.value,
+      activeTab: "audit",
+    });
+  search.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") applyFilter();
+  });
+  category.addEventListener("change", applyFilter);
 }
 
 function ledgerKind(k) {
@@ -1038,7 +1288,11 @@ async function affiliateAdmin(el) {
     <p class="hint" style="margin-top:10px">Mỗi đơn được đối chiếu với mã gốc từ sàn. Hệ thống tự đánh dấu hoạt động bất thường để quản trị viên kiểm tra.</p>`;
   el.querySelectorAll("[data-refund]").forEach((b) =>
     b.addEventListener("click", async () => {
-      if (!confirm("Xử lý hoàn đơn này? Doanh số & hoa hồng sẽ bị trừ ngược."))
+      if (
+        !(await confirmDialog(
+          "Xử lý hoàn đơn này? Doanh số & hoa hồng sẽ bị trừ ngược.",
+        ))
+      )
         return;
       try {
         await post("/api/affiliate/order-status", {
@@ -1181,12 +1435,14 @@ const LEAD_STATUSES = [
 ];
 
 function leadNeedLabel(need) {
-  return {
-    "Tư vấn booking marketplace": "Tư vấn chọn và đặt KOC",
-    "Tư vấn chiến dịch lớn": "Tư vấn chiến dịch lớn",
-    "Tìm hiểu AI Clone": "Tìm hiểu dịch vụ video đại diện",
-    "Hỗ trợ kỹ thuật khác": "Cần hỗ trợ khác",
-  }[need] || need;
+  return (
+    {
+      "Tư vấn booking marketplace": "Tư vấn chọn và đặt KOC",
+      "Tư vấn chiến dịch lớn": "Tư vấn chiến dịch lớn",
+      "Tìm hiểu AI Clone": "Tìm hiểu dịch vụ video đại diện",
+      "Hỗ trợ kỹ thuật khác": "Cần hỗ trợ khác",
+    }[need] || need
+  );
 }
 
 function leadStatusChip(status) {
@@ -1436,6 +1692,7 @@ async function aiclone(el) {
         }${a.quote_kocs ? "" : "</div>"}</div>
       <div class="row">
         ${a.booking_status === "quote_pending" ? `<button class="btn primary sm" data-ai-quote="${a.booking_id}" data-batch="${esc(a.aiclone_batch_id || "")}" data-code="${esc(a.booking_code || "")}" data-business="${esc(a.business_name || "Doanh nghiệp")}">💰 Gửi báo giá booking</button>` : ""}
+        ${a.quote_kocs && a.quote_kocs.some((k) => ["brief_review", "producing", "revision_requested", "pending_business_review", "business_approved", "pending_koc_review", "video_approved"].includes(k.booking_status)) ? `<button class="btn navy sm" data-deliver="${a.booking_id}" data-batch="${esc(a.aiclone_batch_id || "")}" data-target="business" data-code="${esc(a.aiclone_batch_id || a.booking_code || "")}" data-recipient="${esc(a.business_name || "Doanh nghiệp")}">📤 Gửi một video cho doanh nghiệp duyệt</button>` : ""}
         ${!a.booking_id ? `<button class="btn primary sm" data-book="${a.koc_id}">Tạo booking nội bộ</button>` : ""}
         ${!a.quote_kocs && a.booking_id && ["pending", "confirmed", "brief_review", "revision_requested"].includes(a.booking_status) ? `<button class="btn primary sm" data-script="${a.booking_id}" data-current="${esc(a.aiclone_script || "")}">✍️ Nội dung sản xuất (tùy chọn)</button>` : ""}
         ${!a.quote_kocs && a.booking_id && ["pending", "confirmed", "brief_review", "producing", "revision_requested"].includes(a.booking_status) ? `<button class="btn navy sm" data-deliver="${a.booking_id}" data-target="business" data-code="${esc(a.booking_code || "")}" data-recipient="${esc(a.business_name || "Doanh nghiệp")}">📤 Giao video cho doanh nghiệp</button>` : ""}
@@ -1452,14 +1709,12 @@ async function aiclone(el) {
               k,
             ) => `<div class="between" style="padding:10px 0;border-top:1px solid var(--border);gap:12px">
           <div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div>
-            <div class="row"><b>${esc(k.name)}</b>${tierBadge(k.tier)}${statusChip(k.booking_status)}</div>
+            <div class="row"><b>${esc(k.name)}</b>${tierBadge(k.tier)}${statusChip(["quote_grouped", "payment_grouped"].includes(k.booking_status) ? a.booking_status : k.booking_status)}</div>
             <div class="muted" style="font-size:11px">${esc(k.booking_code || "")} · ${esc(k.province || "")}</div>
           </div></div>
           <div class="row" style="flex-wrap:wrap;justify-content:flex-end">
             ${["pending", "confirmed", "brief_review", "revision_requested"].includes(k.booking_status) ? `<button class="btn primary sm" data-script="${k.booking_id}" data-current="${esc(k.aiclone_script || "")}">✍️ Nội dung sản xuất</button>` : ""}
-            ${["pending", "confirmed", "brief_review", "producing", "revision_requested"].includes(k.booking_status) ? `<button class="btn navy sm" data-deliver="${k.booking_id}" data-target="business" data-code="${esc(k.booking_code || "")}" data-recipient="${esc(k.business_name || "Doanh nghiệp")}">📤 Giao video cho doanh nghiệp</button>` : ""}
             ${k.booking_status === "pending_business_review" ? '<span class="chip w">Doanh nghiệp đang duyệt</span>' : ""}
-            ${k.booking_status === "business_approved" ? `<button class="btn ok sm" data-deliver="${k.booking_id}" data-target="koc" data-code="${esc(k.booking_code || "")}" data-recipient="${esc(k.name || "KOC")}">📤 Giao video cho KOC</button>` : ""}
             ${k.booking_status === "pending_koc_review" ? '<span class="chip w">KOC đang duyệt</span>' : ""}
             ${k.booking_status === "video_approved" ? '<span class="chip g">Video đã được KOC duyệt</span>' : ""}
           </div>
@@ -1549,9 +1804,22 @@ async function aiclone(el) {
       const m = modal(`<h2>Gửi báo giá AI Clone Avatar</h2>
       <div class="tint-box"><b>${esc(button.dataset.business)}</b> · ${num(items.length)} KOC trong booking
         <div class="muted" style="margin-top:5px">${items.map((item) => esc(item.name)).join(" · ")}</div></div>
+      <div class="field" style="margin-top:12px"><label>Phí trả riêng cho từng KOC</label>
+        <div style="display:grid;gap:8px;margin-top:7px">${items
+          .map(
+            (
+              item,
+              index,
+            ) => `<div class="between" style="gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff">
+          <div><b>${index + 1}. ${esc(item.name)}</b><div class="muted" style="font-size:11px">${esc(item.booking_code || "")}</div></div>
+          <input class="aiq-part aiq-koc-fee" data-booking-id="${esc(item.booking_id)}" type="number" min="0" step="1000" value="${Number(item.aiclone_quote_koc || 0)}" style="width:150px;text-align:right" aria-label="Phí của ${esc(item.name)}">
+        </div>`,
+          )
+          .join("")}</div>
+        <div class="between" style="margin-top:8px"><span class="muted">Tổng phí KOC</span><b class="money" id="aiq-koc-total">0đ</b></div>
+      </div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 12px;margin-top:12px">
         <div class="field"><label>Phí sản xuất video (đ)</label><input class="aiq-part" id="aiq-production" type="number" min="0" value="${estimatedProduction}"></div>
-        <div class="field"><label>Phí KOC (đ)</label><input class="aiq-part" id="aiq-koc" type="number" min="0" value="0"></div>
         <div class="field"><label>Phí nền tảng (đ)</label><input class="aiq-part" id="aiq-platform" type="number" min="0" value="${estimatedPlatform}"></div>
         <div class="field"><label>Chi phí bổ sung (đ)</label><input class="aiq-part" id="aiq-additional" type="number" min="0" value="0"></div>
       </div>
@@ -1559,14 +1827,23 @@ async function aiclone(el) {
       <div class="field"><label>Ghi chú gửi doanh nghiệp</label><textarea id="aiq-note" rows="3" maxlength="1000" placeholder="Hạng mục sản xuất, thời gian thực hiện, điều kiện áp dụng…"></textarea></div>
       <button class="btn primary" id="aiq-send">Gửi báo giá cho doanh nghiệp</button>
       <button class="btn ghost" id="aiq-cancel" style="margin-top:8px">Hủy</button>`);
+      const kocAllocations = () =>
+        [...m.querySelectorAll(".aiq-koc-fee")].map((input) => ({
+          booking_id: input.dataset.bookingId,
+          amount: Number(input.value || 0),
+        }));
       const quoteParts = () => ({
         production_fee: Number(m.querySelector("#aiq-production").value || 0),
-        koc_fee: Number(m.querySelector("#aiq-koc").value || 0),
+        koc_fee: kocAllocations().reduce(
+          (sum, allocation) => sum + allocation.amount,
+          0,
+        ),
         platform_fee: Number(m.querySelector("#aiq-platform").value || 0),
         additional_fee: Number(m.querySelector("#aiq-additional").value || 0),
       });
       const updateTotal = () => {
         const parts = quoteParts();
+        m.querySelector("#aiq-koc-total").textContent = money(parts.koc_fee);
         m.querySelector("#aiq-total").textContent = money(
           parts.production_fee +
             parts.koc_fee +
@@ -1598,6 +1875,7 @@ async function aiclone(el) {
             id: button.dataset.aiQuote,
             batch_id: button.dataset.batch,
             ...parts,
+            koc_allocations: kocAllocations(),
             note: m.querySelector("#aiq-note").value.trim(),
           });
           toast("Đã gửi báo giá cho doanh nghiệp", "ok");
@@ -1638,15 +1916,11 @@ async function aiclone(el) {
   );
   el.querySelectorAll("[data-deliver]").forEach((b) =>
     b.addEventListener("click", async () => {
-      const target = b.dataset.target;
-      const targetLabel = target === "koc" ? "KOC" : "doanh nghiệp";
-      modal(`<h2>Giao video AI Clone cho ${targetLabel}</h2>
+      const target = "business";
+      const targetLabel = "doanh nghiệp";
+      modal(`<h2>Gửi video chung cho doanh nghiệp duyệt</h2>
       <div class="tint-box"><b>${esc(b.dataset.code)}</b> · ${esc(b.dataset.recipient)}</div>
-      <p class="muted" style="margin-top:10px">${
-        target === "koc"
-          ? "Đây là bước giao riêng cho KOC sau khi doanh nghiệp đã duyệt. KOC sẽ được thông báo để xem và phê duyệt quyền hình ảnh."
-          : "Video chỉ được giao cho doanh nghiệp xem và duyệt. Hệ thống chưa gửi video này cho KOC."
-      }</p>
+      <p class="muted" style="margin-top:10px">Chỉ cần gửi một bản dựng cho doanh nghiệp. Sau khi doanh nghiệp duyệt, hệ thống tự động chuyển cùng link video đến toàn bộ KOC trong booking.</p>
       <div class="field" style="margin-top:12px"><label>Link video bản dựng</label><input id="dv-link" type="url" placeholder="https://…/video.mp4"></div>
       <div id="dv-preview" style="display:none;margin-bottom:12px"><video controls playsinline style="width:100%;max-height:360px;border-radius:12px;background:#111"></video></div>
       <button class="btn navy" id="dv-go">Gửi video cho ${targetLabel} xem và duyệt</button>
@@ -1673,10 +1947,11 @@ async function aiclone(el) {
         try {
           await post("/api/admin/aiclone/deliver", {
             id: b.dataset.deliver,
+            batch_id: b.dataset.batch,
             target,
             video_link: videoLink,
           });
-          toast(`Đã giao video riêng cho ${targetLabel} duyệt`, "ok");
+          toast(`Đã gửi video chung cho ${targetLabel} duyệt`, "ok");
           closeModal();
           aiclone(el);
         } catch (e) {
@@ -1712,9 +1987,9 @@ async function tiers(el) {
       </ul></div>`;
   document.getElementById("tr-save").addEventListener("click", async () => {
     if (
-      !confirm(
+      !(await confirmDialog(
         "Xác nhận lưu khung giá mới? Booking mới và onboarding KOC mới sẽ áp dụng ngay.",
-      )
+      ))
     )
       return;
     const names = cfg.tiers.map((t) => t.name);
