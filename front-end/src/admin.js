@@ -562,21 +562,23 @@ function showSignedContract(c) {
 
 function buildContractPrintDocument(c) {
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; font-src 'self'; style-src 'unsafe-inline'">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title></title>
     </head><body>${c.contract_html}
     <style>
+      @font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-Regular.ttf") format("truetype");font-weight:400;font-style:normal}
+      @font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-Bold.ttf") format("truetype");font-weight:700;font-style:normal}
       @page{size:A4 portrait;margin:21mm 23mm}
       *{box-sizing:border-box}
       html,body{margin:0;color:#000;background:#e5e7eb}
-      body{padding:18px;font-family:"Times New Roman",Times,serif;font-size:13pt;line-height:1.35}
+      body{padding:18px;font-family:"Be Vietnam Pro Local",Arial,sans-serif;font-size:13pt;line-height:1.35}
       .contract-box{width:210mm;min-height:297mm;margin:0 auto;background:#fff!important;border:0!important;border-radius:0!important;box-shadow:0 2px 16px rgba(0,0,0,.16);overflow:visible!important;padding:21mm 23mm}
       .contract-header{background:#fff!important;color:#000!important;padding:0!important;text-align:center}
-      .contract-title{font-family:"Times New Roman",Times,serif!important;font-size:15pt!important;font-weight:700!important;text-transform:uppercase;margin:0 0 4pt!important;letter-spacing:0!important}
-      .contract-subtitle,.contract-header .doc-no{font-family:"Times New Roman",Times,serif!important;color:#000!important;font-size:11pt!important;margin:0 0 4pt!important}
+      .contract-title{font-family:"Be Vietnam Pro Local",Arial,sans-serif!important;font-size:15pt!important;font-weight:700!important;text-transform:uppercase;margin:0 0 4pt!important;letter-spacing:0!important}
+      .contract-subtitle,.contract-header .doc-no{font-family:"Be Vietnam Pro Local",Arial,sans-serif!important;color:#000!important;font-size:11pt!important;margin:0 0 4pt!important}
       .contract-header .doc-no{text-align:left;margin-top:10pt!important}
-      .contract-scroll{max-height:none!important;overflow:visible!important;padding:0!important;background:#fff!important;color:#000!important;font-family:"Times New Roman",Times,serif!important;font-size:13pt!important;line-height:1.35!important}
+      .contract-scroll{max-height:none!important;overflow:visible!important;padding:0!important;background:#fff!important;color:#000!important;font-family:"Be Vietnam Pro Local",Arial,sans-serif!important;font-size:13pt!important;line-height:1.35!important}
       .contract-basis{margin:10pt 0!important;padding:0!important;background:#fff!important;border:0!important;border-radius:0!important;font-size:13pt!important}
       .contract-basis ul{margin:4pt 0 8pt 24pt!important;padding:0!important}
       .contract-basis li{margin:0 0 3pt!important}
@@ -584,9 +586,9 @@ function buildContractPrintDocument(c) {
       .contract-party b{color:#000!important}
       .contract-party .party-label{display:block!important;background:none!important;color:#000!important;border-radius:0!important;padding:0!important;margin:8pt 0 3pt!important;font-size:13pt!important;font-weight:700!important}
       .contract-scroll p{margin:0 0 6pt!important;text-align:justify}
-      .contract-article-title{font-family:"Times New Roman",Times,serif!important;font-size:13pt!important;font-weight:700!important;color:#000!important;margin:10pt 0 5pt!important;padding:0!important;border:0!important;page-break-after:avoid}
+      .contract-article-title{font-family:"Be Vietnam Pro Local",Arial,sans-serif!important;font-size:13pt!important;font-weight:700!important;color:#000!important;margin:10pt 0 5pt!important;padding:0!important;border:0!important;page-break-after:avoid}
       .contract-scroll .term-def b{color:#000!important}
-      .contract-table{width:100%!important;border-collapse:collapse!important;margin:8pt 0 10pt!important;font-family:"Times New Roman",Times,serif!important;font-size:11pt!important;page-break-inside:auto}
+      .contract-table{width:100%!important;border-collapse:collapse!important;margin:8pt 0 10pt!important;font-family:"Be Vietnam Pro Local",Arial,sans-serif!important;font-size:11pt!important;page-break-inside:auto}
       .contract-table tr{page-break-inside:avoid}
       .contract-table th,.contract-table td{border:1px solid #000!important;background:#fff!important;color:#000!important;padding:4pt 5pt!important;vertical-align:middle!important;text-align:left!important}
       .contract-table th{font-weight:700!important;text-align:center!important}

@@ -281,6 +281,38 @@
   display: block;
 }
 
+.lp-home .lp-hero-title .lp-hero-line {
+  display: block;
+}
+
+@media (min-width: 1025px) {
+  .lp-home .lp-hero-home-inner {
+    grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.85fr);
+  }
+
+  .lp-home .lp-hero-content {
+    max-width: 760px;
+  }
+
+  .lp-home .lp-hero-title {
+    font-size: clamp(2.35rem, 3.35vw, 3.35rem);
+  }
+
+  .lp-home .lp-hero-title .lp-hero-line-wide {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .lp-home .lp-hero-title .lp-hero-line {
+    display: inline;
+  }
+
+  .lp-home .lp-hero-title .lp-hero-line + .lp-hero-line::before {
+    content: " ";
+  }
+}
+
 .lp-home .lp-hero-sub {
   font-size: 15px;
   line-height: 1.65;

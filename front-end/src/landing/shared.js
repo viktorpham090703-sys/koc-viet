@@ -599,7 +599,18 @@ function bindKocActivityTicker(root) {
   let startIndex = 0;
   let rotateTimer = 0;
   let pollTimer = 0;
+  let clockTimer = 0;
   let stopped = false;
+
+  const stageActivities = (items) => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    return items.map((item, index) => ({
+      ...item,
+      displayedAt: nowSeconds - Math.min(110, 8 + index * 22),
+    }));
+  };
+
+  activities = stageActivities(activities);
 
   const esc = (s) =>
     String(s || "")
@@ -614,21 +625,20 @@ function bindKocActivityTicker(root) {
     controller.abort();
     clearInterval(rotateTimer);
     clearInterval(pollTimer);
+    clearInterval(clockTimer);
   };
 
   const relativeTime = (occurredAt) => {
     const occurredDate = new Date(Number(occurredAt) * 1000);
     if (Number.isNaN(occurredDate.getTime())) return "vừa xong";
-    const seconds = Math.max(
+    const seconds = Math.min(119, Math.max(
       0,
       Math.floor((Date.now() - occurredDate.getTime()) / 1000),
-    );
-    if (seconds < 50) return "vừa xong";
+    ));
+    if (seconds < 5) return "vừa xong";
+    if (seconds < 60) return `${seconds} giây trước`;
     const mins = Math.floor(seconds / 60);
-    if (mins < 60) return `${mins} phút trước`;
-    const hours = Math.floor(seconds / 3600);
-    if (hours < 24) return `${hours} giờ trước`;
-    return `${Math.floor(seconds / 86400)} ngày trước`;
+    return `${mins} phút trước`;
   };
 
   const safeAvatar = (value) => {
@@ -662,7 +672,7 @@ function bindKocActivityTicker(root) {
 
       for (let i = 0; i < visibleCount; i++) {
         const item = activities[(startIndex + i) % activities.length];
-        const timeStr = relativeTime(item.occurredAt - i * 45);
+        const timeStr = relativeTime(item.displayedAt || item.occurredAt);
         const avatar = safeAvatar(item.avatar) || "/default-avatar.svg";
         const catInfo = defaultCategories[i % defaultCategories.length];
         const categoryLabel = item.category || catInfo.cat;
@@ -698,7 +708,7 @@ function bindKocActivityTicker(root) {
       singleCard.dataset.activityType = item.type;
       if (label) label.textContent = item.category || "HOẠT ĐỘNG";
       if (text)
-        text.textContent = `${item.name}: ${item.text || "hoạt động mới"} (${relativeTime(item.occurredAt)})`;
+        text.textContent = `${item.name}: ${item.text || "hoạt động mới"} (${relativeTime(item.displayedAt || item.occurredAt)})`;
       singleCard.hidden = false;
     }
   };
@@ -737,7 +747,7 @@ function bindKocActivityTicker(root) {
           )
         : [];
       if (nextActivities.length) {
-        activities = nextActivities;
+        activities = stageActivities(nextActivities);
       }
       render();
     } catch (_) {
@@ -749,6 +759,7 @@ function bindKocActivityTicker(root) {
   refresh();
   rotateTimer = window.setInterval(rotate, 5000);
   pollTimer = window.setInterval(refresh, 25000);
+  clockTimer = window.setInterval(render, 1000);
   return stop;
 }
 
