@@ -259,7 +259,7 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
    imagery and colors intentionally remain unchanged. */
 @media (min-width:1025px){
   .mobile.koc-portal{max-width:none;width:100%;margin:0;min-height:100vh;padding:0 0 0 240px;background:var(--screen)}
-  .koc-portal .bottom-nav{position:fixed;inset:0 auto 0 0;width:240px;max-width:none;height:100vh;margin:0;padding:18px 0;display:flex;flex-direction:column;align-items:stretch;background:var(--navy);border:0;overflow-y:auto;z-index:500}
+  .koc-portal .bottom-nav{position:fixed;top:0;right:auto;bottom:0;left:0;width:240px;max-width:none;height:auto;min-height:100vh;min-height:100dvh;margin:0;padding:18px 0;display:flex;flex-direction:column;align-items:stretch;background:var(--navy);border:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;z-index:500}
   .koc-portal .koc-desktop-brand{display:flex;padding:2px 22px 24px;align-items:center;gap:11px;color:#fff;font-size:21px;font-weight:800}
   .koc-portal .koc-desktop-brand img{width:42px;height:42px;flex:0 0 42px;object-fit:contain}
   .koc-portal .bottom-nav a{flex:0 0 auto;display:flex;width:calc(100% - 24px);min-height:46px;margin:2px 12px;padding:10px 13px;align-items:center;gap:12px;border:0;border-radius:10px;text-align:left;font-size:14px;line-height:1.3;color:#cdd6e4;transition:background .18s ease,color .18s ease,transform .18s ease}
@@ -532,7 +532,7 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
   .business-portal .content,.admin-portal .content{padding:28px}
 }
 @media (min-width:1025px){
-  .business-portal .sidebar,.admin-portal .sidebar{position:fixed;inset:0 auto 0 0;height:100dvh;overflow:hidden;z-index:200}
+  .business-portal .sidebar,.admin-portal .sidebar{position:fixed;top:0;right:auto;bottom:0;left:0;height:auto;min-height:100vh;min-height:100dvh;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;z-index:200}
   .business-portal .main,.admin-portal .main{width:calc(100% - 272px);margin-left:272px}
 }
 @media (min-width:1025px) and (max-width:1280px){
