@@ -447,7 +447,7 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
 
 /* ===== Business & Admin portal layout refresh =====
    Structural rules only: brand assets and the existing color tokens stay unchanged. */
-.business-portal,.admin-portal{min-height:100dvh;align-items:stretch}
+.business-portal,.admin-portal{min-height:100vh;min-height:100dvh;align-items:stretch}
 .business-portal .sidebar,.admin-portal .sidebar{
   width:272px;padding:24px 14px 18px;display:flex;min-height:0;flex-direction:column;gap:12px;overflow:hidden
 }
@@ -455,8 +455,17 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
   min-height:52px;padding:0 12px 18px;margin-bottom:2px;border-bottom:1px solid rgba(255,255,255,.1)
 }
 .business-portal .portal-nav,.admin-portal .portal-nav{
+<<<<<<< HEAD
   display:flex;min-height:0;flex:1 1 auto;flex-direction:column;gap:4px;padding:4px 0 12px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable
+=======
+  display:flex;min-height:0;flex:1;flex-direction:column;gap:4px;padding:4px 0 12px;
+  overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.24) transparent
+>>>>>>> 8015a65b6ba64ce72b5fe3a6ce6c09e8be5269f6
 }
+.business-portal .portal-nav::-webkit-scrollbar,.admin-portal .portal-nav::-webkit-scrollbar{width:6px}
+.business-portal .portal-nav::-webkit-scrollbar-track,.admin-portal .portal-nav::-webkit-scrollbar-track{background:transparent}
+.business-portal .portal-nav::-webkit-scrollbar-thumb,.admin-portal .portal-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.24);border-radius:999px}
 @media (min-width:1025px){
   .koc-portal .bottom-nav .koc-desktop-account,.sidebar .btn.ghost.portal-sidebar-logout{display:flex;width:calc(100% - 32px);height:44px;flex:0 0 auto;margin:auto 16px 0;padding:0 12px;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:10px;font-size:13px;font-weight:700;transition:border-color .18s ease,color .18s ease,background .18s ease}
   .koc-portal .bottom-nav .koc-desktop-account:hover,.koc-portal .bottom-nav .koc-desktop-account:focus-visible,.sidebar .btn.ghost.portal-sidebar-logout:hover,.sidebar .btn.ghost.portal-sidebar-logout:focus-visible{background:rgba(255,255,255,.06);color:var(--primary);border-color:var(--primary)}
@@ -468,7 +477,7 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
 .business-portal .sidebar a.active,.admin-portal .sidebar a.active{
   border-left:0;box-shadow:inset 3px 0 0 var(--grad-b)
 }
-.business-portal .main,.admin-portal .main{display:flex;min-height:100dvh;flex-direction:column}
+.business-portal .main,.admin-portal .main{display:flex;min-height:100vh;min-height:100dvh;flex-direction:column}
 .business-portal .topbar,.admin-portal .topbar{
   min-height:72px;padding:12px clamp(20px,3vw,40px);gap:20px
 }
@@ -535,10 +544,16 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
   .business-portal .content,.admin-portal .content{padding:28px}
 }
 @media (min-width:1025px){
+<<<<<<< HEAD
   .business-portal .sidebar,.admin-portal .sidebar{position:fixed;top:0;right:auto;bottom:0;left:0;height:100vh;height:100dvh;min-height:0;overflow:hidden;z-index:200}
+=======
+  .business-portal,.admin-portal{background:linear-gradient(to right,var(--navy) 0 272px,var(--screen) 272px)}
+  .business-portal .sidebar,.admin-portal .sidebar{position:fixed;top:0;right:auto;bottom:0;left:0;height:auto;min-height:100vh;min-height:100dvh;overflow:hidden;z-index:200}
+>>>>>>> 8015a65b6ba64ce72b5fe3a6ce6c09e8be5269f6
   .business-portal .main,.admin-portal .main{width:calc(100% - 272px);margin-left:272px}
 }
 @media (min-width:1025px) and (max-width:1280px){
+  .business-portal,.admin-portal{background:linear-gradient(to right,var(--navy) 0 244px,var(--screen) 244px)}
   .business-portal .main,.admin-portal .main{width:calc(100% - 244px);margin-left:244px}
 }
 @media (max-width:1024px){
