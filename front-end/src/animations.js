@@ -177,8 +177,15 @@ export function pulse(el) {
 export function autoAnimate(root) {
   if (!root) return;
 
-  // Page enter
-  pageEnter(root);
+  // A transformed ancestor changes the containing block of position:fixed
+  // descendants. Landing pages use a fixed responsive header, so keep #app
+  // transform-free there and animate the page sections instead.
+  const isLandingPage = root.firstElementChild?.classList.contains('lp-body');
+  if (isLandingPage) {
+    root.classList.remove('nv-page-enter');
+  } else {
+    pageEnter(root);
+  }
 
   // Card entrance for grids & portal cards
   animateCards(root, '.grid > .card, .stat-cards > .card, .stat-tile, .booking-grid-card, .koc-content-card, .koc-affiliate-card, .list-item, .lp-grid-2 > .lp-card, .lp-grid-3 > .lp-card, .lp-grid-4 > .lp-card', { stagger: 40 });
