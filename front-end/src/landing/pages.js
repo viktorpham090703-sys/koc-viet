@@ -952,29 +952,24 @@ function pageMarketplace() {
     </div>
   </section>`;
 
-  const flow = `<section class="lp-section" aria-label="Quy trình thẳng">
+  const flow = `<section class="lp-section lp-marketplace-flow-section" aria-label="Quy trình từ hồ sơ đến bài đăng">
     <div class="lp-section-inner">
       <div class="lp-section-head">
         <h2>Từ hồ sơ đến bài đăng — <span class="lp-coral-text">một đường thẳng</span></h2>
       </div>
-      
-      <!-- Highlighted Flow Banner -->
-      <div class="lp-flow-banner" style="max-width:920px;margin:0 auto">
-        <div class="lp-flow-banner-header">
-          <span class="lp-statement-tag">LUỒNG VẬN HÀNH KHÉP KÍN</span>
-          <span class="lp-flow-caption">Mọi giao dịch có mã riêng, tra cứu được trọn đời</span>
-        </div>
-        <div class="lp-flow-steps-row">
-          <div class="lp-flow-step-item"><span class="step-idx">1</span><span>Chọn gói trên hồ sơ</span></div>
-          <div class="lp-flow-arrow">→</div>
-          <div class="lp-flow-step-item"><span class="step-idx">2</span><span>Gửi link dữ liệu SP</span></div>
-          <div class="lp-flow-arrow">→</div>
-          <div class="lp-flow-step-item"><span class="step-idx">3</span><span>Thanh toán ví đảm bảo</span></div>
-          <div class="lp-flow-arrow">→</div>
-          <div class="lp-flow-step-item"><span class="step-idx">4</span><span>KOC sản xuất &amp; đăng bài</span></div>
-          <div class="lp-flow-arrow">→</div>
-          <div class="lp-flow-step-item"><span class="step-idx">5</span><span>Xác nhận &amp; Giải ngân 95%</span></div>
-        </div>
+
+      <div class="lp-flow-banner lp-marketplace-flow">
+        <ol class="lp-marketplace-flow-list">
+          <li class="lp-marketplace-flow-step"><span class="step-idx">01</span><span><strong>Chọn gói</strong><small>trên hồ sơ</small></span></li>
+          <li class="lp-marketplace-flow-step"><span class="step-idx">02</span><span><strong>Gửi link</strong><small>dữ liệu SP</small></span></li>
+          <li class="lp-marketplace-flow-step"><span class="step-idx">03</span><span><strong>Thanh toán</strong><small>ví đảm bảo</small></span></li>
+          <li class="lp-marketplace-flow-step"><span class="step-idx">04</span><span><strong>Đăng bài</strong><small>&amp; xác nhận</small></span></li>
+          <li class="lp-marketplace-flow-step"><span class="step-idx">05</span><span><strong>Giải ngân</strong><small>95%</small></span></li>
+        </ol>
+        <p class="lp-flow-assurance">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <span>Mỗi giao dịch có mã riêng, tra cứu trọn đời</span>
+        </p>
       </div>
     </div>
   </section>`;
