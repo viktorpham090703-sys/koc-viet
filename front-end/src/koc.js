@@ -1456,7 +1456,6 @@ async function profile(el, editing = false) {
       <div id="pf-prices"></div>
       <h3 style="margin-top:18px;font-size:14px">Tài khoản nhận thanh toán</h3>
       <div class="field"><label>Ngân hàng</label><input id="pf-bank-name" value="${esc(k.bank_name || "")}"></div>
-      <div class="field"><label>Mã ngân hàng</label><input id="pf-bank-bin" value="${esc(k.bank_bin || "")}" inputmode="numeric" maxlength="6" placeholder="Gồm 6 chữ số"></div>
       <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" value="${esc(k.bank_account || "")}"></div>
       <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(k.bank_owner || "")}"></div>
       <section class="card password-change-section">
@@ -1573,12 +1572,9 @@ async function profile(el, editing = false) {
         ]
       : [];
     const bankName = el.querySelector("#pf-bank-name").value.trim();
-    const bankBin = el.querySelector("#pf-bank-bin").value.trim();
     const bankAccount = el.querySelector("#pf-bank-account").value.trim();
     const bankOwner = el.querySelector("#pf-bank-owner").value.trim();
     if (!bankName) return toast("Nhập tên ngân hàng", "err");
-    if (!/^\d{6}$/.test(bankBin))
-      return toast("Mã ngân hàng gồm đúng 6 chữ số", "err");
     if (!/^\d{6,20}$/.test(bankAccount))
       return toast("Số tài khoản chỉ gồm chữ số, 6-20 ký tự", "err");
     if (!bankOwner || /\d/.test(bankOwner))
@@ -1596,7 +1592,7 @@ async function profile(el, editing = false) {
         socials,
         categories: cats,
         prices,
-        bank: { name: bankName, bin: bankBin, account: bankAccount, owner: bankOwner },
+        bank: { name: bankName, account: bankAccount, owner: bankOwner },
       });
       const topAvatar = document.querySelector(".koc-top-profile img");
       if (topAvatar) topAvatar.src = avatarUrl(avatarSource);
