@@ -26,10 +26,9 @@ import { autoAnimate } from "./animations.js";
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
   ["#/businesses", "🏢", "Quản lý doanh nghiệp"],
-  ["#/queue", icon("approval", "sidebar-icon"), "Duyệt hồ sơ"],
+  ["#/queue", icon("approval", "sidebar-icon"), "Quản lý KOC"],
   ["#/allbookings", icon("booking", "sidebar-icon"), "Booking toàn sàn"],
   ["#/complaints", icon("complaint", "sidebar-icon"), "Khiếu nại"],
-  ["#/contracts", "📜", "Hợp đồng điện tử"],
   ["#/affiliate", "🔗", "Đơn tiếp thị liên kết"],
   ["#/kol", icon("kolRequest", "sidebar-icon"), "Yêu cầu KOL"],
   ["#/leads", icon("quoteLead", "sidebar-icon"), "Khách cần tư vấn"],
@@ -40,7 +39,13 @@ const NAV = [
 ];
 
 export async function renderAdmin(el, hash) {
-  const page = hash.replace("#/", "") || "dashboard";
+  const requestedPage = hash.replace("#/", "") || "dashboard";
+  const kocSection = ["queue", "contracts", "kocs"].includes(requestedPage)
+    ? requestedPage
+    : "queue";
+  const page = ["contracts", "kocs"].includes(requestedPage)
+    ? "queue"
+    : requestedPage;
   const keys = NAV.map((n) => n[0].replace("#/", ""));
   const active = "#/" + (keys.includes(page) ? page : "dashboard");
   el.innerHTML = `<div class="portal admin-portal">
@@ -56,10 +61,9 @@ export async function renderAdmin(el, hash) {
   try {
     if (active === "#/dashboard") await kpi(view);
     else if (active === "#/businesses") await businessesAdmin(view);
-    else if (active === "#/queue") await queue(view);
+    else if (active === "#/queue") await kocManagement(view, kocSection);
     else if (active === "#/allbookings") await allBookings(view);
     else if (active === "#/complaints") await complaintsAdmin(view);
-    else if (active === "#/contracts") await contractsAdmin(view);
     else if (active === "#/affiliate") await affiliateAdmin(view);
     else if (active === "#/kol") await kolAdmin(view);
     else if (active === "#/leads") await leadsAdmin(view);
@@ -332,6 +336,78 @@ async function kpi(el) {
   drawProvinces();
 }
 
+async function kocManagement(el, section = "queue") {
+  el.innerHTML = `<div class="between"><div><h1>Quản lý KOC</h1>
+      <p class="muted">Duyệt hồ sơ và quản lý hợp đồng điện tử của KOC tại một nơi.</p></div></div>
+    <div class="row" style="margin:16px 0;gap:8px" role="tablist" aria-label="Quản lý KOC">
+      <a class="btn ${section === "queue" ? "primary" : "ghost"} sm" href="#/queue" role="tab" aria-selected="${section === "queue"}">Hồ sơ chờ duyệt</a>
+      <a class="btn ${section === "contracts" ? "primary" : "ghost"} sm" href="#/contracts" role="tab" aria-selected="${section === "contracts"}">Hợp đồng điện tử</a>
+      <a class="btn ${section === "kocs" ? "primary" : "ghost"} sm" href="#/kocs" role="tab" aria-selected="${section === "kocs"}">Thông tin KOC</a>
+    </div>
+    <div id="koc-management-content"></div>`;
+  const content = el.querySelector("#koc-management-content");
+  if (section === "contracts") await contractsAdmin(content);
+  else if (section === "kocs") await kocDirectory(content);
+  else await queue(content);
+}
+
+let kocDirectoryFilters = { page: 1, search: "", status: "" };
+async function kocDirectory(el) {
+  el.innerHTML = `<div class="between"><div><h1>Thông tin KOC</h1><p class="muted">Tra cứu hồ sơ, chỉ số hoạt động và thông tin thanh toán của KOC.</p></div></div>
+    <div class="filters" style="margin:14px 0">
+      <div class="field" style="flex:1"><label>Tìm kiếm</label><input id="koc-directory-search" value="${esc(kocDirectoryFilters.search)}" placeholder="Tên, email hoặc số điện thoại"></div>
+      <div class="field"><label>Trạng thái</label><select id="koc-directory-status">
+        <option value="">Tất cả</option>
+        <option value="pending" ${kocDirectoryFilters.status === "pending" ? "selected" : ""}>Chờ duyệt</option>
+        <option value="leader_ok" ${kocDirectoryFilters.status === "leader_ok" ? "selected" : ""}>Trưởng nhóm đã duyệt</option>
+        <option value="active" ${kocDirectoryFilters.status === "active" ? "selected" : ""}>Đang hoạt động</option>
+        <option value="rejected" ${kocDirectoryFilters.status === "rejected" ? "selected" : ""}>Đã từ chối</option>
+      </select></div>
+      <button class="btn primary sm" id="koc-directory-filter">Tìm</button>
+    </div>
+    <div id="koc-directory-list">${skeletonPage("table")}</div>`;
+  el.querySelector("#koc-directory-filter").addEventListener("click", () => {
+    kocDirectoryFilters = {
+      page: 1,
+      search: el.querySelector("#koc-directory-search").value.trim(),
+      status: el.querySelector("#koc-directory-status").value,
+    };
+    loadKocDirectory(el);
+  });
+  el.querySelector("#koc-directory-search").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") el.querySelector("#koc-directory-filter").click();
+  });
+  await loadKocDirectory(el);
+}
+
+async function loadKocDirectory(el) {
+  const box = el.querySelector("#koc-directory-list");
+  box.innerHTML = skeletonPage("table");
+  const qs = new URLSearchParams({ page: String(kocDirectoryFilters.page) });
+  if (kocDirectoryFilters.search) qs.set("search", kocDirectoryFilters.search);
+  if (kocDirectoryFilters.status) qs.set("status", kocDirectoryFilters.status);
+  const r = await api("/api/admin/kocs?" + qs.toString());
+  if (!r.kocs.length) {
+    box.innerHTML = empty("👤", "Không tìm thấy KOC phù hợp");
+    return;
+  }
+  box.innerHTML = `<div class="table-wrap"><table><thead><tr><th>KOC</th><th>Liên hệ</th><th>Hạng</th><th>Ngành hàng</th><th>Người theo dõi</th><th>Đánh giá</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    ${r.kocs.map((k) => `<tr><td><div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><b>${esc(k.name)}</b></div></td>
+      <td><div>${esc(k.phone || "—")}</div><div class="muted" style="font-size:11px">${esc(k.email || "—")}</div></td>
+      <td>${tierBadge(k.tier)}</td><td>${esc((k.categories || []).join(", ") || "—")}</td><td>${num(k.followers)}</td><td>${stars(k.rating)}</td><td>${statusChip(k.status)}</td>
+      <td><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml(r.page, r.pages)}`;
+  box.querySelectorAll("[data-koc-directory-detail]").forEach((button) =>
+    button.addEventListener("click", () => kocDetail(r.kocs.find((k) => k.id === button.dataset.kocDirectoryDetail))),
+  );
+  box.querySelectorAll("[data-pg]").forEach((button) =>
+    button.addEventListener("click", () => {
+      kocDirectoryFilters.page = Number(button.dataset.pg);
+      loadKocDirectory(el);
+    }),
+  );
+}
+
 async function queue(el) {
   const r = await api("/api/admin/queue");
   el.innerHTML = `<div class="between"><h1>Hàng đợi duyệt hồ sơ KOC</h1>${r.kocs.length ? `<button class="btn ok sm" id="q-bulk">Duyệt hàng loạt (${r.kocs.length})</button>` : ""}</div>
@@ -397,12 +473,17 @@ async function kocDetail(k) {
       : "✓ Đã xác minh";
   modal(`<div class="row"><img class="avatar lg" src="${esc(avatarUrl(k.avatar))}"><div><h2>${esc(k.name)}</h2>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div></div>
     <div class="tint-box" style="margin:12px 0">
-       <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Chưa xác minh</span>'}</b></div>
+      <div class="between"><span>Trạng thái</span><b>${statusChip(k.status)}</b></div>
+      <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Chưa xác minh</span>'}</b></div>
       <div class="between"><span>Tương tác</span><b>${k.engagement}%</b></div>
+      <div class="between"><span>Đánh giá</span><b>${stars(k.rating)} · ${num(k.completed_bookings || 0)} booking</b></div>
       <div class="between"><span>Ngành hàng</span><b>${(k.categories || []).join(", ")}</b></div>
+      <div class="between"><span>Kênh mạng xã hội</span><b style="font-size:12px">${(k.socials || []).map((social) => `${esc(social.platform || "")} ${esc(social.handle || "")}`).join(" · ") || "—"}</b></div>
       <div class="between"><span>SĐT / Email</span><b style="font-size:12px">${esc(k.phone || "")} · ${esc(k.email || "—")}</b></div>
       <div class="between"><span>Mã hợp đồng</span><b style="font-size:11px">${esc((k.contract_hash || "").slice(0, 20))}…</b></div>
     </div>
+    ${k.bio ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Giới thiệu</div><div class="muted">${esc(k.bio)}</div></div>` : ""}
+    ${(k.prices || []).length ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Bảng giá booking</div>${k.prices.map((price) => `<div class="between"><span>${esc(price.category)}</span><b>${money(price.price)}</b></div>`).join("")}</div>` : ""}
     <div class="tint-box" style="margin:0 0 12px">
       <div style="font-size:12px;font-weight:700;margin-bottom:4px">💳 Tài khoản nhận thanh toán</div>
       <div class="between"><span>Ngân hàng</span><b>${esc(k.bank_name || "—")}</b></div>
@@ -1071,6 +1152,7 @@ async function settle(el, changes = {}) {
     .map((s) => {
       const isAi = s.type === "aiclone";
       const isCampaign = s.type === "campaign" || String(s.code || '').startsWith('CD-');
+      const isKol = s.type === 'kol' || String(s.code||'').startsWith('KOL-');
       const quoteKoc = Number(s.aiclone_quote_koc || 0);
       const prodFee = Number(
         s.aiclone_quote_production || s.aiclone_production_fee || 0,
@@ -1081,7 +1163,7 @@ async function settle(el, changes = {}) {
       const addFee = Number(s.aiclone_quote_additional || 0);
 
       let kocFee = 0;
-      if (isCampaign) {
+      if (isCampaign || isKol) {
         kocFee = Number(s.campaign_koc_paid || 0);
       } else if (isAi) {
         kocFee = quoteKoc;
@@ -1091,25 +1173,26 @@ async function settle(el, changes = {}) {
           Number(s.price) - Math.round(Number(s.price) * 0.05),
         );
       }
-      const netvietFee = isCampaign
+      const netvietFee = isCampaign || isKol
         ? Number(s.campaign_netviet_paid || 0)
         : Math.max(0, Number(s.price) - kocFee);
       const campaignStatus = {
         funded: 'Đã ký quỹ', coordinating: 'Đang điều phối', assigned: 'Đã phân bổ',
         in_progress: 'Đang giải ngân', completed: 'Đã hoàn tất', cancelled: 'Đã hủy',
       };
+      const kolSettlementStatus={funded:'Đã ký quỹ',confirmed:'Đã xác nhận',revision_requested:'Chờ chỉnh sửa',delivered:'Chờ nghiệm thu',approved:'Chờ giải ngân',completed:'Đã hoàn tất',cancelled:'Đã hủy'};
       const kocNames = isCampaign
         ? String(s.koc_name || '').split(' · ').filter(name => name && name !== 'Chưa phân bổ')
         : (s.koc_names || [s.koc_name]).filter(Boolean);
       const kocCount = isCampaign ? kocNames.length : Number(s.batch_count || kocNames.length);
 
       return `<tr>
-      <td><b>${esc(s.code)}</b>${isCampaign?'<span class="chip n" style="margin-left:6px">Chiến dịch lớn</span>':''}<div class="muted" style="font-size:11px">${esc(s.business_name || "Doanh nghiệp")}</div></td>
+      <td><b>${esc(s.code)}</b>${isCampaign?'<span class="chip n" style="margin-left:6px">Chiến dịch lớn</span>':isKol?'<span class="chip r" style="margin-left:6px">KOL / Nghệ sĩ</span>':''}<div class="muted" style="font-size:11px">${esc(s.business_name || "Doanh nghiệp")}</div></td>
       <td>${kocCount>1?`<div class="settlement-koc-group"><b>${kocCount} KOC</b><button class="settlement-koc-detail" data-settlement-kocs="${esc(s.id)}">Xem chi tiết</button></div>`:`<b>${esc(kocNames[0]||'Chưa phân bổ')}</b>`}</td>
-      <td class="money" style="font-weight:700">${money(s.price)}${isCampaign?`<div class="muted" style="font-size:10px">Còn Escrow ${money(s.campaign_remaining||0)}</div>`:''}</td>
+      <td class="money" style="font-weight:700">${money(s.price)}${isCampaign||isKol?`<div class="muted" style="font-size:10px">Còn Escrow ${money(s.campaign_remaining||0)}</div>`:''}</td>
       <td class="money" style="color:var(--success);font-weight:700">+${money(kocFee)}</td>
-      <td class="money" style="color:var(--primary);font-weight:700">+${money(netvietFee)}<div class="muted" style="font-size:10px">${isCampaign?'Phí điều phối đã ghi nhận':'Sản xuất AI + Phí NT'}</div></td>
-      <td class="settlement-status">${isCampaign?`<span class="chip ${s.status==='completed'?'g':s.status==='cancelled'?'r':'b'}">${campaignStatus[s.status]||esc(s.status)}</span>`:s.status === "completed" ? '<span class="chip g">✓ Đã giải ngân</span>' : '<span class="chip b">Đang xử lý</span>'}</td>
+      <td class="money" style="color:var(--primary);font-weight:700">+${money(netvietFee)}<div class="muted" style="font-size:10px">${isCampaign?'Phí điều phối đã ghi nhận':isKol?'Phí dịch vụ KOL đã ghi nhận':'Sản xuất AI + Phí NT'}</div></td>
+      <td class="settlement-status">${isCampaign?`<span class="chip ${s.status==='completed'?'g':s.status==='cancelled'?'r':'b'}">${campaignStatus[s.status]||esc(s.status)}</span>`:isKol?`<span class="chip ${s.status==='completed'?'g':s.status==='cancelled'?'r':'b'}">${kolSettlementStatus[s.status]||esc(s.status)}</span>`:s.status === "completed" ? '<span class="chip g">✓ Đã giải ngân</span>' : '<span class="chip b">Đang xử lý</span>'}</td>
       <td class="muted" style="font-size:11px">${fmtDate(s.updated_at || s.created_at)}</td>
     </tr>`;
     })
@@ -1342,8 +1425,11 @@ async function affiliateAdmin(el) {
   );
 }
 
-async function kolAdmin(el) {
-  const r = await api("/api/kol/requests");
+let adminKolPage=1;
+async function kolAdmin(el,page=adminKolPage) {
+  adminKolPage=Math.max(1,Number(page)||1);
+  const r = await api(`/api/kol/requests?page=${adminKolPage}&per=10`);
+  adminKolPage=r.page||1;
   const prefillBanner = state.kolPrefill
     ? `<div class="tint-box" style="margin-bottom:16px;border-left:4px solid var(--primary);padding:14px">
         <div class="between">
@@ -1367,14 +1453,15 @@ async function kolAdmin(el) {
               (
                 q,
               ) => `<tr><td>${esc(q.kolname)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(q.created_at)}</td><td>${esc(q.field)}</td><td>${esc(q.bizname)}</td>
-      <td class="money">${money(q.budget)}</td><td class="money">${q.quote ? money(q.quote) : "—"}</td><td>${statusChip({ pending: "pending", quoted: "settling", approved: "confirmed", rejected: "rejected" }[q.status] || q.status)}</td>
+      <td class="money">${money(q.budget)}</td><td>${q.quote?`<b class="money">${money(q.total_amount||q.quote)}</b><div class="muted" style="font-size:10px">KOL ${money(q.quote_kol||q.quote)} · NetViet ${money(q.quote_platform||0)}</div>`:'—'}</td><td>${statusChip(q.status)}</td>
       <td class="muted" style="max-width:200px">${esc(q.admin_note || "—")}</td>
-      <td style="width:1%;white-space:nowrap;text-align:right"><div class="row" style="flex-wrap:wrap">${q.status === "pending" ? `<button class="btn primary sm" data-quote="${q.id}">Báo giá</button> <button class="btn danger sm" data-reject="${q.id}">Từ chối</button>` : q.status === "quoted" ? `<button class="btn ok sm" data-approve="${q.id}">Chốt</button> <button class="btn danger sm" data-reject="${q.id}">Từ chối</button>` : ""}</div></td></tr>`,
+      <td style="width:1%;white-space:nowrap;text-align:right"><div class="row" style="flex-wrap:wrap">${['pending','quoted'].includes(q.status)?`<button class="btn primary sm" data-quote="${q.id}">${q.status==='quoted'?'Sửa báo giá':'Báo giá'}</button> <button class="btn danger sm" data-reject="${q.id}">Từ chối</button>`:''}${q.status==='funded'?`<button class="btn ok sm" data-confirm-kol="${q.id}">Xác nhận lịch & hợp đồng</button>`:''}${['confirmed','revision_requested'].includes(q.status)?`<button class="btn primary sm" data-deliver-kol="${q.id}">Bàn giao sản phẩm</button>`:''}${q.status==='approved'?`<button class="btn ok sm" data-settle-kol="${q.id}">Giải ngân</button>`:''}${['funded','confirmed','revision_requested','delivered','approved'].includes(q.status)?`<button class="btn danger sm" data-cancel-kol="${q.id}">Hủy & hoàn tiền</button>`:''}</div></td></tr>`,
             )
             .join("")
         : '<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">Chưa có yêu cầu KOL</td></tr>'
     }
-    </tbody></table></div>`;
+    </tbody></table></div><div class="pager" id="admin-kol-pager"></div>`;
+  if(r.pages>1){const pager=el.querySelector('#admin-kol-pager');pager.innerHTML=`<button data-admin-kol-page="${r.page-1}" ${r.page<=1?'disabled':''}>‹</button><span class="muted">${r.page} / ${r.pages}</span><button data-admin-kol-page="${r.page+1}" ${r.page>=r.pages?'disabled':''}>›</button>`;pager.querySelectorAll('[data-admin-kol-page]').forEach(b=>b.addEventListener('click',()=>kolAdmin(el,Number(b.dataset.adminKolPage))))}
   if (state.kolPrefill) {
     document
       .getElementById("kol-clear-prefill")
@@ -1385,9 +1472,10 @@ async function kolAdmin(el) {
   }
   el.querySelectorAll("[data-quote]").forEach((b) =>
     b.addEventListener("click", () => {
+      const request=r.requests.find(item=>item.id===b.dataset.quote);
       const m =
-        modal(`<h2>Báo giá KOL</h2><div class="field" style="margin-top:12px"><label>Mức báo giá (đ)</label><input id="kq-amt" type="number"></div>
-      <div class="field"><label>Ghi chú</label><textarea id="kq-note" rows="2"></textarea></div>
+        modal(`<h2>Báo giá KOL</h2><div class="field" style="margin-top:12px"><label>Thù lao KOL (đ)</label><input id="kq-kol" type="number" min="1" step="1000" value="${Number(request?.quote_kol||0)||''}"></div><div class="field"><label>Phí dịch vụ NetViet (đ)</label><input id="kq-platform" type="number" min="0" step="1000" value="${Number(request?.quote_platform||0)}"></div><div class="field"><label>Chi phí bổ sung (đ)</label><input id="kq-additional" type="number" min="0" step="1000" value="${Number(request?.quote_additional||0)}"></div>
+      <div class="field"><label>Ghi chú</label><textarea id="kq-note" rows="2">${esc(request?.admin_note||'')}</textarea></div>
       <button class="btn primary" id="kq-go">Gửi báo giá</button><button class="btn ghost" id="kq-x" style="margin-top:8px">Hủy</button>`);
       m.querySelector("#kq-x").addEventListener("click", closeModal);
       m.querySelector("#kq-go").addEventListener("click", async () => {
@@ -1395,7 +1483,9 @@ async function kolAdmin(el) {
           await post("/api/admin/kol-action", {
             id: b.dataset.quote,
             action: "quote",
-            quote: m.querySelector("#kq-amt").value,
+            kolAmount: Number(m.querySelector("#kq-kol").value),
+            platformFee: Number(m.querySelector("#kq-platform").value),
+            additionalFee: Number(m.querySelector("#kq-additional").value),
             note: m.querySelector("#kq-note").value,
           });
           toast("Đã gửi báo giá", "ok");
@@ -1407,20 +1497,10 @@ async function kolAdmin(el) {
       });
     }),
   );
-  el.querySelectorAll("[data-approve]").forEach((b) =>
-    b.addEventListener("click", async () => {
-      try {
-        await post("/api/admin/kol-action", {
-          id: b.dataset.approve,
-          action: "approve",
-        });
-        toast("Đã chốt yêu cầu KOL", "ok");
-        kolAdmin(el);
-      } catch (e) {
-        toast(e.message, "err");
-      }
-    }),
-  );
+  el.querySelectorAll('[data-confirm-kol]').forEach(b=>b.addEventListener('click',async()=>{const contractReference=await promptDialog('Nhập mã hợp đồng hoặc nội dung xác nhận lịch:');if(!contractReference)return;try{await post('/api/admin/kol-action',{id:b.dataset.confirmKol,action:'confirm',contractReference});toast('Đã xác nhận lịch và hợp đồng KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
+  el.querySelectorAll('[data-deliver-kol]').forEach(b=>b.addEventListener('click',()=>{const m=modal(`<h2>Bàn giao sản phẩm KOL</h2><div class="field"><label>Link sản phẩm / biên bản bàn giao</label><input id="kd-url" placeholder="https://..."></div><div class="field"><label>Ghi chú</label><textarea id="kd-note" rows="3"></textarea></div><button class="btn primary" id="kd-go">Gửi doanh nghiệp nghiệm thu</button><button class="btn ghost" id="kd-close" style="margin-top:8px">Đóng</button>`);m.querySelector('#kd-close').addEventListener('click',closeModal);m.querySelector('#kd-go').addEventListener('click',async()=>{try{await post('/api/admin/kol-action',{id:b.dataset.deliverKol,action:'deliver',deliveryUrl:m.querySelector('#kd-url').value.trim(),note:m.querySelector('#kd-note').value.trim()});toast('Đã bàn giao sản phẩm KOL','ok');closeModal();kolAdmin(el)}catch(e){toast(e.message,'err')}})}));
+  el.querySelectorAll('[data-settle-kol]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Giải ngân thù lao vào Ví KOL và ghi nhận phí NetViet?')))return;try{await post('/api/admin/kol-action',{id:b.dataset.settleKol,action:'settle'});toast('Đã giải ngân yêu cầu KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
+  el.querySelectorAll('[data-cancel-kol]').forEach(b=>b.addEventListener('click',async()=>{const note=await promptDialog('Lý do hủy và hoàn tiền:');if(!note)return;try{await post('/api/admin/kol-action',{id:b.dataset.cancelKol,action:'cancel',note});toast('Đã hủy và hoàn tiền doanh nghiệp','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll("[data-reject]").forEach((b) =>
     b.addEventListener("click", async () => {
       const m = modal(`<h2>Từ chối yêu cầu KOL</h2>

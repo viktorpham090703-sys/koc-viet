@@ -4528,7 +4528,10 @@ export async function route(request, env, url) {
     const kol = await env.DB.prepare("SELECT * FROM kol_profiles WHERE id=?")
       .bind(body.kol_id)
       .first();
-    if (!kol) return err("KOL không tồn tại", 404);
+    if (!kol || kol.status !== 'active') return err("KOL không tồn tại hoặc đang tạm ngưng", 404);
+    const budget=Number(body.budget),brief=String(body.brief||'').trim().slice(0,1000);
+    if(!Number.isSafeInteger(budget)||budget<=0||budget>100_000_000_000)return err('Ngân sách dự kiến phải là số nguyên VND hợp lệ');
+    if(brief.length<10)return err('Brief cần ít nhất 10 ký tự');
     const id = uid();
     await env.DB.prepare(
       `INSERT INTO kol_requests (id,kol_id,business_id,brief,budget,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`,
@@ -4537,8 +4540,8 @@ export async function route(request, env, url) {
         id,
         body.kol_id,
         me.business_id,
-        (body.brief || "").slice(0, 1000),
-        Number(body.budget) || 0,
+        brief,
+        budget,
         "pending",
         now(),
         now(),
@@ -4555,11 +4558,45 @@ export async function route(request, env, url) {
       sql += " WHERE kr.business_id=?";
       bind.push(me.business_id);
     } else if (me.role !== "admin") return err("403", 403);
-    sql += " ORDER BY kr.created_at DESC, kr.rowid DESC";
+    const per=Math.min(20,Math.max(5,Number(url.searchParams.get('per')||10))),requestedPage=Math.max(1,Number(url.searchParams.get('page')||1));
+    const countSql=`SELECT COUNT(*) count FROM kol_requests kr${me.role==='business'?' WHERE kr.business_id=?':''}`;
+    const total=Number(await env.DB.prepare(countSql).bind(...bind).first('count'))||0,pages=Math.max(1,Math.ceil(total/per)),page=Math.min(requestedPage,pages);
+    sql += " ORDER BY kr.created_at DESC, kr.rowid DESC LIMIT ? OFFSET ?";
+    bind.push(per,(page-1)*per);
     const { results } = await env.DB.prepare(sql)
       .bind(...bind)
       .all();
-    return J({ requests: results });
+    return J({ requests: results,page,per,total,pages });
+  }
+  if (p === '/api/kol/action' && m === 'POST') {
+    if(me.role!=='business')return err('Chỉ doanh nghiệp được xác nhận báo giá KOL',403);
+    const kr=await env.DB.prepare(`SELECT kr.*,kp.name kol_name FROM kol_requests kr JOIN kol_profiles kp ON kp.id=kr.kol_id WHERE kr.id=? AND kr.business_id=?`).bind(body.id,me.business_id).first();
+    if(!kr)return err('Không tìm thấy yêu cầu KOL',404);
+    const action=String(body.action||'');
+    if(action==='fund'){
+      if(kr.status!=='quoted')return err('Báo giá không còn ở trạng thái chờ xác nhận');
+      const amount=Number(kr.total_amount||kr.quote);if(!Number.isSafeInteger(amount)||amount<=0)return err('Tổng báo giá không hợp lệ');
+      const legacyKolAmount=Number(kr.quote_kol)>0?Number(kr.quote_kol):amount,legacyPlatformFee=Number(kr.quote_kol)>0?Number(kr.quote_platform||0):0,legacyAdditionalFee=Number(kr.quote_kol)>0?Number(kr.quote_additional||0):0;
+      await transferWalletFunds(env,{idempotencyKey:`kol-fund:${kr.id}`,eventType:'kol_escrow_hold',referenceType:'kol_request',referenceId:kr.id,note:`Ký quỹ KOL ${kr.kol_name}`,source:walletAccount('business',kr.business_id,'available'),destinations:[{account:walletAccount('business',kr.business_id,'escrow'),amount}]});
+      await env.DB.prepare(`UPDATE kol_requests SET status='funded',quote_kol=?,quote_platform=?,quote_additional=?,total_amount=?,escrow_amount=?,funded_at=?,updated_at=? WHERE id=?`).bind(legacyKolAmount,legacyPlatformFee,legacyAdditionalFee,amount,amount,now(),now(),kr.id).run();
+      await notifyAdmins(env,'kol','Doanh nghiệp đã ký quỹ KOL',`${kr.kol_name} · ${amount.toLocaleString('vi-VN')}đ`,'#/kol');
+      await audit(env,me.id,'kol_request.funded',kr.id,`amount=${amount}`);return J({ok:true,status:'funded',amount});
+    }
+    if(action==='approve_delivery'||action==='request_revision'){
+      if(kr.status!=='delivered')return err('Sản phẩm KOL chưa sẵn sàng nghiệm thu');
+      const note=String(body.note||'').trim().slice(0,1000);if(action==='request_revision'&&!note)return err('Vui lòng nhập nội dung cần chỉnh sửa');
+      const next=action==='approve_delivery'?'approved':'revision_requested';
+      await env.DB.prepare(`UPDATE kol_requests SET status=?,business_note=?,approved_at=?,updated_at=? WHERE id=?`).bind(next,note||null,next==='approved'?now():null,now(),kr.id).run();
+      await notifyAdmins(env,'kol',next==='approved'?'Doanh nghiệp đã nghiệm thu KOL':'Doanh nghiệp yêu cầu chỉnh sửa KOL',`${kr.kol_name}${note?' · '+note:''}`,'#/kol');
+      await audit(env,me.id,`kol_request.${next}`,kr.id,note);return J({ok:true,status:next});
+    }
+    if(action==='cancel'){
+      if(!['pending','quoted','funded'].includes(kr.status))return err('Vui lòng liên hệ NetViet để hủy ở giai đoạn hiện tại');
+      const refund=kr.status==='funded'?Number(kr.escrow_amount||kr.total_amount||kr.quote):0;
+      if(refund>0)await transferWalletFunds(env,{idempotencyKey:`kol-refund:${kr.id}`,eventType:'kol_refund',referenceType:'kol_request',referenceId:kr.id,note:`Hoàn ký quỹ KOL ${kr.kol_name}`,source:walletAccount('business',kr.business_id,'escrow'),destinations:[{account:walletAccount('business',kr.business_id,'available'),amount:refund}]});
+      await env.DB.prepare(`UPDATE kol_requests SET status='cancelled',escrow_amount=0,cancelled_at=?,updated_at=? WHERE id=?`).bind(now(),now(),kr.id).run();await audit(env,me.id,'kol_request.cancelled',kr.id,`refund=${refund}`);return J({ok:true,refund});
+    }
+    return err('Hành động không hợp lệ');
   }
 
   // ================= ADMIN =================
@@ -4790,6 +4827,44 @@ export async function route(request, env, url) {
         `SELECT * FROM kocs WHERE status IN ('pending','leader_ok') ORDER BY created_at DESC,rowid DESC`,
       ).all();
       return J({ kocs: results.map(parseKoc) });
+    }
+    if (p === "/api/admin/kocs" && m === "GET") {
+      const q = url.searchParams;
+      const page = Math.max(1, parseInt(q.get("page") || "1"));
+      const per = 10;
+      const where = [];
+      const bind = [];
+      if (q.get("status")) {
+        where.push(`status=?`);
+        bind.push(q.get("status"));
+      }
+      if (q.get("search")) {
+        where.push(`(name LIKE ? OR email LIKE ? OR phone LIKE ?)`);
+        const term = `%${q.get("search")}%`;
+        bind.push(term, term, term);
+      }
+      const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+      const total = Number(
+        (await env.DB.prepare(`SELECT COUNT(*) c FROM kocs ${clause}`)
+          .bind(...bind)
+          .first("c")) || 0,
+      );
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM kocs ${clause} ORDER BY created_at DESC,rowid DESC LIMIT ? OFFSET ?`,
+      ).bind(...bind, per, (page - 1) * per).all();
+      const kocs = [];
+      for (const row of results) {
+        const prices = await env.DB.prepare(
+          `SELECT category,price FROM koc_prices WHERE koc_id=? ORDER BY category`,
+        ).bind(row.id).all();
+        kocs.push({ ...parseKoc(row), prices: prices.results });
+      }
+      return J({
+        kocs,
+        total,
+        page,
+        pages: Math.ceil(total / per) || 1,
+      });
     }
     if (p.startsWith("/api/admin/koc-identity/") && m === "GET") {
       const kocId = p.split("/")[4];
@@ -5034,7 +5109,8 @@ export async function route(request, env, url) {
       const campaignSettlementWhere = "WHERE c.status IN ('funded','coordinating','assigned','in_progress','completed','cancelled')";
       const bookingSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM bookings b ${settlementWhere}`).first("c")) || 0;
       const campaignSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM campaigns c ${campaignSettlementWhere}`).first("c")) || 0;
-      const settlementTotal = bookingSettlementTotal + campaignSettlementTotal;
+      const kolSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM kol_requests WHERE status IN ('funded','confirmed','revision_requested','delivered','approved','completed','cancelled')`).first('c'))||0;
+      const settlementTotal = bookingSettlementTotal + campaignSettlementTotal + kolSettlementTotal;
       const settlementTotals = await env.DB.prepare(
         `SELECT COALESCE(SUM(price),0) escrow,COALESCE(SUM(koc_fee),0) koc,COALESCE(SUM(price-koc_fee),0) netviet
          FROM (
@@ -5074,6 +5150,14 @@ export async function route(request, env, url) {
                 CASE WHEN c.status='cancelled' THEN 0 ELSE GREATEST(0,c.total_amount-COALESCE((SELECT SUM(ca.amount) FROM campaign_allocations ca WHERE ca.campaign_id=c.id AND ca.status='settled'),0)-(CASE WHEN c.status='completed' THEN c.management_fee ELSE c.upfront_fee_released END)) END campaign_remaining
          FROM campaigns c JOIN businesses bz ON bz.id=c.business_id
          ${campaignSettlementWhere}
+         UNION ALL
+         SELECT kr.id,'KOL-' || UPPER(SUBSTRING(kr.id FROM 1 FOR 8)) code,'kol' type,kr.total_amount price,kr.status,
+                kr.created_at,kr.updated_at,NULL,0,0,0,0,0,0,kp.name,bz.name,
+                CASE WHEN kr.status='completed' THEN kr.quote_kol ELSE 0 END,
+                CASE WHEN kr.status='completed' THEN kr.quote_platform+kr.quote_additional ELSE 0 END,
+                CASE WHEN kr.status='cancelled' THEN 0 ELSE kr.escrow_amount END
+         FROM kol_requests kr JOIN kol_profiles kp ON kp.id=kr.kol_id JOIN businesses bz ON bz.id=kr.business_id
+         WHERE kr.status IN ('funded','confirmed','revision_requested','delivered','approved','completed','cancelled')
          ) distribution_rows
          ORDER BY updated_at DESC,id DESC LIMIT ? OFFSET ?`,
       ).bind(per, (distributionPage - 1) * per).all();
@@ -5084,6 +5168,7 @@ export async function route(request, env, url) {
            COALESCE((SELECT SUM(amount) FROM campaign_allocations WHERE status='settled'),0) koc,
            COALESCE((SELECT SUM(total_amount) FROM campaigns WHERE status='completed'),0) escrow`,
       ).first();
+      const kolTotals=await env.DB.prepare(`SELECT COALESCE(SUM(CASE WHEN status='completed' THEN quote_kol ELSE 0 END),0) koc,COALESCE(SUM(CASE WHEN status='completed' THEN total_amount ELSE 0 END),0) escrow FROM kol_requests`).first();
       return J({
         ledger: results, audit: audit.results, settlements: settlements.results || [],
         pagination: {
@@ -5092,8 +5177,8 @@ export async function route(request, env, url) {
           audit: pagination(auditPage, auditTotal),
         },
         totals: {
-          escrow: Number(settlementTotals.escrow || 0) + Number(campaignTotals.escrow || 0),
-          koc: Number(settlementTotals.koc || 0) + Number(campaignTotals.koc || 0),
+          escrow: Number(settlementTotals.escrow || 0) + Number(campaignTotals.escrow || 0)+Number(kolTotals.escrow||0),
+          koc: Number(settlementTotals.koc || 0) + Number(campaignTotals.koc || 0)+Number(kolTotals.koc||0),
           netviet: Number(settlementTotals.netviet || 0),
           platformWalletRevenue,
         },
@@ -5247,35 +5332,50 @@ export async function route(request, env, url) {
         .first();
       if (!kr) return err("Không tìm thấy yêu cầu", 404);
       const to = body.action; // 'quote' | 'approve' | 'reject'
-      if (["approved", "rejected"].includes(kr.status))
+      if (["completed", "rejected", "cancelled"].includes(kr.status))
         return err("Yêu cầu KOL đã được xử lý");
       if (to === "quote") {
-        if (kr.status !== "pending")
-          return err("Chỉ có thể báo giá yêu cầu đang chờ xử lý");
-        const quote = Number(body.quote);
-        if (!Number.isFinite(quote) || quote <= 0)
-          return err("Mức báo giá phải là số dương");
+        if (!['pending','quoted'].includes(kr.status))return err("Không thể sửa báo giá sau khi doanh nghiệp ký quỹ");
+        const kolAmount=Number(body.kolAmount),platformFee=Number(body.platformFee),additionalFee=Number(body.additionalFee||0);
+        if(!Number.isSafeInteger(kolAmount)||kolAmount<=0||!Number.isSafeInteger(platformFee)||platformFee<0||!Number.isSafeInteger(additionalFee)||additionalFee<0)return err('Các khoản báo giá phải là số nguyên VND hợp lệ');
+        const quote=kolAmount+platformFee+additionalFee;if(!Number.isSafeInteger(quote)||quote<=0||quote>100_000_000_000)return err('Tổng báo giá không hợp lệ');
         await env.DB.prepare(
-          "UPDATE kol_requests SET status=?, quote=?, admin_note=?, updated_at=? WHERE id=?",
+          "UPDATE kol_requests SET status=?,quote=?,quote_kol=?,quote_platform=?,quote_additional=?,total_amount=?,admin_note=?,quoted_at=?,updated_at=? WHERE id=?",
         )
           .bind(
             "quoted",
             quote,
+            kolAmount,platformFee,additionalFee,quote,
             String(body.note || "")
               .trim()
               .slice(0, 500),
-            now(),
+            now(),now(),
             body.id,
           )
           .run();
-      } else if (to === "approve") {
-        if (kr.status !== "quoted")
-          return err("Cần báo giá trước khi chốt yêu cầu");
+        await notifyBusiness(env,kr.business_id,'kol_quote','NetViet đã gửi báo giá KOL',`Tổng ký quỹ ${quote.toLocaleString('vi-VN')}đ.`,'#/kol');
+      } else if (to === "confirm") {
+        if (kr.status !== "funded")return err("Doanh nghiệp chưa ký quỹ");
+        const contractReference=String(body.contractReference||'').trim().slice(0,200);if(!contractReference)return err('Vui lòng nhập mã hợp đồng hoặc xác nhận lịch diễn');
         await env.DB.prepare(
-          "UPDATE kol_requests SET status=?, updated_at=? WHERE id=?",
+          "UPDATE kol_requests SET status='confirmed',contract_reference=?,confirmed_at=?,updated_at=? WHERE id=?",
         )
-          .bind("approved", now(), body.id)
+          .bind(contractReference,now(),now(),body.id)
           .run();
+        await notifyBusiness(env,kr.business_id,'kol_confirmed','KOL đã xác nhận lịch và hợp đồng','Yêu cầu đang được thực hiện.','#/kol');
+      } else if(to==='deliver'){
+        if(!['confirmed','revision_requested'].includes(kr.status))return err('Yêu cầu chưa ở giai đoạn bàn giao');
+        const deliveryUrl=String(body.deliveryUrl||'').trim(),deliveryNote=String(body.note||'').trim().slice(0,1000);if(!isUrl(deliveryUrl))return err('Link bàn giao không hợp lệ');
+        await env.DB.prepare(`UPDATE kol_requests SET status='delivered',delivery_url=?,delivery_note=?,delivered_at=?,updated_at=? WHERE id=?`).bind(deliveryUrl,deliveryNote||null,now(),now(),kr.id).run();
+        await notifyBusiness(env,kr.business_id,'kol_delivery','KOL đã bàn giao sản phẩm','Vui lòng kiểm tra và nghiệm thu.','#/kol');
+      } else if(to==='settle'){
+        if(kr.status!=='approved')return err('Doanh nghiệp chưa nghiệm thu sản phẩm KOL');
+        const kolAmount=Number(kr.quote_kol),platformAmount=Number(kr.quote_platform)+Number(kr.quote_additional),total=kolAmount+platformAmount;
+        if(total!==Number(kr.escrow_amount)||total!==Number(kr.total_amount))return err('Số tiền ký quỹ không khớp báo giá, chưa thể giải ngân');
+        const destinations=[{account:walletAccount('kol',kr.kol_id,'available'),amount:kolAmount}];if(platformAmount>0)destinations.push({account:walletAccount('platform','netviet','revenue'),amount:platformAmount});
+        await transferWalletFunds(env,{idempotencyKey:`kol-settle:${kr.id}`,eventType:'kol_settled',referenceType:'kol_request',referenceId:kr.id,note:`Giải ngân yêu cầu KOL ${kr.id}`,source:walletAccount('business',kr.business_id,'escrow'),destinations});
+        await env.DB.prepare(`UPDATE kol_requests SET status='completed',escrow_amount=0,completed_at=?,updated_at=? WHERE id=?`).bind(now(),now(),kr.id).run();
+        await notifyBusiness(env,kr.business_id,'kol_completed','Yêu cầu KOL đã hoàn tất',`Đã giải ngân ${total.toLocaleString('vi-VN')}đ.`,'#/kol');
       } else if (to === "reject") {
         if (!["pending", "quoted"].includes(kr.status))
           return err("Không thể từ chối yêu cầu ở trạng thái hiện tại");
@@ -5288,17 +5388,19 @@ export async function route(request, env, url) {
         )
           .bind("rejected", reason, now(), body.id)
           .run();
+        await notifyBusiness(env,kr.business_id,'kol_rejected','Yêu cầu KOL đã bị từ chối',reason,'#/kol');
+      } else if(to==='cancel'){
+        if(!['funded','confirmed','revision_requested','delivered','approved'].includes(kr.status))return err('Không thể hủy ở trạng thái hiện tại');
+        const refund=Number(kr.escrow_amount||0);if(refund>0)await transferWalletFunds(env,{idempotencyKey:`kol-refund:${kr.id}`,eventType:'kol_refund',referenceType:'kol_request',referenceId:kr.id,note:`Admin hoàn ký quỹ KOL ${kr.id}`,source:walletAccount('business',kr.business_id,'escrow'),destinations:[{account:walletAccount('business',kr.business_id,'available'),amount:refund}]});
+        await env.DB.prepare(`UPDATE kol_requests SET status='cancelled',escrow_amount=0,admin_note=?,cancelled_at=?,updated_at=? WHERE id=?`).bind(String(body.note||'').trim().slice(0,500)||null,now(),now(),kr.id).run();
+        await notifyBusiness(env,kr.business_id,'kol_cancelled','Yêu cầu KOL đã được hủy',`Đã hoàn ${refund.toLocaleString('vi-VN')}đ về Ví doanh nghiệp.`,'#/kol');
       } else return err("Hành động không hợp lệ");
       await audit(
         env,
         me.id,
         "kol_request." + to,
         body.id,
-        to === "reject"
-          ? String(body.note || "")
-              .trim()
-              .slice(0, 500)
-          : `quote=${body.quote || 0}`,
+        `action=${to} kol=${body.kolAmount||kr.quote_kol||0} platform=${body.platformFee||kr.quote_platform||0} note=${String(body.note||'').trim().slice(0,300)}`,
       );
       return J({ ok: true });
     }

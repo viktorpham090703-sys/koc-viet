@@ -83,26 +83,54 @@ export function lpCtaFinal(headline, ctas) {
   </section>`;
 }
 
-export function lpHero({ eyebrow, h1, sub, ctas, trust, extra, img, waveFill = "#ffffff" }) {
+export function lpHero({
+  eyebrow,
+  h1,
+  sub,
+  ctas,
+  trust,
+  extra,
+  img,
+  waveFill = "#ffffff",
+}) {
   return `<section class="lp-hero-home">
     <div class="lp-hero-home-inner">
       <div class="lp-hero-content">
-        ${eyebrow ? `<div class="lp-hero-eyebrow-wrap">
+        ${
+          eyebrow
+            ? `<div class="lp-hero-eyebrow-wrap">
           <span class="lp-hero-eyebrow-dash"></span>
           <span class="lp-hero-eyebrow">${eyebrow}</span>
-        </div>` : ""}
+        </div>`
+            : ""
+        }
         <h1 class="lp-hero-title">${h1}</h1>
         <p class="lp-hero-sub">${sub}</p>
-        ${ctas && ctas.length ? `<div class="lp-hero-cta">
-          ${ctas.map(c => `<a href="${c.href}" class="btn ${c.cls === "outline-white" || c.ghost ? "btn-secondary" : "btn-primary"} nv-lift">${c.label}</a>`).join("")}
-        </div>` : ""}
-        ${trust ? `<div class="lp-hero-trust-bar">${trust.split("·").map(t => `<span class="pill">${t.trim()}</span>`).join("")}</div>` : ""}
+        ${
+          ctas && ctas.length
+            ? `<div class="lp-hero-cta">
+          ${ctas.map((c) => `<a href="${c.href}" class="btn ${c.cls === "outline-white" || c.ghost ? "btn-secondary" : "btn-primary"} nv-lift">${c.label}</a>`).join("")}
+        </div>`
+            : ""
+        }
+        ${
+          trust
+            ? `<div class="lp-hero-trust-bar">${trust
+                .split("·")
+                .map((t) => `<span class="pill">${t.trim()}</span>`)
+                .join("")}</div>`
+            : ""
+        }
         ${extra || ""}
       </div>
-      ${img ? `<div class="lp-hero-visual">
+      ${
+        img
+          ? `<div class="lp-hero-visual">
         <div class="lp-hero-brush-arc" aria-hidden="true"></div>
-        <img src="${escAttr(img.src)}" alt="${escAttr(img.alt || '')}" fetchpriority="high" decoding="async">
-      </div>` : ""}
+        <img src="${escAttr(img.src)}" alt="${escAttr(img.alt || "")}" fetchpriority="high" decoding="async">
+      </div>`
+          : ""
+      }
     </div>
     <div class="lp-hero-wave-divider" aria-hidden="true">
       <svg viewBox="0 0 1440 90" preserveAspectRatio="none" fill="${waveFill}">
@@ -221,7 +249,7 @@ export function lpContactForm(idSuffix, title) {
         <div class="field"><label>Tên doanh nghiệp (nếu có)</label><input placeholder="Công ty / thương hiệu"></div>
         <div class="field"><label>Nội dung cần tư vấn</label><textarea rows="3" placeholder="Bạn cần hỗ trợ điều gì?"></textarea></div>
         <button type="submit" class="btn primary" style="width:100%">Gửi yêu cầu</button>
-        <p class="lp-muted" style="text-align:center">Yêu cầu được ghi nhận và gửi mô phỏng tới đội ngũ NetViet (demo).</p>
+        <p class="lp-muted" style="text-align:center">Yêu cầu được ghi nhận và gửi mô phỏng tới đội ngũ NetViet.</p>
       </form>
       <div class="lp-contact-success">
         <div class="ico">✅</div>
@@ -299,7 +327,12 @@ export function bindLandingEvents(root) {
   // Intercept landing navbar/footer link clicks for instant 0ms SPA transitions
   root.querySelectorAll("a[href^='/']").forEach((a) => {
     const href = a.getAttribute("href");
-    if (href && !href.startsWith("/#") && !href.startsWith("//") && !a.hasAttribute("download")) {
+    if (
+      href &&
+      !href.startsWith("/#") &&
+      !href.startsWith("//") &&
+      !a.hasAttribute("download")
+    ) {
       a.addEventListener("click", (e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         const targetPath = href.split("#")[0];
@@ -328,9 +361,15 @@ export function bindLandingEvents(root) {
     const timeDisplay = card.querySelector(".lp-video-time");
     const progressWrap = card.querySelector(".lp-video-progress-wrap");
     const playedBar = card.querySelector(".lp-video-progress-played");
-    const ctrlPlayBtn = card.querySelector(".lp-ctrl-play-pause") || card.querySelector("#lp-ctrl-play-pause");
-    const ctrlVolBtn = card.querySelector(".lp-ctrl-volume") || card.querySelector("#lp-ctrl-volume");
-    const ctrlFsBtn = card.querySelector(".lp-ctrl-fullscreen") || card.querySelector("#lp-ctrl-fullscreen");
+    const ctrlPlayBtn =
+      card.querySelector(".lp-ctrl-play-pause") ||
+      card.querySelector("#lp-ctrl-play-pause");
+    const ctrlVolBtn =
+      card.querySelector(".lp-ctrl-volume") ||
+      card.querySelector("#lp-ctrl-volume");
+    const ctrlFsBtn =
+      card.querySelector(".lp-ctrl-fullscreen") ||
+      card.querySelector("#lp-ctrl-fullscreen");
 
     if (!videoEl) return;
     let isSeeking = false;
@@ -338,7 +377,9 @@ export function bindLandingEvents(root) {
     const formatTime = (sec) => {
       if (isNaN(sec) || sec < 0) return "0:00";
       const m = Math.floor(sec / 60);
-      const s = Math.floor(sec % 60).toString().padStart(2, "0");
+      const s = Math.floor(sec % 60)
+        .toString()
+        .padStart(2, "0");
       return `${m}:${s}`;
     };
 
@@ -399,7 +440,7 @@ export function bindLandingEvents(root) {
         const dur = videoEl.duration;
         if (!isNaN(dur) && dur > 0) {
           videoEl.currentTime = pct * dur;
-          if (playedBar) playedBar.style.width = (pct * 100) + "%";
+          if (playedBar) playedBar.style.width = pct * 100 + "%";
           if (timeDisplay) {
             timeDisplay.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(dur)}`;
           }
@@ -445,7 +486,8 @@ export function bindLandingEvents(root) {
         const iconVol = ctrlVolBtn.querySelector(".lp-icon-vol");
         const iconMuted = ctrlVolBtn.querySelector(".lp-icon-muted");
         if (iconVol) iconVol.style.display = videoEl.muted ? "none" : "inline";
-        if (iconMuted) iconMuted.style.display = videoEl.muted ? "inline" : "none";
+        if (iconMuted)
+          iconMuted.style.display = videoEl.muted ? "inline" : "none";
       });
     }
 
@@ -508,18 +550,63 @@ function bindKocActivityTicker(root) {
 
   const controller = new AbortController();
   let activities = [
-    { name: "Kim L.", avatar: "", type: "booking_received", occurredAt: Math.floor(Date.now() / 1000) - 960, text: "Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới", category: "Thực phẩm", dot: "green" },
-    { name: "Ngọc A.", avatar: "", type: "booking_received", occurredAt: Math.floor(Date.now() / 1000) - 1020, text: "Booking & 03 cpc", category: "Thời trang", dot: "red" },
-    { name: "Minh T.", avatar: "", type: "registered", occurredAt: Math.floor(Date.now() / 1000) - 1560, text: "Săn hàng & mở hồ sơ niêm yết giá", category: "Trước công", dot: "green" },
-    { name: "Lan H.", avatar: "", type: "booking_completed", occurredAt: Math.floor(Date.now() / 1000) - 3600, text: "Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn & 500 đồng.", category: "Thực phẩm", dot: "green" },
-    { name: "Quang D.", avatar: "", type: "booking_completed", occurredAt: Math.floor(Date.now() / 1000) - 3600, text: "Đo lường & chi trả hoa hồng", category: "Thác Đăng", dot: "red" },
+    {
+      name: "Kim L.",
+      avatar: "",
+      type: "booking_received",
+      occurredAt: Math.floor(Date.now() / 1000) - 960,
+      text: "Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới",
+      category: "Thực phẩm",
+      dot: "green",
+    },
+    {
+      name: "Ngọc A.",
+      avatar: "",
+      type: "booking_received",
+      occurredAt: Math.floor(Date.now() / 1000) - 1020,
+      text: "Booking & 03 cpc",
+      category: "Thời trang",
+      dot: "red",
+    },
+    {
+      name: "Minh T.",
+      avatar: "",
+      type: "registered",
+      occurredAt: Math.floor(Date.now() / 1000) - 1560,
+      text: "Săn hàng & mở hồ sơ niêm yết giá",
+      category: "Trước công",
+      dot: "green",
+    },
+    {
+      name: "Lan H.",
+      avatar: "",
+      type: "booking_completed",
+      occurredAt: Math.floor(Date.now() / 1000) - 3600,
+      text: "Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn & 500 đồng.",
+      category: "Thực phẩm",
+      dot: "green",
+    },
+    {
+      name: "Quang D.",
+      avatar: "",
+      type: "booking_completed",
+      occurredAt: Math.floor(Date.now() / 1000) - 3600,
+      text: "Đo lường & chi trả hoa hồng",
+      category: "Thác Đăng",
+      dot: "red",
+    },
   ];
   let startIndex = 0;
   let rotateTimer = 0;
   let pollTimer = 0;
   let stopped = false;
 
-  const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const esc = (s) =>
+    String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
 
   const stop = () => {
     if (stopped) return;
@@ -532,7 +619,10 @@ function bindKocActivityTicker(root) {
   const relativeTime = (occurredAt) => {
     const occurredDate = new Date(Number(occurredAt) * 1000);
     if (Number.isNaN(occurredDate.getTime())) return "vừa xong";
-    const seconds = Math.max(0, Math.floor((Date.now() - occurredDate.getTime()) / 1000));
+    const seconds = Math.max(
+      0,
+      Math.floor((Date.now() - occurredDate.getTime()) / 1000),
+    );
     if (seconds < 50) return "vừa xong";
     const mins = Math.floor(seconds / 60);
     if (mins < 60) return `${mins} phút trước`;
@@ -544,7 +634,9 @@ function bindKocActivityTicker(root) {
   const safeAvatar = (value) => {
     try {
       const url = new URL(String(value || ""), window.location.origin);
-      return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+      return url.protocol === "https:" || url.protocol === "http:"
+        ? url.href
+        : "";
     } catch (_) {
       return "";
     }
@@ -575,13 +667,13 @@ function bindKocActivityTicker(root) {
         const catInfo = defaultCategories[i % defaultCategories.length];
         const categoryLabel = item.category || catInfo.cat;
         const dotColor = item.dot || catInfo.dot;
-        const textContent = item.text || (
-          item.type === "booking_received"
+        const textContent =
+          item.text ||
+          (item.type === "booking_received"
             ? "Tiếp nhận booking chiến dịch mới"
             : item.type === "booking_completed"
-            ? "Hoàn tất nghiệm thu và thanh toán an toàn"
-            : "Đã hoàn tất hồ sơ và sẵn sàng nhận booking"
-        );
+              ? "Hoàn tất nghiệm thu và thanh toán an toàn"
+              : "Đã hoàn tất hồ sơ và sẵn sàng nhận booking");
 
         rowsHtml.push(`
           <article class="lp-activity-row-item" data-activity-type="${item.type}">
@@ -605,7 +697,8 @@ function bindKocActivityTicker(root) {
       const label = singleCard.querySelector("[data-koc-activity-label]");
       singleCard.dataset.activityType = item.type;
       if (label) label.textContent = item.category || "HOẠT ĐỘNG";
-      if (text) text.textContent = `${item.name}: ${item.text || "hoạt động mới"} (${relativeTime(item.occurredAt)})`;
+      if (text)
+        text.textContent = `${item.name}: ${item.text || "hoạt động mới"} (${relativeTime(item.occurredAt)})`;
       singleCard.hidden = false;
     }
   };
