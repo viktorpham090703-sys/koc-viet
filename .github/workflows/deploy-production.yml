@@ -102,8 +102,9 @@ jobs:
               --fail \
               --silent \
               --show-error \
-              --retry 10 \
+              --retry 20 \
               --retry-delay 3 \
+              --retry-connrefused \
               http://127.0.0.1:3000/health
 
             sudo nginx -t
