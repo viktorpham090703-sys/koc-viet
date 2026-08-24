@@ -93,7 +93,7 @@ export async function renderKoc(el, hash) {
 function bottomNav(active) {
   return `<div class="bottom-nav">
     <div class="koc-desktop-brand"><img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785140674/koc_app_wsfxgv.png" alt=""><span>KOC Viet</span></div>
-    ${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}"><span class="ico">${n[1]}</span><span class="koc-nav-label">${n[2]}</span>${n[0] === "#/notifications" ? '<span class="badge-num notification-count" hidden></span>' : ""}</a>`).join("")}
+    <nav class="koc-nav-scroll">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}"><span class="ico">${n[1]}</span><span class="koc-nav-label">${n[2]}</span>${n[0] === "#/notifications" ? '<span class="badge-num notification-count" hidden></span>' : ""}</a>`).join("")}</nav>
     <button class="koc-desktop-account" id="koc-shell-logout">Đăng xuất</button>
   </div>`;
 }
@@ -162,7 +162,7 @@ async function campaigns(el, page = kocCampaignPage) {
   kocCampaignPage = Math.max(1, Number(page) || 1);
   const r = await api(`/api/koc/campaigns?page=${kocCampaignPage}&per=6`);
   kocCampaignPage = r.page || 1;
-  el.innerHTML = `<div class="m-body"><div class="campaign-koc-grid">${r.campaigns.length?r.campaigns.map(c=>`<article class="card campaign-koc-card campaign-koc-card--${esc(c.status)}">
+  el.innerHTML = `<div class="m-body"><div class="campaign-koc-grid${r.campaigns.length ? '' : ' campaign-koc-grid--empty'}">${r.campaigns.length?r.campaigns.map(c=>`<article class="card campaign-koc-card campaign-koc-card--${esc(c.status)}">
       <div class="campaign-koc-card-head"><div class="campaign-koc-company"><span>Doanh nghiệp</span><h3>${esc(c.business_name)}</h3></div>${statusChip(c.status)}</div>
       <div class="campaign-koc-money"><span>Khoản nhận sau nghiệm thu</span><strong>${money(c.amount)}</strong></div>
       <div class="campaign-koc-meta"><div><span>Ngành hàng</span><b>${esc(c.category)}</b></div><div><span>Hạng KOC</span>${tierBadge(c.tier)}</div><div><span>Hạn hoàn thành</span><b>${c.deadline||c.campaign_deadline?esc(c.deadline||c.campaign_deadline):'Chưa đặt'}</b></div></div>
