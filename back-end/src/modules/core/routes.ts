@@ -5995,7 +5995,11 @@ export async function route(request, env, url) {
     const bankName = String(bank.name || "")
       .trim()
       .slice(0, 80);
-    const bankBin = String(bank.bin || "").trim();
+    // Profile edits no longer ask the KOC to enter a technical bank BIN.
+    // Preserve any existing value instead of deleting payout configuration.
+    const bankBin = bank.bin == null
+      ? String(k.bank_bin || "").trim()
+      : String(bank.bin).trim();
     const bankAccount = String(bank.account || "")
       .trim()
       .slice(0, 40);
@@ -6004,7 +6008,7 @@ export async function route(request, env, url) {
       .slice(0, 120);
     if (!bankName || !bankAccount || !bankOwner)
       return err("Nhập đầy đủ thông tin tài khoản nhận thanh toán");
-    if (!/^\d{6}$/.test(bankBin))
+    if (bank.bin != null && !/^\d{6}$/.test(bankBin))
       return err("Mã ngân hàng gồm đúng 6 chữ số");
     const oldAccepting = JSON.parse(k.accepting || "{}");
     const accepting = {};
