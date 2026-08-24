@@ -2313,6 +2313,126 @@
   flex-shrink: 0;
 }
 
+/* Marketplace: one continuous booking path from profile to payout. */
+.lp-home .lp-marketplace-flow-section .lp-section-head {
+  max-width: 900px;
+  margin-bottom: 32px;
+}
+
+.lp-home .lp-marketplace-flow {
+  --flow-gap: clamp(28px, 3.5vw, 52px);
+  width: 100%;
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 34px 40px 24px;
+}
+
+.lp-home .lp-marketplace-flow-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--flow-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-home .lp-marketplace-flow-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #0f172a;
+}
+
+.lp-home .lp-marketplace-flow-step:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: calc(var(--flow-gap) / -2);
+  color: #ea583c;
+  font-size: 18px;
+  line-height: 1;
+  transform: translate(50%, -50%);
+}
+
+.lp-home .lp-marketplace-flow-step .step-idx {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-home .lp-marketplace-flow-step strong,
+.lp-home .lp-marketplace-flow-step small {
+  display: block;
+}
+
+.lp-home .lp-marketplace-flow-step strong {
+  font-size: clamp(13px, 1.15vw, 15px);
+  line-height: 1.35;
+}
+
+.lp-home .lp-marketplace-flow-step small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: clamp(11px, 0.95vw, 13px);
+  line-height: 1.4;
+}
+
+.lp-home .lp-flow-assurance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 26px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.lp-home .lp-flow-assurance svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  color: #ea583c;
+}
+
+@media (max-width: 780px) {
+  .lp-home .lp-marketplace-flow {
+    --flow-gap: 14px;
+    padding: 24px 20px 20px;
+  }
+
+  .lp-home .lp-marketplace-flow-list {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-home .lp-marketplace-flow-step {
+    min-height: 52px;
+    padding: 4px 0 14px;
+  }
+
+  .lp-home .lp-marketplace-flow-step:not(:last-child)::after {
+    top: auto;
+    right: auto;
+    bottom: -7px;
+    left: 7px;
+    transform: rotate(90deg);
+  }
+
+  .lp-home .lp-flow-assurance {
+    align-items: flex-start;
+    margin-top: 20px;
+  }
+}
+
 .lp-home .lp-statement-example-box {
   margin-top: 18px;
   padding: 14px 18px;
