@@ -1553,7 +1553,16 @@ function pageCommunity() {
         </div>
         
         <div class="lp-recruit-card">
-          <p>Bạn là KOC có uy tín tại địa phương và muốn dẫn dắt cộng đồng? Vị trí trưởng nhóm đang mở tại nhiều tỉnh, với hoa hồng cộng đồng, huy hiệu riêng và ngân sách sự kiện.</p>
+          <div class="lp-recruit-card-content">
+            <h3>QUYỀN LỢI TRƯỞNG NHÓM TỈNH</h3>
+            <p>Trở thành trưởng nhóm cộng đồng, bạn nhận được:</p>
+            <ul class="lp-recruit-benefits">
+              <li><span aria-hidden="true">✓</span> Hoa hồng cộng đồng từ các booking phát sinh trong tỉnh.</li>
+              <li><span aria-hidden="true">✓</span> Huy hiệu &amp; quyền lợi riêng dành cho trưởng nhóm trên nền tảng.</li>
+              <li><span aria-hidden="true">✓</span> Ưu tiên tham gia các sự kiện, chương trình trải nghiệm sản phẩm.</li>
+              <li><span aria-hidden="true">✓</span> Mở rộng mạng lưới KOC và trở thành người kết nối cộng đồng tại địa phương.</li>
+            </ul>
+          </div>
           <a href="/#/tuyen-koc" class="btn btn-primary" style="display:inline-flex;align-items:center;justify-content:center;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;color:#fff;background:#ea583c;">Ứng tuyển trưởng nhóm tỉnh</a>
         </div>
       </div>
