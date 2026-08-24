@@ -121,31 +121,31 @@ function pageHome() {
             <div class="lp-cat-pill"><span class="lp-cat-dot green"></span><span>Thực phẩm</span></div>
             <div class="lp-user-cell"><img class="lp-user-avatar" src="/default-avatar.svg" alt="Kim L." /><span class="lp-user-name">Kim L.</span></div>
             <div class="lp-activity-desc">Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới</div>
-            <div class="lp-activity-timestamp">16 phút trước</div>
+            <div class="lp-activity-timestamp">8 giây trước</div>
           </article>
           <article class="lp-activity-row-item">
             <div class="lp-cat-pill"><span class="lp-cat-dot red"></span><span>Thời trang</span></div>
             <div class="lp-user-cell"><img class="lp-user-avatar" src="/default-avatar.svg" alt="Ngọc A." /><span class="lp-user-name">Ngọc A.</span></div>
             <div class="lp-activity-desc">Booking &amp; 03 cpc</div>
-            <div class="lp-activity-timestamp">17 phút trước</div>
+            <div class="lp-activity-timestamp">30 giây trước</div>
           </article>
           <article class="lp-activity-row-item">
             <div class="lp-cat-pill"><span class="lp-cat-dot green"></span><span>Trước công</span></div>
             <div class="lp-user-cell"><img class="lp-user-avatar" src="/default-avatar.svg" alt="Minh T." /><span class="lp-user-name">Minh T.</span></div>
             <div class="lp-activity-desc">Săn hàng</div>
-            <div class="lp-activity-timestamp">26 phút trước</div>
+            <div class="lp-activity-timestamp">52 giây trước</div>
           </article>
           <article class="lp-activity-row-item">
             <div class="lp-cat-pill"><span class="lp-cat-dot green"></span><span>Thực phẩm</span></div>
             <div class="lp-user-cell"><img class="lp-user-avatar" src="/default-avatar.svg" alt="Lan H." /><span class="lp-user-name">Lan H.</span></div>
             <div class="lp-activity-desc">Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn &amp; 500 đồng.</div>
-            <div class="lp-activity-timestamp">1 giờ trước</div>
+            <div class="lp-activity-timestamp">1 phút trước</div>
           </article>
           <article class="lp-activity-row-item">
             <div class="lp-cat-pill"><span class="lp-cat-dot red"></span><span>Thác Đăng</span></div>
             <div class="lp-user-cell"><img class="lp-user-avatar" src="/default-avatar.svg" alt="Quang D." /><span class="lp-user-name">Quang D.</span></div>
             <div class="lp-activity-desc">Đo lường &amp; chi trả</div>
-            <div class="lp-activity-timestamp">1 giờ trước</div>
+            <div class="lp-activity-timestamp">1 phút trước</div>
           </article>
         </div>
       </div>
@@ -232,7 +232,7 @@ function pageHome() {
   const whyUs = `<section class="lp-home-proof" aria-label="Điều mà thị trường booking KOC đang thiếu">
     <div class="lp-home-proof-inner">
       <div class="lp-section-head">
-        <h2 class="lp-proof-heading">Điều mà thị trường booking KOC đang thiếu — <span class="lp-coral-text">chúng tôi làm trước tiên</span></h2>
+        <h2 class="lp-proof-heading">Điều thị trường booking KOC đang thiếu, <span class="lp-coral-text">chúng tôi làm trước tiên</span></h2>
       </div>
       <div class="lp-grid-4 lp-proof-grid">
         <article class="lp-card lp-proof-card lp-proof-coral">
@@ -309,7 +309,7 @@ function pageHome() {
   const aiCloneTeaser = `<section class="lp-home-spotlight">
     <div class="lp-home-spotlight-inner">
       <div class="lp-banner">
-        <h3>Mới: Dịch vụ video đại diện — không cần tự quay mỗi ngày</h3>
+        <h3>Mới: Dịch vụ video đại diện, không cần tự quay mỗi ngày</h3>
         <p>NetViet tiếp nhận booking và sản xuất video cho bạn. Bạn xem, duyệt và đăng, đồng thời vẫn nhận phí booking cùng hoa hồng bán hàng.</p>
         <a href="/ai-clone" class="btn grad">Tìm hiểu dịch vụ →</a>
       </div>
@@ -393,7 +393,7 @@ function pageKoc() {
   const dualIncome = `<section class="lp-section" aria-label="Một bài đăng — hai dòng thu nhập">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Một bài đăng — <span class="lp-coral-text">hai dòng thu nhập</span></h2>
+        <h2>Một bài đăng, <span class="lp-coral-text">hai dòng thu nhập</span></h2>
       </div>
       <div class="lp-grid-2">
         <article class="lp-card lp-proof-card lp-proof-coral">
@@ -437,7 +437,7 @@ function pageKoc() {
   const process = `<section class="lp-section tint" aria-label="5 bước để bắt đầu">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>5 bước để bắt đầu — <span class="lp-coral-text">dưới 15 phút</span></h2>
+        <h2>Bắt đầu chỉ với 5 bước, <span class="lp-coral-text">trong dưới 15 phút</span></h2>
       </div>
       <div class="lp-steps-video-wrap">
         ${lpVideoPlayer({
@@ -633,7 +633,7 @@ function pageKoc() {
 function pageBusiness() {
   const hero = lpHero({
     eyebrow: "DÀNH CHO DOANH NGHIỆP & NHÃN HÀNG",
-    h1: `Booking KOC dễ dàng như đặt xe công nghệ:<br><span class="coral">Chọn người - Hợp giá - Chốt ngay.</span>`,
+    h1: `<span class="lp-hero-line">Booking KOC dễ dàng</span><span class="lp-hero-line">như đặt xe công nghệ:</span><span class="coral lp-hero-line lp-hero-line-wide">Chọn người - Hợp giá - Chốt ngay.</span>`,
     sub: "Không còn xin báo giá qua ba tầng agency. Trên KOC Việt, mọi KOC niêm yết giá công khai theo ngành hàng, kèm chỉ số hiệu quả thật từ dữ liệu affiliate. Ngân sách 3 triệu hay 3 tỷ đều bắt đầu được ngay hôm nay.",
     ctas: [
       { href: "/#/explore", label: "Tìm KOC ngay — miễn phí" },
@@ -693,7 +693,7 @@ function pageBusiness() {
   const solutions = `<section class="lp-section tint" aria-label="Giải pháp từ KOC Việt">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>KOC Việt giải quyết cả ba — <span class="lp-coral-text">bằng thiết kế, không bằng lời hứa</span></h2>
+        <h2>KOC Việt giải quyết cả ba <span class="lp-coral-text">bằng thiết kế, không bằng lời hứa</span></h2>
       </div>
       <div class="lp-grid-3">
         <article class="lp-card lp-proof-card lp-proof-coral">
@@ -733,7 +733,7 @@ function pageBusiness() {
   const twoModes = `<section class="lp-section" aria-label="Hai luồng — tuỳ quy mô của bạn">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Hai luồng — <span class="lp-coral-text">tuỳ quy mô của bạn</span></h2>
+        <h2>Hai cách hợp tác, <span class="lp-coral-text">phù hợp từng quy mô</span></h2>
       </div>
       <div class="lp-grid-2">
         <article class="lp-card" style="border-top: 4px solid #ea583c;">
@@ -856,7 +856,7 @@ function pageBusiness() {
 function pageMarketplace() {
   const hero = lpHero({
     eyebrow: "MARKETPLACE KOC/KOLs",
-    h1: `Cả một thị trường KOC<br><span class="coral">trong một bộ lọc.</span>`,
+    h1: `<span class="lp-hero-line lp-hero-line-wide">Cả một thị trường KOC</span><span class="coral lp-hero-line">trong một bộ lọc.</span>`,
     sub: "Hàng trăm nghìn hồ sơ KOC được xác minh — lọc theo ngành hàng, tỉnh thành, hạng, mức giá và hiệu quả thật. Tìm đúng gương mặt cho thương hiệu của bạn trong 30 giây.",
     ctas: [{ href: "/#/explore", label: "Khám phá marketplace" }],
     extra: `<div class="lp-box on-dark" style="margin-top:20px">Tìm theo: ngành hàng · tỉnh/thành · hạng KOC · khoảng giá · đánh giá ★</div>`,
@@ -870,7 +870,7 @@ function pageMarketplace() {
   const filters = `<section class="lp-section" aria-label="Lọc thông minh">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Lọc thông minh — <span class="lp-coral-text">vì mỗi chiến dịch cần một kiểu KOC khác nhau</span></h2>
+        <h2>Lọc thông minh <span class="lp-coral-text">cho từng kiểu chiến dịch</span></h2>
       </div>
       <div class="lp-grid-4">
         <article class="lp-card lp-proof-card lp-proof-coral">
@@ -955,7 +955,7 @@ function pageMarketplace() {
   const flow = `<section class="lp-section lp-marketplace-flow-section" aria-label="Quy trình từ hồ sơ đến bài đăng">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Từ hồ sơ đến bài đăng — <span class="lp-coral-text">một đường thẳng</span></h2>
+        <h2>Từ hồ sơ đến bài đăng, <span class="lp-coral-text">một quy trình liền mạch</span></h2>
       </div>
 
       <div class="lp-flow-banner lp-marketplace-flow">
@@ -1026,7 +1026,7 @@ function pageMarketplace() {
 function pageAiClone() {
   const hero = lpHero({
     eyebrow: "DỊCH VỤ CỘNG THÊM — DÀNH RIÊNG CHO KOC CỦA KOC VIỆT",
-    h1: `Thu nhập vẫn chạy —<br><span class="coral">kể cả ngày bạn không quay video.</span>`,
+    h1: `<span class="lp-hero-line">Thu nhập vẫn chạy</span><span class="coral lp-hero-line lp-hero-line-wide">Ngay cả khi bạn không quay video.</span>`,
     sub: "Tham gia chương trình AI Clone Avatar: NetViet trực tiếp mang booking đến và sản xuất video hoàn chỉnh bằng công nghệ AI Clone Avatar hình ảnh, giọng nói của bạn. Việc của bạn chỉ là duyệt video và bấm đăng — phí booking và hoa hồng affiliate vẫn về ví như thường.",
     ctas: [
       {
@@ -1086,7 +1086,7 @@ function pageAiClone() {
   const how = `<section class="lp-section tint" aria-label="Quy trình AI Clone">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>NetViet lo phần nặng — <span class="lp-coral-text">bạn giữ phần quyết</span></h2>
+        <h2>NetViet lo phần nặng, <span class="lp-coral-text">bạn giữ quyền quyết định</span></h2>
       </div>
       <div class="lp-steps-video-wrap">
         ${lpVideoPlayer({
@@ -1470,7 +1470,7 @@ function pagePricing() {
 function pageCommunity() {
   const hero = lpHero({
     eyebrow: "CỘNG ĐỒNG KOC 34 TỈNH THÀNH",
-    h1: `Khách hàng ở tỉnh nào —<br><span class="coral">KOC ở tỉnh đó.</span>`,
+    h1: `<span class="lp-hero-line lp-hero-line-wide">Khách hàng ở tỉnh nào</span><span class="coral lp-hero-line">KOC có mặt ở tỉnh đó.</span>`,
     sub: "KOC Việt tổ chức KOC thành cộng đồng theo từng tỉnh/thành: doanh nghiệp địa phương tìm được người nói đúng giọng khách hàng của mình, KOC tỉnh có sân chơi và người dẫn dắt ngay tại quê nhà.",
     ctas: [
       { href: "/#/explore", label: "Tìm KOC tại tỉnh của bạn" },
@@ -1530,7 +1530,7 @@ function pageCommunity() {
   const leader = `<section class="lp-section tint" aria-label="Trưởng nhóm cộng đồng">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Trưởng nhóm cộng đồng — <span class="lp-coral-text">người kết nối tại từng tỉnh</span></h2>
+        <h2>Trưởng nhóm cộng đồng, <span class="lp-coral-text">người kết nối tại từng tỉnh</span></h2>
       </div>
       <div class="lp-grid-2">
         <!-- Highlighted Leader Statement Card -->
@@ -1623,8 +1623,8 @@ function pageSupport() {
           <span class="lp-hero-eyebrow">TRUNG TÂM TRỢ GIÚP &amp; GIẢI ĐÁP</span>
         </div>
         <h1 class="lp-hero-title">
-          Mọi câu hỏi về KOC Việt —<br>
-          <span class="coral">trả lời thẳng, không vòng vo.</span>
+          <span class="lp-hero-line lp-hero-line-wide">Mọi câu hỏi về KOC Việt</span>
+          <span class="coral lp-hero-line lp-hero-line-wide">Được trả lời thẳng, không vòng vo.</span>
         </h1>
         <p class="lp-hero-sub" style="margin: 0 auto 28px auto;">Tra cứu câu hỏi thường gặp hoặc gửi yêu cầu trực tiếp tới đội ngũ hỗ trợ NetViet.</p>
         <div class="lp-search-box">
@@ -1779,7 +1779,7 @@ function pageSupport() {
   const contact = `<section class="lp-section" aria-label="Gửi yêu cầu hỗ trợ">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Chưa tìm thấy câu trả lời? Gửi yêu cầu hỗ trợ — chúng tôi phản hồi trong 2 giờ làm việc.</h2>
+        <h2>Chưa tìm thấy câu trả lời? Gửi yêu cầu hỗ trợ. Chúng tôi phản hồi trong 2 giờ làm việc.</h2>
       </div>
       ${lpContactForm("ho-tro", "Gửi yêu cầu hỗ trợ")}
     </div>

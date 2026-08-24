@@ -1,4 +1,10 @@
 /* KOC Việt · Hallmark design tokens · warm-paper editorial system */
+@font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-Regular.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-Medium.ttf") format("truetype");font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-SemiBold.ttf") format("truetype");font-style:normal;font-weight:600;font-display:swap}
+@font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-Bold.ttf") format("truetype");font-style:normal;font-weight:700;font-display:swap}
+@font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-ExtraBold.ttf") format("truetype");font-style:normal;font-weight:800;font-display:swap}
+@font-face{font-family:"Be Vietnam Pro Local";src:url("/font/Be_Vietnam_Pro/BeVietnamPro-Black.ttf") format("truetype");font-style:normal;font-weight:900;font-display:swap}
 :root {
   --color-white: #ffffff;
   --color-neutral-50: oklch(98.5% 0 0);
@@ -28,8 +34,8 @@
   --color-home-accent-hover: oklch(74% 0.16 36);
   --color-home-accent-ink: oklch(17% 0.04 252);
 
-  --font-display: "Lora", ui-serif, serif;
-  --font-body: "Be Vietnam Pro", ui-sans-serif, sans-serif;
+  --font-display: "Be Vietnam Pro Local", ui-sans-serif, sans-serif;
+  --font-body: "Be Vietnam Pro Local", ui-sans-serif, sans-serif;
 
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
