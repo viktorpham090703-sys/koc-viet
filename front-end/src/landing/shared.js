@@ -31,7 +31,7 @@ export function lpHeader(active) {
           <a href="#/login" class="btn primary sm">Đăng nhập</a>
         </div>
       </nav>
-      <button class="lp-burger" id="lp-burger" aria-label="Menu">☰</button>
+      <button class="lp-burger" id="lp-burger" type="button" aria-label="Mở trình đơn" aria-controls="lp-nav" aria-expanded="false">☰</button>
     </div>
   </header>`;
 }
@@ -268,9 +268,18 @@ export function bindLandingEvents(root) {
   const burger = root.querySelector("#lp-burger");
   const nav = root.querySelector("#lp-nav");
   if (burger && nav) {
-    burger.addEventListener("click", () => nav.classList.toggle("open"));
+    const setMenuOpen = (isOpen) => {
+      nav.classList.toggle("open", isOpen);
+      burger.setAttribute("aria-expanded", String(isOpen));
+      burger.setAttribute("aria-label", isOpen ? "Đóng trình đơn" : "Mở trình đơn");
+    };
+    burger.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setMenuOpen(!nav.classList.contains("open"));
+    });
     nav.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", () => nav.classList.remove("open"));
+      link.addEventListener("click", () => setMenuOpen(false));
     });
   }
   root.querySelectorAll(".lp-acc-q").forEach((q) => {
