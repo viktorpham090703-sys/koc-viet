@@ -1,0 +1,15 @@
+{
+  "approved": true,
+  "approvedAt": "2026-08-15",
+  "primaryComp": ".impeccable/mocks/home-campaign-desk.png",
+  "decision": "Use Campaign Desk as the complete and only direction. No secondary comp may influence the implementation.",
+  "buildPath": "comp-led",
+  "constraints": [
+    "Preserve current frontend entry architecture, content, product logic, routes, and behavior.",
+    "Preserve the primary navy and coral brand relationship.",
+    "Avoid repetitive rectangles, heavy card borders, symmetrical 50/50 layouts, and full-width CTA buttons.",
+    "Use intentional whitespace, light overlap, strong editorial type hierarchy, and mobile-safe responsive fallbacks.",
+    "Place the four-step process immediately after the hero metrics, matching the approved comp's second fold.",
+    "Keep testimonial composition inside the Campaign Desk 7/5 rhythm."
+  ]
+}

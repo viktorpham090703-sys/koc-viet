@@ -1,0 +1,50 @@
+[
+  {
+    "date": "2026-08-14",
+    "scope": "page",
+    "macrostructure": "Midnight Ecosystem Index + Light Long Document",
+    "theme": "KOC Việt split-surface editorial",
+    "enrichment": "Existing hero image, campaign video and live KOC avatars",
+    "brief": "Giữ nguyên nội dung và áp dụng phong cách ảnh tham chiếu cho trang chủ"
+  },
+  {
+    "date": "2026-08-14",
+    "scope": "page",
+    "macrostructure": "Ecosystem Index + asymmetric section rhythm",
+    "theme": "KOC Việt midnight editorial",
+    "enrichment": "Existing hero image + live KOC avatars",
+    "brief": "Đồng bộ toàn bộ section trang chủ theo hero xanh đêm và thay logo điều hướng"
+  },
+  {
+    "date": "2026-08-14",
+    "scope": "page-section",
+    "macrostructure": "Horizontal activity rail",
+    "theme": "KOC Việt midnight editorial",
+    "enrichment": "Live KOC avatars and status progression",
+    "brief": "Dải hoạt động Booking và KOC có ảnh đại diện, tiến trình trạng thái, điều hướng và vuốt ngang"
+  },
+  {
+    "date": "2026-08-14",
+    "scope": "page-section",
+    "macrostructure": "Ecosystem Index + H2 Split Diptych",
+    "theme": "KOC Việt midnight editorial",
+    "enrichment": "Tier-C image with edge blend",
+    "brief": "Giới hạn nền tối đến hết hoạt động, bỏ đường ngăn và hòa ảnh hero vào một nền"
+  },
+  {
+    "date": "2026-08-14",
+    "scope": "page",
+    "macrostructure": "Ecosystem Index + H2 Split Diptych",
+    "theme": "KOC Việt midnight editorial",
+    "enrichment": "Tier-C edited source image",
+    "brief": "Trang chủ nền xanh đêm với ảnh hero hòa vào nền"
+  },
+  {
+    "date": "2026-08-13",
+    "scope": "app",
+    "macrostructure": "Landing + Workbench + Long Document",
+    "theme": "KOC Việt warm-paper editorial",
+    "enrichment": "source videos",
+    "brief": "Đồng bộ toàn bộ UI và icon từ nexrall-koc-viet"
+  }
+]

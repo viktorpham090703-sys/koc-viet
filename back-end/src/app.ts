@@ -9,6 +9,8 @@ import { MemoryKv } from './infrastructure/memory-kv.js'
 import { errorHandler } from './middleware/error-handler.js'
 import { notFound } from './middleware/not-found.js'
 import { createApiRouter } from './modules/api/api.router.js'
+import { migrate } from './modules/core/db.js'
+import { ensureSeedData } from './modules/core/seed.js'
 import { createHealthRouter } from './modules/health/health.router.js'
 import type { ApplicationEnvironment } from './types/environment.js'
 
@@ -25,5 +27,10 @@ export function createApp(config: AppConfig) {
   app.use('/api', createApiRouter(environment))
   app.use(notFound)
   app.use(errorHandler)
-  return { app, pool }
+  return { app, pool, environment }
+}
+
+export async function initializeDatabase(environment: ApplicationEnvironment) {
+  await migrate(environment)
+  await ensureSeedData(environment)
 }

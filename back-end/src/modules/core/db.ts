@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-08-05-business-products-v1';
+const SCHEMA_GUARD_VERSION = '2026-08-21-kol-workflow-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -205,12 +205,78 @@ const MIGRATIONS = [
      failure_reason TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, paid_at INTEGER )`,
   // ---- business product catalog: reusable source links for future affiliate flows ----
   ...BUSINESS_PRODUCT_SCHEMA,
+  // ---- private KOC identity images; only exposed through admin-only APIs ----
+  `CREATE TABLE IF NOT EXISTS koc_identity_documents (
+     koc_id TEXT PRIMARY KEY, front_image TEXT NOT NULL, back_image TEXT NOT NULL,
+     selfie_image TEXT NOT NULL, front_object_key TEXT, back_object_key TEXT,
+     selfie_object_key TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+  `ALTER TABLE koc_identity_documents ADD COLUMN front_object_key TEXT`,
+  `ALTER TABLE koc_identity_documents ADD COLUMN back_object_key TEXT`,
+  `ALTER TABLE koc_identity_documents ADD COLUMN selfie_object_key TEXT`,
+  `ALTER TABLE campaigns ADD COLUMN management_rate REAL NOT NULL DEFAULT 0.15`,
+  `ALTER TABLE campaigns ADD COLUMN management_fee INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE campaigns ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE campaigns ADD COLUMN upfront_fee_released INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE campaigns ADD COLUMN funded_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN started_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN completed_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN cancelled_at INTEGER`,
+  `CREATE TABLE IF NOT EXISTS campaign_allocations (id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,koc_id TEXT NOT NULL,amount INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'pending',settled_at INTEGER,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,UNIQUE(campaign_id,koc_id))`,
+  `CREATE INDEX IF NOT EXISTS idx_campaign_allocations_campaign ON campaign_allocations(campaign_id,status)`,
+  `ALTER TABLE campaigns ADD COLUMN quote_note TEXT`,
+  `ALTER TABLE campaigns ADD COLUMN quoted_at INTEGER`,
+  `ALTER TABLE campaigns ADD COLUMN deadline TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN deadline TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN submission_url TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN submission_note TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN business_note TEXT`,
+  `ALTER TABLE campaign_allocations ADD COLUMN accepted_at INTEGER`,
+  `ALTER TABLE campaign_allocations ADD COLUMN declined_at INTEGER`,
+  `ALTER TABLE campaign_allocations ADD COLUMN submitted_at INTEGER`,
+  `ALTER TABLE campaign_allocations ADD COLUMN approved_at INTEGER`,
+  `UPDATE campaigns SET management_rate=0.15,
+     management_fee=CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END,
+     total_amount=COALESCE(budget,0)+(CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END)
+     WHERE COALESCE(total_amount,0)=0`,
+  `ALTER TABLE kol_requests ADD COLUMN quote_kol INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN quote_platform INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN quote_additional INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN escrow_amount INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN contract_reference TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN delivery_url TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN delivery_note TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN business_note TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN quoted_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN funded_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN confirmed_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN delivered_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN approved_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN completed_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN cancelled_at INTEGER`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
 // after swallowing a failed migration. This is required for older persistent
 // databases that can report the latest version while still missing objects.
 async function ensureV14Schema(env) {
+  await env.DB.exec(
+    `CREATE TABLE IF NOT EXISTS koc_identity_documents (
+       koc_id TEXT PRIMARY KEY, front_image TEXT NOT NULL, back_image TEXT NOT NULL,
+       selfie_image TEXT NOT NULL, front_object_key TEXT, back_object_key TEXT,
+       selfie_object_key TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+  );
+  const identityColumns = await env.DB.prepare(`PRAGMA table_info(koc_identity_documents)`).all();
+  const existingIdentityColumns = new Set(
+    (identityColumns.results || []).map(column => column.name),
+  );
+  for (const [column, sql] of [
+    ['front_object_key', `ALTER TABLE koc_identity_documents ADD COLUMN front_object_key TEXT`],
+    ['back_object_key', `ALTER TABLE koc_identity_documents ADD COLUMN back_object_key TEXT`],
+    ['selfie_object_key', `ALTER TABLE koc_identity_documents ADD COLUMN selfie_object_key TEXT`],
+  ]) {
+    if (!existingIdentityColumns.has(column)) await env.DB.exec(sql);
+  }
   const columns = await env.DB.prepare(`PRAGMA table_info(bookings)`).all();
   const hasContentType = (columns.results || []).some(column => column.name === 'content_type');
   if (!hasContentType) {
@@ -269,6 +335,82 @@ async function ensureV14Schema(env) {
   ];
   for (const [name, sql] of requiredBusinessColumns) {
     if (!existingBusinessColumns.has(name)) await env.DB.prepare(sql).run();
+  }
+
+  // Campaign migrations used to ignore individual ALTER failures while still
+  // advancing schema_version. Repair the real table shape on every guard bump.
+  const campaignColumns = await env.DB.prepare(`PRAGMA table_info(campaigns)`).all();
+  const existingCampaignColumns = new Set(
+    (campaignColumns.results || []).map(column => column.name),
+  );
+  const requiredCampaignColumns = [
+    ['management_rate', `ALTER TABLE campaigns ADD COLUMN management_rate REAL NOT NULL DEFAULT 0.15`],
+    ['management_fee', `ALTER TABLE campaigns ADD COLUMN management_fee INTEGER NOT NULL DEFAULT 0`],
+    ['total_amount', `ALTER TABLE campaigns ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`],
+    ['upfront_fee_released', `ALTER TABLE campaigns ADD COLUMN upfront_fee_released INTEGER NOT NULL DEFAULT 0`],
+    ['funded_at', `ALTER TABLE campaigns ADD COLUMN funded_at INTEGER`],
+    ['started_at', `ALTER TABLE campaigns ADD COLUMN started_at INTEGER`],
+    ['completed_at', `ALTER TABLE campaigns ADD COLUMN completed_at INTEGER`],
+    ['cancelled_at', `ALTER TABLE campaigns ADD COLUMN cancelled_at INTEGER`],
+    ['quote_note', `ALTER TABLE campaigns ADD COLUMN quote_note TEXT`],
+    ['quoted_at', `ALTER TABLE campaigns ADD COLUMN quoted_at INTEGER`],
+    ['deadline', `ALTER TABLE campaigns ADD COLUMN deadline TEXT`],
+  ];
+  for (const [name, sql] of requiredCampaignColumns) {
+    if (!existingCampaignColumns.has(name)) await env.DB.prepare(sql).run();
+  }
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS campaign_allocations (
+       id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,koc_id TEXT NOT NULL,
+       amount INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'pending',
+       settled_at INTEGER,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,
+       UNIQUE(campaign_id,koc_id))`,
+  ).run();
+  const allocationColumns = await env.DB.prepare(`PRAGMA table_info(campaign_allocations)`).all();
+  const existingAllocationColumns = new Set(
+    (allocationColumns.results || []).map(column => column.name),
+  );
+  const requiredAllocationColumns = [
+    ['deadline', `ALTER TABLE campaign_allocations ADD COLUMN deadline TEXT`],
+    ['submission_url', `ALTER TABLE campaign_allocations ADD COLUMN submission_url TEXT`],
+    ['submission_note', `ALTER TABLE campaign_allocations ADD COLUMN submission_note TEXT`],
+    ['business_note', `ALTER TABLE campaign_allocations ADD COLUMN business_note TEXT`],
+    ['accepted_at', `ALTER TABLE campaign_allocations ADD COLUMN accepted_at INTEGER`],
+    ['declined_at', `ALTER TABLE campaign_allocations ADD COLUMN declined_at INTEGER`],
+    ['submitted_at', `ALTER TABLE campaign_allocations ADD COLUMN submitted_at INTEGER`],
+    ['approved_at', `ALTER TABLE campaign_allocations ADD COLUMN approved_at INTEGER`],
+  ];
+  for (const [name, sql] of requiredAllocationColumns) {
+    if (!existingAllocationColumns.has(name)) await env.DB.prepare(sql).run();
+  }
+  await env.DB.prepare(
+    `CREATE INDEX IF NOT EXISTS idx_campaign_allocations_campaign ON campaign_allocations(campaign_id,status)`,
+  ).run();
+
+  const kolRequestColumns = await env.DB.prepare(`PRAGMA table_info(kol_requests)`).all();
+  const existingKolRequestColumns = new Set(
+    (kolRequestColumns.results || []).map(column => column.name),
+  );
+  const requiredKolRequestColumns = [
+    ['quote_kol', `ALTER TABLE kol_requests ADD COLUMN quote_kol INTEGER NOT NULL DEFAULT 0`],
+    ['quote_platform', `ALTER TABLE kol_requests ADD COLUMN quote_platform INTEGER NOT NULL DEFAULT 0`],
+    ['quote_additional', `ALTER TABLE kol_requests ADD COLUMN quote_additional INTEGER NOT NULL DEFAULT 0`],
+    ['total_amount', `ALTER TABLE kol_requests ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`],
+    ['escrow_amount', `ALTER TABLE kol_requests ADD COLUMN escrow_amount INTEGER NOT NULL DEFAULT 0`],
+    ['contract_reference', `ALTER TABLE kol_requests ADD COLUMN contract_reference TEXT`],
+    ['delivery_url', `ALTER TABLE kol_requests ADD COLUMN delivery_url TEXT`],
+    ['delivery_note', `ALTER TABLE kol_requests ADD COLUMN delivery_note TEXT`],
+    ['business_note', `ALTER TABLE kol_requests ADD COLUMN business_note TEXT`],
+    ['quoted_at', `ALTER TABLE kol_requests ADD COLUMN quoted_at INTEGER`],
+    ['funded_at', `ALTER TABLE kol_requests ADD COLUMN funded_at INTEGER`],
+    ['confirmed_at', `ALTER TABLE kol_requests ADD COLUMN confirmed_at INTEGER`],
+    ['delivered_at', `ALTER TABLE kol_requests ADD COLUMN delivered_at INTEGER`],
+    ['approved_at', `ALTER TABLE kol_requests ADD COLUMN approved_at INTEGER`],
+    ['completed_at', `ALTER TABLE kol_requests ADD COLUMN completed_at INTEGER`],
+    ['cancelled_at', `ALTER TABLE kol_requests ADD COLUMN cancelled_at INTEGER`],
+  ];
+  for (const [name, sql] of requiredKolRequestColumns) {
+    if (!existingKolRequestColumns.has(name)) await env.DB.prepare(sql).run();
   }
 
   // Older databases may report the latest schema version even though an

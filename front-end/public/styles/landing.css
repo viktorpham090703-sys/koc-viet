@@ -1,3 +1,5 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4 */
+/* Hallmark · genre: editorial · macrostructure: source landing · design-system: design.md · designed-as-app */
 /* Landing marketing pages — additive stylesheet, reuses tokens/vars from styles/main.css */
 
 .lp-body {
@@ -23,34 +25,41 @@
 }
 .lp-header-inner {
   width: 100%;
-  max-width: 1460px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 28px;
+  gap: 20px;
+  box-sizing: border-box;
 }
 .lp-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  justify-content: flex-start;
+  flex: 0 0 155px;
+  width: 155px;
+  min-width: 155px;
+  max-width: 155px;
   padding: 0;
-  margin: 0;
-  height: 48px;
+  margin: 0 24px 0 0;
+  height: 40px;
+  text-decoration: none;
 }
 .lp-logo picture {
-  display: block;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100%;
+  height: 40px;
+  width: 155px;
 }
 .lp-logo img {
   display: block;
-  height: 100%;
-  width: auto;
+  height: 38px;
+  width: 155px;
+  max-width: 155px;
   object-fit: contain;
+  object-position: left center;
   margin: 0;
   padding: 0;
 }
@@ -59,17 +68,18 @@
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: clamp(8px, 1.1vw, 18px);
   flex: 1;
   min-width: 0;
 }
 .lp-nav > a {
-  padding: 8px 10px;
+  padding: 8px clamp(3px, 0.5vw, 7px);
   border-radius: var(--r-btn);
-  font-size: 13.5px;
+  font-size: clamp(12.5px, 0.95vw, 14px);
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .lp-nav a:hover {
   background: var(--tint);
@@ -82,9 +92,9 @@
 .lp-auth-btns {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
-  margin-left: 16px;
+  margin-left: clamp(8px, 1vw, 16px);
 }
 .lp-burger {
   display: none;
@@ -94,28 +104,72 @@
   color: var(--navy);
 }
 
+/* --- Logo responsive swap via <picture> element --- */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .lp-logo {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    flex: 0 0 140px !important;
+  }
+  .lp-logo picture,
+  .lp-logo img {
+    width: 140px !important;
+    max-width: 140px !important;
+    height: 36px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .lp-logo {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    flex: 0 0 40px !important;
+    height: 40px !important;
+    margin-right: 10px !important;
+  }
+  .lp-logo picture,
+  .lp-logo img {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px !important;
+    object-fit: contain !important;
+  }
+}
+
 @media (min-width: 1181px) and (max-width: 1360px) {
   .lp-header-inner {
-    padding: 14px 18px;
-    gap: 14px;
+    padding: 10px 18px;
+    gap: 12px;
   }
   .lp-logo {
-    height: 42px;
+    width: 145px;
+    min-width: 145px;
+    max-width: 145px;
+    flex: 0 0 145px;
+    margin-right: 14px;
+  }
+  .lp-logo img {
+    height: 34px;
+    width: 145px;
+    max-width: 145px;
   }
   .lp-nav {
-    gap: 1px;
+    gap: 6px;
   }
   .lp-nav > a {
-    padding: 7px 6px;
-    font-size: 12px;
+    padding: 6px 4px;
+    font-size: 12.5px;
   }
   .lp-auth-btns {
     gap: 6px;
-    margin-left: 8px;
+    margin-left: 6px;
   }
   .lp-auth-btns .btn {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 12px;
   }
 }
 
@@ -780,10 +834,17 @@
   display: block;
   margin: 0 0 8px;
 }
+.lp-footer-bottom-wrap {
+  width: 100% !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  margin-top: 28px !important;
+  padding: 16px 20px 20px 20px !important;
+  box-sizing: border-box !important;
+}
 .lp-footer-bottom {
-  margin-top: 28px;
-  padding: 16px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  max-width: 1200px;
+  margin: 0 auto;
+  border-top: none !important;
   text-align: center;
   font-size: 12.5px;
   opacity: 0.75;
@@ -1195,4 +1256,21 @@
 .lp-section-media {
   max-width: 900px;
   margin: 0 auto 28px;
+}
+
+/* Responsive invariants retained across every source landing route. */
+html,
+body {
+  overflow-x: clip;
+}
+
+.lp-hero h1,
+.lp-section h2,
+.lp-banner h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lp-banner .btn {
+  white-space: nowrap;
 }

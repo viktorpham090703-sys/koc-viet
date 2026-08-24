@@ -78,6 +78,18 @@ CREATE TABLE IF NOT EXISTS koc_prices (
   price BIGINT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS koc_identity_documents (
+  koc_id TEXT PRIMARY KEY,
+  front_image TEXT NOT NULL,
+  back_image TEXT NOT NULL,
+  selfie_image TEXT NOT NULL,
+  front_object_key TEXT,
+  back_object_key TEXT,
+  selfie_object_key TEXT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS businesses (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -172,8 +184,15 @@ CREATE TABLE IF NOT EXISTS campaigns (
   note TEXT,
   status TEXT DEFAULT 'pending',
   assigned TEXT DEFAULT '[]',
+  management_rate DOUBLE PRECISION NOT NULL DEFAULT 0.15,
+  management_fee BIGINT NOT NULL DEFAULT 0,
+  total_amount BIGINT NOT NULL DEFAULT 0,
+  upfront_fee_released BIGINT NOT NULL DEFAULT 0,
+  funded_at BIGINT, started_at BIGINT, completed_at BIGINT, cancelled_at BIGINT,
   created_at BIGINT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS campaign_allocations (id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,koc_id TEXT NOT NULL,amount BIGINT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',settled_at BIGINT,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL,UNIQUE(campaign_id,koc_id));
+CREATE INDEX IF NOT EXISTS idx_campaign_allocations_campaign ON campaign_allocations(campaign_id,status);
 
 CREATE TABLE IF NOT EXISTS ledger (
   id TEXT PRIMARY KEY,

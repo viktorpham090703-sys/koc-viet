@@ -1,17 +1,20 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
-import { TIERS, CATEGORIES, PROVINCES, tierOf, getDemoAccounts, getDemoAccount, isDemoUser, demoAccountsEnabled } from './seed.js';
+import { TIERS, CATEGORIES, tierOf, getDemoAccounts, getDemoAccount, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
 import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword } from './lib/password.js';
+import { signJwt, verifyJwt } from './lib/jwt.js';
+import { deleteKocIdentityImages, signedKocIdentityUrl, uploadKocIdentityImages } from './lib/s3Identity.js';
 import { analyzeFollowerOcrEvidence } from './lib/followerOcr.js';
+import { canonicalProvinceName, getAddressKitProvinces, provinceFilterAliases } from './lib/addressKit.js';
 import {
   createPayOSPaymentLink,
   getPayOSPaymentLink,
   verifyPayOSWebhook,
 } from './lib/payos.js';
-import { createPayOSPayout } from './lib/payosPayout.js';
+import { createPayOSPayout, getPayOSPayoutBalance } from './lib/payosPayout.js';
 import {
   walletBalances,
   walletTransactions,
@@ -24,7 +27,6 @@ import {
 const J = (data, status = 200, headers = undefined) => Response.json(data, { status, headers });
 const err = (msg, status = 400, headers = undefined) => Response.json({ error: msg }, { status, headers });
 const SESSION_COOKIE = 'kv_session';
-const SESSION_ABSOLUTE_SECONDS = 7 * 24 * 60 * 60;
 const SESSION_IDLE_SECONDS = 12 * 60 * 60;
 const FOLLOWER_CHALLENGE_TTL_SECONDS = 30 * 60;
 const FOLLOWER_PROOF_TTL_SECONDS = 24 * 60 * 60;
@@ -146,61 +148,47 @@ async function sha256Hex(value) {
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function sessionCookie(request, token = '', maxAge = SESSION_ABSOLUTE_SECONDS) {
+function sessionCookie(request, token = '', maxAge = SESSION_IDLE_SECONDS) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
   return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure}`;
 }
 
-async function createSession(env, request, user, demo = false) {
-  const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
-  const token = Array.from(tokenBytes, byte => byte.toString(16).padStart(2, '0')).join('');
-  const createdAt = now();
-  await env.KV.put(`sess:${await sha256Hex(token)}`, JSON.stringify({
-    userId: user.id,
-    sessionVersion: Number(user.session_version || 0),
-    createdAt,
-    lastSeen: createdAt,
-    demo: !!demo,
-  }), { expirationTtl: SESSION_IDLE_SECONDS });
-  return sessionCookie(request, token);
+function jwtSecret(env) {
+  return String(env.JWT_SECRET || env.SESSION_SECRET || 'koc_viet_default_jwt_secret_dev_32_bytes_fallback_key');
 }
 
-async function deleteSession(env, request) {
-  const token = cookieValue(request, SESSION_COOKIE);
-  if (token) await env.KV.delete(`sess:${await sha256Hex(token)}`);
+async function createSession(env, request, user, demo = false) {
+  const createdAt = now();
+  const token = await signJwt({
+    iss: 'koc-viet',
+    aud: 'koc-viet-web',
+    sub: user.id,
+    role: user.role,
+    sv: Number(user.session_version || 0),
+    iat: createdAt,
+    exp: createdAt + SESSION_IDLE_SECONDS,
+    jti: uid(),
+    demo: !!demo,
+  }, jwtSecret(env));
+  return sessionCookie(request, token, SESSION_IDLE_SECONDS);
 }
+
+async function deleteSession() {}
 
 async function sessionUser(env, req) {
   const token = cookieValue(req, SESSION_COOKIE);
   if (!token) return null;
-  const key = `sess:${await sha256Hex(token)}`;
-  let session = null;
-  try { session = JSON.parse((await env.KV.get(key)) || 'null'); } catch (_) {}
-  if (!session?.userId) return null;
-  const currentTime = now();
-  if (
-    currentTime - Number(session.createdAt || 0) > SESSION_ABSOLUTE_SECONDS ||
-    currentTime - Number(session.lastSeen || 0) > SESSION_IDLE_SECONDS ||
-    (session.demo && !demoAccountsEnabled(env))
-  ) {
-    await env.KV.delete(key);
-    return null;
-  }
+  const session = await verifyJwt(token, jwtSecret(env));
+  if (!session?.sub || (session.demo && !demoAccountsEnabled(env))) return null;
   const user = await env.DB.prepare("SELECT * FROM users WHERE id=?")
-    .bind(session.userId)
+    .bind(session.sub)
     .first();
   if (
     !user ||
     user.status !== "active" ||
-    Number(user.session_version || 0) !== Number(session.sessionVersion || 0)
-  ) {
-    await env.KV.delete(key);
-    return null;
-  }
-  if (currentTime - Number(session.lastSeen || 0) >= 60) {
-    session.lastSeen = currentTime;
-    await env.KV.put(key, JSON.stringify(session), { expirationTtl: SESSION_IDLE_SECONDS });
-  }
+    user.role !== session.role ||
+    Number(user.session_version || 0) !== Number(session.sv || 0)
+  ) return null;
   user._sessionDemo = !!session.demo;
   return user;
 }
@@ -231,9 +219,11 @@ function parseKoc(r) {
     categories: JSON.parse(r.categories || "[]"),
     socials: JSON.parse(r.socials || "[]"),
     accepting: JSON.parse(r.accepting || "{}"),
-    ai_clone: !!r.ai_clone,
-    leader: !!r.leader,
-    followers_verified: !!r.followers_verified,
+    // PostgreSQL returns BIGINT flags as strings; Boolean("0") is true.
+    // Normalize numerically so zero-valued flags stay false in API responses.
+    ai_clone: Number(r.ai_clone || 0) > 0,
+    leader: Number(r.leader || 0) > 0,
+    followers_verified: Number(r.followers_verified || 0) > 0,
   };
 }
 
@@ -382,7 +372,7 @@ async function ensureBookingAffiliateLink(env, booking, actorId = "system") {
   if (existing?.generated_url) return existing.generated_url;
 
   if (!isUrl(booking.product_url))
-    throw new Error("Booking chưa có link sản phẩm hợp lệ để tạo link affiliate");
+    throw new Error("Booking chưa có đường dẫn sản phẩm hợp lệ");
   const trackingCode = Tracking.shortCode() + booking.koc_id.slice(0, 4);
   const provider = affiliateProvider(booking.platform);
   const generatedUrl = await provider.generateLink({
@@ -424,7 +414,7 @@ function requireVideoBucket(env) {
   const bucket = env.VIDEO_BUCKET || env.STORAGE;
   if (!bucket) {
     const error = new Error(
-      "Cloudflare R2 Storage chưa sẵn sàng trong môi trường hiện tại.",
+      "Kho lưu trữ video chưa sẵn sàng. Vui lòng thử lại sau.",
     );
     error.code = "R2_CONFIGURATION_MISSING";
     throw error;
@@ -708,14 +698,14 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
   if (!payment) return { found: false, changed: false };
   const amount = Number(providerData.amount ?? providerData.amountPaid);
   if (!Number.isSafeInteger(amount) || amount !== Number(payment.amount)) {
-    throw new Error('Số tiền webhook payOS không khớp booking');
+    throw new Error('Số tiền thanh toán không khớp booking');
   }
   const paymentLinkId = String(providerData.paymentLinkId || providerData.id || '');
   if (
     payment.payment_link_id &&
     paymentLinkId &&
     payment.payment_link_id !== paymentLinkId
-  ) throw new Error('Mã link thanh toán payOS không khớp');
+  ) throw new Error('Mã giao dịch thanh toán không khớp');
 
   const reference = String(providerData.reference || '').slice(0, 160);
 
@@ -739,7 +729,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
         eventType: 'wallet_topup',
         referenceType: 'payment_request',
         referenceId: payment.id,
-        note: `Nạp tiền vào Ví doanh nghiệp qua payOS (#${payment.order_code})`,
+        note: `Nạp tiền vào Ví doanh nghiệp (#${payment.order_code})`,
         postings: [
           {
             account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -769,7 +759,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
     `SELECT b.*,bz.name bizname
      FROM bookings b JOIN businesses bz ON bz.id=b.business_id WHERE b.id=?`,
   ).bind(payment.booking_id).first();
-  if (!booking) throw new Error('Booking của giao dịch payOS không tồn tại');
+  if (!booking) throw new Error('Không tìm thấy booking của giao dịch');
   if (['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
     return { found: true, changed: false, booking };
   }
@@ -835,7 +825,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
           eventType: 'booking_settled',
           referenceType: 'payment_request',
           referenceId: payment.id,
-          note: `Giải ngân booking ${booking.code} qua payOS vào ví KOC`,
+          note: `Chuyển tiền booking ${booking.code} vào ví KOC`,
           postings: [
             {
               account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -920,7 +910,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
           eventType: 'wallet_topup',
           referenceType: 'payment_request',
           referenceId: payment.id,
-          note: `Nạp tiền ví doanh nghiệp từ thanh toán demo/payOS đơn ${booking.code}`,
+          note: `Nạp tiền ví doanh nghiệp từ thanh toán đơn ${booking.code}`,
           postings: [
             {
               account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -938,7 +928,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
         eventType: 'escrow_hold',
         referenceType: 'payment_request',
         referenceId: payment.id,
-        note: `Trừ tiền Ví doanh nghiệp ký quỹ Escrow đơn ${booking.code}`,
+        note: `Giữ tiền an toàn cho đơn booking ${booking.code}`,
         source: walletAccount('business', booking.business_id, 'available'),
         destinations: [{
           account: walletAccount('business', booking.business_id, 'escrow'),
@@ -1011,7 +1001,7 @@ async function syncPayOSPayment(env, payment) {
   const paidAmount = Number(data.amountPaid ?? data.amount);
   if (status === 'PAID') {
     if (paidAmount !== Number(payment.amount))
-      throw new Error('Số tiền payOS đã nhận không khớp booking');
+      throw new Error('Số tiền đã nhận không khớp booking');
     await markPayOSPaymentPaid(env, payment, {
       ...data,
       amount: paidAmount,
@@ -1304,33 +1294,36 @@ export async function route(request, env, url) {
   if (p === "/api/config") {
     const tiers = await getTiers(env);
     const demoAccounts = await getDemoAccounts(env);
-    return J({ tiers, categories: CATEGORIES, provinces: PROVINCES, demoAccounts });
+    const provinces = await getAddressKitProvinces();
+    return J({ tiers, categories: CATEGORIES, provinces, demoAccounts });
   }
 
   // ---------- PUBLIC privacy-safe landing activity ----------
   if (p === "/api/public/koc-activity" && m === "GET") {
     const { results = [] } = await env.DB.prepare(
-      `SELECT name,activity_type,occurred_at FROM (
-         SELECT name,'registered' activity_type,created_at occurred_at
+      `SELECT name,avatar,activity_type,MAX(occurred_at) occurred_at FROM (
+         SELECT name,avatar,'registered' activity_type,created_at occurred_at
          FROM kocs
          WHERE status IN ('pending','active')
          UNION ALL
-         SELECT k.name,'booking_received' activity_type,b.updated_at occurred_at
+         SELECT k.name,k.avatar,'booking_received' activity_type,b.updated_at occurred_at
          FROM bookings b
          JOIN kocs k ON k.id=b.koc_id
          WHERE b.status='confirmed'
          UNION ALL
-         SELECT k.name,'booking_completed' activity_type,b.updated_at occurred_at
+         SELECT k.name,k.avatar,'booking_completed' activity_type,b.updated_at occurred_at
          FROM bookings b
          JOIN kocs k ON k.id=b.koc_id
          WHERE b.status='completed'
        )
+       GROUP BY name,avatar,activity_type
        ORDER BY occurred_at DESC
        LIMIT 15`,
     ).all();
     const currentNow = now();
     const activities = results.map((item, idx) => ({
       name: publicKocDisplayName(item.name),
+      avatar: isUrl(item.avatar) ? item.avatar : "",
       type: item.activity_type,
       // Calculate realistic relative time (1 to 15 minutes ago) so activity updates stay ultra fresh
       occurredAt: currentNow - Math.max(25, 40 + idx * 70 + ((idx * 17) % 35)),
@@ -1411,7 +1404,7 @@ export async function route(request, env, url) {
       claimedFollowers < 0 ||
       claimedFollowers > 2_000_000_000
     )
-      return err("Số follower khai báo không hợp lệ");
+      return err("Số người theo dõi khai báo không hợp lệ");
 
     const token = uid().replace(/-/g, "");
     const code = `KOCV-${uid().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -1465,7 +1458,7 @@ export async function route(request, env, url) {
       return J(
         {
           error:
-            "Tesseract chưa đọc đủ bằng chứng. Hãy chụp rõ handle, số follower và mã trong bio rồi thử lại.",
+            "Hệ thống chưa đọc đủ thông tin. Hãy chụp rõ tên tài khoản, số người theo dõi và mã trong phần giới thiệu rồi thử lại.",
           code: "FOLLOWER_OCR_EVIDENCE_REJECTED",
           failedChecks: analysis.failedChecks,
           analysis: {
@@ -1517,8 +1510,9 @@ export async function route(request, env, url) {
       bind.push('%"' + q.get("category") + '"%');
     }
     if (q.get("province")) {
-      where.push(`province=?`);
-      bind.push(q.get("province"));
+      const provinceAliases = provinceFilterAliases(q.get("province"));
+      where.push(`province IN (${provinceAliases.map(() => "?").join(",")})`);
+      bind.push(...provinceAliases);
     }
     if (q.get("tier")) {
       where.push(`tier=?`);
@@ -1565,7 +1559,7 @@ export async function route(request, env, url) {
 
   if (
     p.startsWith("/api/koc/") &&
-    !["dashboard", "accepting", "profile"].includes(p.split("/")[3])
+    !["dashboard", "accepting", "profile", "campaigns"].includes(p.split("/")[3])
   ) {
     const id = p.split("/")[3];
     const r = await env.DB.prepare("SELECT * FROM kocs WHERE id=?")
@@ -1616,32 +1610,46 @@ export async function route(request, env, url) {
     const emailOk = await isEmailVerified(env, email, "onboard");
     if (!emailOk) return err("Email chưa được xác thực OTP");
     const kyc = await eKYC.verify(body.kyc || {});
-    if (!kyc.ok) return err("eKYC thất bại");
+    if (!kyc.ok) return err("Xác minh danh tính chưa thành công");
+    const kycFiles = body.kyc?.files || {};
+    const identityImage = (value) => {
+      const image = String(value || "");
+      return /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) && image.length <= 3_000_000
+        ? image
+        : "";
+    };
+    const identityImages = {
+      front: identityImage(kycFiles.frontPreview),
+      back: identityImage(kycFiles.backPreview),
+      selfie: identityImage(kycFiles.selfiePreview),
+    };
+    if (!identityImages.front || !identityImages.back || !identityImages.selfie)
+      return err("Ảnh xác minh không hợp lệ hoặc vượt quá dung lượng cho phép");
     const followerProofToken = String(
       body.followerVerificationToken || "",
     ).trim();
     if (!/^[a-f0-9]{32}$/i.test(followerProofToken))
-      return err("Bạn cần xác minh số follower bằng OCR trước khi đăng ký");
+      return err("Bạn cần xác minh số người theo dõi từ ảnh chụp trước khi đăng ký");
     const rawFollowerProof = await env.KV.get(
       `follower-proof:${followerProofToken}`,
     );
     if (!rawFollowerProof)
-      return err("Kết quả xác minh follower đã hết hạn. Hãy xác minh lại.", 410);
+      return err("Kết quả xác minh số người theo dõi đã hết hạn. Hãy xác minh lại.", 410);
     let followerProof;
     try {
       followerProof = JSON.parse(rawFollowerProof);
     } catch (_) {
-      return err("Kết quả xác minh follower không hợp lệ", 410);
+      return err("Kết quả xác minh số người theo dõi không hợp lệ", 410);
     }
     if (followerProof.email !== email)
-      return err("Kết quả xác minh follower không thuộc email này", 403);
+      return err("Kết quả xác minh số người theo dõi không thuộc email này", 403);
     const followers = Number(followerProof.followers);
     if (
       !Number.isSafeInteger(followers) ||
       followers < 0 ||
       followers > 2_000_000_000
     )
-      return err("Số follower đã xác minh không hợp lệ");
+      return err("Số người theo dõi đã xác minh không hợp lệ");
     const verifiedSocials = [
       {
         platform: followerProof.platform,
@@ -1667,9 +1675,12 @@ export async function route(request, env, url) {
     }
     const bank = body.bank || {};
     const bankName = String(bank.name || "").trim();
+    const bankBin = String(bank.bin || "").trim();
     const bankAccount = String(bank.account || "").trim();
     const bankOwner = String(bank.owner || "").trim();
     if (!bankName) return err("Nhập tên ngân hàng");
+    if (!/^\d{6}$/.test(bankBin))
+      return err("Mã ngân hàng gồm đúng 6 chữ số");
     if (!/^\d{6,20}$/.test(bankAccount))
       return err("Số tài khoản chỉ gồm chữ số, 6-20 ký tự");
     if (!bankOwner || /\d/.test(bankOwner))
@@ -1706,13 +1717,20 @@ export async function route(request, env, url) {
     );
     const id = uid();
     const userId = uid();
+    let identityObjectKeys = {};
+    try {
+      identityObjectKeys = await uploadKocIdentityImages(env, id, identityImages);
+    } catch (error) {
+      console.error('S3 identity upload failed:', error?.message || error);
+      return err('Không thể tải ảnh xác minh lên kho lưu trữ. Vui lòng thử lại.', 502);
+    }
     const passwordHash = await hashPassword(password);
     const cats = body.categories || [];
     const accepting = {};
     cats.forEach((c) => (accepting[c] = true));
     const createKoc = env.DB.prepare(
-      `INSERT INTO kocs (id,name,phone,email,tier,province,avatar,bio,followers,followers_verified,followers_verified_at,followers_verification_source,engagement,categories,socials,status,accepting,contract_hash,contract_version,contract_signed_at,contract_signature,contract_html,bank_name,bank_account,bank_owner,created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO kocs (id,name,phone,email,tier,province,avatar,bio,followers,followers_verified,followers_verified_at,followers_verification_source,engagement,categories,socials,status,accepting,contract_hash,contract_version,contract_signed_at,contract_signature,contract_html,bank_name,bank_bin,bank_account,bank_owner,created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
       .bind(
         id,
@@ -1721,7 +1739,7 @@ export async function route(request, env, url) {
         email,
         tier,
         body.province,
-        `https://i.pravatar.cc/150?u=${id}`,
+        "",
         body.bio || "",
         followers,
         1,
@@ -1738,6 +1756,7 @@ export async function route(request, env, url) {
         contractSignature,
         contractHtml,
         bankName.slice(0, 80),
+        bankBin,
         bankAccount.slice(0, 40),
         bankOwner.slice(0, 120),
         now(),
@@ -1754,11 +1773,21 @@ export async function route(request, env, url) {
       `INSERT INTO users (id,email,password,role,name,koc_id,status,created_at,updated_at)
        VALUES (?,?,?,'koc',?,?,'pending',?,?)`,
     ).bind(userId, email, passwordHash, name, id, now(), now());
+    const createIdentityDocuments = env.DB.prepare(
+      `INSERT INTO koc_identity_documents
+       (koc_id,front_image,back_image,selfie_image,front_object_key,back_object_key,selfie_object_key,created_at,updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+    ).bind(id, '', '', '', identityObjectKeys.front, identityObjectKeys.back, identityObjectKeys.selfie, now(), now());
     const consumeOtp = env.DB.prepare(
       `UPDATE email_otp SET expires_at=?
        WHERE email=? AND purpose='onboard' AND verified=1`,
     ).bind(now(), email);
-    await env.DB.batch([createKoc, createUser, ...stmts, consumeOtp]);
+    try {
+      await env.DB.batch([createKoc, createUser, createIdentityDocuments, ...stmts, consumeOtp]);
+    } catch (error) {
+      await deleteKocIdentityImages(env, identityObjectKeys).catch(() => {});
+      throw error;
+    }
     try {
       await env.KV.delete(`follower-proof:${followerProofToken}`);
     } catch (_) {}
@@ -1926,9 +1955,9 @@ export async function route(request, env, url) {
       }
     } catch (error) {
       console.error("r2 video read", error?.message || error);
-      return err("Không đọc được video từ Cloudflare R2", 502);
+      return err("Không tải được video. Vui lòng thử lại sau.", 502);
     }
-    if (!object) return err("Video không tồn tại trên Cloudflare R2", 404);
+    if (!object) return err("Video không còn tồn tại.", 404);
 
     const headers = new Headers();
     if (typeof object.writeHttpMetadata === "function")
@@ -2002,7 +2031,7 @@ export async function route(request, env, url) {
     ).bind(body.booking_id, me.business_id).first();
     if (!booking) return err('Booking không tồn tại', 404);
     if (!(Number(booking.price) > 0))
-      return err('Booking này không cần thanh toán payOS');
+      return err('Booking này không cần thanh toán trực tuyến');
     const isAiCloneUpfront = booking.type === 'aiclone' && !booking.post_link;
     if (!booking.post_link && !isAiCloneUpfront)
       return err('KOC chưa đăng bài nên booking chưa đến bước thanh toán');
@@ -2016,7 +2045,7 @@ export async function route(request, env, url) {
       'quoted',
       'quote_pending',
     ].includes(booking.status))
-      return err('Booking đã được thanh toán hoặc không thể tạo link payOS');
+      return err('Booking đã được thanh toán hoặc chưa thể tạo yêu cầu thanh toán');
 
     const latest = await env.DB.prepare(
       `SELECT * FROM payment_requests
@@ -2064,7 +2093,7 @@ export async function route(request, env, url) {
         paymentRequired: true,
       });
     } catch (error) {
-      return err(error?.message || 'Không tạo được link thanh toán payOS', 502);
+      return err(error?.message || 'Chưa tạo được yêu cầu thanh toán', 502);
     }
   }
 
@@ -2077,12 +2106,12 @@ export async function route(request, env, url) {
       `SELECT p.* FROM payment_requests p
        WHERE p.order_code=? AND (?='admin' OR p.business_id=?) LIMIT 1`,
     ).bind(orderCode, me.role, me.business_id || '').first();
-    if (!payment) return err('Không tìm thấy giao dịch payOS', 404);
+    if (!payment) return err('Không tìm thấy giao dịch', 404);
     try {
       const result = await syncPayOSPayment(env, payment);
       return J({ ok: true, ...result, orderCode });
     } catch (error) {
-      return err(error?.message || 'Không đồng bộ được payOS', 502);
+      return err(error?.message || 'Chưa cập nhật được trạng thái thanh toán', 502);
     }
   }
 
@@ -2146,8 +2175,9 @@ export async function route(request, env, url) {
       binds.push(tier);
     }
     if (province) {
-      where.push("k.province=?");
-      binds.push(province);
+      const provinceAliases = provinceFilterAliases(province);
+      where.push(`k.province IN (${provinceAliases.map(() => "?").join(",")})`);
+      binds.push(...provinceAliases);
     }
     if (category) {
       where.push("EXISTS(SELECT 1 FROM koc_prices fp WHERE fp.koc_id=k.id AND fp.category=?)");
@@ -2201,7 +2231,7 @@ export async function route(request, env, url) {
       pages: Math.max(1, Math.ceil(total / per)),
       filters: {
         tiers: TIERS.map(item => item.name),
-        provinces: PROVINCES,
+        provinces: await getAddressKitProvinces(),
         categories: CATEGORIES,
       },
       aiProductionPricing: AI_VIDEO_PRICING,
@@ -2242,7 +2272,7 @@ export async function route(request, env, url) {
       if (!PLATFORMS.includes(platform)) return err("Chọn sàn áp dụng hợp lệ");
       if (!isUrl(productUrl)) return err("Link sản phẩm trên sàn không hợp lệ");
       if (!(commissionRate >= 1 && commissionRate <= 90))
-        return err("Chiết khấu affiliate phải từ 1–90%");
+        return err("Tỉ lệ hoa hồng bán hàng phải từ 1–90%");
     }
 
     const placeholders = kocIds.map(() => "?").join(",");
@@ -2359,7 +2389,12 @@ export async function route(request, env, url) {
         .bind(body.koc_id, body.category)
         .first();
       if (!priceRow) return err("Ngành hàng không có bảng giá");
-      price = priceRow.price;
+      // PostgreSQL returns BIGINT columns as strings.  Wallet transfers require
+      // an actual safe integer, so normalize the listed price before comparing
+      // balances or creating the available -> escrow ledger entry.
+      price = Number(priceRow.price);
+      if (!Number.isSafeInteger(price) || price <= 0)
+        return err("Giá booking không hợp lệ");
     }
     let commission_rate = 0,
       platform = null,
@@ -2403,7 +2438,7 @@ export async function route(request, env, url) {
           eventType: 'escrow_hold',
           referenceType: 'booking',
           referenceId: id,
-          note: `Trừ tiền Ví khả dụng ký quỹ Escrow cho đơn booking ${code}`,
+          note: `Giữ tiền an toàn cho đơn booking ${code}`,
           source: walletAccount('business', me.business_id, 'available'),
           destinations: [{
             account: walletAccount('business', me.business_id, 'escrow'),
@@ -2411,7 +2446,7 @@ export async function route(request, env, url) {
           }],
         });
       } catch (e) {
-        return err(`Không thể ký quỹ Escrow từ ví khả dụng: ${e.message}`, 400);
+        return err(`Chưa thể giữ khoản thanh toán từ số dư khả dụng: ${e.message}`, 400);
       }
     }
 
@@ -2530,6 +2565,16 @@ export async function route(request, env, url) {
       cond.push("k.name LIKE ?");
       bind.push("%" + kocName + "%");
     }
+    const bookingId = url.searchParams.get("id");
+    if (bookingId) {
+      cond.push("b.id=?");
+      bind.push(bookingId);
+    }
+    const batchId = url.searchParams.get("batch");
+    if (batchId) {
+      cond.push("b.aiclone_batch_id=?");
+      bind.push(batchId);
+    }
     const from = url.searchParams.get("from");
     if (from) {
       cond.push("b.created_at>=?");
@@ -2540,10 +2585,25 @@ export async function route(request, env, url) {
       cond.push("b.created_at<=?");
       bind.push(Number(to));
     }
-    if (cond.length) sql += " WHERE " + cond.join(" AND ");
-    sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT 200";
+    const whereSql = cond.length ? " WHERE " + cond.join(" AND ") : "";
+    sql += whereSql;
+    let page = 1;
+    let per = 200;
+    let total = 0;
+    const paginated = me.role === "business" || me.role === "admin";
+    if (paginated) {
+      const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
+      per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
+      total = Number(await env.DB.prepare(
+        `SELECT COUNT(*) c FROM bookings b JOIN businesses bz ON bz.id=b.business_id JOIN kocs k ON k.id=b.koc_id${whereSql}`,
+      ).bind(...bind).first("c")) || 0;
+      page = Math.min(requestedPage, Math.max(1, Math.ceil(total / per)));
+      sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT ? OFFSET ?";
+    } else {
+      sql += " ORDER BY b.created_at DESC, b.rowid DESC LIMIT 200";
+    }
     const { results } = await env.DB.prepare(sql)
-      .bind(...bind)
+      .bind(...bind, ...(paginated ? [per, (page - 1) * per] : []))
       .all();
     for (const r of results) {
       const aff = await env.DB.prepare(
@@ -2555,6 +2615,10 @@ export async function route(request, env, url) {
     }
     return J({
       bookings: results,
+      page,
+      per,
+      total: paginated ? total : results.length,
+      pages: paginated ? Math.max(1, Math.ceil(total / per)) : 1,
       demoPaymentAllowed: me.role === "business" && canUseDemoPayment(env, me, url),
     });
   }
@@ -2642,7 +2706,7 @@ export async function route(request, env, url) {
         uploadMethod = "storage_chunks";
       } else {
         const error = new Error(
-          "Storage của Nexrall không hỗ trợ put/get video.",
+          "Kho lưu trữ hiện không hỗ trợ tải video.",
         );
         error.code = "R2_CONFIGURATION_MISSING";
         throw error;
@@ -2726,9 +2790,9 @@ export async function route(request, env, url) {
         uploaded = await multipart.uploadPart(partNumber, request.body);
       } else if (submission.storage_provider === "storage") {
         if (partNumber !== 1)
-          return err("Nexrall Storage chỉ nhận một phần video trực tiếp");
+          return err("Kho lưu trữ chỉ nhận video được tải trực tiếp");
         if (!supportsDirectStorage(bucket))
-          return err("Nexrall Storage không hỗ trợ tải video", 503);
+          return err("Kho lưu trữ hiện không hỗ trợ tải video", 503);
         const stored = await bucket.put(submission.object_key, request.body, {
           httpMetadata: {
             contentType: submission.mime_type || "video/mp4",
@@ -2744,7 +2808,7 @@ export async function route(request, env, url) {
         };
       } else {
         if (!supportsDirectStorage(bucket))
-          return err("Nexrall Storage không hỗ trợ tải video", 503);
+          return err("Kho lưu trữ hiện không hỗ trợ tải video", 503);
         const expectedParts = storagePartCount(submission);
         if (partNumber > expectedParts)
           return err("Số thứ tự phần video vượt quá giới hạn");
@@ -2774,7 +2838,7 @@ export async function route(request, env, url) {
       });
     } catch (error) {
       console.error("video storage upload", error?.message || error);
-      return err("Không tải được video lên Storage", 502);
+      return err("Không tải được video. Vui lòng thử lại.", 502);
     }
   }
 
@@ -2793,7 +2857,7 @@ export async function route(request, env, url) {
       !["r2", "storage", "storage_chunks"].includes(submission.storage_provider) ||
       !submission.object_key ||
       !submission.r2_upload_id
-    ) return err("Phiên tải video Storage không hợp lệ");
+    ) return err("Lần tải video này không hợp lệ");
 
     const parts = Array.isArray(body.parts)
       ? body.parts.map((part) => ({
@@ -2811,11 +2875,11 @@ export async function route(request, env, url) {
       );
     if (invalidParts) return err("Danh sách phần video tải lên không hợp lệ");
     if (submission.storage_provider === "storage" && parts.length !== 1)
-      return err("Danh sách phần video Nexrall Storage không hợp lệ");
+      return err("Thông tin video đã tải không hợp lệ");
     if (
       submission.storage_provider === "storage_chunks" &&
       parts.length !== storagePartCount(submission)
-    ) return err("Video chưa tải đủ các phần lên Nexrall Storage");
+    ) return err("Video chưa được tải lên đầy đủ");
 
     let object;
     try {
@@ -2844,13 +2908,13 @@ export async function route(request, env, url) {
       }
     } catch (error) {
       console.error("video storage complete", error?.message || error);
-      return err("Không thể hoàn tất video trên Storage", 502);
+      return err("Không thể hoàn tất video. Vui lòng thử lại.", 502);
     }
-    if (!object) return err("Video không tồn tại trên Storage", 502);
+    if (!object) return err("Video không còn tồn tại.", 502);
     if (
       Number(object.size) > 0 &&
       Number(object.size) !== Number(submission.size_bytes)
-    ) return err("Dung lượng video trên Storage không khớp", 502);
+    ) return err("Dung lượng video không khớp. Vui lòng tải lại.", 502);
 
     await env.DB.batch([
       env.DB.prepare(
@@ -2910,7 +2974,7 @@ export async function route(request, env, url) {
           ? await bucket.head(statusKey)
           : await bucket.get(statusKey);
       if (!object && submission.status !== "uploading")
-        return err("Video không còn tồn tại trên Storage", 404);
+        return err("Video không còn tồn tại.", 404);
     }
     return J({ video: await videoWithAccessUrls(env, submission) });
   }
@@ -3070,6 +3134,30 @@ export async function route(request, env, url) {
       booking.status === "pending_business_review"
     ) {
       nextStatus = action === "approve" ? "pending_koc_review" : "revision_requested";
+      if (booking.aiclone_batch_id) {
+        const { results: members } = await env.DB.prepare(
+          `SELECT id,code,koc_id FROM bookings
+           WHERE aiclone_batch_id=? AND type='aiclone'`,
+        ).bind(booking.aiclone_batch_id).all();
+        if (action === "approve") {
+          await env.DB.prepare(
+            `UPDATE bookings
+             SET koc_video_link=COALESCE(business_video_link,video_link),video_link=COALESCE(business_video_link,video_link),
+                 status='pending_koc_review',reject_reason=NULL,updated_at=?
+             WHERE aiclone_batch_id=? AND type='aiclone' AND status='pending_business_review'`,
+          ).bind(now(), booking.aiclone_batch_id).run();
+          for (const member of members) {
+            await notifyKoc(env, member.koc_id, "video_review", "Doanh nghiệp đã duyệt bản dựng video", `${member.code} · Vui lòng xem và phê duyệt video để tiến hành đăng tải.`, "#/bookings");
+          }
+        } else {
+          await env.DB.prepare(
+            `UPDATE bookings SET status='revision_requested',reject_reason=?,updated_at=?
+             WHERE aiclone_batch_id=? AND type='aiclone' AND status='pending_business_review'`,
+          ).bind(note, now(), booking.aiclone_batch_id).run();
+        }
+        await audit(env, me.id, `aiclone.video_${action}`, booking.id, `batch=${booking.aiclone_batch_id} ${note}`);
+        return J({ ok: true, status: nextStatus, batchId: booking.aiclone_batch_id, recipients: members.length });
+      }
       if (action === "approve") {
         await env.DB.prepare(
           "UPDATE bookings SET koc_video_link=COALESCE(koc_video_link,business_video_link,video_link) WHERE id=?",
@@ -3115,7 +3203,7 @@ export async function route(request, env, url) {
           "video_review",
           "Video AI Clone đã sẵn sàng quảng bá",
           ["affiliate", "combo"].includes(booking.booking_type)
-            ? `${booking.code} · Link affiliate cá nhân đã được tạo. Hãy đăng video kèm link này.`
+            ? `${booking.code} · Đường dẫn sản phẩm riêng đã được tạo. Hãy đăng video kèm đường dẫn này.`
             : `${booking.code} · Hãy đăng video theo yêu cầu của booking.`,
           "#/bookings",
         );
@@ -3154,44 +3242,48 @@ export async function route(request, env, url) {
     ) return err("Báo giá không còn ở trạng thái chờ xác nhận");
 
     const batchId = booking.aiclone_batch_id || booking.id;
+    const quoteAction = String(body.action || "");
+    if (quoteAction === "reject") {
+      const reason = String(body.reason || "").trim();
+      if (!reason) return err("Vui lòng nhập lý do từ chối báo giá");
+      await env.DB.batch([
+        env.DB.prepare(
+          `UPDATE bookings SET status='rejected',reject_reason=?,updated_at=?
+           WHERE id=? AND status IN ('quote_sent','payment_pending')`,
+        ).bind(reason, now(), booking.id),
+        env.DB.prepare(
+          `UPDATE bookings SET status='rejected',reject_reason=?,updated_at=?
+           WHERE aiclone_batch_id=? AND status IN ('quote_grouped','payment_grouped')`,
+        ).bind(reason, now(), batchId),
+      ]);
+      await notifyAdmins(
+        env,
+        "aiclone_quote",
+        "Doanh nghiệp đã từ chối báo giá AI Clone",
+        `${booking.code} · Lý do: ${reason}`,
+        "#/aiclone",
+      );
+      await audit(env, me.id, "aiclone.quote_rejected", booking.id, `batch=${batchId} reason=${reason}`);
+      return J({ ok: true, status: "rejected", batchId });
+    }
+    if (quoteAction !== "accept") return err("Hành động báo giá không hợp lệ");
+
     const priceToPay = Number(booking.price || 0);
     if (priceToPay > 0) {
-      try {
-        let avail = await walletBalance(env, 'business', me.business_id, 'available');
-        if (avail < priceToPay) {
-          await postWalletEntry(env, {
-            idempotencyKey: `topup-auto:${booking.id}:${now()}`,
-            eventType: 'wallet_topup',
-            referenceType: 'booking',
-            referenceId: booking.id,
-            note: `Nạp tiền tự động cho Ví doanh nghiệp ${booking.code}`,
-            postings: [
-              {
-                account: walletAccount('system', 'payos', 'cash_clearing'),
-                amount: -priceToPay,
-              },
-              {
-                account: walletAccount('business', me.business_id, 'available'),
-                amount: priceToPay,
-              },
-            ],
-          });
-        }
-        await transferWalletFunds(env, {
-          idempotencyKey: `escrow-hold:${booking.id}`,
-          eventType: 'escrow_hold',
-          referenceType: 'booking',
-          referenceId: booking.id,
-          note: `Trừ tiền Ví doanh nghiệp ký quỹ Escrow đơn booking ${booking.code}`,
-          source: walletAccount('business', me.business_id, 'available'),
-          destinations: [{
-            account: walletAccount('business', me.business_id, 'escrow'),
-            amount: priceToPay,
-          }],
-        });
-      } catch (e) {
-        console.error('Quote response wallet error:', e?.message || e);
-      }
+      const available = await walletBalance(env, 'business', me.business_id, 'available');
+      if (available < priceToPay) return err("Số dư Ví doanh nghiệp không đủ để ký quỹ báo giá", 400);
+      await transferWalletFunds(env, {
+        idempotencyKey: `escrow-hold:${booking.id}`,
+        eventType: 'escrow_hold',
+        referenceType: 'booking',
+        referenceId: booking.id,
+        note: `Ký quỹ báo giá AI Clone ${booking.code}`,
+        source: walletAccount('business', me.business_id, 'available'),
+        destinations: [{
+          account: walletAccount('business', me.business_id, 'escrow'),
+          amount: priceToPay,
+        }],
+      });
     }
     await env.DB.batch([
       env.DB.prepare(
@@ -3201,7 +3293,7 @@ export async function route(request, env, url) {
       env.DB.prepare(
         `UPDATE bookings SET status='brief_review',funding_mode='wallet_escrow_v2',escrow=?,updated_at=?
          WHERE aiclone_batch_id=? AND status IN ('quote_grouped','payment_grouped')`,
-      ).bind(priceToPay, now(), batchId),
+      ).bind(0, now(), batchId),
     ]);
     await notifyAdmins(
       env,
@@ -3311,7 +3403,7 @@ export async function route(request, env, url) {
             eventType: 'escrow_refund',
             referenceType: 'booking',
             referenceId: b.id,
-            note: `Hoàn tiền Escrow về Ví khả dụng đơn booking ${b.code} do KOC từ chối`,
+            note: `Hoàn tiền về số dư khả dụng cho đơn booking ${b.code} do KOC từ chối`,
             source: walletAccount('business', b.business_id, 'escrow'),
             destinations: [{
               account: walletAccount('business', b.business_id, 'available'),
@@ -3337,7 +3429,7 @@ export async function route(request, env, url) {
         "booking",
         "Booking đã bị từ chối",
         needsRefund && refundAmount > 0
-          ? `${b.code} đã bị từ chối. Số tiền ${refundAmount.toLocaleString('vi-VN')}đ tạm giữ Escrow đã được hoàn lại vào Ví khả dụng của bạn.`
+          ? `${b.code} đã bị từ chối. Số tiền ${refundAmount.toLocaleString('vi-VN')}đ đang được giữ đã được hoàn lại vào số dư khả dụng của bạn.`
           : `${b.code} đã bị từ chối.`,
         "#/orders",
       );
@@ -3391,8 +3483,15 @@ export async function route(request, env, url) {
       (isBiz || isAdmin) &&
       (b.status === "posted" || b.status === "settling")
     ) {
+      const isAiClone = b.type === "aiclone";
+      const quoteKoc = Number(b.aiclone_quote_koc || 0);
+      const aiServiceFees = Number(b.aiclone_quote_production || 0) +
+        Number(b.aiclone_quote_platform || 0) + Number(b.aiclone_quote_additional || 0);
+      const settlementAmount = isAiClone
+        ? quoteKoc + aiServiceFees
+        : Number(b.price || 0);
       let sourceBucket = 'available';
-      if (b.price > 0) {
+      if (settlementAmount > 0) {
         const paidPayment = await env.DB.prepare(
           `SELECT id FROM payment_requests
            WHERE booking_id=? AND status='paid'
@@ -3404,13 +3503,13 @@ export async function route(request, env, url) {
 
         if (paidPayment) {
           sourceBucket = 'cash_clearing';
-        } else if (bizEscrow >= b.price || Number(b.escrow) > 0) {
+        } else if (bizEscrow >= settlementAmount || Number(b.escrow) > 0) {
           sourceBucket = 'escrow';
-        } else if (bizAvail >= b.price) {
+        } else if (bizAvail >= settlementAmount) {
           sourceBucket = 'available';
         } else {
           return err(
-            `Ví khả dụng của doanh nghiệp không đủ số dư để giải ngân (${bizAvail.toLocaleString('vi-VN')}đ / ${Number(b.price).toLocaleString('vi-VN')}đ). Vui lòng nạp thêm tiền vào ví khả dụng.`,
+            `Ví của doanh nghiệp không đủ số dư để giải ngân (${settlementAmount.toLocaleString('vi-VN')}đ).`,
             400,
           );
         }
@@ -3418,23 +3517,12 @@ export async function route(request, env, url) {
       const stmts = [];
       let payoutAmount = 0;
       // settle 95/5 on the FIXED FEE portion (ad + combo). Affiliate-only has price 0.
-      if (b.price > 0) {
-        const isAiClone = b.type === "aiclone";
+      if (settlementAmount > 0) {
         let kocGet = 0;
         let fee = 0;
         if (isAiClone) {
-          const quoteKoc = Number(b.aiclone_quote_koc || 0);
-          const prodFee = Number(b.aiclone_quote_production || b.aiclone_production_fee || 0);
-          const platFee = Number(b.aiclone_quote_platform || b.aiclone_platform_fee || 0);
-          const addFee = Number(b.aiclone_quote_additional || 0);
-          if (quoteKoc > 0) {
-            kocGet = quoteKoc;
-          } else if (Number(b.price) > (prodFee + platFee + addFee)) {
-            kocGet = Number(b.price) - prodFee - platFee - addFee;
-          } else {
-            kocGet = Math.round(Number(b.price) * 0.85);
-          }
-          fee = Math.max(0, Number(b.price) - kocGet);
+          kocGet = quoteKoc;
+          fee = Math.max(0, settlementAmount - kocGet);
         } else {
           const platformFee = Math.round(b.price * 0.05);
           kocGet = b.price - platformFee;
@@ -3468,7 +3556,7 @@ export async function route(request, env, url) {
             now(),
           ),
         );
-        if (payoutAmount > 0) {
+        if (settlementAmount > 0) {
           try {
             const paidPayment = await env.DB.prepare(
               `SELECT id FROM payment_requests
@@ -3487,11 +3575,11 @@ export async function route(request, env, url) {
               eventType: 'booking_settled',
               referenceType: 'booking',
               referenceId: b.id,
-              note: `Giải ngân booking ${b.code} từ ví Escrow vào ví KOC`,
+              note: `Chuyển tiền booking ${b.code} vào ví KOC`,
               postings: [
                 {
                   account: srcAccount,
-                  amount: -Number(b.price || 0),
+                  amount: -settlementAmount,
                 },
                 {
                   account: walletAccount('koc', b.koc_id, 'available'),
@@ -3499,7 +3587,7 @@ export async function route(request, env, url) {
                 },
                 {
                   account: walletAccount('platform', 'netviet', 'revenue'),
-                  amount: Number(b.price || 0) - payoutAmount,
+                  amount: settlementAmount - payoutAmount,
                 },
               ],
             });
@@ -3562,21 +3650,22 @@ export async function route(request, env, url) {
         pending = 0;
       const commissionSummary = { expected: 0, reconciled: 0, paid: 0 };
       for (const t of results) {
+        const transactionAmount = Number(t.amount || 0);
         if (t.type === "withdraw") {
-          avail -= t.amount;
+          avail -= transactionAmount;
         } else if (["pending", "expected"].includes(t.status))
-          pending += t.amount;
-        else if (!["cancelled", "refunded"].includes(t.status)) avail += t.amount;
+          pending += transactionAmount;
+        else if (!["cancelled", "refunded"].includes(t.status)) avail += transactionAmount;
         if (t.type === "commission") {
           if (["pending", "expected"].includes(t.status))
-            commissionSummary.expected += t.amount;
+            commissionSummary.expected += transactionAmount;
           else if (["settled", "reconciled"].includes(t.status))
-            commissionSummary.reconciled += t.amount;
-          else if (t.status === "paid") commissionSummary.paid += t.amount;
+            commissionSummary.reconciled += transactionAmount;
+          else if (t.status === "paid") commissionSummary.paid += transactionAmount;
         }
       }
       const koc = await env.DB.prepare(
-        "SELECT email,bank_name,bank_account,bank_owner FROM kocs WHERE id=?",
+        "SELECT email,bank_name,bank_bin,bank_account,bank_owner FROM kocs WHERE id=?",
       )
         .bind(me.koc_id)
         .first();
@@ -3725,28 +3814,37 @@ export async function route(request, env, url) {
       .all();
     let avail = 0;
     for (const t of results) {
-      if (t.type === "withdraw") avail -= t.amount;
+      const transactionAmount = Number(t.amount || 0);
+      if (t.type === "withdraw") avail -= transactionAmount;
       else if (["settled", "reconciled", "paid"].includes(t.status))
-        avail += t.amount;
+        avail += transactionAmount;
     }
     if (amount > avail) return err("Số dư khả dụng không đủ");
 
     if (mode === "payos") {
-      if (!koc?.bank_account || !koc?.bank_name) {
-        return err("Vui lòng cập nhật thông tin tài khoản ngân hàng nhận tiền trước khi rút qua payOS");
+      if (!koc?.bank_account || !koc?.bank_name || !/^\d{6}$/.test(String(koc?.bank_bin || ''))) {
+        return err("Vui lòng cập nhật đầy đủ ngân hàng nhận tiền và mã ngân hàng 6 số trước khi rút");
       }
       const txId = uid();
       const referenceId = `wd-${txId.slice(0, 16)}`;
       try {
+        const payoutAccount = await getPayOSPayoutBalance(env);
+        const payoutBalance = Number(String(payoutAccount?.balance ?? '').replace(/[^0-9.-]/g, ''));
+        if (!Number.isFinite(payoutBalance)) {
+          return err('Chưa kiểm tra được nguồn tiền chi trả. Vui lòng thử lại sau.');
+        }
+        if (payoutBalance < amount) {
+          return err('Nguồn tiền chi trả hiện chưa đủ. Vui lòng liên hệ quản trị viên hoặc thử lại sau.');
+        }
         await createPayOSPayout(env, {
           referenceId,
           amount,
           description: `RUT VI KOC ${me.koc_id.slice(0, 8)}`,
-          toBin: koc.bank_bin || '970422',
+          toBin: koc.bank_bin,
           toAccountNumber: koc.bank_account,
-        });
+        }, referenceId);
       } catch (error) {
-        return err(`Lỗi thanh toán payOS Chi hộ: ${error?.message || 'Không gửi được lệnh chi'}`);
+        return err(`Chưa gửi được yêu cầu rút tiền: ${error?.message || 'Vui lòng thử lại sau'}`);
       }
 
       await env.DB.prepare(
@@ -3758,7 +3856,7 @@ export async function route(request, env, url) {
           "withdraw",
           amount,
           "processing",
-          `Rút qua payOS Chi hộ (${koc.bank_name})`,
+          `Rút tiền về ngân hàng (${koc.bank_name})`,
           now(),
         )
         .run();
@@ -3769,7 +3867,7 @@ export async function route(request, env, url) {
           eventType: 'wallet_withdraw',
           referenceType: 'wallet_tx',
           referenceId: txId,
-          note: `KOC rút tiền qua payOS Chi hộ (${koc.bank_name})`,
+          note: `KOC rút tiền về ngân hàng (${koc.bank_name})`,
           source: walletAccount('koc', me.koc_id, 'available'),
           destinations: [{
             account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -3781,7 +3879,7 @@ export async function route(request, env, url) {
       }
 
       await audit(env, me.id, "wallet.withdraw_requested_payos", me.koc_id, `amount=${amount}`);
-      return J({ ok: true, mode: 'payos', message: 'Lệnh rút qua payOS Chi hộ đã gửi thành công' });
+      return J({ ok: true, mode: 'payos', message: 'Yêu cầu rút tiền đã được gửi thành công' });
     }
 
     // mode === "demo"
@@ -3856,7 +3954,7 @@ export async function route(request, env, url) {
         "commission",
         addCommission,
         "expected",
-        "Hoa hồng affiliate dự kiến",
+        "Hoa hồng bán hàng dự kiến",
         now(),
       )
       .run();
@@ -3901,7 +3999,7 @@ export async function route(request, env, url) {
     const l = await env.DB.prepare("SELECT * FROM affiliate_links WHERE id=?")
       .bind(body.linkId)
       .first();
-    if (!l) return err("Không tìm thấy link affiliate", 404);
+    if (!l) return err("Không tìm thấy đường dẫn bán hàng", 404);
     // authorization: the KOC who owns the link, or admin
     if (!(isAdmin || (me.role === "koc" && me.koc_id === l.koc_id)))
       return err("403", 403);
@@ -3964,7 +4062,7 @@ export async function route(request, env, url) {
           "commission",
           commission,
           "expected",
-          `Hoa hồng affiliate ${b.code} · đơn ${raw.platform_order_id}`,
+          `Hoa hồng bán hàng ${b.code} · đơn ${raw.platform_order_id}`,
           now(),
         )
         .run();
@@ -4047,10 +4145,10 @@ export async function route(request, env, url) {
           ? "cancel"
           : "commission",
       to === "refunded"
-        ? "Đơn affiliate đã hoàn"
+        ? "Đơn tiếp thị liên kết đã hoàn"
         : to === "cancelled"
-          ? "Đơn affiliate đã hủy"
-          : "Đơn affiliate đã xác nhận",
+          ? "Đơn tiếp thị liên kết đã hủy"
+          : "Đơn tiếp thị liên kết đã xác nhận",
       `${o.platform_order_id} · hoa hồng ${o.commission_amount.toLocaleString("vi-VN")}đ ${to === "confirmed" ? "chờ đối soát" : "không được ghi nhận"}.`,
       "#/affiliate",
     );
@@ -4189,14 +4287,17 @@ export async function route(request, env, url) {
     if (me.role !== "business") return err("403", 403);
     const budget = Number(body.budget),
       qty = Number(body.qty);
-    if (!Number.isFinite(budget) || budget <= 0)
-      return err("Ngân sách phải là số dương");
+    if (!Number.isSafeInteger(budget) || budget <= 0 || budget > 100_000_000_000)
+      return err("Ngân sách phải là số nguyên VND hợp lệ");
     if (!Number.isFinite(qty) || qty <= 0 || !Number.isInteger(qty))
       return err("Số lượng KOC phải là số nguyên dương");
     if (!body.tier) return err("Chọn hạng KOC");
     if (!body.category) return err("Chọn ngành hàng");
+    const managementRate = 0.15;
+    const managementFee = Math.max(2_000_000, Math.round(budget * managementRate));
+    const totalAmount = budget + managementFee;
     await env.DB.prepare(
-      `INSERT INTO campaigns (id,business_id,budget,qty,tier,category,note,status,created_at) VALUES (?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO campaigns (id,business_id,budget,qty,tier,category,note,status,management_rate,management_fee,total_amount,deadline,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
       .bind(
         uid(),
@@ -4206,13 +4307,16 @@ export async function route(request, env, url) {
         body.tier,
         body.category,
         String(body.note || "").slice(0, 500),
-        "pending",
+        "quote_pending",
+        managementRate, managementFee, totalAmount,
+        String(body.deadline || "").slice(0, 40) || null,
         now(),
       )
       .run();
-    return J({ ok: true });
+    return J({ ok: true, pricing: { budget, managementRate, managementFee, totalAmount } });
   }
   if (p === "/api/campaigns") {
+    if (!['admin','business'].includes(me.role)) return err('Không có quyền xem danh sách chiến dịch',403);
     let sql =
       "SELECT c.*, bz.name bizname FROM campaigns c JOIN businesses bz ON bz.id=c.business_id";
     const bind = [];
@@ -4224,14 +4328,116 @@ export async function route(request, env, url) {
     const { results } = await env.DB.prepare(sql)
       .bind(...bind)
       .all();
+    for (const campaign of results) {
+      const { results: allocations } = await env.DB.prepare(`SELECT ca.*,k.name koc_name,k.avatar koc_avatar FROM campaign_allocations ca JOIN kocs k ON k.id=ca.koc_id WHERE ca.campaign_id=? ORDER BY ca.created_at,ca.id`).bind(campaign.id).all();
+      campaign.allocations = allocations || [];
+    }
     return J({ campaigns: results });
+  }
+  if (p === "/api/koc/campaigns" && m === "GET") {
+    if (me.role !== "koc") return err("Chỉ KOC được truy cập", 403);
+    const per = Math.min(12, Math.max(4, Number(url.searchParams.get('per') || 6)));
+    const requestedPage = Math.max(1, Number(url.searchParams.get('page') || 1));
+    const total = Number(await env.DB.prepare(
+      `SELECT COUNT(*) count FROM campaign_allocations WHERE koc_id=?`,
+    ).bind(me.koc_id).first('count')) || 0;
+    const pages = Math.max(1, Math.ceil(total / per));
+    const page = Math.min(requestedPage, pages);
+    const { results } = await env.DB.prepare(
+      `SELECT ca.*,c.category,c.tier,c.note campaign_note,c.deadline campaign_deadline,c.status campaign_status,
+              bz.name business_name
+       FROM campaign_allocations ca
+       JOIN campaigns c ON c.id=ca.campaign_id
+       JOIN businesses bz ON bz.id=c.business_id
+       WHERE ca.koc_id=? ORDER BY ca.created_at DESC,ca.id DESC LIMIT ? OFFSET ?`,
+    ).bind(me.koc_id,per,(page-1)*per).all();
+    return J({ campaigns: results || [], page, per, total, pages });
+  }
+  if (p === "/api/campaign/allocation/action" && m === "POST") {
+    const a = await env.DB.prepare(
+      `SELECT ca.*,c.business_id,c.status campaign_status,c.category,c.note campaign_note
+       FROM campaign_allocations ca JOIN campaigns c ON c.id=ca.campaign_id WHERE ca.id=?`,
+    ).bind(body.id).first();
+    if (!a) return err("Không tìm thấy công việc chiến dịch", 404);
+    const action = String(body.action || "");
+    const isKocOwner = me.role === "koc" && me.koc_id === a.koc_id;
+    const isBusinessOwner = me.role === "business" && me.business_id === a.business_id;
+    if (!['assigned','in_progress'].includes(a.campaign_status)) return err('Chiến dịch không còn ở giai đoạn thực hiện');
+    if (action === "accept") {
+      if (!isKocOwner || a.status !== "invited") return err("Không thể nhận công việc này", 403);
+      await env.DB.prepare(`UPDATE campaign_allocations SET status='accepted',accepted_at=?,updated_at=? WHERE id=?`).bind(now(),now(),a.id).run();
+      await notifyBusiness(env,a.business_id,'campaign','KOC đã nhận chiến dịch',`Một KOC đã xác nhận tham gia chiến dịch ${a.campaign_id}.`,'#/campaigns');
+      return J({ok:true,status:'accepted'});
+    }
+    if (action === "decline") {
+      if (!isKocOwner || a.status !== "invited") return err("Không thể từ chối công việc này", 403);
+      const reason=String(body.note||'').trim().slice(0,500);
+      await env.DB.prepare(`UPDATE campaign_allocations SET status='declined',business_note=?,declined_at=?,updated_at=? WHERE id=?`).bind(reason||null,now(),now(),a.id).run();
+      await notifyAdmins(env,'campaign','KOC từ chối chiến dịch',`Phân bổ ${a.id} cần chọn KOC thay thế.`,'#/campaigns');
+      return J({ok:true,status:'declined'});
+    }
+    if (action === "submit") {
+      if (!isKocOwner || !['accepted','revision_requested'].includes(a.status)) return err("Công việc chưa sẵn sàng để nộp", 403);
+      const url=String(body.url||'').trim(),note=String(body.note||'').trim().slice(0,1000);
+      if(!isUrl(url))return err('Link bài đăng/video không hợp lệ');
+      await env.DB.prepare(`UPDATE campaign_allocations SET status='submitted',submission_url=?,submission_note=?,submitted_at=?,updated_at=? WHERE id=?`).bind(url,note||null,now(),now(),a.id).run();
+      await notifyBusiness(env,a.business_id,'campaign','KOC đã nộp nội dung chiến dịch',`Vui lòng nghiệm thu phân bổ ${a.id}.`,'#/campaigns');
+      return J({ok:true,status:'submitted'});
+    }
+    if (action === "approve" || action === "request_revision") {
+      if (!isBusinessOwner || a.status !== "submitted") return err("Nội dung chưa sẵn sàng nghiệm thu", 403);
+      const note=String(body.note||'').trim().slice(0,1000);
+      if(action==='request_revision'&&!note)return err('Vui lòng nhập nội dung cần chỉnh sửa');
+      const next=action==='approve'?'approved':'revision_requested';
+      await env.DB.prepare(`UPDATE campaign_allocations SET status=?,business_note=?,approved_at=?,updated_at=? WHERE id=?`).bind(next,note||null,action==='approve'?now():null,now(),a.id).run();
+      await notifyKoc(env,a.koc_id,'campaign',action==='approve'?'Doanh nghiệp đã nghiệm thu nội dung':'Doanh nghiệp yêu cầu chỉnh sửa',action==='approve'?'Nội dung đã duyệt, đang chờ Admin giải ngân.':note,'#/campaigns');
+      return J({ok:true,status:next});
+    }
+    return err("Hành động không hợp lệ");
+  }
+  if (p === "/api/campaign/action" && m === "POST") {
+    const c = await env.DB.prepare(`SELECT * FROM campaigns WHERE id=?`).bind(body.id).first();
+    if (!c) return err('Không tìm thấy chiến dịch',404);
+    const action=String(body.action||''),isOwner=me.role==='business'&&me.business_id===c.business_id,isAdmin=me.role==='admin';
+    if(action==='quote'){
+      if(!isAdmin||!['pending','quote_pending','quoted'].includes(c.status))return err('Chiến dịch không còn chờ báo giá',403);
+      const fee=Number(body.managementFee),budget=Number(c.budget);
+      if(!Number.isSafeInteger(fee)||fee<0||fee>1_000_000_000)return err('Phí điều phối không hợp lệ');
+      const total=budget+fee;if(!Number.isSafeInteger(total)||total<=0)return err('Tổng báo giá không hợp lệ');
+      await env.DB.prepare(`UPDATE campaigns SET management_fee=?,management_rate=?,total_amount=?,quote_note=?,status='quoted',quoted_at=? WHERE id=?`).bind(fee,budget>0?fee/budget:0,total,String(body.note||'').trim().slice(0,1000)||null,now(),c.id).run();
+      await notifyBusiness(env,c.business_id,'campaign_quote','NetViet đã gửi báo giá chiến dịch',`Tổng ký quỹ ${total.toLocaleString('vi-VN')}đ. Vui lòng kiểm tra và xác nhận. `,'#/campaigns');
+      await audit(env,me.id,'campaign.quoted',c.id,`budget=${budget} fee=${fee} total=${total}`);return J({ok:true,status:'quoted',totalAmount:total});
+    }
+    if(action==='fund'){
+      if(!isOwner||c.status!=='quoted')return err('Chỉ ký quỹ sau khi Admin gửi báo giá',403);
+      const fallbackFee=Math.max(2_000_000,Math.round(Number(c.budget||0)*.15)),amount=Number(c.total_amount)||Number(c.budget||0)+fallbackFee;if(!Number.isSafeInteger(amount)||amount<=0)return err('Tổng tiền chiến dịch không hợp lệ');await transferWalletFunds(env,{idempotencyKey:`campaign-fund:${c.id}`,eventType:'campaign_escrow_hold',referenceType:'campaign',referenceId:c.id,note:`Ký quỹ chiến dịch ${c.id}`,source:walletAccount('business',c.business_id,'available'),destinations:[{account:walletAccount('business',c.business_id,'escrow'),amount}]});
+      await env.DB.prepare(`UPDATE campaigns SET status='funded',funded_at=? WHERE id=?`).bind(now(),c.id).run();await audit(env,me.id,'campaign.funded',c.id,`amount=${amount}`);return J({ok:true,status:'funded',amount});
+    }
+    if(action==='start'){
+      if(!isAdmin||c.status!=='funded')return err('Chiến dịch chưa được ký quỹ',403);const fee=Math.round(Number(c.management_fee)*.2);
+      if(fee>0)await transferWalletFunds(env,{idempotencyKey:`campaign-start-fee:${c.id}`,eventType:'campaign_management_fee_upfront',referenceType:'campaign',referenceId:c.id,note:`20% phí điều phối ${c.id}`,source:walletAccount('business',c.business_id,'escrow'),destinations:[{account:walletAccount('platform','netviet','revenue'),amount:fee}]});
+      await env.DB.prepare(`UPDATE campaigns SET status='coordinating',upfront_fee_released=?,started_at=? WHERE id=?`).bind(fee,now(),c.id).run();await audit(env,me.id,'campaign.started',c.id,`upfront_fee=${fee}`);return J({ok:true,status:'coordinating',upfrontFee:fee});
+    }
+    if(action==='settle_koc'){
+      if(!isAdmin||!['assigned','in_progress'].includes(c.status))return err('Chiến dịch chưa sẵn sàng giải ngân',403);const a=await env.DB.prepare(`SELECT ca.*,k.name koc_name FROM campaign_allocations ca JOIN kocs k ON k.id=ca.koc_id WHERE ca.id=? AND ca.campaign_id=?`).bind(body.allocationId,c.id).first();if(!a)return err('Không tìm thấy khoản phân bổ',404);if(a.status==='settled')return J({ok:true,idempotent:true});if(a.status!=='approved')return err('Chỉ giải ngân sau khi doanh nghiệp đã nghiệm thu KOC này');
+      const amount=Number(a.amount);await transferWalletFunds(env,{idempotencyKey:`campaign-koc-settle:${a.id}`,eventType:'campaign_koc_settled',referenceType:'campaign_allocation',referenceId:a.id,note:`Giải ngân chiến dịch ${c.id}`,source:walletAccount('business',c.business_id,'escrow'),destinations:[{account:walletAccount('koc',a.koc_id,'available'),amount}]});
+      await env.DB.batch([env.DB.prepare(`UPDATE campaign_allocations SET status='settled',settled_at=?,updated_at=? WHERE id=?`).bind(now(),now(),a.id),env.DB.prepare(`UPDATE campaigns SET status='in_progress' WHERE id=?`).bind(c.id),env.DB.prepare(`INSERT OR IGNORE INTO wallet_tx (id,koc_id,type,amount,status,note,created_at) VALUES (?,?,?,?,?,?,?)`).bind(`campaign-${a.id}`,a.koc_id,'campaign',amount,'settled',`Chiến dịch ${c.id}`,now())]);await audit(env,me.id,'campaign.koc_settled',c.id,`allocation=${a.id} koc=${a.koc_id} amount=${amount}`);return J({ok:true,amount});
+    }
+    if(action==='complete'){
+      if(!isAdmin||!['assigned','in_progress'].includes(c.status))return err('Chiến dịch chưa sẵn sàng hoàn tất',403);const t=await env.DB.prepare(`SELECT COALESCE(SUM(amount),0) total,COALESCE(SUM(CASE WHEN status='settled' THEN amount ELSE 0 END),0) settled,COUNT(*) count FROM campaign_allocations WHERE campaign_id=?`).bind(c.id).first();if(!Number(t?.count)||Number(t.total)!==Number(c.budget)||Number(t.settled)!==Number(c.budget))return err('Còn KOC chưa được phân bổ hoặc giải ngân đầy đủ');const fee=Math.max(0,Number(c.management_fee)-Number(c.upfront_fee_released));
+      if(fee>0)await transferWalletFunds(env,{idempotencyKey:`campaign-complete-fee:${c.id}`,eventType:'campaign_management_fee_final',referenceType:'campaign',referenceId:c.id,note:`Phí điều phối còn lại ${c.id}`,source:walletAccount('business',c.business_id,'escrow'),destinations:[{account:walletAccount('platform','netviet','revenue'),amount:fee}]});await env.DB.prepare(`UPDATE campaigns SET status='completed',completed_at=? WHERE id=?`).bind(now(),c.id).run();await audit(env,me.id,'campaign.completed',c.id,`final_fee=${fee}`);return J({ok:true,finalFee:fee});
+    }
+    if(action==='cancel'){
+      if(!isAdmin&&!isOwner)return err('Không có quyền hủy',403);if(['completed','cancelled'].includes(c.status))return err('Chiến dịch đã kết thúc');if(isOwner&&!['pending','quote_pending','quoted','funded'].includes(c.status))return err('Vui lòng liên hệ admin để hủy');let refundAmount=0;if(!['pending','quote_pending','quoted'].includes(c.status)){const t=await env.DB.prepare(`SELECT COALESCE(SUM(CASE WHEN status='settled' THEN amount ELSE 0 END),0) settled FROM campaign_allocations WHERE campaign_id=?`).bind(c.id).first();refundAmount=Math.max(0,Number(c.total_amount)-Number(c.upfront_fee_released)-Number(t?.settled||0));if(refundAmount>0)await transferWalletFunds(env,{idempotencyKey:`campaign-cancel-refund:${c.id}`,eventType:'campaign_refund',referenceType:'campaign',referenceId:c.id,note:`Hoàn tiền chiến dịch ${c.id}`,source:walletAccount('business',c.business_id,'escrow'),destinations:[{account:walletAccount('business',c.business_id,'available'),amount:refundAmount}]});}await env.DB.prepare(`UPDATE campaigns SET status='cancelled',cancelled_at=? WHERE id=?`).bind(now(),c.id).run();await audit(env,me.id,'campaign.cancelled',c.id,`refund=${refundAmount}`);return J({ok:true,refundAmount});
+    }
+    return err('Hành động không hợp lệ');
   }
 
   // ---------- Business report (3-way breakdown, same numbers as KOC/Admin) ----------
   if (p === "/api/business/report") {
     if (me.role !== "business") return err("403", 403);
     const { results } = await env.DB.prepare(
-      `SELECT b.id,b.code,b.category,b.price,b.status,b.booking_type,b.content_type,b.commission_rate,b.platform, k.name kocname,
+      `SELECT b.id,b.code,b.category,b.price,b.status,b.booking_type,b.content_type,b.commission_rate,b.platform,b.created_at, k.name kocname,
               a.clicks legacy_clicks, a.orders legacy_orders, a.commission legacy_commission
        FROM bookings b JOIN kocs k ON k.id=b.koc_id LEFT JOIN affiliate a ON a.booking_id=b.id
        WHERE b.business_id=? ORDER BY b.created_at DESC, b.rowid DESC`,
@@ -4246,6 +4452,10 @@ export async function route(request, env, url) {
       platformFee = 0;
     for (const r of results) {
       const bt = r.booking_type || "ad";
+      r.price = Number(r.price) || 0;
+      r.legacy_clicks = Number(r.legacy_clicks) || 0;
+      r.legacy_orders = Number(r.legacy_orders) || 0;
+      r.legacy_commission = Number(r.legacy_commission) || 0;
       if (r.status !== "rejected" && (bt === "ad" || bt === "combo"))
         spend += r.price;
       // new affiliate_orders (exclude cancelled)
@@ -4264,9 +4474,9 @@ export async function route(request, env, url) {
       r.aff_orders = Number(agg.o) || 0;
       r.aff_commission = Number(agg.c) || 0;
       r.platform_fee = Number(agg.f) || 0;
-      r.clicks = (Number(cl) || 0) + (r.legacy_clicks || 0);
-      r.orders = r.aff_orders + (r.legacy_orders || 0);
-      r.commission = r.aff_commission + (r.legacy_commission || 0);
+      r.clicks = (Number(cl) || 0) + r.legacy_clicks;
+      r.orders = r.aff_orders + r.legacy_orders;
+      r.commission = r.aff_commission + r.legacy_commission;
       r.roi = r.price + r.commission > 0 ? r.gmv / (r.price + r.commission) : 0;
       clicks += r.clicks;
       orders += r.orders;
@@ -4275,8 +4485,17 @@ export async function route(request, env, url) {
       platformFee += r.platform_fee;
     }
     const adFee = Math.round(spend * 0.05);
+    const per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
+    const total = results.length;
+    const pages = Math.max(1, Math.ceil(total / per));
+    const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
+    const page = Math.min(requestedPage, pages);
     return J({
-      rows: results,
+      rows: results.slice((page - 1) * per, page * per),
+      page,
+      per,
+      total,
+      pages,
       totals: {
         spend,
         clicks,
@@ -4309,7 +4528,10 @@ export async function route(request, env, url) {
     const kol = await env.DB.prepare("SELECT * FROM kol_profiles WHERE id=?")
       .bind(body.kol_id)
       .first();
-    if (!kol) return err("KOL không tồn tại", 404);
+    if (!kol || kol.status !== 'active') return err("KOL không tồn tại hoặc đang tạm ngưng", 404);
+    const budget=Number(body.budget),brief=String(body.brief||'').trim().slice(0,1000);
+    if(!Number.isSafeInteger(budget)||budget<=0||budget>100_000_000_000)return err('Ngân sách dự kiến phải là số nguyên VND hợp lệ');
+    if(brief.length<10)return err('Brief cần ít nhất 10 ký tự');
     const id = uid();
     await env.DB.prepare(
       `INSERT INTO kol_requests (id,kol_id,business_id,brief,budget,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`,
@@ -4318,8 +4540,8 @@ export async function route(request, env, url) {
         id,
         body.kol_id,
         me.business_id,
-        (body.brief || "").slice(0, 1000),
-        Number(body.budget) || 0,
+        brief,
+        budget,
         "pending",
         now(),
         now(),
@@ -4336,11 +4558,45 @@ export async function route(request, env, url) {
       sql += " WHERE kr.business_id=?";
       bind.push(me.business_id);
     } else if (me.role !== "admin") return err("403", 403);
-    sql += " ORDER BY kr.created_at DESC, kr.rowid DESC";
+    const per=Math.min(20,Math.max(5,Number(url.searchParams.get('per')||10))),requestedPage=Math.max(1,Number(url.searchParams.get('page')||1));
+    const countSql=`SELECT COUNT(*) count FROM kol_requests kr${me.role==='business'?' WHERE kr.business_id=?':''}`;
+    const total=Number(await env.DB.prepare(countSql).bind(...bind).first('count'))||0,pages=Math.max(1,Math.ceil(total/per)),page=Math.min(requestedPage,pages);
+    sql += " ORDER BY kr.created_at DESC, kr.rowid DESC LIMIT ? OFFSET ?";
+    bind.push(per,(page-1)*per);
     const { results } = await env.DB.prepare(sql)
       .bind(...bind)
       .all();
-    return J({ requests: results });
+    return J({ requests: results,page,per,total,pages });
+  }
+  if (p === '/api/kol/action' && m === 'POST') {
+    if(me.role!=='business')return err('Chỉ doanh nghiệp được xác nhận báo giá KOL',403);
+    const kr=await env.DB.prepare(`SELECT kr.*,kp.name kol_name FROM kol_requests kr JOIN kol_profiles kp ON kp.id=kr.kol_id WHERE kr.id=? AND kr.business_id=?`).bind(body.id,me.business_id).first();
+    if(!kr)return err('Không tìm thấy yêu cầu KOL',404);
+    const action=String(body.action||'');
+    if(action==='fund'){
+      if(kr.status!=='quoted')return err('Báo giá không còn ở trạng thái chờ xác nhận');
+      const amount=Number(kr.total_amount||kr.quote);if(!Number.isSafeInteger(amount)||amount<=0)return err('Tổng báo giá không hợp lệ');
+      const legacyKolAmount=Number(kr.quote_kol)>0?Number(kr.quote_kol):amount,legacyPlatformFee=Number(kr.quote_kol)>0?Number(kr.quote_platform||0):0,legacyAdditionalFee=Number(kr.quote_kol)>0?Number(kr.quote_additional||0):0;
+      await transferWalletFunds(env,{idempotencyKey:`kol-fund:${kr.id}`,eventType:'kol_escrow_hold',referenceType:'kol_request',referenceId:kr.id,note:`Ký quỹ KOL ${kr.kol_name}`,source:walletAccount('business',kr.business_id,'available'),destinations:[{account:walletAccount('business',kr.business_id,'escrow'),amount}]});
+      await env.DB.prepare(`UPDATE kol_requests SET status='funded',quote_kol=?,quote_platform=?,quote_additional=?,total_amount=?,escrow_amount=?,funded_at=?,updated_at=? WHERE id=?`).bind(legacyKolAmount,legacyPlatformFee,legacyAdditionalFee,amount,amount,now(),now(),kr.id).run();
+      await notifyAdmins(env,'kol','Doanh nghiệp đã ký quỹ KOL',`${kr.kol_name} · ${amount.toLocaleString('vi-VN')}đ`,'#/kol');
+      await audit(env,me.id,'kol_request.funded',kr.id,`amount=${amount}`);return J({ok:true,status:'funded',amount});
+    }
+    if(action==='approve_delivery'||action==='request_revision'){
+      if(kr.status!=='delivered')return err('Sản phẩm KOL chưa sẵn sàng nghiệm thu');
+      const note=String(body.note||'').trim().slice(0,1000);if(action==='request_revision'&&!note)return err('Vui lòng nhập nội dung cần chỉnh sửa');
+      const next=action==='approve_delivery'?'approved':'revision_requested';
+      await env.DB.prepare(`UPDATE kol_requests SET status=?,business_note=?,approved_at=?,updated_at=? WHERE id=?`).bind(next,note||null,next==='approved'?now():null,now(),kr.id).run();
+      await notifyAdmins(env,'kol',next==='approved'?'Doanh nghiệp đã nghiệm thu KOL':'Doanh nghiệp yêu cầu chỉnh sửa KOL',`${kr.kol_name}${note?' · '+note:''}`,'#/kol');
+      await audit(env,me.id,`kol_request.${next}`,kr.id,note);return J({ok:true,status:next});
+    }
+    if(action==='cancel'){
+      if(!['pending','quoted','funded'].includes(kr.status))return err('Vui lòng liên hệ NetViet để hủy ở giai đoạn hiện tại');
+      const refund=kr.status==='funded'?Number(kr.escrow_amount||kr.total_amount||kr.quote):0;
+      if(refund>0)await transferWalletFunds(env,{idempotencyKey:`kol-refund:${kr.id}`,eventType:'kol_refund',referenceType:'kol_request',referenceId:kr.id,note:`Hoàn ký quỹ KOL ${kr.kol_name}`,source:walletAccount('business',kr.business_id,'escrow'),destinations:[{account:walletAccount('business',kr.business_id,'available'),amount:refund}]});
+      await env.DB.prepare(`UPDATE kol_requests SET status='cancelled',escrow_amount=0,cancelled_at=?,updated_at=? WHERE id=?`).bind(now(),now(),kr.id).run();await audit(env,me.id,'kol_request.cancelled',kr.id,`refund=${refund}`);return J({ok:true,refund});
+    }
+    return err('Hành động không hợp lệ');
   }
 
   // ================= ADMIN =================
@@ -4568,9 +4824,61 @@ export async function route(request, env, url) {
     }
     if (p === "/api/admin/queue") {
       const { results } = await env.DB.prepare(
-        `SELECT * FROM kocs WHERE status IN ('pending','leader_ok') ORDER BY created_at DESC, rowid DESC`,
+        `SELECT * FROM kocs WHERE status IN ('pending','leader_ok') ORDER BY created_at DESC,rowid DESC`,
       ).all();
       return J({ kocs: results.map(parseKoc) });
+    }
+    if (p === "/api/admin/kocs" && m === "GET") {
+      const q = url.searchParams;
+      const page = Math.max(1, parseInt(q.get("page") || "1"));
+      const per = 10;
+      const where = [];
+      const bind = [];
+      if (q.get("status")) {
+        where.push(`status=?`);
+        bind.push(q.get("status"));
+      }
+      if (q.get("search")) {
+        where.push(`(name LIKE ? OR email LIKE ? OR phone LIKE ?)`);
+        const term = `%${q.get("search")}%`;
+        bind.push(term, term, term);
+      }
+      const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+      const total = Number(
+        (await env.DB.prepare(`SELECT COUNT(*) c FROM kocs ${clause}`)
+          .bind(...bind)
+          .first("c")) || 0,
+      );
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM kocs ${clause} ORDER BY created_at DESC,rowid DESC LIMIT ? OFFSET ?`,
+      ).bind(...bind, per, (page - 1) * per).all();
+      const kocs = [];
+      for (const row of results) {
+        const prices = await env.DB.prepare(
+          `SELECT category,price FROM koc_prices WHERE koc_id=? ORDER BY category`,
+        ).bind(row.id).all();
+        kocs.push({ ...parseKoc(row), prices: prices.results });
+      }
+      return J({
+        kocs,
+        total,
+        page,
+        pages: Math.ceil(total / per) || 1,
+      });
+    }
+    if (p.startsWith("/api/admin/koc-identity/") && m === "GET") {
+      const kocId = p.split("/")[4];
+      const identity = await env.DB.prepare(
+        `SELECT front_image,back_image,selfie_image,front_object_key,back_object_key,selfie_object_key
+         FROM koc_identity_documents WHERE koc_id=?`,
+      ).bind(kocId).first();
+      if (!identity) return J({ identity: null });
+      const [frontUrl, backUrl, selfieUrl] = await Promise.all([
+        identity.front_object_key ? signedKocIdentityUrl(env, identity.front_object_key) : identity.front_image,
+        identity.back_object_key ? signedKocIdentityUrl(env, identity.back_object_key) : identity.back_image,
+        identity.selfie_object_key ? signedKocIdentityUrl(env, identity.selfie_object_key) : identity.selfie_image,
+      ]);
+      return J({ identity: { front_url: frontUrl, back_url: backUrl, selfie_url: selfieUrl } });
     }
     if (p === "/api/admin/approve" && m === "POST") {
       const status = body.approve ? "active" : "rejected";
@@ -4637,6 +4945,12 @@ export async function route(request, env, url) {
       const prov = await env.DB.prepare(
         `SELECT province, COUNT(*) c FROM kocs WHERE status='active' GROUP BY province ORDER BY c DESC, province ASC`,
       ).all();
+      const officialProvinces = await getAddressKitProvinces();
+      const provinceCounts = new Map(officialProvinces.map(province => [province, 0]));
+      for (const row of prov.results || []) {
+        const province = canonicalProvinceName(row.province, officialProvinces);
+        if (province) provinceCounts.set(province, (provinceCounts.get(province) || 0) + Number(row.c || 0));
+      }
       const pendingWithdraw = await env.DB.prepare(
         `SELECT COALESCE(SUM(amount),0) s FROM wallet_tx WHERE status IN ('pending','expected')`,
       ).first("s");
@@ -4655,7 +4969,7 @@ export async function route(request, env, url) {
         gmv: Number(gmv),
         fee: Number(fee),
         funnel,
-        provinces: prov.results,
+        provinces: officialProvinces.map(province => ({ province, c: provinceCounts.get(province) || 0 })),
         targetKoc: 300000,
         targetBiz: 200000,
         pendingSettle: Number(pendingWithdraw),
@@ -4678,7 +4992,7 @@ export async function route(request, env, url) {
             `UPDATE wallet_tx SET status='reconciled' WHERE id=?`,
           ).bind(t.id),
         );
-        total += t.amount;
+        total += Number(t.amount || 0);
       }
       // settle affiliate_orders that are pending/confirmed and not cancelled/refunded
       const ords = await env.DB.prepare(
@@ -4692,8 +5006,8 @@ export async function route(request, env, url) {
             `UPDATE affiliate_orders SET status='settled', settled_at=? WHERE id=?`,
           ).bind(now(), o.id),
         );
-        platformFeeTotal += o.platform_fee;
-        gmvTotal += o.gmv;
+        platformFeeTotal += Number(o.platform_fee || 0);
+        gmvTotal += Number(o.gmv || 0);
         stmts.push(
           env.DB.prepare(
             `INSERT INTO affiliate_settlements (id,kind,koc_id,booking_id,order_id,amount,note,created_at) VALUES (?,?,?,?,?,?,?,?)`,
@@ -4731,7 +5045,7 @@ export async function route(request, env, url) {
             "platform_fee",
             platformFeeTotal,
             "batch",
-            `Phí nền tảng 1% affiliate (DN trả) · GMV ${gmvTotal.toLocaleString("vi")}đ`,
+            `Phí nền tảng 1% tiếp thị liên kết (doanh nghiệp trả) · Doanh số ${gmvTotal.toLocaleString("vi")}đ`,
             now(),
           ),
         );
@@ -4768,24 +5082,107 @@ export async function route(request, env, url) {
       });
     }
     if (p === "/api/admin/ledger") {
+      const per = Math.min(20, Math.max(5, Number(url.searchParams.get("per") || 8)));
+      const distributionPage = Math.max(1, Number(url.searchParams.get("distributionPage") || 1));
+      const ledgerPage = Math.max(1, Number(url.searchParams.get("ledgerPage") || 1));
+      const auditPage = Math.max(1, Number(url.searchParams.get("auditPage") || 1));
+      const auditSearch = String(url.searchParams.get("auditSearch") || "").trim().toLowerCase();
+      const auditCategory = String(url.searchParams.get("auditCategory") || "").trim();
+      const auditWhere = [];
+      const auditBinds = [];
+      const auditCategories = {
+        booking: "a.action LIKE 'booking.%'",
+        aiclone: "a.action LIKE 'aiclone.%'",
+        payment: "(a.action LIKE 'payment.%' OR a.action LIKE 'wallet.%' OR a.action LIKE 'settle.%' OR a.action LIKE 'affiliate_order.%')",
+        account: "(a.action LIKE 'business.%' OR a.action LIKE 'koc.%' OR a.action LIKE 'account.%')",
+        other: "NOT (a.action LIKE 'booking.%' OR a.action LIKE 'aiclone.%' OR a.action LIKE 'payment.%' OR a.action LIKE 'wallet.%' OR a.action LIKE 'settle.%' OR a.action LIKE 'affiliate_order.%' OR a.action LIKE 'business.%' OR a.action LIKE 'koc.%' OR a.action LIKE 'account.%')",
+      };
+      if (auditCategories[auditCategory]) auditWhere.push(auditCategories[auditCategory]);
+      if (auditSearch) {
+        auditWhere.push("LOWER(COALESCE(a.action,'') || ' ' || COALESCE(a.ref,'') || ' ' || COALESCE(a.detail,'') || ' ' || COALESCE(u.name,'')) LIKE ?");
+        auditBinds.push(`%${auditSearch}%`);
+      }
+      const auditWhereSql = auditWhere.length ? `WHERE ${auditWhere.join(" AND ")}` : "";
+      const ledgerTotal = Number(await env.DB.prepare("SELECT COUNT(*) c FROM ledger").first("c")) || 0;
+      const auditTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM audit_log a LEFT JOIN users u ON u.id=a.actor ${auditWhereSql}`).bind(...auditBinds).first("c")) || 0;
+      const settlementWhere = "WHERE b.status IN ('completed', 'settling', 'video_approved', 'posted', 'brief_review', 'producing')";
+      const campaignSettlementWhere = "WHERE c.status IN ('funded','coordinating','assigned','in_progress','completed','cancelled')";
+      const bookingSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM bookings b ${settlementWhere}`).first("c")) || 0;
+      const campaignSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM campaigns c ${campaignSettlementWhere}`).first("c")) || 0;
+      const kolSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM kol_requests WHERE status IN ('funded','confirmed','revision_requested','delivered','approved','completed','cancelled')`).first('c'))||0;
+      const settlementTotal = bookingSettlementTotal + campaignSettlementTotal + kolSettlementTotal;
+      const settlementTotals = await env.DB.prepare(
+        `SELECT COALESCE(SUM(price),0) escrow,COALESCE(SUM(koc_fee),0) koc,COALESCE(SUM(price-koc_fee),0) netviet
+         FROM (
+           SELECT price,CASE
+             WHEN type='aiclone' THEN COALESCE(aiclone_quote_koc,0)
+             ELSE price-ROUND(price*0.05)
+           END koc_fee FROM bookings WHERE status='completed'
+         ) summary`,
+      ).first();
       const { results } = await env.DB.prepare(
-        "SELECT * FROM ledger ORDER BY created_at DESC, rowid DESC LIMIT 100",
-      ).all();
+        "SELECT * FROM ledger ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?",
+      ).bind(per, (ledgerPage - 1) * per).all();
       const audit = await env.DB.prepare(
-        "SELECT * FROM audit_log ORDER BY created_at DESC, rowid DESC LIMIT 60",
-      ).all();
+        `SELECT a.*,u.name actor_name,u.role actor_role
+         FROM audit_log a LEFT JOIN users u ON u.id=a.actor
+         ${auditWhereSql} ORDER BY a.created_at DESC,a.id DESC LIMIT ? OFFSET ?`,
+      ).bind(...auditBinds, per, (auditPage - 1) * per).all();
       const settlements = await env.DB.prepare(
-        `SELECT b.id, b.code, b.type, b.price, b.status, b.created_at, b.updated_at,
+        `SELECT * FROM (
+         SELECT b.id, b.code, b.type, b.price, b.status, b.created_at, b.updated_at, b.aiclone_batch_id,
                 b.aiclone_quote_production, b.aiclone_quote_koc, b.aiclone_quote_platform, b.aiclone_quote_additional,
                 b.aiclone_production_fee, b.aiclone_platform_fee,
-                k.name koc_name, bz.name business_name
+                k.name koc_name, bz.name business_name,
+                0 campaign_koc_paid,0 campaign_netviet_paid,0 campaign_remaining
          FROM bookings b
          LEFT JOIN kocs k ON k.id=b.koc_id
          LEFT JOIN businesses bz ON bz.id=b.business_id
-         WHERE b.status IN ('completed', 'settling', 'video_approved', 'posted', 'brief_review', 'producing')
-         ORDER BY b.updated_at DESC, b.rowid DESC LIMIT 50`,
-      ).all();
-      return J({ ledger: results, audit: audit.results, settlements: settlements.results || [] });
+         ${settlementWhere}
+         UNION ALL
+         SELECT c.id,'CD-' || UPPER(SUBSTRING(c.id FROM 1 FOR 8)) code,'campaign' type,c.total_amount price,c.status,
+                c.created_at,COALESCE(c.completed_at,c.cancelled_at,c.started_at,c.funded_at,c.created_at) updated_at,NULL aiclone_batch_id,
+                0,0,0,0,0,0,
+                COALESCE((SELECT STRING_AGG(k.name,' · ' ORDER BY k.name) FROM campaign_allocations ca JOIN kocs k ON k.id=ca.koc_id WHERE ca.campaign_id=c.id),'Chưa phân bổ') koc_name,
+                bz.name business_name,
+                COALESCE((SELECT SUM(ca.amount) FROM campaign_allocations ca WHERE ca.campaign_id=c.id AND ca.status='settled'),0) campaign_koc_paid,
+                CASE WHEN c.status='completed' THEN c.management_fee ELSE c.upfront_fee_released END campaign_netviet_paid,
+                CASE WHEN c.status='cancelled' THEN 0 ELSE GREATEST(0,c.total_amount-COALESCE((SELECT SUM(ca.amount) FROM campaign_allocations ca WHERE ca.campaign_id=c.id AND ca.status='settled'),0)-(CASE WHEN c.status='completed' THEN c.management_fee ELSE c.upfront_fee_released END)) END campaign_remaining
+         FROM campaigns c JOIN businesses bz ON bz.id=c.business_id
+         ${campaignSettlementWhere}
+         UNION ALL
+         SELECT kr.id,'KOL-' || UPPER(SUBSTRING(kr.id FROM 1 FOR 8)) code,'kol' type,kr.total_amount price,kr.status,
+                kr.created_at,kr.updated_at,NULL,0,0,0,0,0,0,kp.name,bz.name,
+                CASE WHEN kr.status='completed' THEN kr.quote_kol ELSE 0 END,
+                CASE WHEN kr.status='completed' THEN kr.quote_platform+kr.quote_additional ELSE 0 END,
+                CASE WHEN kr.status='cancelled' THEN 0 ELSE kr.escrow_amount END
+         FROM kol_requests kr JOIN kol_profiles kp ON kp.id=kr.kol_id JOIN businesses bz ON bz.id=kr.business_id
+         WHERE kr.status IN ('funded','confirmed','revision_requested','delivered','approved','completed','cancelled')
+         ) distribution_rows
+         ORDER BY updated_at DESC,id DESC LIMIT ? OFFSET ?`,
+      ).bind(per, (distributionPage - 1) * per).all();
+      const pagination = (page, total) => ({ page, per, total, pages: Math.max(1, Math.ceil(total / per)) });
+      const platformWalletRevenue = await walletBalance(env, 'platform', 'netviet', 'revenue');
+      const campaignTotals = await env.DB.prepare(
+        `SELECT
+           COALESCE((SELECT SUM(amount) FROM campaign_allocations WHERE status='settled'),0) koc,
+           COALESCE((SELECT SUM(total_amount) FROM campaigns WHERE status='completed'),0) escrow`,
+      ).first();
+      const kolTotals=await env.DB.prepare(`SELECT COALESCE(SUM(CASE WHEN status='completed' THEN quote_kol ELSE 0 END),0) koc,COALESCE(SUM(CASE WHEN status='completed' THEN total_amount ELSE 0 END),0) escrow FROM kol_requests`).first();
+      return J({
+        ledger: results, audit: audit.results, settlements: settlements.results || [],
+        pagination: {
+          distribution: pagination(distributionPage, settlementTotal),
+          ledger: pagination(ledgerPage, ledgerTotal),
+          audit: pagination(auditPage, auditTotal),
+        },
+        totals: {
+          escrow: Number(settlementTotals.escrow || 0) + Number(campaignTotals.escrow || 0)+Number(kolTotals.escrow||0),
+          koc: Number(settlementTotals.koc || 0) + Number(campaignTotals.koc || 0)+Number(kolTotals.koc||0),
+          netviet: Number(settlementTotals.netviet || 0),
+          platformWalletRevenue,
+        },
+      });
     }
     // Admin: all affiliate orders (reconciliation with sàn)
     if (p === "/api/admin/affiliate") {
@@ -4935,35 +5332,50 @@ export async function route(request, env, url) {
         .first();
       if (!kr) return err("Không tìm thấy yêu cầu", 404);
       const to = body.action; // 'quote' | 'approve' | 'reject'
-      if (["approved", "rejected"].includes(kr.status))
+      if (["completed", "rejected", "cancelled"].includes(kr.status))
         return err("Yêu cầu KOL đã được xử lý");
       if (to === "quote") {
-        if (kr.status !== "pending")
-          return err("Chỉ có thể báo giá yêu cầu đang chờ xử lý");
-        const quote = Number(body.quote);
-        if (!Number.isFinite(quote) || quote <= 0)
-          return err("Mức báo giá phải là số dương");
+        if (!['pending','quoted'].includes(kr.status))return err("Không thể sửa báo giá sau khi doanh nghiệp ký quỹ");
+        const kolAmount=Number(body.kolAmount),platformFee=Number(body.platformFee),additionalFee=Number(body.additionalFee||0);
+        if(!Number.isSafeInteger(kolAmount)||kolAmount<=0||!Number.isSafeInteger(platformFee)||platformFee<0||!Number.isSafeInteger(additionalFee)||additionalFee<0)return err('Các khoản báo giá phải là số nguyên VND hợp lệ');
+        const quote=kolAmount+platformFee+additionalFee;if(!Number.isSafeInteger(quote)||quote<=0||quote>100_000_000_000)return err('Tổng báo giá không hợp lệ');
         await env.DB.prepare(
-          "UPDATE kol_requests SET status=?, quote=?, admin_note=?, updated_at=? WHERE id=?",
+          "UPDATE kol_requests SET status=?,quote=?,quote_kol=?,quote_platform=?,quote_additional=?,total_amount=?,admin_note=?,quoted_at=?,updated_at=? WHERE id=?",
         )
           .bind(
             "quoted",
             quote,
+            kolAmount,platformFee,additionalFee,quote,
             String(body.note || "")
               .trim()
               .slice(0, 500),
-            now(),
+            now(),now(),
             body.id,
           )
           .run();
-      } else if (to === "approve") {
-        if (kr.status !== "quoted")
-          return err("Cần báo giá trước khi chốt yêu cầu");
+        await notifyBusiness(env,kr.business_id,'kol_quote','NetViet đã gửi báo giá KOL',`Tổng ký quỹ ${quote.toLocaleString('vi-VN')}đ.`,'#/kol');
+      } else if (to === "confirm") {
+        if (kr.status !== "funded")return err("Doanh nghiệp chưa ký quỹ");
+        const contractReference=String(body.contractReference||'').trim().slice(0,200);if(!contractReference)return err('Vui lòng nhập mã hợp đồng hoặc xác nhận lịch diễn');
         await env.DB.prepare(
-          "UPDATE kol_requests SET status=?, updated_at=? WHERE id=?",
+          "UPDATE kol_requests SET status='confirmed',contract_reference=?,confirmed_at=?,updated_at=? WHERE id=?",
         )
-          .bind("approved", now(), body.id)
+          .bind(contractReference,now(),now(),body.id)
           .run();
+        await notifyBusiness(env,kr.business_id,'kol_confirmed','KOL đã xác nhận lịch và hợp đồng','Yêu cầu đang được thực hiện.','#/kol');
+      } else if(to==='deliver'){
+        if(!['confirmed','revision_requested'].includes(kr.status))return err('Yêu cầu chưa ở giai đoạn bàn giao');
+        const deliveryUrl=String(body.deliveryUrl||'').trim(),deliveryNote=String(body.note||'').trim().slice(0,1000);if(!isUrl(deliveryUrl))return err('Link bàn giao không hợp lệ');
+        await env.DB.prepare(`UPDATE kol_requests SET status='delivered',delivery_url=?,delivery_note=?,delivered_at=?,updated_at=? WHERE id=?`).bind(deliveryUrl,deliveryNote||null,now(),now(),kr.id).run();
+        await notifyBusiness(env,kr.business_id,'kol_delivery','KOL đã bàn giao sản phẩm','Vui lòng kiểm tra và nghiệm thu.','#/kol');
+      } else if(to==='settle'){
+        if(kr.status!=='approved')return err('Doanh nghiệp chưa nghiệm thu sản phẩm KOL');
+        const kolAmount=Number(kr.quote_kol),platformAmount=Number(kr.quote_platform)+Number(kr.quote_additional),total=kolAmount+platformAmount;
+        if(total!==Number(kr.escrow_amount)||total!==Number(kr.total_amount))return err('Số tiền ký quỹ không khớp báo giá, chưa thể giải ngân');
+        const destinations=[{account:walletAccount('kol',kr.kol_id,'available'),amount:kolAmount}];if(platformAmount>0)destinations.push({account:walletAccount('platform','netviet','revenue'),amount:platformAmount});
+        await transferWalletFunds(env,{idempotencyKey:`kol-settle:${kr.id}`,eventType:'kol_settled',referenceType:'kol_request',referenceId:kr.id,note:`Giải ngân yêu cầu KOL ${kr.id}`,source:walletAccount('business',kr.business_id,'escrow'),destinations});
+        await env.DB.prepare(`UPDATE kol_requests SET status='completed',escrow_amount=0,completed_at=?,updated_at=? WHERE id=?`).bind(now(),now(),kr.id).run();
+        await notifyBusiness(env,kr.business_id,'kol_completed','Yêu cầu KOL đã hoàn tất',`Đã giải ngân ${total.toLocaleString('vi-VN')}đ.`,'#/kol');
       } else if (to === "reject") {
         if (!["pending", "quoted"].includes(kr.status))
           return err("Không thể từ chối yêu cầu ở trạng thái hiện tại");
@@ -4976,17 +5388,19 @@ export async function route(request, env, url) {
         )
           .bind("rejected", reason, now(), body.id)
           .run();
+        await notifyBusiness(env,kr.business_id,'kol_rejected','Yêu cầu KOL đã bị từ chối',reason,'#/kol');
+      } else if(to==='cancel'){
+        if(!['funded','confirmed','revision_requested','delivered','approved'].includes(kr.status))return err('Không thể hủy ở trạng thái hiện tại');
+        const refund=Number(kr.escrow_amount||0);if(refund>0)await transferWalletFunds(env,{idempotencyKey:`kol-refund:${kr.id}`,eventType:'kol_refund',referenceType:'kol_request',referenceId:kr.id,note:`Admin hoàn ký quỹ KOL ${kr.id}`,source:walletAccount('business',kr.business_id,'escrow'),destinations:[{account:walletAccount('business',kr.business_id,'available'),amount:refund}]});
+        await env.DB.prepare(`UPDATE kol_requests SET status='cancelled',escrow_amount=0,admin_note=?,cancelled_at=?,updated_at=? WHERE id=?`).bind(String(body.note||'').trim().slice(0,500)||null,now(),now(),kr.id).run();
+        await notifyBusiness(env,kr.business_id,'kol_cancelled','Yêu cầu KOL đã được hủy',`Đã hoàn ${refund.toLocaleString('vi-VN')}đ về Ví doanh nghiệp.`,'#/kol');
       } else return err("Hành động không hợp lệ");
       await audit(
         env,
         me.id,
         "kol_request." + to,
         body.id,
-        to === "reject"
-          ? String(body.note || "")
-              .trim()
-              .slice(0, 500)
-          : `quote=${body.quote || 0}`,
+        `action=${to} kol=${body.kolAmount||kr.quote_kol||0} platform=${body.platformFee||kr.quote_platform||0} note=${String(body.note||'').trim().slice(0,300)}`,
       );
       return J({ ok: true });
     }
@@ -5074,27 +5488,44 @@ export async function route(request, env, url) {
         pages: Math.ceil(total / per) || 1,
       });
     }
+    if (p === "/api/admin/campaign-allocation-replace" && m === "POST") {
+      const allocation = await env.DB.prepare(`SELECT ca.*,c.category,c.tier,c.status campaign_status FROM campaign_allocations ca JOIN campaigns c ON c.id=ca.campaign_id WHERE ca.id=?`).bind(body.allocationId).first();
+      if (!allocation) return err('Không tìm thấy phân bổ cần thay thế',404);
+      if (allocation.status !== 'declined' || allocation.campaign_status !== 'assigned') return err('Chỉ thay thế KOC đã từ chối trong chiến dịch đang phân bổ');
+      const kocId=String(body.kocId||'');
+      const duplicate=await env.DB.prepare(`SELECT id FROM campaign_allocations WHERE campaign_id=? AND koc_id=?`).bind(allocation.campaign_id,kocId).first();
+      if(duplicate)return err('KOC này đã có trong chiến dịch');
+      const allCategories=allocation.category==='Tất cả';
+      const koc=await env.DB.prepare(`SELECT id,name,avatar,tier FROM kocs WHERE id=? AND status='active' AND tier=?${allCategories?'':' AND categories LIKE ?'}`).bind(...(allCategories?[kocId,allocation.tier]:[kocId,allocation.tier,'%"'+allocation.category+'"%'])).first();
+      if(!koc)return err('KOC thay thế không còn hoạt động hoặc không phù hợp hạng/ngành');
+      const replacementId=uid(),timestamp=now();
+      await env.DB.batch([env.DB.prepare(`DELETE FROM campaign_allocations WHERE id=?`).bind(allocation.id),env.DB.prepare(`INSERT INTO campaign_allocations (id,campaign_id,koc_id,amount,status,deadline,created_at,updated_at) VALUES (?,?,?,?,'invited',?,?,?)`).bind(replacementId,allocation.campaign_id,koc.id,allocation.amount,allocation.deadline||null,timestamp,timestamp)]);
+      const {results:assignedRows}=await env.DB.prepare(`SELECT k.id,k.name,k.avatar,k.tier FROM campaign_allocations ca JOIN kocs k ON k.id=ca.koc_id WHERE ca.campaign_id=? ORDER BY ca.created_at,ca.id`).bind(allocation.campaign_id).all();
+      await env.DB.prepare(`UPDATE campaigns SET assigned=? WHERE id=?`).bind(JSON.stringify(assignedRows||[]),allocation.campaign_id).run();
+      await audit(env,me.id,'campaign.allocation_replaced',allocation.campaign_id,`old=${allocation.koc_id} new=${koc.id} amount=${allocation.amount}`);
+      return J({ok:true,allocationId:replacementId,amount:Number(allocation.amount)});
+    }
     if (p === "/api/admin/campaign-assign" && m === "POST") {
       const c = await env.DB.prepare("SELECT * FROM campaigns WHERE id=?")
         .bind(body.id)
         .first();
       if (!c) return err("Không tìm thấy chiến dịch", 404);
-      const ids = Array.isArray(body.kocIds) ? [...new Set(body.kocIds)] : [];
+      if (!['coordinating','assigned'].includes(c.status)) return err('Chiến dịch phải được ký quỹ và bắt đầu điều phối trước');
+      const requested = Array.isArray(body.allocations) ? body.allocations : [];
+      const ids = [...new Set(requested.map(item => String(item.kocId || '')))];
       const requiredQty = Number(c.qty) || 0;
-      if (ids.length > requiredQty) {
-        return err(
-          `Chiến dịch chỉ yêu cầu ${requiredQty} KOC, không thể gán ${ids.length} KOC`,
-        );
-      }
+      if (ids.length !== requested.length || ids.length !== requiredQty) return err(`Chiến dịch yêu cầu phân bổ đúng ${requiredQty} KOC`);
+      const amounts = requested.map(item => Number(item.amount));
+      if (amounts.some(value => !Number.isSafeInteger(value) || value <= 0) || amounts.reduce((sum,value)=>sum+value,0) !== Number(c.budget)) return err('Tổng tiền phân bổ phải bằng ngân sách trả KOC');
+      const locked = await env.DB.prepare(`SELECT id FROM campaign_allocations WHERE campaign_id=? AND status NOT IN ('invited','declined') LIMIT 1`).bind(c.id).first();
+      if (locked) return err('Không thể sửa toàn bộ phân bổ sau khi KOC đã nhận việc hoặc nộp bài');
       let assigned = [];
       if (ids.length) {
         const placeholders = ids.map(() => "?").join(",");
-        const { results: arows } = await env.DB.prepare(
-          `SELECT id,name,avatar,tier FROM kocs
-           WHERE id IN (${placeholders}) AND status='active' AND tier=? AND categories LIKE ?`,
-        )
-          .bind(...ids, c.tier, '%"' + c.category + '"%')
-          .all();
+        const allCategories = c.category === 'Tất cả';
+        const query = `SELECT id,name,avatar,tier FROM kocs WHERE id IN (${placeholders}) AND status='active' AND tier=?${allCategories ? '' : ' AND categories LIKE ?'}`;
+        const params = allCategories ? [...ids,c.tier] : [...ids,c.tier,'%"'+c.category+'"%'];
+        const { results: arows } = await env.DB.prepare(query).bind(...params).all();
         if (arows.length !== ids.length) {
           return err(
             "Có KOC không còn hoạt động hoặc không phù hợp hạng/ngành của chiến dịch",
@@ -5102,15 +5533,8 @@ export async function route(request, env, url) {
         }
         assigned = arows;
       }
-      await env.DB.prepare(
-        "UPDATE campaigns SET assigned=?, status=? WHERE id=?",
-      )
-        .bind(
-          JSON.stringify(assigned),
-          assigned.length ? "assigned" : "pending",
-          body.id,
-        )
-        .run();
+      const amountByKoc=new Map(requested.map(item=>[String(item.kocId),Number(item.amount)])),timestamp=now();
+      await env.DB.batch([env.DB.prepare(`DELETE FROM campaign_allocations WHERE campaign_id=?`).bind(c.id),...assigned.map(k=>env.DB.prepare(`INSERT INTO campaign_allocations (id,campaign_id,koc_id,amount,status,deadline,created_at,updated_at) VALUES (?,?,?,?,'invited',?,?,?)`).bind(uid(),c.id,k.id,amountByKoc.get(k.id),c.deadline||null,timestamp,timestamp)),env.DB.prepare(`UPDATE campaigns SET assigned=?,status='assigned' WHERE id=?`).bind(JSON.stringify(assigned),c.id)]);
       await audit(
         env,
         me.id,
@@ -5160,7 +5584,7 @@ export async function route(request, env, url) {
           .first();
         if (!b || b.escrow <= 0)
           return err(
-            "Booking không còn escrow để hoàn (đã giải ngân hoặc là booking affiliate thuần)",
+            "Booking không còn khoản tiền có thể hoàn (đã chuyển tiền hoặc là booking chỉ nhận hoa hồng bán hàng)",
           );
         await upd(env, b.id, {
           status: "refund_pending",
@@ -5231,8 +5655,22 @@ export async function route(request, env, url) {
          ORDER BY created_at,rowid LIMIT 1`,
       ).bind(body.id || "", batchId, batchId).first();
       if (!booking) return err("Không tìm thấy yêu cầu AI Clone", 404);
+      const effectiveBatchId = booking.aiclone_batch_id || booking.id;
+      const { results: batchBookings } = await env.DB.prepare(
+        `SELECT id,koc_id FROM bookings
+         WHERE type='aiclone' AND status='quote_pending'
+           AND (id=? OR aiclone_batch_id=?)
+         ORDER BY created_at,rowid`,
+      ).bind(booking.id, effectiveBatchId).all();
+      const rawAllocations = Array.isArray(body.koc_allocations) ? body.koc_allocations : [];
+      const allocationMap = new Map(rawAllocations.map(item => [String(item?.booking_id || ''), Number(item?.amount)]));
+      if (allocationMap.size !== batchBookings.length || batchBookings.some(item => !allocationMap.has(String(item.id))))
+        return err("Vui lòng nhập phí riêng cho đầy đủ từng KOC trong booking");
+      const allocationValues = batchBookings.map(item => allocationMap.get(String(item.id)));
+      if (!allocationValues.every(value => Number.isSafeInteger(value) && value >= 0))
+        return err("Phí của từng KOC phải là số nguyên không âm");
       const production = Number(body.production_fee || 0);
-      const kocFee = Number(body.koc_fee || 0);
+      const kocFee = allocationValues.reduce((sum, value) => sum + value, 0);
       const platformFee = Number(body.platform_fee || 0);
       const additionalFee = Number(body.additional_fee || 0);
       const parts = [production, kocFee, platformFee, additionalFee];
@@ -5242,29 +5680,25 @@ export async function route(request, env, url) {
       if (quote <= 0 || quote > 1_000_000_000)
         return err("Tổng báo giá phải từ 1đ đến 1 tỷ đồng");
       const note = String(body.note || "").trim().slice(0, 1000);
-      const effectiveBatchId = booking.aiclone_batch_id || booking.id;
-      await env.DB.batch([
-        env.DB.prepare(
+      await env.DB.batch(batchBookings.map(item => {
+        const representative = item.id === booking.id;
+        return env.DB.prepare(
           `UPDATE bookings
-           SET price=?,status='quote_sent',aiclone_quote_note=?,
+           SET price=?,status=?,aiclone_quote_note=?,
                aiclone_quote_production=?,aiclone_quote_koc=?,
                aiclone_quote_platform=?,aiclone_quote_additional=?,updated_at=?
            WHERE id=? AND status='quote_pending'`,
         ).bind(
-          quote, note || null, production, kocFee, platformFee, additionalFee,
-          now(), booking.id,
-        ),
-        env.DB.prepare(
-          `UPDATE bookings
-           SET price=0,status='quote_grouped',aiclone_quote_note=?,
-               aiclone_quote_production=?,aiclone_quote_koc=?,
-               aiclone_quote_platform=?,aiclone_quote_additional=?,updated_at=?
-           WHERE aiclone_batch_id=? AND id!=? AND status='quote_pending'`,
-        ).bind(
-          note || null, production, kocFee, platformFee, additionalFee,
-          now(), effectiveBatchId, booking.id,
-        ),
-      ]);
+          representative ? quote : 0,
+          representative ? 'quote_sent' : 'quote_grouped',
+          note || null,
+          representative ? production : 0,
+          allocationMap.get(String(item.id)),
+          representative ? platformFee : 0,
+          representative ? additionalFee : 0,
+          now(), item.id,
+        );
+      }));
       const bookingCount = Number(await env.DB.prepare(
         `SELECT COUNT(*) c FROM bookings
          WHERE aiclone_batch_id=? AND type='aiclone'`,
@@ -5351,11 +5785,10 @@ export async function route(request, env, url) {
     if (p === "/api/admin/aiclone/deliver" && m === "POST") {
       const videoLink = String(body.video_link || "").trim();
       const target = String(body.target || "business");
-      if (!["business", "koc"].includes(target))
-        return err("Đối tượng nhận video không hợp lệ");
+      if (target !== "business") return err("Video phải được gửi cho doanh nghiệp duyệt trước");
       if (!isUrl(videoLink)) return err("Link video phải là URL http/https hợp lệ");
       const booking = await env.DB.prepare(
-        "SELECT id,code,koc_id,business_id,type,status FROM bookings WHERE id=?",
+        "SELECT id,code,koc_id,business_id,type,status,aiclone_batch_id FROM bookings WHERE id=?",
       )
         .bind(body.id)
         .first();
@@ -5363,29 +5796,23 @@ export async function route(request, env, url) {
         return err("Không tìm thấy booking AI Clone Avatar", 404);
       if (
         target === "business" &&
-        !["pending", "confirmed", "brief_review", "producing", "revision_requested"].includes(booking.status)
+        !["brief_review", "producing", "revision_requested", "pending_business_review", "business_approved", "pending_koc_review", "video_approved"].includes(booking.status)
       ) return err("Booking chưa ở bước cho phép giao video cho doanh nghiệp");
-      if (target === "koc" && booking.status !== "business_approved")
-        return err("Doanh nghiệp phải duyệt video trước khi admin giao cho KOC");
-      const nextStatus = target === "business"
-        ? "pending_business_review"
-        : "pending_koc_review";
-      if (target === "business") {
-        await env.DB.prepare(
-          "UPDATE bookings SET business_video_link=?,video_link=?,status=?,reject_reason=NULL,updated_at=? WHERE id=?",
-        ).bind(videoLink, videoLink, nextStatus, now(), booking.id).run();
-      } else {
-        await env.DB.prepare(
-          "UPDATE bookings SET koc_video_link=?,video_link=?,status=?,reject_reason=NULL,updated_at=? WHERE id=?",
-        ).bind(videoLink, videoLink, nextStatus, now(), booking.id).run();
-      }
+      const nextStatus = "pending_business_review";
+      const effectiveBatchId = booking.aiclone_batch_id || booking.id;
       await env.DB.prepare(
-        `UPDATE aiclone SET status='produced' WHERE koc_id=?`,
+        `UPDATE bookings SET business_video_link=?,video_link=?,status=?,reject_reason=NULL,updated_at=?
+         WHERE type='aiclone' AND (id=? OR aiclone_batch_id=?)
+           AND status IN ('brief_review','producing','revision_requested','pending_business_review','business_approved','pending_koc_review','video_approved')`,
+      ).bind(videoLink, videoLink, nextStatus, now(), booking.id, effectiveBatchId).run();
+      await env.DB.prepare(
+        `UPDATE aiclone SET status='produced' WHERE koc_id IN (
+           SELECT koc_id FROM bookings WHERE type='aiclone' AND (id=? OR aiclone_batch_id=?)
+         )`,
       )
-        .bind(booking.koc_id)
+        .bind(booking.id, effectiveBatchId)
         .run();
-      if (target === "business") {
-        await notifyBusiness(
+      await notifyBusiness(
           env,
           booking.business_id,
           "video_review",
@@ -5393,22 +5820,12 @@ export async function route(request, env, url) {
           `${booking.code} · Vui lòng xem và duyệt video.`,
           "#/orders",
         );
-      } else {
-        await notifyKoc(
-          env,
-          booking.koc_id,
-          "video_review",
-          "Admin đã giao video AI Clone cho bạn",
-          `${booking.code} · Vui lòng xem và phê duyệt quyền hình ảnh.`,
-          "#/aiclone",
-        );
-      }
       await audit(
         env,
         me.id,
         "aiclone.deliver",
         booking.id,
-        `target=${target} video=${videoLink}`,
+        `target=${target} batch=${effectiveBatchId} video=${videoLink}`,
       );
       return J({ ok: true, video_link: videoLink, target, status: nextStatus });
     }
@@ -5578,6 +5995,7 @@ export async function route(request, env, url) {
     const bankName = String(bank.name || "")
       .trim()
       .slice(0, 80);
+    const bankBin = String(bank.bin || "").trim();
     const bankAccount = String(bank.account || "")
       .trim()
       .slice(0, 40);
@@ -5586,11 +6004,13 @@ export async function route(request, env, url) {
       .slice(0, 120);
     if (!bankName || !bankAccount || !bankOwner)
       return err("Nhập đầy đủ thông tin tài khoản nhận thanh toán");
+    if (!/^\d{6}$/.test(bankBin))
+      return err("Mã ngân hàng gồm đúng 6 chữ số");
     const oldAccepting = JSON.parse(k.accepting || "{}");
     const accepting = {};
     categories.forEach((c) => (accepting[c] = oldAccepting[c] !== false));
     await env.DB.prepare(
-      `UPDATE kocs SET email=?,bio=?,province=?,avatar=?,cover=?,socials=?,categories=?,accepting=?,bank_name=?,bank_account=?,bank_owner=? WHERE id=?`,
+      `UPDATE kocs SET email=?,bio=?,province=?,avatar=?,cover=?,socials=?,categories=?,accepting=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=? WHERE id=?`,
     )
       .bind(
         email,
@@ -5602,12 +6022,16 @@ export async function route(request, env, url) {
         JSON.stringify(categories),
         JSON.stringify(accepting),
         bankName,
+        bankBin,
         bankAccount,
         bankOwner,
         me.koc_id,
       )
       .run();
-    await env.DB.prepare("UPDATE users SET email=?,session_version=session_version+1,updated_at=? WHERE id=?")
+    // Profile edits (including avatar/cover changes) must not revoke the
+    // current login session. session_version is reserved for security events
+    // such as changing or resetting a password.
+    await env.DB.prepare("UPDATE users SET email=?,updated_at=? WHERE id=?")
       .bind(email, now(), me.id)
       .run();
     const stmts = [

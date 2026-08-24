@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+graphify-out/
+__pycache__/
+*.pyc
+.freebuff/

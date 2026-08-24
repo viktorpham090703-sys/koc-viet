@@ -1,0 +1,341 @@
+import { notify } from './notifications.jsx';
+
+// Shared UI helpers + components for all 3 portals.
+export const money = (n) => (Number(n)||0).toLocaleString('vi-VN') + 'đ';
+export const num = (n) => (Number(n)||0).toLocaleString('vi-VN');
+export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export const avatarUrl = (value) => String(value || '').trim() || '/default-avatar.svg';
+export function provinceOptions(provinces = [], current = '') {
+  const values = [...new Set([...(provinces || []), current].map(value => String(value || '').trim()).filter(Boolean))];
+  return values.map(value => `<option value="${esc(value)}"${value === current ? ' selected' : ''}>${esc(value)}</option>`).join('');
+}
+export const fmtDate = (ts) => {
+  if (!ts) return '—';
+  const num = Number(ts);
+  if (!isNaN(num) && num > 0) {
+    const d = new Date(num > 1e11 ? num : num * 1000);
+    return d.toLocaleDateString('vi-VN');
+  }
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('vi-VN');
+};
+
+export function stars(r) {
+  r = Number(r)||0;
+  const full = Math.round(r);
+  return `<span class="stars">${'★'.repeat(full)}${'☆'.repeat(5-full)}</span> <span class="muted" style="font-size:12px">${r.toFixed(1)}</span>`;
+}
+
+const STATUS = {
+  quote_pending: ['Chờ Admin báo giá','w'],
+  quote_requested: ['Chờ Admin báo giá','w'],
+  quoted: ['Admin đã gửi báo giá · Chờ thanh toán','b'],
+  quote_sent: ['Chờ DN xác nhận báo giá','w'],
+  quote_grouped: ['Báo giá chung chờ xác nhận','w'],
+  payment_grouped: ['Thanh toán chung theo booking','w'],
+  payment_pending: ['Chờ doanh nghiệp thanh toán','w'],
+  payment_failed: ['Chưa tạo được yêu cầu thanh toán','r'],
+  payment_cancelled: ['DN đã hủy thanh toán','r'],
+  refund_pending: ['Đang chờ hoàn tiền','w'],
+  pending:   ['Chờ xác nhận','w'],
+  funded:    ['Đã ký quỹ','b'],
+  coordinating: ['Đang tuyển chọn','b'],
+  invited: ['Chờ KOC xác nhận','w'],
+  accepted: ['KOC đã nhận việc','b'],
+  declined: ['KOC từ chối','r'],
+  submitted: ['Chờ doanh nghiệp duyệt','w'],
+  approved: ['Doanh nghiệp đã duyệt','g'],
+  in_progress: ['Đang nghiệm thu','w'],
+  confirmed: ['Đã xác nhận','b'],
+  brief_review: ['NetViet duyệt brief','w'],
+  script_drafting: ['Đang soạn kịch bản','w'],
+  producing: ['Đang sản xuất','b'],
+  video_processing: ['Đang xử lý video','w'],
+  pending_review: ['Chờ doanh nghiệp duyệt','w'],
+  pending_business_review: ['Chờ doanh nghiệp duyệt bản dựng','w'],
+  business_approved: ['Doanh nghiệp đã duyệt · Đã chuyển KOC','b'],
+  pending_koc_review: ['Chờ KOC phê duyệt & đăng bài','w'],
+  video_approved: ['Video đã duyệt','g'],
+  revision_requested: ['Yêu cầu sửa video','r'],
+  posted:    ['Đã đăng bài','g'],
+  settling:  ['Đang đối soát','w'],
+  completed: ['Hoàn thành','g'],
+  rejected:  ['Từ chối','r'],
+  registered:['Đã đăng ký','b'],
+  booked:    ['Đã tạo booking','w'],
+  delivered: ['Đã giao video','g'],
+  processing:['Đang xử lý','w'],
+  settled:   ['Đã đối soát','g'],
+  expected:  ['Dự kiến','w'],
+  reconciled:['Đã đối soát','b'],
+  paid:      ['Đã thanh toán','g'],
+  cancelled: ['Đã hủy','r'],
+  refunded:  ['Đã hoàn','r'],
+  open:      ['Mới tiếp nhận','r'],
+  in_review: ['Đang xử lý','b'],
+  resolved:  ['Đã xử lý','g'],
+  assigned:  ['Đã phân bổ','g'],
+};
+export function statusChip(s) {
+  const [label, cls] = STATUS[s] || [s, 'n'];
+  return `<span class="chip ${cls}">${esc(label)}</span>`;
+}
+export function tierBadge(t) { return `<span class="tier-badge tier-${esc(t)}">${esc(t)}</span>`; }
+
+export function toast(msg, type = '') {
+  return notify(msg, type);
+}
+
+// Add a subtle shake animation to error toasts for better visual feedback.
+export function toastError(msg) {
+  return notify(msg, 'error');
+}
+
+export function spinner() { return '<div class="spin"></div>'; }
+export function empty(icon, text) { return `<div class="empty"><div class="ico">${icon}</div><div>${esc(text)}</div></div>`; }
+
+export function skeletonStatCards(count = 4) {
+  let cards = '';
+  for (let i = 0; i < count; i++) {
+    cards += `<div class="sk-card">
+      <div class="nv-skeleton sk-line w-50"></div>
+      <div class="nv-skeleton sk-line w-75" style="height:24px"></div>
+    </div>`;
+  }
+  return `<div class="stat-cards">${cards}</div>`;
+}
+
+export function skeletonTable(rows = 5) {
+  let r = '';
+  for (let i = 0; i < rows; i++) {
+    r += `<div class="sk-card" style="padding:14px; margin-bottom:8px">
+      <div class="row" style="gap:16px; align-items:center">
+        <div class="nv-skeleton sk-circle sm"></div>
+        <div class="nv-skeleton sk-line w-50" style="margin:0"></div>
+        <div class="nv-skeleton sk-line w-25" style="margin:0; margin-left:auto"></div>
+      </div>
+    </div>`;
+  }
+  return `<div class="sk-table-wrap">${r}</div>`;
+}
+
+export function skeletonKocGrid(count = 6) {
+  let cards = '';
+  for (let i = 0; i < count; i++) {
+    cards += `<div class="sk-card" style="align-items:center; text-align:center">
+      <div class="nv-skeleton sk-circle lg" style="margin-bottom:8px"></div>
+      <div class="nv-skeleton sk-line w-75" style="height:18px"></div>
+      <div class="nv-skeleton sk-line w-50"></div>
+      <div class="nv-skeleton sk-line w-25" style="height:24px; border-radius:12px; margin-top:6px"></div>
+    </div>`;
+  }
+  return `<div class="sk-grid">${cards}</div>`;
+}
+
+const SKELETON_PRESETS = {
+  home: 'dashboard', dashboard: 'dashboard', report: 'report', tiers: 'report',
+  bookings: 'cards', orders: 'table', allbookings: 'table', content: 'cards',
+  affiliate: 'table', notifications: 'notifications', businesses: 'table',
+  complaints: 'table', contracts: 'table', campaigns: 'table', settle: 'table',
+  kol: 'table', leads: 'table', queue: 'cards', aiclone: 'workflow',
+  'aiclone-booking': 'workflow', find: 'grid', products: 'grid', wallet: 'wallet',
+  profile: 'profile',
+};
+
+const skLine = (width = 'w-75', height = '') =>
+  `<div class="nv-skeleton sk-line ${width}"${height ? ` style="height:${height}"` : ''}></div>`;
+
+function skeletonHeading(withAction = true) {
+  return `<div class="sk-page-heading"><div>${skLine('w-50', '26px')}${skLine('w-75')}</div>${withAction ? skLine('w-25', '38px') : ''}</div>`;
+}
+
+function skeletonCards(count = 5) {
+  return `<div class="sk-list">${Array.from({ length: count }, () => `<div class="sk-card sk-list-card"><div class="nv-skeleton sk-circle sm"></div><div class="sk-grow">${skLine('w-75', '16px')}${skLine('w-50')}</div>${skLine('w-25', '28px')}</div>`).join('')}</div>`;
+}
+
+function skeletonDataTable(rows = 6, columns = 5) {
+  const cells = () => Array.from({ length: columns }, (_, i) => `<div>${skLine(i === 0 ? 'w-75' : 'w-50')}</div>`).join('');
+  return `<div class="sk-data-table"><div class="sk-data-row sk-data-head">${cells()}</div>${Array.from({ length: rows }, () => `<div class="sk-data-row">${cells()}</div>`).join('')}</div>`;
+}
+
+/** Route-aware loading state used by all authenticated portals. */
+export function skeletonPage(page = 'dashboard') {
+  const preset = SKELETON_PRESETS[page] || 'table';
+  if (preset === 'dashboard') return `<div class="sk-page" aria-hidden="true">${skeletonHeading(false)}${skeletonStatCards(4)}<div class="sk-dashboard-panels"><div class="sk-card">${skLine('w-50','20px')}${skeletonCards(3)}</div><div class="sk-card">${skLine('w-50','20px')}${skeletonCards(3)}</div></div></div>`;
+  if (preset === 'report') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}${skeletonStatCards(4)}<div class="sk-dashboard-panels"><div class="sk-card sk-chart">${skLine('w-50','20px')}<div class="nv-skeleton sk-chart-area"></div></div><div class="sk-card">${skLine('w-50','20px')}${skeletonCards(4)}</div></div></div>`;
+  if (preset === 'grid') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-toolbar">${skLine('w-50','38px')}${skLine('w-25','38px')}</div>${skeletonKocGrid(6)}</div>`;
+  if (preset === 'cards' || preset === 'notifications') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}${preset === 'cards' ? `<div class="sk-tabs">${skLine('w-25','34px')}${skLine('w-25','34px')}${skLine('w-25','34px')}</div>` : ''}${skeletonCards(preset === 'notifications' ? 7 : 5)}</div>`;
+  if (preset === 'wallet') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-wallet-summary"><div class="sk-card">${skLine('w-50')}${skLine('w-75','30px')}</div><div class="sk-card">${skLine('w-50')}${skLine('w-75','30px')}</div></div><div class="sk-card">${skLine('w-25','20px')}${skeletonCards(5)}</div></div>`;
+  if (preset === 'profile') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-profile"><div class="sk-card sk-profile-aside"><div class="nv-skeleton sk-circle lg"></div>${skLine('w-75','20px')}${skLine('w-50')}</div><div class="sk-card sk-form-grid">${Array.from({length: 8}, () => `<div>${skLine('w-50')}${skLine('w-100','40px')}</div>`).join('')}</div></div></div>`;
+  if (preset === 'workflow') return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-workflow"><div class="sk-card">${skLine('w-50','20px')}<div class="sk-toolbar">${skLine('w-50','38px')}${skLine('w-25','38px')}</div>${skeletonCards(5)}</div><div class="sk-card sk-form-grid">${Array.from({length: 7}, () => `<div>${skLine('w-50')}${skLine('w-100','40px')}</div>`).join('')}</div></div></div>`;
+  return `<div class="sk-page" aria-hidden="true">${skeletonHeading()}<div class="sk-toolbar">${skLine('w-50','38px')}${skLine('w-25','38px')}</div>${skeletonDataTable()}</div>`;
+}
+
+export function skeletonPortal() {
+  return `<div class="sk-portal-layout">
+    <div class="sk-sidebar">
+      <div class="nv-skeleton sk-line w-75" style="height:28px; margin-bottom:20px"></div>
+      ${Array(6).fill('<div class="nv-skeleton sk-line w-100" style="height:32px; border-radius:6px; margin-bottom:10px"></div>').join('')}
+    </div>
+    <div class="sk-main">
+      <div class="sk-topbar">
+        <div class="nv-skeleton sk-line w-25" style="height:20px; margin:0"></div>
+        <div class="nv-skeleton sk-circle sm"></div>
+      </div>
+      ${skeletonStatCards(4)}
+      <div class="sk-card" style="margin-top:16px">
+        <div class="nv-skeleton sk-title"></div>
+        ${skeletonTable(4)}
+      </div>
+    </div>
+  </div>`;
+}
+
+export function skeletonKocView() {
+  return `<div style="padding:16px; display:flex; flex-direction:column; gap:16px">
+    <div class="row" style="gap:12px; align-items:center">
+      <div class="nv-skeleton sk-circle md"></div>
+      <div style="flex:1">
+        <div class="nv-skeleton sk-line w-50" style="height:18px"></div>
+        <div class="nv-skeleton sk-line w-25"></div>
+      </div>
+    </div>
+    ${skeletonStatCards(2)}
+    <div class="sk-card">
+      <div class="nv-skeleton sk-title"></div>
+      ${skeletonTable(3)}
+    </div>
+  </div>`;
+}
+
+export function modal(html) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="modal-bg"><div class="modal">${html}</div></div>`;
+  root.querySelector('.modal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('modal-bg')) closeModal(); });
+  return root.querySelector('.modal');
+}
+export function modalClose() { closeModal(); }
+export function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+export function confirmDialog(message, options = {}) {
+  return decisionDialog({
+    title: options.title || 'Xác nhận thao tác',
+    message,
+    confirmText: options.confirmText || 'Xác nhận',
+    cancelText: options.cancelText || 'Để sau',
+    tone: options.tone || 'primary',
+  });
+}
+
+export function promptDialog(message, options = {}) {
+  return decisionDialog({
+    title: options.title || 'Nhập thông tin',
+    message,
+    confirmText: options.confirmText || 'Tiếp tục',
+    cancelText: options.cancelText || 'Hủy',
+    input: true,
+    inputValue: options.value || '',
+    placeholder: options.placeholder || 'Nhập nội dung…',
+    required: options.required !== false,
+  });
+}
+
+function decisionDialog(options) {
+  const root = document.getElementById('modal-root');
+  if (!root) return Promise.resolve(options.input ? null : false);
+  return new Promise(resolve => {
+    root.innerHTML = `<div class="modal-bg decision-backdrop" role="presentation">
+      <section class="modal decision-modal" role="dialog" aria-modal="true" aria-labelledby="decision-title">
+        <button class="decision-close" type="button" aria-label="Đóng">×</button>
+        <div class="decision-icon" aria-hidden="true">?</div>
+        <h2 id="decision-title">${esc(options.title)}</h2>
+        <p>${esc(options.message).replace(/\n/g, '<br>')}</p>
+        ${options.input ? `<textarea class="decision-input" rows="4" placeholder="${esc(options.placeholder)}">${esc(options.inputValue)}</textarea><small class="decision-error" hidden>Vui lòng nhập nội dung trước khi tiếp tục.</small>` : ''}
+        <div class="decision-actions">
+          <button class="btn ghost decision-cancel" type="button">${esc(options.cancelText)}</button>
+          <button class="btn ${options.tone === 'danger' ? 'danger' : 'primary'} decision-confirm" type="button">${esc(options.confirmText)}</button>
+        </div>
+      </section>
+    </div>`;
+    const backdrop = root.querySelector('.decision-backdrop');
+    const input = root.querySelector('.decision-input');
+    let settled = false;
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKeydown);
+      root.innerHTML = '';
+      resolve(value);
+    };
+    const cancel = () => finish(options.input ? null : false);
+    const accept = () => {
+      if (!options.input) return finish(true);
+      const value = input.value.trim();
+      if (options.required && !value) {
+        root.querySelector('.decision-error').hidden = false;
+        input.focus();
+        return;
+      }
+      finish(value);
+    };
+    const onKeydown = event => {
+      if (event.key === 'Escape') cancel();
+      if (event.key === 'Enter' && (!options.input || (!event.shiftKey && event.ctrlKey))) accept();
+    };
+    backdrop.addEventListener('click', event => { if (event.target === backdrop) cancel(); });
+    root.querySelector('.decision-close').addEventListener('click', cancel);
+    root.querySelector('.decision-cancel').addEventListener('click', cancel);
+    root.querySelector('.decision-confirm').addEventListener('click', accept);
+    document.addEventListener('keydown', onKeydown);
+    setTimeout(() => (input || root.querySelector('.decision-confirm')).focus(), 0);
+  });
+}
+
+export function pager(page, pages, onGo) {
+  if (pages <= 1) return '';
+  let btns = `<button ${page<=1?'disabled':''} data-pg="${page-1}">‹</button>`;
+  for (let i = 1; i <= pages; i++) btns += `<button class="${i===page?'active':''}" data-pg="${i}">${i}</button>`;
+  btns += `<button ${page>=pages?'disabled':''} data-pg="${page+1}">›</button>`;
+  setTimeout(() => {
+    document.querySelectorAll('.pager button[data-pg]').forEach(b =>
+      b.addEventListener('click', () => onGo(Number(b.dataset.pg))));
+  }, 0);
+  return `<div class="pager">${btns}</div>`;
+}
+
+export async function copyToClipboard(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    console.warn("navigator.clipboard failed, fallback to execCommand:", err);
+  }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.width = "2em";
+    ta.style.height = "2em";
+    ta.style.padding = "0";
+    ta.style.border = "none";
+    ta.style.outline = "none";
+    ta.style.boxShadow = "none";
+    ta.style.background = "transparent";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (err) {
+    console.error("Copy failed:", err);
+    return false;
+  }
+}
+

@@ -3,7 +3,13 @@ import type { Pool, PoolClient, QueryResult } from 'pg'
 type RunMeta = { changes: number; last_row_id: null }
 type RunResult = { success: true; meta: RunMeta; results: Record<string, unknown>[] }
 
-function postgresSql(sql: string): string {
+export function postgresSql(sql: string): string {
+  const tableInfo = sql.match(/^\s*PRAGMA\s+table_info\(\s*["']?([A-Za-z_][A-Za-z0-9_]*)["']?\s*\)\s*;?\s*$/i)
+  if (tableInfo) {
+    return `SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${tableInfo[1]}' ORDER BY ordinal_position`
+  }
+
+  const insertOrIgnore = /^\s*INSERT\s+OR\s+IGNORE\s+INTO\s+/i.test(sql)
   let index = 0
   let quote: "'" | '"' | null = null
   let output = ''
@@ -25,12 +31,18 @@ function postgresSql(sql: string): string {
     }
   }
 
-  return output
+  output = output
     .replace(/^\s*INSERT\s+OR\s+IGNORE\s+INTO\s+/i, 'INSERT INTO ')
-    .replace(/\s+ON\s+CONFLICT\s+DO\s+NOTHING\s*$/i, ' ON CONFLICT DO NOTHING')
     // SQLite's implicit rowid was only used as a deterministic tie-breaker.
     // Every affected application table has a text primary key named `id`.
     .replace(/\b([A-Za-z_][A-Za-z0-9_]*\.)?rowid\b/gi, (_match, alias = '') => `${alias}id`)
+
+  if (insertOrIgnore && !/\bON\s+CONFLICT\b/i.test(output)) {
+    const hasSemicolon = /;\s*$/.test(output)
+    output = output.replace(/;\s*$/, '') + ' ON CONFLICT DO NOTHING' + (hasSemicolon ? ';' : '')
+  }
+
+  return output
 }
 
 class PreparedStatement {
@@ -47,11 +59,7 @@ class PreparedStatement {
   }
 
   executeWith(queryable: Pool | PoolClient): Promise<QueryResult<Record<string, unknown>>> {
-    let sql = postgresSql(this.sourceSql)
-    if (/^\s*INSERT\s+OR\s+IGNORE\s+/i.test(this.sourceSql) && !/ON\s+CONFLICT/i.test(sql)) {
-      sql += ' ON CONFLICT DO NOTHING'
-    }
-    return queryable.query(sql, this.values)
+    return queryable.query(postgresSql(this.sourceSql), this.values)
   }
 
   private execute() { return this.executeWith(this.queryable) }

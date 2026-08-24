@@ -43,7 +43,7 @@ export const router = createBrowserRouter([
     { path:'home', element:<DashboardPage/> }, { path:'dashboard', element:<DashboardPage/> },
     { path:'bookings', element:resource('Booking của tôi','/api/bookings','bookings',['code','category','price','status','deadline','created_at']) },
     { path:'content', element:resource('Quản lý nội dung','/api/bookings','bookings',['code','content_type','status','post_platform','updated_at']) },
-    { path:'affiliate', element:resource('Affiliate','/api/affiliate/links','links',['tracking_code','platform','clicks','status','created_at']) },
+    { path:'affiliate', element:resource('Tiếp thị liên kết','/api/affiliate/links','links',['tracking_code','platform','clicks','status','created_at']) },
     { path:'wallet', element:resource('Ví và giao dịch','/api/wallet','transactions',['type','amount','status','note','created_at']) },
     { path:'notifications', element:resource('Thông báo','/api/notifications','notifications',['title','message','is_read','created_at']) },
     { path:'orders', element:resource('Booking đã đặt','/api/bookings','bookings',['code','kocname','category','price','status','created_at']) },
