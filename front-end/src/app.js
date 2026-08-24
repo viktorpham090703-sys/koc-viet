@@ -1,25 +1,38 @@
-import { api, post } from './api.js';
-import { toast, spinner, esc } from './ui.js';
-import { renderKoc } from './koc.js';
-import { renderBusiness } from './business.js';
-import { renderAdmin } from './admin.js';
-import { renderKocProfile, renderMarketplacePublic } from './public.js';
-import { LANDING_ROUTES, renderLandingBody } from './landing/pages.js';
-import { bindLandingEvents } from './landing/shared.js';
-import { autoAnimate } from './animations.js';
+import { api, post } from "./api.js";
+import { toast, spinner, esc } from "./ui.js";
+import { renderKoc } from "./koc.js";
+import { renderBusiness } from "./business.js";
+import { renderAdmin } from "./admin.js";
+import { renderKocProfile, renderMarketplacePublic } from "./public.js";
+import { LANDING_ROUTES, renderLandingBody } from "./landing/pages.js";
+import { bindLandingEvents } from "./landing/shared.js";
+import { autoAnimate } from "./animations.js";
 
 export const state = { user: null, config: null };
-const appEl = document.getElementById('app');
+const appEl = document.getElementById("app");
 
-window.onerror = (m) => { console.error(m); };
+window.onerror = (m) => {
+  console.error(m);
+};
 
 async function boot() {
-  try { state.config = await api('/api/config'); } catch (_) { state.config = { tiers: [], categories: [], provinces: [] }; }
-  try { const r = await api('/api/me'); state.user = r.user; } catch (_) { state.user = null; }
+  try {
+    state.config = await api("/api/config");
+  } catch (_) {
+    state.config = { tiers: [], categories: [], provinces: [] };
+  }
+  try {
+    const r = await api("/api/me");
+    state.user = r.user;
+  } catch (_) {
+    state.user = null;
+  }
   route();
 }
 
-export function navigate(hash) { location.hash = hash; }
+export function navigate(hash) {
+  location.hash = hash;
+}
 
 // Set location.hash and route exactly once: the browser only fires 'hashchange' when the
 // hash actually changes, so we must call route() ourselves ONLY in the no-op case — calling
@@ -32,44 +45,76 @@ function goHash(newHash) {
 }
 
 export async function logout() {
-  try { await post('/api/logout'); } catch (_) {}
-  state.user = null; goHash('#/login');
+  try {
+    await post("/api/logout");
+  } catch (_) {}
+  state.user = null;
+  goHash("#/login");
 }
 
 async function route() {
   // 8 public marketing landing pages — render regardless of auth state. A direct visit to a
   // clean path like "/koc" may arrive here as pathname "/koc" OR get rewritten upstream into
   // hash "#/koc" (platform-dependent) — handle both so the page is reachable either way.
-  const landingPath = location.hash ? location.hash.slice(1) : location.pathname;
+  const landingPath = location.hash
+    ? location.hash.slice(1)
+    : location.pathname;
   if (LANDING_ROUTES.includes(landingPath)) {
     appEl.innerHTML = renderLandingBody(landingPath);
     bindLandingEvents(appEl);
     autoAnimate(appEl);
     return;
   }
-  if (!state.user && !location.hash && (location.pathname === '/' || location.pathname === '')) {
-    appEl.innerHTML = renderLandingBody('/trang-chu');
+  if (
+    !state.user &&
+    !location.hash &&
+    (location.pathname === "/" || location.pathname === "")
+  ) {
+    appEl.innerHTML = renderLandingBody("/trang-chu");
     bindLandingEvents(appEl);
     autoAnimate(appEl);
     return;
   }
-  const hash = location.hash || '#/';
+  const hash = location.hash || "#/";
   // public routes (no auth)
-  if (hash.startsWith('#/koc/')) { return renderKocProfile(appEl, hash.split('/')[2]); }
-  if (hash === '#/explore') { return renderMarketplacePublic(appEl); }
-  if (hash === '#/aiclone-landing') { return renderAiCloneLanding(appEl); }
-  if (hash === '#/tuyen-koc') { return renderRecruitLanding(appEl); }
-  if (hash === '#/business-register') {
-    const { renderBusinessRegister } = await import('./business-register.js');
+  if (hash.startsWith("#/koc/")) {
+    return renderKocProfile(appEl, hash.split("/")[2]);
+  }
+  if (hash === "#/explore") {
+    return renderMarketplacePublic(appEl);
+  }
+  if (hash === "#/aiclone-landing") {
+    return renderAiCloneLanding(appEl);
+  }
+  if (hash === "#/tuyen-koc") {
+    return renderRecruitLanding(appEl);
+  }
+  if (hash === "#/business-register") {
+    const { renderBusinessRegister } = await import("./business-register.js");
     return renderBusinessRegister(appEl);
   }
-  if (hash === '#/forgot-password') { return renderForgotPassword(appEl); }
+  if (hash === "#/forgot-password") {
+    return renderForgotPassword(appEl);
+  }
 
-  if (!state.user) { return renderLogin(); }
+  if (!state.user) {
+    return renderLogin();
+  }
 
-  if (state.user.role === 'koc') { await renderKoc(appEl, hash); return; }
-  if (state.user.role === 'business') { await renderBusiness(appEl, hash); enhancePortal(); return; }
-  if (state.user.role === 'admin') { await renderAdmin(appEl, hash); enhancePortal(); return; }
+  if (state.user.role === "koc") {
+    await renderKoc(appEl, hash);
+    return;
+  }
+  if (state.user.role === "business") {
+    await renderBusiness(appEl, hash);
+    enhancePortal();
+    return;
+  }
+  if (state.user.role === "admin") {
+    await renderAdmin(appEl, hash);
+    enhancePortal();
+    return;
+  }
   renderLogin();
 }
 
@@ -77,39 +122,49 @@ async function route() {
 // button into the topbar + a scrim, wiring them to slide the existing .sidebar as a drawer.
 // Pure DOM decoration — does not touch any business logic or existing markup structure.
 export function enhancePortal() {
-  const portal = appEl.querySelector('.portal');
+  const portal = appEl.querySelector(".portal");
   if (!portal) return;
-  const topbar = portal.querySelector('.topbar');
-  const sidebar = portal.querySelector('.sidebar');
+  const topbar = portal.querySelector(".topbar");
+  const sidebar = portal.querySelector(".sidebar");
   if (!topbar || !sidebar) return;
-  if (!topbar.querySelector('.portal-burger')) {
-    const burger = document.createElement('button');
-    burger.className = 'portal-burger';
-    burger.setAttribute('aria-label', 'Menu');
-    burger.textContent = '☰';
-    const close = () => { sidebar.classList.remove('open'); portal.classList.remove('drawer-open'); };
-    const open = () => { sidebar.classList.add('open'); portal.classList.add('drawer-open'); };
-    burger.addEventListener('click', () => sidebar.classList.contains('open') ? close() : open());
+  if (!topbar.querySelector(".portal-burger")) {
+    const burger = document.createElement("button");
+    burger.className = "portal-burger";
+    burger.setAttribute("aria-label", "Menu");
+    burger.textContent = "☰";
+    const close = () => {
+      sidebar.classList.remove("open");
+      portal.classList.remove("drawer-open");
+    };
+    const open = () => {
+      sidebar.classList.add("open");
+      portal.classList.add("drawer-open");
+    };
+    burger.addEventListener("click", () =>
+      sidebar.classList.contains("open") ? close() : open(),
+    );
     topbar.insertBefore(burger, topbar.firstChild);
-    const scrim = document.createElement('div');
-    scrim.className = 'portal-scrim';
-    scrim.addEventListener('click', close);
+    const scrim = document.createElement("div");
+    scrim.className = "portal-scrim";
+    scrim.addEventListener("click", close);
     portal.appendChild(scrim);
     // Close the drawer after picking a nav item (mobile)
-    sidebar.addEventListener('click', (e) => { if (e.target.closest('a')) close(); });
+    sidebar.addEventListener("click", (e) => {
+      if (e.target.closest("a")) close();
+    });
   }
 }
-window.addEventListener('hashchange', route);
-window.addEventListener('popstate', route);
+window.addEventListener("hashchange", route);
+window.addEventListener("popstate", route);
 // Intercept clicks on links to the 8 marketing pages so navigating between them (and back to
 // the app) doesn't force a full reload — pure additive behavior, only for those exact hrefs.
-document.addEventListener('click', (e) => {
-  const a = e.target.closest && e.target.closest('a');
+document.addEventListener("click", (e) => {
+  const a = e.target.closest && e.target.closest("a");
   if (!a) return;
-  const href = a.getAttribute('href') || '';
+  const href = a.getAttribute("href") || "";
   if (LANDING_ROUTES.includes(href)) {
     e.preventDefault();
-    history.pushState(null, '', href);
+    history.pushState(null, "", href);
     route();
   }
 });
@@ -117,33 +172,38 @@ document.addEventListener('click', (e) => {
 async function renderLogin() {
   // Refresh public config whenever the login screen opens. This keeps demo credentials
   // in sync after an email/password change without requiring a full page reload.
-  try { state.config = await api('/api/config'); } catch (_) {}
+  try {
+    state.config = await api("/api/config");
+  } catch (_) {}
   const roleMeta = {
     koc: [
-      'https://res.cloudinary.com/drxum5uxt/image/upload/v1785140674/koc_app_wsfxgv.png',
-      'KOC App',
+      "https://res.cloudinary.com/drxum5uxt/image/upload/v1785140674/koc_app_wsfxgv.png",
+      "KOC App",
     ],
     business: [
-      'https://res.cloudinary.com/drxum5uxt/image/upload/v1785140673/business_ft0lrg.png',
-      'Trang doanh nghiệp',
+      "https://res.cloudinary.com/drxum5uxt/image/upload/v1785140673/business_ft0lrg.png",
+      "Trang doanh nghiệp",
     ],
     admin: [
-      'https://res.cloudinary.com/drxum5uxt/image/upload/v1785140672/admin_qtwjgc.png',
-      'Trang quản trị',
+      "https://res.cloudinary.com/drxum5uxt/image/upload/v1785140672/admin_qtwjgc.png",
+      "Trang quản trị",
     ],
   };
   const demoAccounts = Array.isArray(state.config?.demoAccounts)
-    ? state.config.demoAccounts.filter(account =>
-      roleMeta[account.role] && account.email)
+    ? state.config.demoAccounts.filter(
+        (account) => roleMeta[account.role] && account.email,
+      )
     : [];
-  const defaultAccount = demoAccounts[0] || { email: '' };
-  const demoList = demoAccounts.map((account, index) => {
-    const [roleLogo, label] = roleMeta[account.role];
-    return `<div class="demo-acc" data-demo-index="${index}">
+  const defaultAccount = demoAccounts[0] || { email: "" };
+  const demoList = demoAccounts
+    .map((account, index) => {
+      const [roleLogo, label] = roleMeta[account.role];
+      return `<div class="demo-acc" data-demo-index="${index}">
       <span class="demo-acc-role"><img class="demo-acc-logo" src="${roleLogo}" alt="">${label}</span>
       <span class="muted">${esc(account.email)}</span>
     </div>`;
-  }).join('');
+    })
+    .join("");
   appEl.innerHTML = `
   <div class="auth auth-login">
     <div class="auth-login-shell">
@@ -160,13 +220,12 @@ async function renderLogin() {
       </section>
       <div class="auth-card">
       <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
-      <div class="auth-card-heading"><span>ĐĂNG NHẬP TÀI KHOẢN</span><h2>Chào mừng bạn trở lại</h2><p>Tiếp tục hành trình cùng KOC Việt</p></div>
       <form id="li-form">
         <div class="field"><label for="li-email">Email</label><input id="li-email" name="email" type="email" autocomplete="username" placeholder="Nhập địa chỉ email" value="${esc(defaultAccount.email)}" required></div>
         <div class="field"><div class="auth-label-row"><label for="li-pass">Mật khẩu</label><a href="#/forgot-password">Quên mật khẩu?</a></div><input id="li-pass" name="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required></div>
         <button class="btn primary nv-lift" id="li-btn" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
       </form>
-      ${demoList ? `<div class="auth-divider"><span>Hoặc trải nghiệm nhanh</span></div><div class="auth-demo-list">${demoList}</div>` : ''}
+      ${demoList ? `<div class="auth-divider"><span>Hoặc trải nghiệm nhanh</span></div><div class="auth-demo-list">${demoList}</div>` : ""}
       <div class="auth-quick-links">
         <a href="#/explore" class="btn ghost sm">Khám phá KOC</a>
         <a href="#/tuyen-koc" class="btn ghost sm">Trở thành KOC</a>
@@ -175,46 +234,56 @@ async function renderLogin() {
     </div>
     </div>
   </div>`;
-  document.querySelectorAll('.demo-acc').forEach(el => el.addEventListener('click', async () => {
-    const account = demoAccounts[Number(el.dataset.demoIndex)];
-    if (!account) return;
-    el.style.pointerEvents = 'none';
-    try {
-      const r = await post('/api/demo-login', { role: account.role });
-      state.user = r.user;
-      toast('Xin chào ' + r.user.name, 'ok');
-      goHash(r.user.role === 'koc' ? '#/home' : '#/dashboard');
-    } catch (error) {
-      toast(error.message, 'err');
-      el.style.pointerEvents = '';
-    }
-  }));
-  document.getElementById('li-form').addEventListener('submit', event => {
+  document.querySelectorAll(".demo-acc").forEach((el) =>
+    el.addEventListener("click", async () => {
+      const account = demoAccounts[Number(el.dataset.demoIndex)];
+      if (!account) return;
+      el.style.pointerEvents = "none";
+      try {
+        const r = await post("/api/demo-login", { role: account.role });
+        state.user = r.user;
+        toast("Xin chào " + r.user.name, "ok");
+        goHash(r.user.role === "koc" ? "#/home" : "#/dashboard");
+      } catch (error) {
+        toast(error.message, "err");
+        el.style.pointerEvents = "";
+      }
+    }),
+  );
+  document.getElementById("li-form").addEventListener("submit", (event) => {
     event.preventDefault();
     doLogin();
   });
 }
 
 async function doLogin() {
-  const btn = document.getElementById('li-btn');
-  const email = document.getElementById('li-email').value;
-  const password = document.getElementById('li-pass').value;
-  btn.disabled = true; btn.textContent = 'Đang đăng nhập…';
+  const btn = document.getElementById("li-btn");
+  const email = document.getElementById("li-email").value;
+  const password = document.getElementById("li-pass").value;
+  btn.disabled = true;
+  btn.textContent = "Đang đăng nhập…";
   try {
-    const r = await post('/api/login', { email, password });
+    const r = await post("/api/login", { email, password });
     state.user = r.user;
-    toast('Xin chào ' + r.user.name, 'ok');
-    goHash(r.user.role === 'koc' ? '#/home' : '#/dashboard');
+    toast("Xin chào " + r.user.name, "ok");
+    goHash(r.user.role === "koc" ? "#/home" : "#/dashboard");
   } catch (e) {
-    toast(e.message, 'err'); btn.disabled = false; btn.textContent = 'Đăng nhập';
+    toast(e.message, "err");
+    btn.disabled = false;
+    btn.textContent = "Đăng nhập";
   }
 }
 
 // ---- Forgot / reset password (email OTP, no auth required) ----
 function renderForgotPassword(el) {
-  let stage = 'email'; // 'email' -> 'reset' -> 'done'
-  let email = '';
-  const setErr = (id, msg) => { const e = document.getElementById(id); if (!e) return; e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; };
+  let stage = "email"; // 'email' -> 'reset' -> 'done'
+  let email = "";
+  const setErr = (id, msg) => {
+    const e = document.getElementById(id);
+    if (!e) return;
+    e.textContent = msg || "";
+    e.style.display = msg ? "block" : "none";
+  };
 
   function renderEmailStage() {
     el.innerHTML = `<div class="auth"><div class="auth-card">
@@ -226,17 +295,27 @@ function renderForgotPassword(el) {
       <button class="btn primary" id="fp-send" style="margin-top:10px">Gửi mã đặt lại</button>
       <div class="row" style="margin-top:14px"><a href="#/login" class="muted" style="font-size:12px;text-align:center;width:100%">← Quay lại đăng nhập</a></div>
     </div></div>`;
-    document.getElementById('fp-send').addEventListener('click', async () => {
-      const v = document.getElementById('fp-email').value.trim();
-      setErr('fp-email-err', '');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setErr('fp-email-err', 'Email không hợp lệ'); return; }
-      const btn = document.getElementById('fp-send'); btn.disabled = true; btn.textContent = 'Đang gửi…';
+    document.getElementById("fp-send").addEventListener("click", async () => {
+      const v = document.getElementById("fp-email").value.trim();
+      setErr("fp-email-err", "");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+        setErr("fp-email-err", "Email không hợp lệ");
+        return;
+      }
+      const btn = document.getElementById("fp-send");
+      btn.disabled = true;
+      btn.textContent = "Đang gửi…";
       try {
-        await post('/api/forgot-password', { email: v });
+        await post("/api/forgot-password", { email: v });
         email = v;
-        toast('Nếu email tồn tại trong hệ thống, mã đặt lại đã được gửi', 'ok');
-        stage = 'reset'; render();
-      } catch (e) { toast(e.message, 'err'); btn.disabled = false; btn.textContent = 'Gửi mã đặt lại'; }
+        toast("Nếu email tồn tại trong hệ thống, mã đặt lại đã được gửi", "ok");
+        stage = "reset";
+        render();
+      } catch (e) {
+        toast(e.message, "err");
+        btn.disabled = false;
+        btn.textContent = "Gửi mã đặt lại";
+      }
     });
   }
   function renderResetStage() {
@@ -256,28 +335,55 @@ function renderForgotPassword(el) {
         <button type="button" class="btn ghost sm" id="fp-back" style="flex:1">← Nhập lại email</button>
       </div>
     </div></div>`;
-    document.getElementById('fp-back').addEventListener('click', () => { stage = 'email'; render(); });
-    document.getElementById('fp-resend').addEventListener('click', async () => {
-      const btn = document.getElementById('fp-resend'); btn.disabled = true;
-      try { await post('/api/forgot-password', { email }); toast('Đã gửi lại mã (nếu email tồn tại)', 'ok'); }
-      catch (e) { toast(e.message, 'err'); }
-      finally { btn.disabled = false; }
+    document.getElementById("fp-back").addEventListener("click", () => {
+      stage = "email";
+      render();
     });
-    document.getElementById('fp-reset').addEventListener('click', async () => {
-      const code = document.getElementById('fp-code').value.trim();
-      const pass = document.getElementById('fp-pass').value;
-      const pass2 = document.getElementById('fp-pass2').value;
-      setErr('fp-code-err', ''); setErr('fp-pass-err', ''); setErr('fp-pass2-err', '');
-      let ok = true;
-      if (!code) { setErr('fp-code-err', 'Nhập mã xác thực'); ok = false; }
-      if (!pass || pass.length < 8) { setErr('fp-pass-err', 'Mật khẩu tối thiểu 8 ký tự'); ok = false; }
-      if (pass !== pass2) { setErr('fp-pass2-err', 'Mật khẩu xác nhận không khớp'); ok = false; }
-      if (!ok) return;
-      const btn = document.getElementById('fp-reset'); btn.disabled = true; btn.textContent = 'Đang cập nhật…';
+    document.getElementById("fp-resend").addEventListener("click", async () => {
+      const btn = document.getElementById("fp-resend");
+      btn.disabled = true;
       try {
-        await post('/api/reset-password', { email, code, password: pass });
-        stage = 'done'; render();
-      } catch (e) { setErr('fp-code-err', e.message); btn.disabled = false; btn.textContent = 'Đặt lại mật khẩu'; }
+        await post("/api/forgot-password", { email });
+        toast("Đã gửi lại mã (nếu email tồn tại)", "ok");
+      } catch (e) {
+        toast(e.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    document.getElementById("fp-reset").addEventListener("click", async () => {
+      const code = document.getElementById("fp-code").value.trim();
+      const pass = document.getElementById("fp-pass").value;
+      const pass2 = document.getElementById("fp-pass2").value;
+      setErr("fp-code-err", "");
+      setErr("fp-pass-err", "");
+      setErr("fp-pass2-err", "");
+      let ok = true;
+      if (!code) {
+        setErr("fp-code-err", "Nhập mã xác thực");
+        ok = false;
+      }
+      if (!pass || pass.length < 8) {
+        setErr("fp-pass-err", "Mật khẩu tối thiểu 8 ký tự");
+        ok = false;
+      }
+      if (pass !== pass2) {
+        setErr("fp-pass2-err", "Mật khẩu xác nhận không khớp");
+        ok = false;
+      }
+      if (!ok) return;
+      const btn = document.getElementById("fp-reset");
+      btn.disabled = true;
+      btn.textContent = "Đang cập nhật…";
+      try {
+        await post("/api/reset-password", { email, code, password: pass });
+        stage = "done";
+        render();
+      } catch (e) {
+        setErr("fp-code-err", e.message);
+        btn.disabled = false;
+        btn.textContent = "Đặt lại mật khẩu";
+      }
     });
   }
   function renderDoneStage() {
@@ -288,8 +394,8 @@ function renderForgotPassword(el) {
     </div></div>`;
   }
   function render() {
-    if (stage === 'email') return renderEmailStage();
-    if (stage === 'reset') return renderResetStage();
+    if (stage === "email") return renderEmailStage();
+    if (stage === "reset") return renderResetStage();
     return renderDoneStage();
   }
   render();
@@ -303,12 +409,28 @@ function shell(inner) {
 }
 
 async function renderRecruitLanding(el) {
-  const { renderOnboarding } = await import('./onboard.js');
+  const { renderOnboarding } = await import("./onboard.js");
   const benefits = [
-    ['01','Tự đặt giá','Niêm yết mức phí theo ngành hàng và hạng KOC của bạn.'],
-    ['02','Toàn quyền lựa chọn','Xem brief, sản phẩm và thời hạn trước khi nhận booking.'],
-    ['03','Thêm thu nhập từ tiếp thị liên kết','Chia sẻ đường dẫn sản phẩm và nhận hoa hồng từ đơn phát sinh.'],
-    ['04','Ví và đối soát minh bạch','Theo dõi từng khoản thu, trạng thái và lịch sử rút tiền.'],
+    [
+      "01",
+      "Tự đặt giá",
+      "Niêm yết mức phí theo ngành hàng và hạng KOC của bạn.",
+    ],
+    [
+      "02",
+      "Toàn quyền lựa chọn",
+      "Xem brief, sản phẩm và thời hạn trước khi nhận booking.",
+    ],
+    [
+      "03",
+      "Thêm thu nhập từ tiếp thị liên kết",
+      "Chia sẻ đường dẫn sản phẩm và nhận hoa hồng từ đơn phát sinh.",
+    ],
+    [
+      "04",
+      "Ví và đối soát minh bạch",
+      "Theo dõi từng khoản thu, trạng thái và lịch sử rút tiền.",
+    ],
   ];
   el.innerHTML = `<div class="koc-recruit">
     <header class="koc-recruit-header">
@@ -368,10 +490,14 @@ async function renderRecruitLanding(el) {
             <p>KOC Việt giúp bạn tập trung vào chất lượng nội dung, còn quy trình booking và thanh toán được chuẩn hóa.</p>
           </div>
           <div class="koc-recruit-benefit-grid">
-            ${benefits.map(item=>`<article class="koc-recruit-benefit-card">
+            ${benefits
+              .map(
+                (item) => `<article class="koc-recruit-benefit-card">
               <span class="koc-recruit-card-number">${item[0]}</span>
               <h3>${item[1]}</h3><p>${item[2]}</p>
-            </article>`).join('')}
+            </article>`,
+              )
+              .join("")}
           </div>
         </div>
       </section>
@@ -400,27 +526,35 @@ async function renderRecruitLanding(el) {
     </main>
   </div>`;
   const start = () => renderOnboarding(el);
-  document.getElementById('start-onboard').addEventListener('click', start);
-  document.getElementById('start-onboard-bottom').addEventListener('click', start);
+  document.getElementById("start-onboard").addEventListener("click", start);
+  document
+    .getElementById("start-onboard-bottom")
+    .addEventListener("click", start);
 
   const revealItems = el.querySelectorAll(
-    '.koc-recruit-section-head, .koc-recruit-benefit-card, .koc-recruit-step-grid article, .koc-recruit-final-box',
+    ".koc-recruit-section-head, .koc-recruit-benefit-card, .koc-recruit-step-grid article, .koc-recruit-final-box",
   );
   revealItems.forEach((item, index) => {
-    item.classList.add('koc-recruit-reveal');
-    item.style.setProperty('--reveal-delay', `${Math.min(index % 4, 3) * 70}ms`);
+    item.classList.add("koc-recruit-reveal");
+    item.style.setProperty(
+      "--reveal-delay",
+      `${Math.min(index % 4, 3) * 70}ms`,
+    );
   });
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px' });
-    revealItems.forEach(item => observer.observe(item));
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px" },
+    );
+    revealItems.forEach((item) => observer.observe(item));
   } else {
-    revealItems.forEach(item => item.classList.add('is-visible'));
+    revealItems.forEach((item) => item.classList.add("is-visible"));
   }
 }
 
@@ -445,7 +579,7 @@ function renderAiCloneLanding(el) {
     </div>`);
 }
 
-window.addEventListener('popstate', route);
-window.addEventListener('hashchange', route);
+window.addEventListener("popstate", route);
+window.addEventListener("hashchange", route);
 
 boot();

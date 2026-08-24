@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-08-20-campaign-workflow-v1';
+const SCHEMA_GUARD_VERSION = '2026-08-21-kol-workflow-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -238,6 +238,22 @@ const MIGRATIONS = [
      management_fee=CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END,
      total_amount=COALESCE(budget,0)+(CASE WHEN ROUND(COALESCE(budget,0)*0.15)>2000000 THEN ROUND(COALESCE(budget,0)*0.15) ELSE 2000000 END)
      WHERE COALESCE(total_amount,0)=0`,
+  `ALTER TABLE kol_requests ADD COLUMN quote_kol INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN quote_platform INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN quote_additional INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN escrow_amount INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE kol_requests ADD COLUMN contract_reference TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN delivery_url TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN delivery_note TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN business_note TEXT`,
+  `ALTER TABLE kol_requests ADD COLUMN quoted_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN funded_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN confirmed_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN delivered_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN approved_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN completed_at INTEGER`,
+  `ALTER TABLE kol_requests ADD COLUMN cancelled_at INTEGER`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
@@ -370,6 +386,32 @@ async function ensureV14Schema(env) {
   await env.DB.prepare(
     `CREATE INDEX IF NOT EXISTS idx_campaign_allocations_campaign ON campaign_allocations(campaign_id,status)`,
   ).run();
+
+  const kolRequestColumns = await env.DB.prepare(`PRAGMA table_info(kol_requests)`).all();
+  const existingKolRequestColumns = new Set(
+    (kolRequestColumns.results || []).map(column => column.name),
+  );
+  const requiredKolRequestColumns = [
+    ['quote_kol', `ALTER TABLE kol_requests ADD COLUMN quote_kol INTEGER NOT NULL DEFAULT 0`],
+    ['quote_platform', `ALTER TABLE kol_requests ADD COLUMN quote_platform INTEGER NOT NULL DEFAULT 0`],
+    ['quote_additional', `ALTER TABLE kol_requests ADD COLUMN quote_additional INTEGER NOT NULL DEFAULT 0`],
+    ['total_amount', `ALTER TABLE kol_requests ADD COLUMN total_amount INTEGER NOT NULL DEFAULT 0`],
+    ['escrow_amount', `ALTER TABLE kol_requests ADD COLUMN escrow_amount INTEGER NOT NULL DEFAULT 0`],
+    ['contract_reference', `ALTER TABLE kol_requests ADD COLUMN contract_reference TEXT`],
+    ['delivery_url', `ALTER TABLE kol_requests ADD COLUMN delivery_url TEXT`],
+    ['delivery_note', `ALTER TABLE kol_requests ADD COLUMN delivery_note TEXT`],
+    ['business_note', `ALTER TABLE kol_requests ADD COLUMN business_note TEXT`],
+    ['quoted_at', `ALTER TABLE kol_requests ADD COLUMN quoted_at INTEGER`],
+    ['funded_at', `ALTER TABLE kol_requests ADD COLUMN funded_at INTEGER`],
+    ['confirmed_at', `ALTER TABLE kol_requests ADD COLUMN confirmed_at INTEGER`],
+    ['delivered_at', `ALTER TABLE kol_requests ADD COLUMN delivered_at INTEGER`],
+    ['approved_at', `ALTER TABLE kol_requests ADD COLUMN approved_at INTEGER`],
+    ['completed_at', `ALTER TABLE kol_requests ADD COLUMN completed_at INTEGER`],
+    ['cancelled_at', `ALTER TABLE kol_requests ADD COLUMN cancelled_at INTEGER`],
+  ];
+  for (const [name, sql] of requiredKolRequestColumns) {
+    if (!existingKolRequestColumns.has(name)) await env.DB.prepare(sql).run();
+  }
 
   // Older databases may report the latest schema version even though an
   // idempotent ALTER TABLE was previously swallowed. Repair contract columns
