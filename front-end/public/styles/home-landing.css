@@ -2057,6 +2057,25 @@
   .lp-home .lp-marketplace-hero .lp-hero-visual img {
     width: min(128%, 900px);
   }
+
+  .lp-home .lp-ai-clone-hero .lp-hero-home-inner {
+    grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
+    gap: 40px;
+  }
+
+  .lp-home .lp-ai-clone-hero .lp-hero-content {
+    width: 100%;
+    max-width: 620px;
+    min-width: 0;
+  }
+
+  .lp-home .lp-ai-clone-hero .lp-hero-title .lp-hero-line-wide {
+    white-space: normal;
+  }
+
+  .lp-home .lp-ai-clone-hero .lp-hero-visual {
+    min-width: 0;
+  }
 }
 
 @media (min-width: 1280px) {
