@@ -855,11 +855,12 @@ function pageBusiness() {
 // ---------- 4. Marketplace (/marketplace) ----------
 function pageMarketplace() {
   const hero = lpHero({
+    className: "lp-marketplace-hero",
     eyebrow: "MARKETPLACE KOC/KOLs",
     h1: `<span class="lp-hero-line lp-hero-line-wide">Cả một thị trường KOC</span><span class="coral lp-hero-line">trong một bộ lọc.</span>`,
     sub: "Hàng trăm nghìn hồ sơ KOC được xác minh — lọc theo ngành hàng, tỉnh thành, hạng, mức giá và hiệu quả thật. Tìm đúng gương mặt cho thương hiệu của bạn trong 30 giây.",
     ctas: [{ href: "/#/explore", label: "Khám phá marketplace" }],
-    extra: `<div class="lp-box on-dark" style="margin-top:20px">Tìm theo: ngành hàng · tỉnh/thành · hạng KOC · khoảng giá · đánh giá ★</div>`,
+    extra: `<div class="lp-box on-dark lp-marketplace-filter-summary">Tìm theo: Ngành hàng, Tỉnh/Thành, Hạng KOC, Khoảng giá, Đánh giá ⭐️</div>`,
     img: {
       src: "/images/marketplace-hero-seamless.png",
       alt: "Cả một thị trường KOC trong bộ lọc",
@@ -985,7 +986,6 @@ function pageMarketplace() {
             <div class="lp-proof-icon-box">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <span class="lp-proof-badge">Cam kết 1</span>
           </div>
           <h3 class="lp-proof-card-title">Xác minh 100%</h3>
           <p class="lp-proof-card-desc">100% KOC đã xác minh danh tính và ký hợp đồng điện tử với nền tảng.</p>
@@ -995,7 +995,6 @@ function pageMarketplace() {
             <div class="lp-proof-icon-box">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <span class="lp-proof-badge">Cam kết 2</span>
           </div>
           <h3 class="lp-proof-card-title">Giá cuối cùng</h3>
           <p class="lp-proof-card-desc">Giá trên hồ sơ là giá cuối — không phát sinh, không phí ẩn ngoài 5% dịch vụ đã bao gồm.</p>
@@ -1005,7 +1004,6 @@ function pageMarketplace() {
             <div class="lp-proof-icon-box">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
-            <span class="lp-proof-badge">Cam kết 3</span>
           </div>
           <h3 class="lp-proof-card-title">Bảo vệ ví</h3>
           <p class="lp-proof-card-desc">Giao dịch ngoài nền tảng bị cấm theo hợp đồng — để mọi quyền lợi của bạn được ví đảm bảo bảo vệ.</p>
@@ -1172,20 +1170,27 @@ function pageAiClone() {
           <div class="lp-statement-icon-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>
           </div>
-          <span class="lp-statement-tag">SO SÁNH 2 MÔ HÌNH HOẠT ĐỘNG</span>
+          <p class="lp-statement-note">So sánh hai mô hình hoạt động</p>
         </div>
         <div class="lp-statement-body">
           <div class="lp-compare-grid">
-            <div class="lp-compare-col">
+            <div class="lp-compare-col nv-card-enter nv-lift-card" style="--nv-delay:80ms">
               <h4>Booking thường</h4>
               <p>Bạn tự tìm nhận booking trên marketplace, tự sản xuất và quay dựng content.</p>
             </div>
-            <div class="lp-compare-col featured">
+            <div class="lp-compare-col featured nv-card-enter nv-lift-card" style="--nv-delay:160ms">
               <h4>Booking AI Clone Avatar</h4>
               <p>NetViet mang booking đến, video được sản xuất sẵn bằng hình ảnh và giọng nói AI của bạn.</p>
             </div>
           </div>
-          <p class="lp-statement-sub" style="margin-top:16px"><strong>Điểm chung:</strong> Cùng cơ chế ví an toàn, cùng nhận phí booking + affiliate, cùng trọn quyền duyệt và từ chối. Hai luồng chạy song song — tham gia AI Clone không ảnh hưởng việc nhận booking thường.</p>
+          <div class="lp-compare-common">
+            <strong>Điểm chung</strong>
+            <ul>
+              <li>Thanh toán qua cơ chế ví an toàn; KOC nhận cả phí booking và hoa hồng affiliate.</li>
+              <li>KOC giữ trọn quyền duyệt hoặc từ chối từng nội dung trước khi đăng.</li>
+              <li>Hai mô hình chạy song song; tham gia AI Clone không ảnh hưởng booking thường.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
