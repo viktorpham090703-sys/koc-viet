@@ -14,7 +14,8 @@ import {
   getPayOSPaymentLink,
   verifyPayOSWebhook,
 } from './lib/payos.js';
-import { createPayOSPayout, getPayOSPayoutBalance } from './lib/payosPayout.js';
+import { createPayOSPayout } from './lib/payosPayout.js';
+import { PAYOUT_BANKS, payoutBankBinError } from './lib/bankDestination.js';
 import {
   walletBalances,
   walletTransactions,
@@ -32,6 +33,7 @@ const FOLLOWER_CHALLENGE_TTL_SECONDS = 30 * 60;
 const FOLLOWER_PROOF_TTL_SECONDS = 24 * 60 * 60;
 const FOLLOWER_OCR_RATE_LIMIT = 5;
 const FOLLOWER_OCR_RATE_WINDOW_SECONDS = 60 * 60;
+const MIN_WITHDRAW_AMOUNT = 10_000;
 const SOCIAL_PLATFORMS = {
   tiktok: 'TikTok',
   facebook: 'Facebook',
@@ -1295,7 +1297,7 @@ export async function route(request, env, url) {
     const tiers = await getTiers(env);
     const demoAccounts = await getDemoAccounts(env);
     const provinces = await getAddressKitProvinces();
-    return J({ tiers, categories: CATEGORIES, provinces, demoAccounts });
+    return J({ tiers, categories: CATEGORIES, provinces, demoAccounts, payoutBanks: PAYOUT_BANKS });
   }
 
   // ---------- PUBLIC privacy-safe landing activity ----------
@@ -1681,6 +1683,8 @@ export async function route(request, env, url) {
     if (!bankName) return err("Nhập tên ngân hàng");
     if (!/^\d{6}$/.test(bankBin))
       return err("Mã ngân hàng gồm đúng 6 chữ số");
+    const bankBinError = payoutBankBinError(bankName, bankBin);
+    if (bankBinError) return err(bankBinError, 422);
     if (!/^\d{6,20}$/.test(bankAccount))
       return err("Số tài khoản chỉ gồm chữ số, 6-20 ký tự");
     if (!bankOwner || /\d/.test(bankOwner))
@@ -3804,7 +3808,9 @@ export async function route(request, env, url) {
     const otpResult = await verifyEmailOtp(env, otpEmail, body.otp, 'withdraw', request);
     if (!otpResult.ok) return err(otpResult.error || "OTP không đúng");
     const amount = Number(body.amount);
-    if (!Number.isSafeInteger(amount) || amount < 100000) return err("Ngưỡng rút tối thiểu 100.000đ");
+    if (!Number.isSafeInteger(amount) || amount < MIN_WITHDRAW_AMOUNT) {
+      return err(`Ngưỡng rút tối thiểu ${MIN_WITHDRAW_AMOUNT.toLocaleString('vi-VN')}đ`);
+    }
     const mode = body.mode === "payos" ? "payos" : "demo";
 
     const { results } = await env.DB.prepare(
@@ -3825,17 +3831,13 @@ export async function route(request, env, url) {
       if (!koc?.bank_account || !koc?.bank_name || !/^\d{6}$/.test(String(koc?.bank_bin || ''))) {
         return err("Vui lòng cập nhật đầy đủ ngân hàng nhận tiền và mã ngân hàng 6 số trước khi rút");
       }
+      const bankBinError = payoutBankBinError(koc.bank_name, koc.bank_bin);
+      if (bankBinError) {
+        return err(`${bankBinError}. Vui lòng sửa trong Hồ sơ trước khi rút tiền.`, 422);
+      }
       const txId = uid();
       const referenceId = `wd-${txId.slice(0, 16)}`;
       try {
-        const payoutAccount = await getPayOSPayoutBalance(env);
-        const payoutBalance = Number(String(payoutAccount?.balance ?? '').replace(/[^0-9.-]/g, ''));
-        if (!Number.isFinite(payoutBalance)) {
-          return err('Chưa kiểm tra được nguồn tiền chi trả. Vui lòng thử lại sau.');
-        }
-        if (payoutBalance < amount) {
-          return err('Nguồn tiền chi trả hiện chưa đủ. Vui lòng liên hệ quản trị viên hoặc thử lại sau.');
-        }
         await createPayOSPayout(env, {
           referenceId,
           amount,
@@ -3844,7 +3846,39 @@ export async function route(request, env, url) {
           toAccountNumber: koc.bank_account,
         }, referenceId);
       } catch (error) {
-        return err(`Chưa gửi được yêu cầu rút tiền: ${error?.message || 'Vui lòng thử lại sau'}`);
+        const providerCode = String(error?.providerCode || '')
+          .replace(/[^a-zA-Z0-9_.-]/g, '')
+          .slice(0, 50);
+        const providerDescription = String(error?.providerDescription || '')
+          .replace(/[\u0000-\u001f\u007f]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 300);
+        const providerDetail = [
+          providerCode ? `payOS ${providerCode}` : '',
+          providerDescription,
+        ].filter(Boolean).join(': ');
+        const message = `Chưa gửi được yêu cầu rút tiền: ${error?.message || 'Vui lòng thử lại sau'}`
+          + (providerDetail ? ` (${providerDetail})` : '');
+        const rateLimited = error?.rateLimited
+          || Number(error?.status) === 429
+          || providerCode === '429';
+        const retryAfter = Number(error?.retryAfter);
+        const responseHeaders = rateLimited && Number.isFinite(retryAfter)
+          ? { 'Retry-After': String(Math.max(0, Math.ceil(retryAfter))) }
+          : undefined;
+        const invalidDestination = error?.invalidDestination || providerCode === '607';
+        return Response.json({
+          error: message,
+          ...(providerCode ? { providerCode } : {}),
+          ...(providerDescription ? { providerDescription } : {}),
+          ...(rateLimited && Number.isFinite(retryAfter)
+            ? { retryAfter: Math.max(0, Math.ceil(retryAfter)) }
+            : {}),
+        }, {
+          status: rateLimited ? 429 : invalidDestination ? 422 : 400,
+          headers: responseHeaders,
+        });
       }
 
       await env.DB.prepare(
@@ -5995,11 +6029,7 @@ export async function route(request, env, url) {
     const bankName = String(bank.name || "")
       .trim()
       .slice(0, 80);
-    // Profile edits no longer ask the KOC to enter a technical bank BIN.
-    // Preserve any existing value instead of deleting payout configuration.
-    const bankBin = bank.bin == null
-      ? String(k.bank_bin || "").trim()
-      : String(bank.bin).trim();
+    const bankBin = String(bank.bin || "").trim();
     const bankAccount = String(bank.account || "")
       .trim()
       .slice(0, 40);
@@ -6008,8 +6038,10 @@ export async function route(request, env, url) {
       .slice(0, 120);
     if (!bankName || !bankAccount || !bankOwner)
       return err("Nhập đầy đủ thông tin tài khoản nhận thanh toán");
-    if (bank.bin != null && !/^\d{6}$/.test(bankBin))
+    if (!/^\d{6}$/.test(bankBin))
       return err("Mã ngân hàng gồm đúng 6 chữ số");
+    const bankBinError = payoutBankBinError(bankName, bankBin);
+    if (bankBinError) return err(bankBinError, 422);
     const oldAccepting = JSON.parse(k.accepting || "{}");
     const accepting = {};
     categories.forEach((c) => (accepting[c] = oldAccepting[c] !== false));

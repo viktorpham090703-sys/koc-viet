@@ -12,7 +12,7 @@ interface AuthValue {
   refresh(): Promise<void>
 }
 
-const emptyConfig: AppConfig = { tiers: [], categories: [], provinces: [] }
+const emptyConfig: AppConfig = { tiers: [], categories: [], provinces: [], payoutBanks: [] }
 const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -89,6 +89,8 @@ img{display:block;max-width:100%}
 .app-icon{display:inline-block;flex:0 0 auto;width:1.4em;height:1.4em;object-fit:contain;vertical-align:-.3em}
 input,select,textarea{font-family:inherit;font-size:14px;width:100%;padding:12px;border:1px solid var(--border);border-radius:var(--r-btn);background:#fff;color:var(--text);outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+input[readonly]{cursor:not-allowed;background:#f6f7f9;color:var(--navy)}
+.bank-bin-field input[readonly]{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.06em}
 label{display:block;font-weight:500;margin-bottom:6px;font-size:13px}
 .field{margin-bottom:14px}
 .hint{color:var(--muted);font-size:12px;margin-top:4px}

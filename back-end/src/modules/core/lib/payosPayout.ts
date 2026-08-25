@@ -1,11 +1,46 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 const PAYOS_API_BASE_URL = 'https://api-merchant.payos.vn';
 const PAYOS_TIMEOUT_MS = 15000;
+const PAYOS_RATE_LIMIT_RETRIES = 2;
+const PAYOS_RATE_LIMIT_BACKOFF_MS = 500;
+const PAYOS_MAX_RETRY_DELAY_MS = 5000;
+
+function providerText(value, maxLength = 300) {
+  return String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+}
 
 function required(value, name) {
   const result = String(value || '').trim();
   if (!result) throw new Error(`Thiếu ${name}`);
   return result;
+}
+
+function retryAfterSeconds(response) {
+  const value = String(response.headers.get('retry-after') || '').trim();
+  if (!value) return null;
+  if (/^\d+(?:\.\d+)?$/.test(value)) return Math.max(0, Math.ceil(Number(value)));
+  const retryAt = Date.parse(value);
+  if (!Number.isFinite(retryAt)) return null;
+  return Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
+}
+
+function rateLimitDelay(response, attempt) {
+  const retryAfter = retryAfterSeconds(response);
+  if (retryAfter !== null) {
+    return Math.min(retryAfter * 1000, PAYOS_MAX_RETRY_DELAY_MS);
+  }
+  return Math.min(
+    PAYOS_RATE_LIMIT_BACKOFF_MS * (2 ** attempt),
+    PAYOS_MAX_RETRY_DELAY_MS,
+  );
+}
+
+function wait(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
 export function payOSPayoutConfig(env) {
@@ -82,33 +117,62 @@ async function payoutRequest(env, path, {
   if (signed) headers['x-signature'] = await payoutSignature(config.checksumKey, payload);
 
   let response;
-  try {
-    response = await fetch(`${PAYOS_API_BASE_URL}${path}`, {
-      method,
-      headers,
-      body: payload ? JSON.stringify(payload) : undefined,
-      signal: AbortSignal.timeout(PAYOS_TIMEOUT_MS),
+  let result;
+  let rateLimitRetryAfter = null;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      response = await fetch(`${PAYOS_API_BASE_URL}${path}`, {
+        method,
+        headers,
+        body: payload ? JSON.stringify(payload) : undefined,
+        signal: AbortSignal.timeout(PAYOS_TIMEOUT_MS),
+      });
+    } catch (cause) {
+      const error = new Error(
+        cause?.name === 'TimeoutError'
+          ? 'Dịch vụ rút tiền chưa phản hồi. Vui lòng thử lại.'
+          : 'Chưa kết nối được dịch vụ rút tiền. Vui lòng thử lại.',
+      );
+      error.ambiguous = true;
+      throw error;
+    }
+    result = await response.json().catch(() => ({}));
+    const providerCode = providerText(result.code || response.status || '', 50);
+    const rateLimited = response.status === 429 || providerCode === '429';
+    const safeToRetry = method === 'GET' || !!idempotencyKey;
+    if (!rateLimited || !safeToRetry || attempt >= PAYOS_RATE_LIMIT_RETRIES) break;
+
+    const delayMs = rateLimitDelay(response, attempt);
+    rateLimitRetryAfter = retryAfterSeconds(response);
+    console.warn('Payout request rate limited; retrying:', {
+      path,
+      attempt: attempt + 1,
+      delayMs,
     });
-  } catch (cause) {
-    const error = new Error(
-      cause?.name === 'TimeoutError'
-        ? 'Dịch vụ rút tiền chưa phản hồi. Vui lòng thử lại.'
-        : 'Chưa kết nối được dịch vụ rút tiền. Vui lòng thử lại.',
-    );
-    error.ambiguous = true;
-    throw error;
+    await wait(delayMs);
   }
-  const result = await response.json().catch(() => ({}));
+
   if (!response.ok || result.code !== '00') {
-    const providerCode = String(result.code || response.status || '');
-    const providerDescription = String(result.desc || result.message || '').trim();
+    const providerCode = providerText(result.code || response.status || '', 50);
+    const providerDescription = providerText(
+      result.desc
+        || result.description
+        || result.message
+        || result.error?.message
+        || (typeof result.error === 'string' ? result.error : ''),
+    );
     console.error('Payout request rejected:', {
       status: response.status,
       code: providerCode,
       description: providerDescription,
     });
+    const rateLimited = response.status === 429 || providerCode === '429';
     let message = 'Yêu cầu rút tiền chưa được chấp nhận. Vui lòng thử lại.';
-    if (providerCode === '601' || response.status === 401) {
+    if (rateLimited) {
+      message = 'payOS đang giới hạn tần suất yêu cầu rút tiền. Vui lòng chờ một lúc rồi thử lại.';
+    } else if (providerCode === '607') {
+      message = 'Tài khoản nhận tiền không hợp lệ. Vui lòng kiểm tra lại ngân hàng, mã BIN và số tài khoản trong Hồ sơ.';
+    } else if (providerCode === '601' || response.status === 401) {
       message = 'Cấu hình kênh rút tiền chưa hợp lệ. Vui lòng liên hệ quản trị viên.';
     } else if (response.status === 403) {
       message = 'Kênh rút tiền chưa được kích hoạt hoặc máy chủ chưa được cho phép.';
@@ -117,12 +181,21 @@ async function payoutRequest(env, path, {
     error.ambiguous = response.status >= 500;
     error.status = response.status;
     error.providerCode = providerCode;
+    error.providerDescription = providerDescription;
+    error.rateLimited = rateLimited;
+    error.invalidDestination = providerCode === '607';
+    error.retryAfter = rateLimited
+      ? retryAfterSeconds(response)
+        ?? rateLimitRetryAfter
+        ?? Math.ceil(rateLimitDelay(response, PAYOS_RATE_LIMIT_RETRIES) / 1000)
+      : null;
     throw error;
   }
   return result.data || {};
 }
 
 export async function createPayOSPayout(env, payout, idempotencyKey) {
+  const requestId = required(idempotencyKey, 'khóa chống trùng lệnh chi');
   const payload = {
     referenceId: payout.referenceId,
     amount: payout.amount,
@@ -134,7 +207,7 @@ export async function createPayOSPayout(env, payout, idempotencyKey) {
   return payoutRequest(env, '/v1/payouts', {
     method: 'POST',
     payload,
-    idempotencyKey,
+    idempotencyKey: requestId,
     signed: true,
   });
 }

@@ -25,6 +25,14 @@ import {
 import { state, logout } from "./app.js";
 import { icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
+import {
+  payoutBankOptions,
+  resolvePayoutBank,
+  selectedPayoutBank,
+  syncPayoutBankBin,
+} from "./payout-banks.js";
+
+const MIN_WITHDRAW_AMOUNT = 10_000;
 
 const NAV = [
   ["#/home", icon("home", "nav-icon"), "Trang chủ"],
@@ -909,6 +917,7 @@ async function wallet(el) {
           w.payout && w.payout.bank_account
             ? `
           <div class="between" style="padding:4px 0"><span class="muted">Ngân hàng</span><b>${esc(w.payout.bank_name || "")}</b></div>
+          <div class="between" style="padding:4px 0"><span class="muted">Mã BIN</span><b>${esc(w.payout.bank_bin || "")}</b></div>
           <div class="between" style="padding:4px 0"><span class="muted">Số tài khoản</span><b>${esc(w.payout.bank_account || "")}</b></div>
           <div class="between" style="padding:4px 0"><span class="muted">Chủ tài khoản</span><b>${esc(w.payout.bank_owner || "")}</b></div>
           <div class="between" style="padding:4px 0"><span class="muted">Email</span><b>${esc(w.payout.email || "")}</b></div>
@@ -974,9 +983,10 @@ function walletStatusChip(status) {
 function withdrawModal(mode, balance, el, payout) {
   const isPayOS = mode === "payos";
   const title = isPayOS ? "Rút tiền về tài khoản ngân hàng" : "Rút tiền thử nghiệm";
+  const minimumWithdrawLabel = MIN_WITHDRAW_AMOUNT.toLocaleString("vi-VN");
   const hasBank = payout && payout.bank_account && payout.bank_name && /^\d{6}$/.test(String(payout.bank_bin || ""));
   const m = modal(`<h2>${title}</h2>
-    <p class="muted">Khả dụng: <b class="money">${money(balance)}</b> · Tối thiểu 100.000đ</p>
+    <p class="muted">Khả dụng: <b class="money">${money(balance)}</b> · Tối thiểu ${minimumWithdrawLabel}đ</p>
     ${
       isPayOS
         ? hasBank
@@ -990,7 +1000,7 @@ function withdrawModal(mode, balance, el, payout) {
              </div>`
         : `<p class="muted" style="font-size:12.5px;margin-top:6px">Rút tiền thử nghiệm mô phỏng trực tiếp về số dư.</p>`
     }
-    <div class="field" style="margin-top:12px"><label>Số tiền</label><input id="wd-amt" type="number" placeholder="đ" value="100000" min="100000" step="50000"></div>
+    <div class="field" style="margin-top:12px"><label>Số tiền</label><input id="wd-amt" type="number" placeholder="đ" value="${MIN_WITHDRAW_AMOUNT}" min="${MIN_WITHDRAW_AMOUNT}" step="10000"></div>
     <div class="field"><label>Mã OTP gửi qua email</label><div class="row" style="gap:8px">
       <input id="wd-otp" class="otp-in" inputmode="numeric" maxlength="6" placeholder="••••••" style="flex:1">
       <button class="btn ghost sm" id="wd-send-otp" type="button">Gửi OTP</button>
@@ -1027,8 +1037,8 @@ function withdrawModal(mode, balance, el, payout) {
   m.querySelector("#wd-go").addEventListener("click", async () => {
     const amount = Number(m.querySelector("#wd-amt").value);
     const otp = m.querySelector("#wd-otp").value.trim();
-    if (!amount || amount < 100000) {
-      toast("Ngưỡng rút tối thiểu 100.000đ", "err");
+    if (!amount || amount < MIN_WITHDRAW_AMOUNT) {
+      toast(`Ngưỡng rút tối thiểu ${minimumWithdrawLabel}đ`, "err");
       return;
     }
     if (!otp) {
@@ -1044,7 +1054,26 @@ function withdrawModal(mode, balance, el, payout) {
       wallet(el);
     } catch (e) {
       toast(e.message, "err");
-      goBtn.disabled = false;
+      const retryAfter = Math.max(0, Math.ceil(Number(e.retryAfter)));
+      if (Number.isFinite(retryAfter) && retryAfter > 0) {
+        const originalLabel = goBtn.textContent;
+        let remaining = retryAfter;
+        goBtn.textContent = `Thử lại (${remaining}s)`;
+        const timer = setInterval(() => {
+          remaining--;
+          if (remaining <= 0 || !m.isConnected) {
+            clearInterval(timer);
+            if (m.isConnected) {
+              goBtn.disabled = false;
+              goBtn.textContent = originalLabel;
+            }
+          } else {
+            goBtn.textContent = `Thử lại (${remaining}s)`;
+          }
+        }, 1000);
+      } else {
+        goBtn.disabled = false;
+      }
     }
   });
 }
@@ -1416,6 +1445,7 @@ async function profile(el, editing = false) {
         </div>
         <div class="card profile-section"><h3>Tài khoản nhận thanh toán</h3>
           <div class="profile-price"><span>Ngân hàng</span><b>${esc(k.bank_name || "Chưa cập nhật")}</b></div>
+          <div class="profile-price"><span>Mã BIN</span><b>${esc(k.bank_bin || "Chưa cập nhật")}</b></div>
           <div class="profile-price"><span>Số tài khoản</span><b>${esc(k.bank_account || "Chưa cập nhật")}</b></div>
           <div class="profile-price"><span>Chủ tài khoản</span><b>${esc(k.bank_owner || "Chưa cập nhật")}</b></div>
         </div>
@@ -1432,6 +1462,7 @@ async function profile(el, editing = false) {
 
   const cats = [...k.categories];
   const catList = [...new Set(cfg.categories.concat(cats))];
+  const selectedBank = resolvePayoutBank(cfg.payoutBanks, k.bank_name, k.bank_bin);
   let avatarSource = k.avatar || "";
   let coverSource = k.cover || "";
   el.innerHTML = `<div class="m-head koc-page-heading koc-profile-heading"><div class="between"><h2 style="color:#fff">✏️ Chỉnh sửa hồ sơ</h2><button class="chip on-dark" id="pf-cancel">Hủy</button></div></div>
@@ -1455,7 +1486,8 @@ async function profile(el, editing = false) {
       </div>
       <div id="pf-prices"></div>
       <h3 style="margin-top:18px;font-size:14px">Tài khoản nhận thanh toán</h3>
-      <div class="field"><label>Ngân hàng</label><input id="pf-bank-name" value="${esc(k.bank_name || "")}"></div>
+      <div class="field"><label for="pf-bank-select">Ngân hàng</label><select id="pf-bank-select">${payoutBankOptions(cfg.payoutBanks, k.bank_name, k.bank_bin)}</select></div>
+      <div class="field bank-bin-field"><label for="pf-bank-bin">Mã BIN ngân hàng</label><input id="pf-bank-bin" value="${esc(selectedBank?.bin || "")}" inputmode="numeric" readonly aria-readonly="true" aria-describedby="pf-bank-bin-hint" placeholder="Tự động theo ngân hàng"><small class="hint" id="pf-bank-bin-hint">BIN được cập nhật tự động theo ngân hàng đã chọn.</small></div>
       <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" value="${esc(k.bank_account || "")}"></div>
       <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(k.bank_owner || "")}"></div>
       <section class="card password-change-section">
@@ -1469,6 +1501,10 @@ async function profile(el, editing = false) {
       </section>
       <button class="btn primary" id="pf-save" style="margin-top:10px">Lưu thay đổi</button>
     </div>`;
+
+  const bankSelect = el.querySelector("#pf-bank-select");
+  const bankBinInput = el.querySelector("#pf-bank-bin");
+  bankSelect?.addEventListener("change", () => syncPayoutBankBin(bankSelect, bankBinInput));
 
   const processFile = async (input, target, width, height, assign) => {
     const file = input.files?.[0];
@@ -1571,10 +1607,14 @@ async function profile(el, editing = false) {
           },
         ]
       : [];
-    const bankName = el.querySelector("#pf-bank-name").value.trim();
+    const bank = selectedPayoutBank(el.querySelector("#pf-bank-select"));
+    const bankName = bank.name;
+    const bankBin = bank.bin;
     const bankAccount = el.querySelector("#pf-bank-account").value.trim();
     const bankOwner = el.querySelector("#pf-bank-owner").value.trim();
-    if (!bankName) return toast("Nhập tên ngân hàng", "err");
+    if (!bankName) return toast("Chọn ngân hàng nhận thanh toán", "err");
+    if (!/^\d{6}$/.test(bankBin))
+      return toast("Không xác định được BIN, vui lòng chọn lại ngân hàng", "err");
     if (!/^\d{6,20}$/.test(bankAccount))
       return toast("Số tài khoản chỉ gồm chữ số, 6-20 ký tự", "err");
     if (!bankOwner || /\d/.test(bankOwner))
@@ -1592,7 +1632,7 @@ async function profile(el, editing = false) {
         socials,
         categories: cats,
         prices,
-        bank: { name: bankName, account: bankAccount, owner: bankOwner },
+        bank: { name: bankName, bin: bankBin, account: bankAccount, owner: bankOwner },
       });
       const topAvatar = document.querySelector(".koc-top-profile img");
       if (topAvatar) topAvatar.src = avatarUrl(avatarSource);
