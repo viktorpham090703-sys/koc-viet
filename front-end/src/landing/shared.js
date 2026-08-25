@@ -1,5 +1,9 @@
 // Shared building blocks for the 8 public marketing landing pages (rendered client-side
 // into #app for the pathnames in LANDING_ROUTES). Pure presentation only.
+import {
+  ACTIVITY_CATEGORY_CYCLE,
+  industryIconSvg,
+} from "./industry-icons.js";
 
 export const ROUTES = [
   ["/trang-chu", "Trang chủ"],
@@ -565,8 +569,8 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "booking_received",
       occurredAt: Math.floor(Date.now() / 1000) - 960,
-      text: "Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới",
-      category: "Thực phẩm",
+      text: "Nhận booking review sản phẩm mới và lên lịch đăng nội dung",
+      category: "Ẩm thực & F&B",
       dot: "green",
     },
     {
@@ -574,7 +578,7 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "booking_received",
       occurredAt: Math.floor(Date.now() / 1000) - 1020,
-      text: "Booking & 03 cpc",
+      text: "Bắt đầu chiến dịch ra mắt bộ sưu tập mùa mới",
       category: "Thời trang",
       dot: "red",
     },
@@ -583,17 +587,17 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "registered",
       occurredAt: Math.floor(Date.now() / 1000) - 1560,
-      text: "Săn hàng & mở hồ sơ niêm yết giá",
-      category: "Trước công",
-      dot: "green",
+      text: "Hoàn tất hồ sơ, bảng giá và sẵn sàng nhận booking",
+      category: "Làm đẹp",
+      dot: "orange",
     },
     {
       name: "Lan H.",
       avatar: "",
       type: "booking_completed",
       occurredAt: Math.floor(Date.now() / 1000) - 3600,
-      text: "Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn & 500 đồng.",
-      category: "Thực phẩm",
+      text: "Nhận lời mời trải nghiệm sản phẩm chăm sóc gia đình",
+      category: "Mẹ & Bé",
       dot: "green",
     },
     {
@@ -601,11 +605,30 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "booking_completed",
       occurredAt: Math.floor(Date.now() / 1000) - 3600,
-      text: "Đo lường & chi trả hoa hồng",
-      category: "Thác Đăng",
-      dot: "red",
+      text: "Đã duyệt nội dung cho chiến dịch thiết bị thông minh",
+      category: "Công nghệ",
+      dot: "blue",
+    },
+    {
+      name: "Huyền N.",
+      avatar: "",
+      type: "booking_received",
+      occurredAt: Math.floor(Date.now() / 1000) - 4200,
+      text: "Nhận chiến dịch trải nghiệm điểm đến địa phương",
+      category: "Du lịch",
+      dot: "orange",
+    },
+    {
+      name: "An P.",
+      avatar: "",
+      type: "booking_completed",
+      occurredAt: Math.floor(Date.now() / 1000) - 4800,
+      text: "Hoàn tất nghiệm thu và nhận thanh toán an toàn",
+      category: "Sức khỏe",
+      dot: "green",
     },
   ];
+  const seedActivities = activities.map((item) => ({ ...item }));
   let startIndex = 0;
   let rotateTimer = 0;
   let pollTimer = 0;
@@ -670,15 +693,12 @@ function bindKocActivityTicker(root) {
     }
 
     if (listContainer) {
-      const visibleCount = Math.min(5, activities.length);
+      const visibleCount = Math.min(7, activities.length);
       const rowsHtml = [];
-      const defaultCategories = [
-        { cat: "Thực phẩm", dot: "green" },
-        { cat: "Thời trang", dot: "red" },
-        { cat: "Trước công", dot: "green" },
-        { cat: "Thực phẩm", dot: "green" },
-        { cat: "Thác Đăng", dot: "red" },
-      ];
+      const defaultCategories = ACTIVITY_CATEGORY_CYCLE.map((item) => ({
+        cat: item.label,
+        dot: item.tone,
+      }));
 
       for (let i = 0; i < visibleCount; i++) {
         const item = activities[(startIndex + i) % activities.length];
@@ -686,7 +706,9 @@ function bindKocActivityTicker(root) {
         const avatar = safeAvatar(item.avatar) || "/default-avatar.svg";
         const catInfo = defaultCategories[i % defaultCategories.length];
         const categoryLabel = item.category || catInfo.cat;
-        const dotColor = item.dot || catInfo.dot;
+        const dotColor = ["green", "red", "orange", "blue"].includes(item.dot)
+          ? item.dot
+          : catInfo.dot;
         const textContent =
           item.text ||
           (item.type === "booking_received"
@@ -698,7 +720,7 @@ function bindKocActivityTicker(root) {
         rowsHtml.push(`
           <article class="lp-activity-row-item" data-activity-type="${item.type}">
             <div class="lp-cat-pill">
-              <span class="lp-cat-dot ${dotColor}"></span>
+              <span class="lp-cat-icon-wrap">${industryIconSvg(categoryLabel, "lp-cat-icon")}<span class="lp-cat-dot ${dotColor}"></span></span>
               <span>${esc(categoryLabel)}</span>
             </div>
             <div class="lp-user-cell">
@@ -757,7 +779,16 @@ function bindKocActivityTicker(root) {
           )
         : [];
       if (nextActivities.length) {
-        activities = stageActivities(nextActivities);
+        const paddedActivities = [...nextActivities];
+        const liveKeys = new Set(
+          paddedActivities.map((item) => `${item.name}:${item.type}`),
+        );
+        for (const seedItem of seedActivities) {
+          if (paddedActivities.length >= 7) break;
+          const key = `${seedItem.name}:${seedItem.type}`;
+          if (!liveKeys.has(key)) paddedActivities.push(seedItem);
+        }
+        activities = stageActivities(paddedActivities);
       }
       render();
     } catch (_) {
