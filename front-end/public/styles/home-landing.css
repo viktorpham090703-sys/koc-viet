@@ -227,13 +227,13 @@
 }
 
 .lp-home .lp-hero-home-inner {
-  max-width: 1320px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
+  grid-template-columns: minmax(480px, 0.92fr) minmax(0, 1.28fr);
   align-items: center;
-  gap: 36px;
+  gap: 24px;
   position: relative;
   z-index: 2;
 }
@@ -287,7 +287,7 @@
 
 @media (min-width: 1025px) {
   .lp-home .lp-hero-home-inner {
-    grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.85fr);
+    grid-template-columns: minmax(480px, 0.92fr) minmax(0, 1.28fr);
   }
 
   .lp-home .lp-hero-content {
@@ -388,8 +388,8 @@
 .lp-home .lp-hero-visual img {
   position: relative;
   z-index: 2;
-  width: 100%;
-  max-width: 660px;
+  width: min(112%, 780px);
+  max-width: none;
   height: auto;
   object-fit: contain;
   display: block;
@@ -3290,7 +3290,7 @@
     gap: 32px;
   }
   .lp-home .lp-hero-visual img {
-    max-width: 520px;
+    max-width: 560px;
   }
   .lp-home .lp-hero-stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -3332,6 +3332,10 @@
 }
 
 @media (max-width: 768px) {
+  .lp-home .lp-hero-visual img {
+    width: 100%;
+    max-width: 520px;
+  }
   .lp-home .lp-nav {
     display: none;
   }

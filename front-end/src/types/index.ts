@@ -13,6 +13,7 @@ export interface AppConfig {
   tiers: Array<{ name: string; min: number; max: number; minF: number; maxF: number; fee: number }>
   categories: string[]
   provinces: string[]
+  payoutBanks: Array<{ name: string; bin: string }>
   demoAccounts?: Array<{ role: Role; email: string }>
 }
 
