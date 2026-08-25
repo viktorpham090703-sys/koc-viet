@@ -1,5 +1,9 @@
 // Shared building blocks for the 8 public marketing landing pages (rendered client-side
 // into #app for the pathnames in LANDING_ROUTES). Pure presentation only.
+import {
+  ACTIVITY_CATEGORY_CYCLE,
+  industryIconSvg,
+} from "./industry-icons.js";
 
 export const ROUTES = [
   ["/trang-chu", "Trang chủ"],
@@ -222,7 +226,18 @@ function escAttr(s) {
 
 export function lpAccordion(items, opts) {
   const groupTitle = opts && opts.groupTitle;
-  return `${groupTitle ? `<div class="lp-faq-group-title">${groupTitle}</div>` : ""}
+  const groupId = opts && opts.groupId;
+  const groupIcon = opts && opts.groupIcon;
+  const icons = {
+    account: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>`,
+    wallet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a3 3 0 0 1 3-3h13v16H6a3 3 0 0 1-3-3V7Z"/><path d="M3 8h16"/><path d="M15 12h6v4h-6a2 2 0 0 1 0-4Z"/></svg>`,
+    booking: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg>`,
+    payment: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>`,
+    legal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5M9 12h7M9 16h7"/></svg>`,
+    ai: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="13" rx="3"/><path d="M9 3h6M12 3v4M8 12h.01M16 12h.01M9 16h6"/></svg>`,
+  };
+  const icon = groupIcon && icons[groupIcon] ? `<span class="lp-faq-group-icon" aria-hidden="true">${icons[groupIcon]}</span>` : "";
+  const content = `${groupTitle ? `<div class="lp-faq-group-title">${icon}${groupTitle}</div>` : ""}
   ${items
     .map(
       ([q, a]) => `<div class="lp-acc-item">
@@ -231,6 +246,9 @@ export function lpAccordion(items, opts) {
     </div>`,
     )
     .join("")}`;
+  return groupId
+    ? `<div class="lp-faq-anchor" id="${escAttr(groupId)}">${content}</div>`
+    : content;
 }
 
 // Red "Liên hệ nhận báo giá trực tiếp" CTA (brand red #B91C1C) — additive, links to contact form.
@@ -241,16 +259,17 @@ export function lpQuoteCta(label) {
 }
 
 export function lpContactForm(idSuffix, title) {
+  const isSupport = idSuffix === "ho-tro";
   return `<div class="lp-contact-wrap" id="contact-form">
     <div class="lp-card">
       <h3 style="margin-bottom:14px">${title}</h3>
       <form class="lp-contact-form" data-id="${idSuffix}">
+        ${isSupport ? `<div class="field"><label for="support-request-type">Loại yêu cầu</label><select id="support-request-type" name="requestType" required><option value="" selected disabled>Chọn loại yêu cầu</option><option value="Hỗ trợ kỹ thuật">Hỗ trợ kỹ thuật</option><option value="Khiếu nại thanh toán">Khiếu nại thanh toán</option><option value="Tư vấn AI Clone Avatar">Tư vấn AI Clone Avatar</option><option value="Khác">Khác</option></select></div>` : ""}
         <div class="field"><label>Họ tên</label><input required placeholder="Nguyễn Văn A"></div>
         <div class="field"><label>Số điện thoại</label><input required placeholder="09xx xxx xxx"></div>
         <div class="field"><label>Tên doanh nghiệp (nếu có)</label><input placeholder="Công ty / thương hiệu"></div>
         <div class="field"><label>Nội dung cần tư vấn</label><textarea rows="3" placeholder="Bạn cần hỗ trợ điều gì?"></textarea></div>
-        <button type="submit" class="btn primary" style="width:100%">Gửi yêu cầu</button>
-        <p class="lp-muted" style="text-align:center">Yêu cầu được ghi nhận và gửi mô phỏng tới đội ngũ NetViet.</p>
+        ${isSupport ? `<div class="lp-contact-submit-row"><button type="submit" class="btn primary">Gửi yêu cầu</button><p><span aria-hidden="true">✓</span> Chúng tôi phản hồi trong 2 giờ làm việc</p></div>` : `<button type="submit" class="btn primary" style="width:100%">Gửi yêu cầu</button><p class="lp-muted" style="text-align:center">Yêu cầu được ghi nhận và gửi mô phỏng tới đội ngũ NetViet.</p>`}
       </form>
       <div class="lp-contact-success">
         <div class="ico">✅</div>
@@ -296,6 +315,12 @@ export function bindLandingEvents(root) {
       });
     });
   }
+  root.querySelectorAll("[data-faq-target]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = root.querySelector(`#${tab.dataset.faqTarget}`);
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
   root.querySelectorAll(".lp-contact-form").forEach((f) => {
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -306,6 +331,7 @@ export function bindLandingEvents(root) {
         inputs[2],
         inputs[3],
       ];
+      const requestType = f.querySelector('[name="requestType"]')?.value || "";
       // best-effort persist as a real lead; UI success shows regardless
       try {
         await fetch("/api/lead", {
@@ -315,7 +341,7 @@ export function bindLandingEvents(root) {
             name: name?.value || "",
             phone: phone?.value || "",
             company: company?.value || "",
-            need: need?.value || "",
+            need: requestType ? `[Loại yêu cầu: ${requestType}]\n${need?.value || ""}` : (need?.value || ""),
             source: "landing-" + (f.dataset.id || "contact"),
           }),
         });
@@ -565,8 +591,8 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "booking_received",
       occurredAt: Math.floor(Date.now() / 1000) - 960,
-      text: "Booking 50C cực hạn/ mẹt hàn và thương hiệu chống dính công nghệ mới",
-      category: "Thực phẩm",
+      text: "Nhận booking review sản phẩm mới và lên lịch đăng nội dung",
+      category: "Ẩm thực & F&B",
       dot: "green",
     },
     {
@@ -574,7 +600,7 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "booking_received",
       occurredAt: Math.floor(Date.now() / 1000) - 1020,
-      text: "Booking & 03 cpc",
+      text: "Bắt đầu chiến dịch ra mắt bộ sưu tập mùa mới",
       category: "Thời trang",
       dot: "red",
     },
@@ -583,17 +609,17 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "registered",
       occurredAt: Math.floor(Date.now() / 1000) - 1560,
-      text: "Săn hàng & mở hồ sơ niêm yết giá",
-      category: "Trước công",
-      dot: "green",
+      text: "Hoàn tất hồ sơ, bảng giá và sẵn sàng nhận booking",
+      category: "Làm đẹp",
+      dot: "orange",
     },
     {
       name: "Lan H.",
       avatar: "",
       type: "booking_completed",
       occurredAt: Math.floor(Date.now() / 1000) - 3600,
-      text: "Review hũ ốc cháy — nghêu, ghẹ, sụ,... đồng nghìn & 500 đồng.",
-      category: "Thực phẩm",
+      text: "Nhận lời mời trải nghiệm sản phẩm chăm sóc gia đình",
+      category: "Mẹ & Bé",
       dot: "green",
     },
     {
@@ -601,11 +627,30 @@ function bindKocActivityTicker(root) {
       avatar: "",
       type: "booking_completed",
       occurredAt: Math.floor(Date.now() / 1000) - 3600,
-      text: "Đo lường & chi trả hoa hồng",
-      category: "Thác Đăng",
-      dot: "red",
+      text: "Đã duyệt nội dung cho chiến dịch thiết bị thông minh",
+      category: "Công nghệ",
+      dot: "blue",
+    },
+    {
+      name: "Huyền N.",
+      avatar: "",
+      type: "booking_received",
+      occurredAt: Math.floor(Date.now() / 1000) - 4200,
+      text: "Nhận chiến dịch trải nghiệm điểm đến địa phương",
+      category: "Du lịch",
+      dot: "orange",
+    },
+    {
+      name: "An P.",
+      avatar: "",
+      type: "booking_completed",
+      occurredAt: Math.floor(Date.now() / 1000) - 4800,
+      text: "Hoàn tất nghiệm thu và nhận thanh toán an toàn",
+      category: "Sức khỏe",
+      dot: "green",
     },
   ];
+  const seedActivities = activities.map((item) => ({ ...item }));
   let startIndex = 0;
   let rotateTimer = 0;
   let pollTimer = 0;
@@ -670,15 +715,12 @@ function bindKocActivityTicker(root) {
     }
 
     if (listContainer) {
-      const visibleCount = Math.min(5, activities.length);
+      const visibleCount = Math.min(7, activities.length);
       const rowsHtml = [];
-      const defaultCategories = [
-        { cat: "Thực phẩm", dot: "green" },
-        { cat: "Thời trang", dot: "red" },
-        { cat: "Trước công", dot: "green" },
-        { cat: "Thực phẩm", dot: "green" },
-        { cat: "Thác Đăng", dot: "red" },
-      ];
+      const defaultCategories = ACTIVITY_CATEGORY_CYCLE.map((item) => ({
+        cat: item.label,
+        dot: item.tone,
+      }));
 
       for (let i = 0; i < visibleCount; i++) {
         const item = activities[(startIndex + i) % activities.length];
@@ -686,7 +728,9 @@ function bindKocActivityTicker(root) {
         const avatar = safeAvatar(item.avatar) || "/default-avatar.svg";
         const catInfo = defaultCategories[i % defaultCategories.length];
         const categoryLabel = item.category || catInfo.cat;
-        const dotColor = item.dot || catInfo.dot;
+        const dotColor = ["green", "red", "orange", "blue"].includes(item.dot)
+          ? item.dot
+          : catInfo.dot;
         const textContent =
           item.text ||
           (item.type === "booking_received"
@@ -698,7 +742,7 @@ function bindKocActivityTicker(root) {
         rowsHtml.push(`
           <article class="lp-activity-row-item" data-activity-type="${item.type}">
             <div class="lp-cat-pill">
-              <span class="lp-cat-dot ${dotColor}"></span>
+              <span class="lp-cat-icon-wrap">${industryIconSvg(categoryLabel, "lp-cat-icon")}<span class="lp-cat-dot ${dotColor}"></span></span>
               <span>${esc(categoryLabel)}</span>
             </div>
             <div class="lp-user-cell">
@@ -757,7 +801,16 @@ function bindKocActivityTicker(root) {
           )
         : [];
       if (nextActivities.length) {
-        activities = stageActivities(nextActivities);
+        const paddedActivities = [...nextActivities];
+        const liveKeys = new Set(
+          paddedActivities.map((item) => `${item.name}:${item.type}`),
+        );
+        for (const seedItem of seedActivities) {
+          if (paddedActivities.length >= 7) break;
+          const key = `${seedItem.name}:${seedItem.type}`;
+          if (!liveKeys.has(key)) paddedActivities.push(seedItem);
+        }
+        activities = stageActivities(paddedActivities);
       }
       render();
     } catch (_) {

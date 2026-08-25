@@ -22,6 +22,9 @@ function pubShell(inner) {
 let mp = { page: 1, filters: {} };
 
 export async function renderMarketplacePublic(el) {
+  const hashQuery = location.hash.includes('?') ? location.hash.split('?').slice(1).join('?') : '';
+  const requestedCategory = new URLSearchParams(hashQuery).get('category') || '';
+  mp = { page: 1, filters: requestedCategory ? { category: requestedCategory } : {} };
   el.innerHTML = pubShell(`<div class="content" style="padding:0">
     <div style="margin-bottom:12px">
       <a href="/marketplace" class="muted" style="font-size:13.5px;display:inline-flex;align-items:center;gap:4px;font-weight:500">‹ Quay lại trang giới thiệu</a>
@@ -29,7 +32,7 @@ export async function renderMarketplacePublic(el) {
     <h1 style="font-size:28px;margin-bottom:6px">Khám phá KOC</h1>
     <p class="muted" style="margin-bottom:20px;font-size:15px">Tìm KOC theo ngành hàng, tỉnh, hạng, giá và đánh giá.</p>
     <div id="mp-filters"></div><div id="mp-list">${skeletonKocGrid(6)}</div></div>`);
-  renderFilters(document.getElementById('mp-filters'), () => loadMp(false));
+  renderFilters(document.getElementById('mp-filters'), () => loadMp(false), mp.filters);
   loadMp(false);
 }
 
@@ -40,7 +43,7 @@ export async function renderMarketplaceEmbed(container, onBook) {
   loadMp(!!onBook, onBook);
 }
 
-function renderFilters(host, onChange) {
+function renderFilters(host, onChange, initialFilters = {}) {
   const cfg = state.config || { categories: [], provinces: [], tiers: [] };
   host.innerHTML = `<div class="filters">
     <div class="field"><label>Tìm tên</label><input id="f-search" placeholder="Tên KOC…"></div>
@@ -51,6 +54,12 @@ function renderFilters(host, onChange) {
     <div class="field"><label>Sao ≥</label><select id="f-rating"><option value="">Tất cả</option><option>4</option><option>4.5</option></select></div>
     <button class="btn primary sm" id="f-go">Lọc</button>
   </div>`;
+  host.querySelector('#f-search').value = initialFilters.search || '';
+  host.querySelector('#f-cat').value = initialFilters.category || '';
+  host.querySelector('#f-prov').value = initialFilters.province || '';
+  host.querySelector('#f-tier').value = initialFilters.tier || '';
+  host.querySelector('#f-max').value = initialFilters.maxPrice || '';
+  host.querySelector('#f-rating').value = initialFilters.minRating || '';
   const go = () => {
     mp.page = 1;
     mp.filters = {

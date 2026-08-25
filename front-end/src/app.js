@@ -80,7 +80,7 @@ async function route() {
   if (hash.startsWith("#/koc/")) {
     return renderKocProfile(appEl, hash.split("/")[2]);
   }
-  if (hash === "#/explore") {
+  if (hash === "#/explore" || hash.startsWith("#/explore?")) {
     return renderMarketplacePublic(appEl);
   }
   if (hash === "#/aiclone-landing") {
