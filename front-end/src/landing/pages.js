@@ -32,13 +32,48 @@ export const LANDING_ROUTES = [
 // ---------- 1. Trang chủ (/home) ----------
 function pageHome() {
   const activitySeedRows = [
-    { name: "Kim L.", category: "Ẩm thực & F&B", text: "Nhận booking review sản phẩm mới và lên lịch đăng nội dung", time: "8 giây trước" },
-    { name: "Ngọc A.", category: "Thời trang", text: "Bắt đầu chiến dịch ra mắt bộ sưu tập mùa mới", time: "30 giây trước" },
-    { name: "Minh T.", category: "Làm đẹp", text: "Hoàn tất hồ sơ, bảng giá và sẵn sàng nhận booking", time: "52 giây trước" },
-    { name: "Lan H.", category: "Mẹ & Bé", text: "Nhận lời mời trải nghiệm sản phẩm chăm sóc gia đình", time: "1 phút trước" },
-    { name: "Quang D.", category: "Công nghệ", text: "Đã duyệt nội dung cho chiến dịch thiết bị thông minh", time: "1 phút trước" },
-    { name: "Huyền N.", category: "Du lịch", text: "Nhận chiến dịch trải nghiệm điểm đến địa phương", time: "2 phút trước" },
-    { name: "An P.", category: "Sức khỏe", text: "Hoàn tất nghiệm thu và nhận thanh toán an toàn", time: "2 phút trước" },
+    {
+      name: "Kim L.",
+      category: "Ẩm thực & F&B",
+      text: "Nhận booking review sản phẩm mới và lên lịch đăng nội dung",
+      time: "8 giây trước",
+    },
+    {
+      name: "Ngọc A.",
+      category: "Thời trang",
+      text: "Bắt đầu chiến dịch ra mắt bộ sưu tập mùa mới",
+      time: "30 giây trước",
+    },
+    {
+      name: "Minh T.",
+      category: "Làm đẹp",
+      text: "Hoàn tất hồ sơ, bảng giá và sẵn sàng nhận booking",
+      time: "52 giây trước",
+    },
+    {
+      name: "Lan H.",
+      category: "Mẹ & Bé",
+      text: "Nhận lời mời trải nghiệm sản phẩm chăm sóc gia đình",
+      time: "1 phút trước",
+    },
+    {
+      name: "Quang D.",
+      category: "Công nghệ",
+      text: "Đã duyệt nội dung cho chiến dịch thiết bị thông minh",
+      time: "1 phút trước",
+    },
+    {
+      name: "Huyền N.",
+      category: "Du lịch",
+      text: "Nhận chiến dịch trải nghiệm điểm đến địa phương",
+      time: "2 phút trước",
+    },
+    {
+      name: "An P.",
+      category: "Sức khỏe",
+      text: "Hoàn tất nghiệm thu và nhận thanh toán an toàn",
+      time: "2 phút trước",
+    },
   ];
   const activityRows = activitySeedRows
     .map((item, index) => {
@@ -56,11 +91,14 @@ function pageHome() {
     .join("");
 
   const categoryLinks = INDUSTRY_ITEMS.map(
-    (item) => `<line x1="500" y1="310" x2="${item.x * 10}" y2="${item.y * 6.2}"/>`,
+    (item) =>
+      `<line x1="500" y1="310" x2="${item.x * 10}" y2="${item.y * 6.2}"/>`,
   ).join("");
 
   const categoryNodes = INDUSTRY_ITEMS.map(
-    (item) => `<a class="lp-category-node" href="/#/explore?category=${encodeURIComponent(item.filterCategory)}" style="--node-x:${item.x}%;--node-y:${item.y}%" aria-label="Khám phá KOC ngành ${item.label}">
+    (
+      item,
+    ) => `<a class="lp-category-node" href="/#/explore?category=${encodeURIComponent(item.filterCategory)}" style="--node-x:${item.x}%;--node-y:${item.y}%" aria-label="Khám phá KOC ngành ${item.label}">
       <span class="lp-category-node-icon">${industryIconSvg(item.label)}</span>
       <strong>${item.label}</strong>
       <span class="lp-category-node-rule" aria-hidden="true"></span>
@@ -218,7 +256,8 @@ function pageHome() {
       <div class="lp-steps-video-wrap">
         ${lpVideoPlayer({
           src: "/videos/how-it-works.mp4",
-          poster: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg",
+          poster:
+            "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg",
           alt: "Video 4 bước cho một chiến dịch trọn vẹn",
         })}
       </div>
@@ -389,9 +428,7 @@ function pageKoc() {
     eyebrow: "DÀNH CHO KOC/KOLs",
     h1: `Bạn định giá.<br>Nền tảng mang booking đến.<br><span class="coral">Ví tự cộng tiền.</span>`,
     sub: `Tự đặt phí theo ngành hàng, nhận booking từ 200.000+ doanh nghiệp và kiếm thêm hoa hồng affiliate trên mỗi đơn hàng.<span class="lp-koc-hero-speed">Đăng ký và ký hợp đồng điện tử trong <strong>chưa đầy 15 phút.</strong></span>`,
-    ctas: [
-      { href: "/#/tuyen-koc", label: "Tạo hồ sơ KOC miễn phí" },
-    ],
+    ctas: [{ href: "/#/tuyen-koc", label: "Tạo hồ sơ KOC miễn phí" }],
     trust: "Miễn phí trọn đời · Nhận 95% mỗi booking · Rút tiền trong 24h",
     img: {
       src: "/images/koc-hero-seamless.png",
@@ -457,7 +494,8 @@ function pageKoc() {
         <div class="lp-steps-video-wrap">
           ${lpVideoPlayer({
             src: "/videos/koc-process.mp4",
-            poster: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312036/BANNER_TRANG_KOC_qjho2n.jpg",
+            poster:
+              "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312036/BANNER_TRANG_KOC_qjho2n.jpg",
             alt: "Video giới thiệu quy trình đăng ký KOC Việt",
           })}
         </div>
@@ -548,7 +586,7 @@ function pageKoc() {
         <h2>Làm tốt hơn, nâng hạng cao hơn,<br><span class="lp-coral-text">nhận booking giá trị hơn</span></h2>
       </div>
       <div class="lp-section-media lp-koc-rank-media lp-reveal">${lpMedia({
-        src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785313892/c%C3%A0nh_l%C3%A0m_t%E1%BB%91t_khung_gi%C3%A1_c%C3%A0ng_m%E1%BB%9F_jtq8qd.jpg",
+        src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1787646254/c%C3%A0nh_l%C3%A0m_t%E1%BB%91t_tzi3vl.png",
         alt: "Lộ trình thăng hạng và mở mức giá KOC",
         ratio: "16/6",
       })}</div>
@@ -672,14 +710,7 @@ function pageKoc() {
   );
 
   return (
-    hero +
-    dualIncome +
-    process +
-    rights +
-    rankUp +
-    conditions +
-    faq +
-    ctaFinal
+    hero + dualIncome + process + rights + rankUp + conditions + faq + ctaFinal
   );
 }
 
@@ -817,7 +848,8 @@ function pageBusiness() {
       <div class="lp-steps-video-wrap lp-business-process-video">
         ${lpVideoPlayer({
           src: "/videos/booking-process.mp4",
-          poster: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg",
+          poster:
+            "https://res.cloudinary.com/drxum5uxt/image/upload/v1785312034/booking_koc_d%E1%BB%85_d%C3%A0ng_nh%C6%B0_%C4%91%E1%BA%B7t_xe_jwapy0.jpg",
           alt: "Video giới thiệu quy trình booking dành cho doanh nghiệp",
         })}
       </div>
@@ -1005,11 +1037,13 @@ function pageMarketplace() {
       <div class="lp-section-head">
         <h2>Mỗi hồ sơ KOC là một bản chào hàng đầy đủ</h2>
       </div>
-      <div class="lp-section-media lp-reveal" style="max-width:920px;margin:0 auto 24px auto">${lpMedia({
-        src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785383806/h%E1%BB%93_s%C6%A1_koc_ihq9lf.jpg",
-        alt: "Hồ sơ KOC",
-        ratio: "21/9",
-      })}</div>
+      <div class="lp-section-media lp-reveal" style="max-width:920px;margin:0 auto 24px auto">${lpMedia(
+        {
+          src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785383806/h%E1%BB%93_s%C6%A1_koc_ihq9lf.jpg",
+          alt: "Hồ sơ KOC",
+          ratio: "21/9",
+        },
+      )}</div>
       
       <!-- Highlighted Profile Transparency Statement Card -->
       <div class="lp-statement-card lp-statement-teal" style="max-width:920px;margin:0 auto">
@@ -1172,7 +1206,8 @@ function pageAiClone() {
       <div class="lp-steps-video-wrap">
         ${lpVideoPlayer({
           src: "/videos/ai-clone.mp4",
-          poster: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/banner_ai_clone_av_i0rjqx.jpg",
+          poster:
+            "https://res.cloudinary.com/drxum5uxt/image/upload/v1785313898/banner_ai_clone_av_i0rjqx.jpg",
           alt: "Video giới thiệu quy trình AI Clone Avatar",
         })}
       </div>
@@ -1491,7 +1526,7 @@ function pagePricing() {
               <div class="lp-payout-ico">⚡</div>
               <div class="lp-payout-content">
                 <strong>Giải ngân ngay lập tức</strong>
-                <p>Phí booking giải ngân ngay khi doanh nghiệp xác nhận hoàn thành chiến dịch.</p>
+                <p>Phí booking được ghi nhận vào ví ngay khi doanh nghiệp xác nhận hoàn thành; yêu cầu rút tiền được xử lý trong 24h làm việc.</p>
               </div>
             </div>
             <div class="lp-payout-pill-item">
@@ -1505,7 +1540,7 @@ function pagePricing() {
               <div class="lp-payout-ico">💳</div>
               <div class="lp-payout-content">
                 <strong>Ngưỡng rút 1.000.000đ</strong>
-                <p>Rút về tài khoản ngân hàng / ví điện tử trong 24h làm việc.</p>
+                <p>Có thể tạo yêu cầu rút khi số dư khả dụng đạt từ 1.000.000đ; số dư thấp hơn được cộng dồn.</p>
               </div>
             </div>
             <div class="lp-payout-pill-item">
@@ -1544,25 +1579,18 @@ function pagePricing() {
   );
 
   return (
-    hero +
-    feeMechanism +
-    tiers +
-    tierCriteria +
-    payoutPolicy +
-    quote +
-    ctaFinal
+    hero + feeMechanism + tiers + tierCriteria + payoutPolicy + quote + ctaFinal
   );
 }
 
 // ---------- 7. Cộng đồng tỉnh thành (/cong-dong) ----------
 function pageCommunity() {
   const hero = lpHero({
+    className: "lp-community-hero",
     eyebrow: "CỘNG ĐỒNG KOC 34 TỈNH THÀNH",
     h1: `<span class="lp-hero-line lp-hero-line-wide">Khách hàng ở tỉnh nào</span><span class="coral lp-hero-line">KOC có mặt ở tỉnh đó.</span>`,
-    sub: "KOC Việt tổ chức KOC thành cộng đồng theo từng tỉnh/thành: doanh nghiệp địa phương tìm được người nói đúng giọng khách hàng của mình, KOC tỉnh có sân chơi và người dẫn dắt ngay tại quê nhà.",
-    ctas: [
-      { href: "/#/explore", label: "Tìm KOC tại tỉnh của bạn" },
-    ],
+    sub: "KOC Việt kết nối doanh nghiệp với KOC tại 34 tỉnh thành, giúp thương hiệu tiếp cận đúng khách hàng địa phương và đúng người ảnh hưởng.",
+    ctas: [{ href: "/#/explore", label: "Tìm KOC tại tỉnh của bạn" }],
     img: {
       src: "/images/community-hero-seamless.png",
       alt: "Khách hàng tỉnh nào, KOC tỉnh đó",
@@ -1575,11 +1603,13 @@ function pageCommunity() {
       <div class="lp-section-head">
         <h2>Sức mạnh của KOC “cùng quê”</h2>
       </div>
-      <div class="lp-section-media lp-reveal" style="max-width:920px;margin:0 auto 36px auto">${lpMedia({
-        src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785313891/s%E1%BB%A9c_m%E1%BA%A1nh_c%E1%BB%A7a_koc_c%C3%B9ng_t%E1%BB%89nh_vrclku.jpg",
-        alt: "Sức mạnh của KOC cùng tỉnh",
-        ratio: "21/9",
-      })}</div>
+      <div class="lp-section-media lp-reveal" style="max-width:920px;margin:0 auto 36px auto">${lpMedia(
+        {
+          src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785313891/s%E1%BB%A9c_m%E1%BA%A1nh_c%E1%BB%A7a_koc_c%C3%B9ng_t%E1%BB%89nh_vrclku.jpg",
+          alt: "Sức mạnh của KOC cùng tỉnh",
+          ratio: "21/9",
+        },
+      )}</div>
       <div class="lp-grid-3">
         <article class="lp-card lp-proof-card lp-proof-coral">
           <div class="lp-proof-card-top">
@@ -1618,7 +1648,7 @@ function pageCommunity() {
   const leader = `<section class="lp-section tint" aria-label="Trưởng nhóm cộng đồng">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Trưởng nhóm cộng đồng, <span class="lp-coral-text">người kết nối tại từng tỉnh</span></h2>
+        <h2><span class="lp-heading-line">Trưởng nhóm cộng đồng</span><span class="lp-heading-line lp-coral-text">Người kết nối lại từng tỉnh</span></h2>
       </div>
       <div class="lp-grid-2">
         <!-- Highlighted Leader Statement Card -->
@@ -1660,11 +1690,11 @@ function pageCommunity() {
   const roadmap = `<section class="lp-section" aria-label="Lộ trình phủ 34 tỉnh thành">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Lộ trình phủ 34 tỉnh thành</h2>
+        <h2>Từ 5 thành phố, tiến đến 34 tỉnh thành</h2>
       </div>
       
       <!-- Highlighted Roadmap Flow Banner -->
-      <div class="lp-flow-banner" style="max-width:920px;margin:0 auto">
+      <div class="lp-flow-banner lp-community-roadmap">
         <div class="lp-flow-banner-header">
           <span class="lp-statement-tag">LỘ TRÌNH PHỦ 34 TỈNH THÀNH</span>
           <span class="lp-flow-caption">Mở rộng mạng lưới KOC theo từng giai đoạn</span>
@@ -1689,6 +1719,20 @@ function pageCommunity() {
             <span class="phase-badge">Giai đoạn 4</span>
             <h4>Liên kết vùng</h4>
             <p>Chia sẻ booking giữa các tỉnh lân cận cho chiến dịch vùng miền.</p>
+          </div>
+        </div>
+        <div class="lp-roadmap-cta">
+          <div class="lp-roadmap-network" aria-hidden="true">
+            <svg viewBox="0 0 360 150" fill="none">
+              <path d="M38 92L102 42L174 76L244 30L324 72M102 42L126 122L174 76L232 126L324 72M38 92L126 122M244 30L232 126"/>
+              <circle cx="38" cy="92" r="8"/><circle cx="102" cy="42" r="10"/><circle cx="126" cy="122" r="7"/><circle cx="174" cy="76" r="13"/><circle cx="232" cy="126" r="8"/><circle cx="244" cy="30" r="7"/><circle cx="324" cy="72" r="11"/>
+              <circle class="pulse" cx="174" cy="76" r="22"/>
+            </svg>
+          </div>
+          <div class="lp-roadmap-cta-content">
+            <h3>Tỉnh của bạn chưa có trong mạng lưới?</h3>
+            <p>Trở thành người kết nối KOC đầu tiên tại địa phương.</p>
+            <a href="/#/tuyen-koc" class="btn btn-primary nv-lift">Đăng ký trở thành trưởng nhóm tỉnh</a>
           </div>
         </div>
       </div>
@@ -1725,7 +1769,8 @@ function pageSupport() {
         </h1>
         <p class="lp-hero-sub" style="margin: 0 auto 28px auto;">Tra cứu câu hỏi thường gặp hoặc gửi yêu cầu trực tiếp tới đội ngũ hỗ trợ NetViet.</p>
         <div class="lp-search-box">
-          <input id="lp-faq-search" placeholder="Gõ từ khoá: phí, rút tiền, hợp đồng, hoàn tiền, AI Clone Avatar…">
+          <svg class="lp-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input id="lp-faq-search" type="search" aria-label="Tìm kiếm câu hỏi hỗ trợ" placeholder="Gõ từ khoá: phí, rút tiền, hợp đồng...">
         </div>
       </div>
     </div>
@@ -1735,6 +1780,17 @@ function pageSupport() {
       </svg>
     </div>
   </section>`;
+
+  const categoryTabs = `<nav class="lp-support-tabs" aria-label="Danh mục hỗ trợ">
+    <div class="lp-support-tabs-inner">
+      <button type="button" data-faq-target="faq-tai-khoan">Tài khoản &amp; đăng ký</button>
+      <button type="button" data-faq-target="faq-gia-phi">Giá &amp; phí</button>
+      <button type="button" data-faq-target="faq-booking">Booking &amp; nội dung</button>
+      <button type="button" data-faq-target="faq-thanh-toan">Thanh toán</button>
+      <button type="button" data-faq-target="faq-phap-ly">Pháp lý &amp; dữ liệu</button>
+      <button type="button" data-faq-target="faq-ai-clone">AI Clone Avatar</button>
+    </div>
+  </nav>`;
 
   const faqBody = `<section class="lp-section" aria-label="Danh mục câu hỏi thường gặp">
     <div class="lp-section-inner" style="max-width:820px;margin:0 auto">
@@ -1756,7 +1812,7 @@ function pageSupport() {
             "Được — mỗi ngành một hồ sơ năng lực, bảng giá và chỉ số riêng.",
           ],
         ],
-        { groupTitle: "Tài khoản & Đăng ký" },
+        { groupTitle: "Tài khoản & Đăng ký", groupId: "faq-tai-khoan", groupIcon: "account" },
       )}
       ${lpAccordion(
         [
@@ -1769,7 +1825,7 @@ function pageSupport() {
             "Không. Giá trên hồ sơ là giá cuối do KOC niêm yết trong khung hạng — minh bạch cho cả hai phía.",
           ],
         ],
-        { groupTitle: "Giá & Phí" },
+        { groupTitle: "Giá & Phí", groupId: "faq-gia-phi", groupIcon: "wallet" },
       )}
       ${lpAccordion(
         [
@@ -1786,7 +1842,7 @@ function pageSupport() {
             "Có — nền tảng nhắc tự động gắn #quangcao theo quy định pháp luật hiện hành.",
           ],
         ],
-        { groupTitle: "Booking & Nội dung" },
+        { groupTitle: "Booking & Nội dung", groupId: "faq-booking", groupIcon: "booking" },
       )}
       ${lpAccordion(
         [
@@ -1799,7 +1855,7 @@ function pageSupport() {
             "Mở khiếu nại trong app; đội ngũ trọng tài của nền tảng đối chiếu dữ liệu giao dịch (được lưu vết đầy đủ) và phân xử theo điều khoản hợp đồng.",
           ],
         ],
-        { groupTitle: "Thanh toán" },
+        { groupTitle: "Thanh toán", groupId: "faq-thanh-toan", groupIcon: "payment" },
       )}
       ${lpAccordion(
         [
@@ -1812,7 +1868,7 @@ function pageSupport() {
             "Chỉ để xác minh danh tính và chi trả đúng người, mã hoá lưu trữ theo Nghị định 13/2023/NĐ-CP, không chia sẻ bên thứ ba.",
           ],
         ],
-        { groupTitle: "Pháp lý & Dữ liệu" },
+        { groupTitle: "Pháp lý & Dữ liệu", groupId: "faq-phap-ly", groupIcon: "legal" },
       )}
       ${lpAccordion(
         [
@@ -1825,7 +1881,7 @@ function pageSupport() {
             "NetViet booking và sản xuất bên ngoài hệ thống; KOC duyệt cuối từng video trước khi đăng.",
           ],
         ],
-        { groupTitle: "AI Clone Avatar" },
+        { groupTitle: "AI Clone Avatar", groupId: "faq-ai-clone", groupIcon: "ai" },
       )}
     </div>
   </section>`;
@@ -1837,7 +1893,7 @@ function pageSupport() {
       </div>
       
       <!-- Highlighted Support Channels Statement Card -->
-      <div class="lp-statement-card lp-statement-teal" style="max-width:820px;margin:0 auto">
+      <div class="lp-statement-card lp-statement-teal lp-support-channels-card">
         <div class="lp-statement-header">
           <div class="lp-statement-icon-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -1850,24 +1906,27 @@ function pageSupport() {
               <span class="chan-ico">💬</span>
               <strong>Trung tâm hỗ trợ trong app</strong>
               <p>Phản hồi dưới 2 giờ làm việc</p>
+              <span class="lp-channel-hours">9:00–18:00 · Thứ 2–Thứ 7</span>
             </div>
-            <div class="lp-channel-item">
+            <div class="lp-channel-item featured">
               <span class="chan-ico">📞</span>
               <strong>Hotline NetViet</strong>
               <p>Hỗ trợ trực tiếp từ chuyên viên</p>
+              <span class="lp-channel-hours">9:00–18:00 · Thứ 2–Thứ 7</span>
             </div>
             <div class="lp-channel-item">
               <span class="chan-ico">✉️</span>
               <strong>Email hỗ trợ</strong>
               <p>Tiếp nhận &amp; xử lý yêu cầu</p>
+              <span class="lp-channel-hours">Tiếp nhận 24/7 · phản hồi trong giờ làm việc</span>
             </div>
             <div class="lp-channel-item">
               <span class="chan-ico">👥</span>
               <strong>Cộng đồng KOC tỉnh</strong>
               <p>Trao đổi tại địa phương</p>
+              <span class="lp-channel-hours">Trao đổi 24/7 · tùy quản trị viên địa phương</span>
             </div>
           </div>
-          <p class="lp-statement-sub" style="margin-top:16px;text-align:center">⏰ <strong>Giờ làm việc:</strong> 9:00 – 18:00 (Thứ 2 – Thứ 7 hàng tuần).</p>
         </div>
       </div>
     </div>
@@ -1876,13 +1935,13 @@ function pageSupport() {
   const contact = `<section class="lp-section" aria-label="Gửi yêu cầu hỗ trợ">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Chưa tìm thấy câu trả lời? Gửi yêu cầu hỗ trợ. Chúng tôi phản hồi trong 2 giờ làm việc.</h2>
+        <h2>Chưa tìm thấy câu trả lời? Gửi yêu cầu hỗ trợ.</h2>
       </div>
       ${lpContactForm("ho-tro", "Gửi yêu cầu hỗ trợ")}
     </div>
   </section>`;
 
-  return hero + faqBody + support + contact;
+  return hero + categoryTabs + faqBody + support + contact;
 }
 
 const BUILDERS = {
