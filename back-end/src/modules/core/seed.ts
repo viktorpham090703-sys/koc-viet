@@ -10,7 +10,7 @@ export const TIERS = [
   { name: 'Macro', min: 15000000,max: 80000000, minF: 500000, maxF: 99000000,fee: 3 },
 ];
 
-export const CATEGORIES = ['Thời trang','Mỹ phẩm','Ẩm thực','Công nghệ','Mẹ & Bé','Du lịch','Gia dụng','Sức khỏe'];
+export const CATEGORIES = ['Thời trang','Mỹ phẩm','Ẩm thực','Công nghệ','Mẹ & Bé','Du lịch','Gia dụng','Sức khỏe','Thương mại điện tử','Giáo dục','Tài chính cá nhân'];
 // Fallback for Address Kit's official 34 province/city list (effective 01/07/2025).
 export const PROVINCES = [
   'Thành phố Hà Nội', 'Tỉnh Cao Bằng', 'Tỉnh Tuyên Quang', 'Tỉnh Điện Biên',
