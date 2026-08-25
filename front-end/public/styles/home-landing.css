@@ -2298,6 +2298,21 @@
   margin: 0 auto 12px auto;
 }
 
+@media (max-width: 480px) {
+  .lp-home .lp-support-channels-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-home .lp-contact-submit-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.lp-home .lp-heading-line {
+  display: block;
+}
+
 .lp-home .lp-section-head p {
   font-size: 15.5px;
   line-height: 1.65;
@@ -2572,6 +2587,16 @@
   }
 
   .lp-home .lp-ai-clone-hero .lp-hero-visual {
+    min-width: 0;
+  }
+
+  .lp-home .lp-community-hero .lp-hero-home-inner {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 32px;
+  }
+
+  .lp-home .lp-community-hero .lp-hero-content,
+  .lp-home .lp-community-hero .lp-hero-visual {
     min-width: 0;
   }
 }
@@ -3335,6 +3360,91 @@
   margin-top: 20px;
 }
 
+.lp-home .lp-community-roadmap {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 34px 38px;
+}
+
+.lp-home .lp-community-roadmap .lp-roadmap-grid {
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.lp-home .lp-community-roadmap .lp-roadmap-card {
+  min-height: 190px;
+  padding: 24px 20px;
+}
+
+.lp-home .lp-roadmap-cta {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 32px;
+  margin-top: 28px;
+  padding: 28px 30px;
+  border: 1px solid rgba(234, 88, 60, 0.24);
+  border-radius: 16px;
+  background: linear-gradient(120deg, #fff7f3 0%, #ffffff 58%, #fffaf0 100%);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+.lp-home .lp-roadmap-network svg {
+  display: block;
+  width: 100%;
+  max-height: 150px;
+}
+
+.lp-home .lp-roadmap-network path {
+  stroke: url("#roadmap-gradient");
+  stroke: #f28a55;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 6 7;
+}
+
+.lp-home .lp-roadmap-network circle:not(.pulse) {
+  fill: #ffffff;
+  stroke: #ea583c;
+  stroke-width: 4;
+  filter: drop-shadow(0 4px 6px rgba(234, 88, 60, 0.2));
+}
+
+.lp-home .lp-roadmap-network .pulse {
+  fill: rgba(245, 158, 11, 0.12);
+  stroke: #f59e0b;
+  stroke-width: 2;
+  transform-origin: 174px 76px;
+  animation: nvPulseSoft 2.4s ease-in-out infinite;
+}
+
+.lp-home .lp-roadmap-cta-content h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.3;
+}
+
+.lp-home .lp-roadmap-cta-content p {
+  margin: 0 0 18px;
+  color: #475569;
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+.lp-home .lp-roadmap-cta-content .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  border-radius: 8px;
+  background: #ea583c;
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .lp-home .lp-roadmap-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -3377,6 +3487,12 @@
 }
 
 /* Support Channels Grid */
+.lp-home .lp-support-channels-card {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
 .lp-home .lp-support-channels-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -3394,6 +3510,14 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  position: relative;
+  min-width: 0;
+}
+
+.lp-home .lp-channel-item.featured {
+  border: 2px solid #ea583c;
+  background: linear-gradient(180deg, #fff8f5 0%, #ffffff 100%);
+  box-shadow: 0 9px 24px rgba(234, 88, 60, 0.14);
 }
 
 .lp-home .chan-ico {
@@ -3410,6 +3534,16 @@
   font-size: 12.5px;
   color: #64748b;
   margin: 0;
+}
+
+.lp-home .lp-channel-hours {
+  display: block;
+  margin-top: auto;
+  padding-top: 8px;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.45;
 }
 
 /* ==========================================================================
@@ -3549,12 +3683,25 @@
 }
 
 .lp-home .lp-faq-group-title::before {
-  content: "";
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: #ea583c;
+  content: none;
+}
+
+.lp-home .lp-faq-group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 9px;
+  background: #fff1ee;
+  color: #ea583c;
+  box-shadow: 0 3px 10px rgba(234, 88, 60, 0.12);
+}
+
+.lp-home .lp-faq-group-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .lp-home .lp-acc-item {
@@ -3663,14 +3810,71 @@
 }
 
 .lp-home .lp-search-box::before {
-  content: "🔍";
+  content: none;
+}
+
+.lp-home .lp-search-icon {
   position: absolute;
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 16px;
-  opacity: 0.8;
+  z-index: 1;
+  width: 19px;
+  height: 19px;
+  color: rgba(255, 255, 255, 0.72);
   pointer-events: none;
+}
+
+.lp-home .lp-support-tabs {
+  position: sticky;
+  top: 60px;
+  z-index: 450;
+  width: 100%;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(12px);
+}
+
+.lp-home .lp-support-tabs-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  box-sizing: border-box;
+}
+
+.lp-home .lp-support-tabs button {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 650;
+  font-family: inherit;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.lp-home .lp-support-tabs button:hover,
+.lp-home .lp-support-tabs button:focus-visible {
+  border-color: #ea583c;
+  background: #fff1ee;
+  color: #c9412c;
+  transform: translateY(-1px);
+}
+
+.lp-home .lp-faq-anchor {
+  scroll-margin-top: 128px;
 }
 
 /* Contact Form */
@@ -3700,6 +3904,7 @@
 }
 
 .lp-home .lp-contact-form input,
+.lp-home .lp-contact-form select,
 .lp-home .lp-contact-form textarea {
   width: 100%;
   padding: 11px 16px;
@@ -3715,9 +3920,54 @@
 }
 
 .lp-home .lp-contact-form input:focus,
+.lp-home .lp-contact-form select:focus,
 .lp-home .lp-contact-form textarea:focus {
   border-color: #ea583c;
   box-shadow: 0 0 0 3px rgba(234, 88, 60, 0.12);
+}
+
+.lp-home .lp-contact-form select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position: calc(100% - 19px) 50%, calc(100% - 14px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.lp-home .lp-contact-submit-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.75fr) minmax(0, 1.25fr);
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.lp-home .lp-contact-submit-row .btn {
+  width: 100%;
+}
+
+.lp-home .lp-contact-submit-row p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.lp-home .lp-contact-submit-row p span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 50%;
+  background: #fff1ee;
+  color: #ea583c;
+  font-weight: 800;
 }
 
 .lp-home .lp-contact-form button[type="submit"] {
@@ -4482,6 +4732,20 @@
 }
 
 @media (max-width: 768px) {
+  .lp-home .lp-roadmap-cta {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 22px 18px;
+  }
+
+  .lp-home .lp-roadmap-network svg {
+    max-height: 120px;
+  }
+
+  .lp-home .lp-roadmap-cta-content .btn {
+    width: 100%;
+  }
+
   .lp-home .lp-hero-visual img {
     width: 100%;
     max-width: 520px;
@@ -4522,7 +4786,6 @@
   }
   .lp-home .lp-payout-pills-grid,
   .lp-home .lp-roadmap-grid,
-  .lp-home .lp-support-channels-grid,
   .lp-home .lp-compare-grid {
     grid-template-columns: 1fr;
   }
