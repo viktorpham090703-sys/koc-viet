@@ -1023,6 +1023,7 @@ function pageMarketplace() {
 // ---------- 5. AI Clone Avatar (/ai-clone) ----------
 function pageAiClone() {
   const hero = lpHero({
+    className: "lp-ai-clone-hero",
     eyebrow: "DỊCH VỤ CỘNG THÊM — DÀNH RIÊNG CHO KOC CỦA KOC VIỆT",
     h1: `<span class="lp-hero-line">Thu nhập vẫn chạy</span><span class="coral lp-hero-line lp-hero-line-wide">Ngay cả khi bạn không quay video.</span>`,
     sub: "Tham gia chương trình AI Clone Avatar: NetViet trực tiếp mang booking đến và sản xuất video hoàn chỉnh bằng công nghệ AI Clone Avatar hình ảnh, giọng nói của bạn. Việc của bạn chỉ là duyệt video và bấm đăng — phí booking và hoa hồng affiliate vẫn về ví như thường.",
