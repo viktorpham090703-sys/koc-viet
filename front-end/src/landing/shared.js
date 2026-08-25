@@ -92,8 +92,9 @@ export function lpHero({
   extra,
   img,
   waveFill = "#ffffff",
+  className = "",
 }) {
-  return `<section class="lp-hero-home">
+  return `<section class="lp-hero-home ${escAttr(className)}">
     <div class="lp-hero-home-inner">
       <div class="lp-hero-content">
         ${
