@@ -6,13 +6,19 @@ type IdentityImages = { front: string; back: string; selfie: string }
 function config(env: Record<string, unknown>) {
   const region = String(env.AWS_REGION || '').trim()
   const bucket = String(env.AWS_S3_IDENTITY_BUCKET || env.AWS_S3_BUCKET || '').trim()
+  const endpoint = String(env.AWS_S3_ENDPOINT || '').trim()
+  const forcePathStyle = String(env.AWS_S3_FORCE_PATH_STYLE || '').trim().toLowerCase() === 'true'
   if (!region || !bucket) throw new Error('AWS_REGION and AWS_S3_IDENTITY_BUCKET are required')
-  return { region, bucket }
+  return { region, bucket, endpoint, forcePathStyle }
 }
 
 function client(env: Record<string, unknown>) {
-  const { region } = config(env)
-  return new S3Client({ region })
+  const { region, endpoint, forcePathStyle } = config(env)
+  return new S3Client({
+    region,
+    ...(endpoint ? { endpoint } : {}),
+    forcePathStyle,
+  })
 }
 
 function decodeImage(dataUrl: string) {

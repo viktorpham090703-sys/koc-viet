@@ -55,6 +55,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+
       - name: Configure SSH
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
@@ -65,6 +68,29 @@ jobs:
           chmod 600 ~/.ssh/koc_viet_ec2
           printf '%s\n' "$EC2_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+
+      - name: Package application
+        run: |
+          tar \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='*/.env' \
+            --exclude='node_modules' \
+            --exclude='*/node_modules' \
+            --exclude='dist' \
+            --exclude='*/dist' \
+            -czf /tmp/koc-viet-release.tar.gz .
+
+      - name: Upload application
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          scp \
+            -i ~/.ssh/koc_viet_ec2 \
+            -o IdentitiesOnly=yes \
+            /tmp/koc-viet-release.tar.gz \
+            "$EC2_USER@$EC2_HOST:/home/$EC2_USER/koc-viet-release.tar.gz"
 
       - name: Deploy application
         env:
@@ -77,16 +103,19 @@ jobs:
             "$EC2_USER@$EC2_HOST" 'bash -se' <<'DEPLOY'
             set -Eeuo pipefail
 
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-            nvm use 22
+            release_archive="$HOME/koc-viet-release.tar.gz"
+            release_dir="$(mktemp -d)"
+            trap 'rm -rf "$release_dir" "$release_archive"' EXIT
+
+            tar -xzf "$release_archive" -C "$release_dir"
+
+            rsync -a --delete \
+              --exclude='.env' \
+              --exclude='node_modules/' \
+              --exclude='dist/' \
+              "$release_dir/" /var/www/koc-viet/
 
             cd /var/www/koc-viet
-
-            git fetch origin main
-            git checkout main
-            git pull --ff-only origin main
-
             docker compose up -d postgres
 
             npm ci --prefix back-end
