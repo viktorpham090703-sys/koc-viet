@@ -8,3 +8,4 @@ graphify-out/
 __pycache__/
 *.pyc
 .freebuff/
+migration-backups/
