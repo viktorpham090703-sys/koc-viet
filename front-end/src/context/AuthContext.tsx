@@ -1,13 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { get, post } from '../lib/api'
-import type { AppConfig, Role, User } from '../types'
+import type { AppConfig, User } from '../types'
 
 interface AuthValue {
   user: User | null
   config: AppConfig
   loading: boolean
   login(email: string, password: string): Promise<User>
-  demoLogin(role: Role): Promise<User>
   logout(): Promise<void>
   refresh(): Promise<void>
 }
@@ -35,10 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user, config, loading, refresh,
     async login(email, password) {
       const result = await post<{ user: User }>('/api/login', { email, password })
-      setUser(result.user); return result.user
-    },
-    async demoLogin(role) {
-      const result = await post<{ user: User }>('/api/demo-login', { role })
       setUser(result.user); return result.user
     },
     async logout() { await post('/api/logout'); setUser(null) },

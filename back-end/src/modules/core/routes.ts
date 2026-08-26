@@ -1,6 +1,6 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
-import { TIERS, CATEGORIES, tierOf, getDemoAccounts, getDemoAccount, isDemoUser, demoAccountsEnabled } from './seed.js';
+import { TIERS, CATEGORIES, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
@@ -1067,18 +1067,6 @@ export async function route(request, env, url) {
     return J({ user: safeUser(u) }, 200, { 'Set-Cookie': setCookie });
   }
 
-  if (p === '/api/demo-login' && m === 'POST') {
-    if (!demoAccountsEnabled(env)) return err('Tài khoản demo không được bật.', 404);
-    const role = String(body.role || '').trim().toLowerCase();
-    const u = await getDemoAccount(env, role);
-    if (!u) return err('Tài khoản demo không tồn tại.', 404);
-    const allowed = await consumeRateLimit(env, 'demo-login-ip', requestIp(request), 30, 15 * 60);
-    if (!allowed) return err('Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.', 429, { 'Retry-After': '900' });
-    const setCookie = await createSession(env, request, u, true);
-    u._sessionDemo = true;
-    return J({ user: safeUser(u) }, 200, { 'Set-Cookie': setCookie });
-  }
-
   const me = await sessionUser(env, request);
 
   if (p === "/api/me") {
@@ -1295,9 +1283,8 @@ export async function route(request, env, url) {
   // ---------- PUBLIC config ----------
   if (p === "/api/config") {
     const tiers = await getTiers(env);
-    const demoAccounts = await getDemoAccounts(env);
     const provinces = await getAddressKitProvinces();
-    return J({ tiers, categories: CATEGORIES, provinces, demoAccounts, payoutBanks: PAYOUT_BANKS });
+    return J({ tiers, categories: CATEGORIES, provinces, payoutBanks: PAYOUT_BANKS });
   }
 
   // ---------- PUBLIC privacy-safe landing activity ----------

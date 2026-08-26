@@ -439,15 +439,6 @@ tr {
   box-shadow: 0 4px 12px rgba(11, 31, 58, .06);
 }
 
-/* ---------- Demo account hover ---------- */
-.demo-acc {
-  transition: background .2s ease, transform .2s cubic-bezier(.22,1,.36,1), border-color .2s ease;
-}
-.demo-acc:hover {
-  transform: translateX(3px);
-  border-color: var(--primary);
-}
-
 /* ---------- Chips ---------- */
 .chip {
   transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s ease, box-shadow .2s ease;
