@@ -2,10 +2,9 @@ import { post } from "./api.js";
 import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions } from "./ui.js";
 import { state } from "./app.js";
 import {
-  payoutBankOptions,
-  resolvePayoutBank,
+  bankPickerHtml,
+  bindBankPicker,
   selectedPayoutBank,
-  syncPayoutBankBin,
 } from "./payout-banks.js";
 import Tesseract from "tesseract.js";
 
@@ -774,7 +773,6 @@ export function renderOnboarding(el) {
     </div>`;
   }
   function renderStep3() {
-    const selectedBank = resolvePayoutBank(cfg.payoutBanks, d.bankName, d.bankBin);
     el.innerHTML = wrap(`
       <p class="muted" style="margin-bottom:12px">Xác minh danh tính — nhập thông tin cá nhân, tải ảnh hai mặt CCCD và ảnh chân dung.</p>
       <div class="field"><label>Ngày sinh</label><input type="date" id="o-dob" value="${esc(d.dob)}">
@@ -800,24 +798,22 @@ export function renderOnboarding(el) {
       </div>
       <h3 style="margin-top:18px;font-size:14px">💳 Thông tin nhận thanh toán</h3>
       <p class="muted" style="font-size:12px;margin-bottom:10px">Dùng để nhận 95% phí booking cùng hoa hồng bán hàng sau khi đối soát.</p>
-      <div class="field"><label for="o-bank-select">Ngân hàng</label><select id="o-bank-select" aria-describedby="o-bank-name-err">${payoutBankOptions(cfg.payoutBanks, d.bankName, d.bankBin)}</select>
+      <div class="field"><label for="o-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("o-bank-select", cfg.payoutBanks, d.bankName, d.bankBin, "o-bank-name-err")}
         <div class="err" id="o-bank-name-err" style="display:none"></div></div>
-      <div class="field bank-bin-field"><label for="o-bank-bin">Mã BIN ngân hàng</label><input id="o-bank-bin" value="${esc(selectedBank?.bin || "")}" inputmode="numeric" readonly aria-readonly="true" aria-describedby="o-bank-bin-hint o-bank-bin-err" placeholder="Tự động theo ngân hàng">
-        <small class="hint" id="o-bank-bin-hint">BIN được cập nhật tự động theo ngân hàng đã chọn.</small>
-        <div class="err" id="o-bank-bin-err" style="display:none"></div></div>
       <div class="field"><label>Số tài khoản</label><input id="o-bank-account" value="${esc(d.bankAccount)}" placeholder="Số tài khoản (chỉ số)">
         <div class="err" id="o-bank-account-err" style="display:none"></div></div>
       <div class="field"><label>Chủ tài khoản</label><input id="o-bank-owner" value="${esc(d.bankOwner)}" placeholder="Tên chủ tài khoản (không dấu)">
         <div class="err" id="o-bank-owner-err" style="display:none"></div></div>`);
     bindChrome();
-    const bankSelect = el.querySelector("#o-bank-select");
-    const bankBinInput = el.querySelector("#o-bank-bin");
+    const bankSelect = bindBankPicker(
+      el.querySelector('[data-bank-picker="o-bank-select"]'),
+      cfg.payoutBanks,
+    );
     bankSelect?.addEventListener("change", () => {
-      const bank = syncPayoutBankBin(bankSelect, bankBinInput);
+      const bank = selectedPayoutBank(bankSelect);
       d.bankName = bank.name;
       d.bankBin = bank.bin;
       fieldErr("o-bank-name-err", "");
-      fieldErr("o-bank-bin-err", "");
     });
     const showSelfiePreview = (url) => {
       const img = el.querySelector("#o-file-selfie-preview");
@@ -939,8 +935,6 @@ export function renderOnboarding(el) {
     const bank = selectedPayoutBank(el.querySelector("#o-bank-select"));
     d.bankName = bank.name;
     d.bankBin = bank.bin;
-    const bb = el.querySelector("#o-bank-bin");
-    if (bb && !d.bankBin) d.bankBin = bb.value.trim();
     const ba = el.querySelector("#o-bank-account");
     if (ba) d.bankAccount = ba.value;
     const bo = el.querySelector("#o-bank-owner");
@@ -954,7 +948,6 @@ export function renderOnboarding(el) {
     fieldErr("o-cccd-place-err", "");
     fieldErr("o-address-err", "");
     fieldErr("o-bank-name-err", "");
-    fieldErr("o-bank-bin-err", "");
     fieldErr("o-bank-account-err", "");
     fieldErr("o-bank-owner-err", "");
     let ok = true;
@@ -987,7 +980,7 @@ export function renderOnboarding(el) {
       ok = false;
     }
     if (!/^\d{6}$/.test(d.bankBin.trim())) {
-      fieldErr("o-bank-bin-err", "Không xác định được BIN, vui lòng chọn lại ngân hàng");
+      fieldErr("o-bank-name-err", "Không xác định được ngân hàng, vui lòng chọn lại");
       ok = false;
     }
     if (!/^\d{6,20}$/.test(d.bankAccount.trim())) {

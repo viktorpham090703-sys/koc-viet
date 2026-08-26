@@ -21,7 +21,7 @@ test('resolves common Vietnamese bank names to their payout BIN', () => {
 test('detects a stale BIN after the payout bank was changed', () => {
   assert.equal(
     payoutBankBinError('Agribank', '970436'),
-    'Mã BIN của Agribank phải là 970405',
+    'Thông tin ngân hàng Agribank không khớp danh mục hiện tại',
   );
   assert.equal(payoutBankBinError('Agribank', '970405'), '');
   assert.equal(payoutBankBinError('Ngân hàng chưa có trong danh mục', '123456'), '');
