@@ -14,7 +14,6 @@ export interface AppConfig {
   categories: string[]
   provinces: string[]
   payoutBanks: Array<{ name: string; bin: string }>
-  demoAccounts?: Array<{ role: Role; email: string }>
 }
 
 export interface Koc {
