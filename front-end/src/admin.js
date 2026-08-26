@@ -22,6 +22,7 @@ import {
 import { state, logout, enhancePortal } from "./app.js";
 import { icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
+import { bankIdentityHtml } from "./payout-banks.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
@@ -216,7 +217,7 @@ async function businessDetail(id) {
       </div>
     </div>
     <h3>Thông tin ngân hàng</h3><div class="tint-box" style="margin:8px 0 14px">
-      <div class="between"><span>Ngân hàng</span><b>${esc(b.bank_name || "—")}</b></div>
+      <div class="between"><span>Ngân hàng</span>${bankIdentityHtml(state.config?.payoutBanks, b.bank_name, "", "—")}</div>
       <div class="between"><span>Số tài khoản</span><b>${esc(b.bank_account || "—")}</b></div>
       <div class="between"><span>Chủ tài khoản</span><b>${esc(b.bank_owner || "—")}</b></div>
     </div>
@@ -486,7 +487,7 @@ async function kocDetail(k) {
     ${(k.prices || []).length ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Bảng giá booking</div>${k.prices.map((price) => `<div class="between"><span>${esc(price.category)}</span><b>${money(price.price)}</b></div>`).join("")}</div>` : ""}
     <div class="tint-box" style="margin:0 0 12px">
       <div style="font-size:12px;font-weight:700;margin-bottom:4px">💳 Tài khoản nhận thanh toán</div>
-      <div class="between"><span>Ngân hàng</span><b>${esc(k.bank_name || "—")}</b></div>
+      <div class="between"><span>Ngân hàng</span>${bankIdentityHtml(state.config?.payoutBanks, k.bank_name, k.bank_bin, "—")}</div>
       <div class="between"><span>Số TK</span><b>${esc(k.bank_account || "—")}</b></div>
       <div class="between"><span>Chủ TK</span><b>${esc(k.bank_owner || "—")}</b></div>
     </div>

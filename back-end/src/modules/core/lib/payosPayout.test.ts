@@ -117,7 +117,7 @@ test('payout explains an invalid destination account without retrying', async ()
         };
         assert.equal(payoutError.invalidDestination, true);
         assert.equal(payoutError.providerCode, '607');
-        assert.match(payoutError.message, /mã BIN và số tài khoản trong Hồ sơ/);
+        assert.match(payoutError.message, /ngân hàng và số tài khoản trong Hồ sơ/);
         return true;
       },
     );

@@ -171,7 +171,7 @@ async function payoutRequest(env, path, {
     if (rateLimited) {
       message = 'payOS đang giới hạn tần suất yêu cầu rút tiền. Vui lòng chờ một lúc rồi thử lại.';
     } else if (providerCode === '607') {
-      message = 'Tài khoản nhận tiền không hợp lệ. Vui lòng kiểm tra lại ngân hàng, mã BIN và số tài khoản trong Hồ sơ.';
+      message = 'Tài khoản nhận tiền không hợp lệ. Vui lòng kiểm tra lại ngân hàng và số tài khoản trong Hồ sơ.';
     } else if (providerCode === '601' || response.status === 401) {
       message = 'Cấu hình kênh rút tiền chưa hợp lệ. Vui lòng liên hệ quản trị viên.';
     } else if (response.status === 403) {
