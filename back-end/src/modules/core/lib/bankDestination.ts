@@ -71,5 +71,5 @@ export function expectedPayoutBankBin(bankName) {
 export function payoutBankBinError(bankName, bankBin) {
   const expected = expectedPayoutBankBin(bankName);
   if (!expected || expected === String(bankBin || '').trim()) return '';
-  return `Mã BIN của ${String(bankName || '').trim()} phải là ${expected}`;
+  return `Thông tin ngân hàng ${String(bankName || '').trim()} không khớp danh mục hiện tại`;
 }

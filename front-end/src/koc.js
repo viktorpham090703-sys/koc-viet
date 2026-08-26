@@ -26,10 +26,10 @@ import { state, logout } from "./app.js";
 import { icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
 import {
-  payoutBankOptions,
-  resolvePayoutBank,
+  bankIdentityHtml,
+  bankPickerHtml,
+  bindBankPicker,
   selectedPayoutBank,
-  syncPayoutBankBin,
 } from "./payout-banks.js";
 
 const MIN_WITHDRAW_AMOUNT = 10_000;
@@ -916,8 +916,7 @@ async function wallet(el) {
         ${
           w.payout && w.payout.bank_account
             ? `
-          <div class="between" style="padding:4px 0"><span class="muted">Ngân hàng</span><b>${esc(w.payout.bank_name || "")}</b></div>
-          <div class="between" style="padding:4px 0"><span class="muted">Mã BIN</span><b>${esc(w.payout.bank_bin || "")}</b></div>
+          <div class="between" style="padding:4px 0"><span class="muted">Ngân hàng</span>${bankIdentityHtml(state.config?.payoutBanks, w.payout.bank_name, w.payout.bank_bin)}</div>
           <div class="between" style="padding:4px 0"><span class="muted">Số tài khoản</span><b>${esc(w.payout.bank_account || "")}</b></div>
           <div class="between" style="padding:4px 0"><span class="muted">Chủ tài khoản</span><b>${esc(w.payout.bank_owner || "")}</b></div>
           <div class="between" style="padding:4px 0"><span class="muted">Email</span><b>${esc(w.payout.email || "")}</b></div>
@@ -991,8 +990,7 @@ function withdrawModal(mode, balance, el, payout) {
       isPayOS
         ? hasBank
           ? `<div style="background:var(--bg-muted);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
-              <div><span class="muted">Ngân hàng nhận:</span> <b>${esc(payout.bank_name)}</b></div>
-              <div><span class="muted">Mã ngân hàng:</span> <b>${esc(payout.bank_bin)}</b></div>
+              <div class="between"><span class="muted">Ngân hàng nhận:</span> ${bankIdentityHtml(state.config?.payoutBanks, payout.bank_name, payout.bank_bin)}</div>
               <div><span class="muted">Số tài khoản:</span> <b>${esc(payout.bank_account)}</b> (${esc(payout.bank_owner || "")})</div>
              </div>`
           : `<div style="color:var(--error);background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
@@ -1444,8 +1442,7 @@ async function profile(el, editing = false) {
           ${(k.socials || []).map((item) => `<div class="profile-price"><span>${esc(item.platform)} · ${esc(item.handle)}</span><b>${num(item.followers || k.followers)} followers</b></div>`).join("") || '<p class="muted">Chưa cập nhật.</p>'}
         </div>
         <div class="card profile-section"><h3>Tài khoản nhận thanh toán</h3>
-          <div class="profile-price"><span>Ngân hàng</span><b>${esc(k.bank_name || "Chưa cập nhật")}</b></div>
-          <div class="profile-price"><span>Mã BIN</span><b>${esc(k.bank_bin || "Chưa cập nhật")}</b></div>
+          <div class="profile-price"><span>Ngân hàng</span>${bankIdentityHtml(cfg.payoutBanks, k.bank_name, k.bank_bin)}</div>
           <div class="profile-price"><span>Số tài khoản</span><b>${esc(k.bank_account || "Chưa cập nhật")}</b></div>
           <div class="profile-price"><span>Chủ tài khoản</span><b>${esc(k.bank_owner || "Chưa cập nhật")}</b></div>
         </div>
@@ -1462,7 +1459,6 @@ async function profile(el, editing = false) {
 
   const cats = [...k.categories];
   const catList = [...new Set(cfg.categories.concat(cats))];
-  const selectedBank = resolvePayoutBank(cfg.payoutBanks, k.bank_name, k.bank_bin);
   let avatarSource = k.avatar || "";
   let coverSource = k.cover || "";
   el.innerHTML = `<div class="m-head koc-page-heading koc-profile-heading"><div class="between"><h2 style="color:#fff">✏️ Chỉnh sửa hồ sơ</h2><button class="chip on-dark" id="pf-cancel">Hủy</button></div></div>
@@ -1486,8 +1482,7 @@ async function profile(el, editing = false) {
       </div>
       <div id="pf-prices"></div>
       <h3 style="margin-top:18px;font-size:14px">Tài khoản nhận thanh toán</h3>
-      <div class="field"><label for="pf-bank-select">Ngân hàng</label><select id="pf-bank-select">${payoutBankOptions(cfg.payoutBanks, k.bank_name, k.bank_bin)}</select></div>
-      <div class="field bank-bin-field"><label for="pf-bank-bin">Mã BIN ngân hàng</label><input id="pf-bank-bin" value="${esc(selectedBank?.bin || "")}" inputmode="numeric" readonly aria-readonly="true" aria-describedby="pf-bank-bin-hint" placeholder="Tự động theo ngân hàng"><small class="hint" id="pf-bank-bin-hint">BIN được cập nhật tự động theo ngân hàng đã chọn.</small></div>
+      <div class="field"><label for="pf-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("pf-bank-select", cfg.payoutBanks, k.bank_name, k.bank_bin)}</div>
       <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" value="${esc(k.bank_account || "")}"></div>
       <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(k.bank_owner || "")}"></div>
       <section class="card password-change-section">
@@ -1502,9 +1497,7 @@ async function profile(el, editing = false) {
       <button class="btn primary" id="pf-save" style="margin-top:10px">Lưu thay đổi</button>
     </div>`;
 
-  const bankSelect = el.querySelector("#pf-bank-select");
-  const bankBinInput = el.querySelector("#pf-bank-bin");
-  bankSelect?.addEventListener("change", () => syncPayoutBankBin(bankSelect, bankBinInput));
+  bindBankPicker(el.querySelector('[data-bank-picker="pf-bank-select"]'), cfg.payoutBanks);
 
   const processFile = async (input, target, width, height, assign) => {
     const file = input.files?.[0];
@@ -1614,7 +1607,7 @@ async function profile(el, editing = false) {
     const bankOwner = el.querySelector("#pf-bank-owner").value.trim();
     if (!bankName) return toast("Chọn ngân hàng nhận thanh toán", "err");
     if (!/^\d{6}$/.test(bankBin))
-      return toast("Không xác định được BIN, vui lòng chọn lại ngân hàng", "err");
+      return toast("Không xác định được ngân hàng, vui lòng chọn lại", "err");
     if (!/^\d{6,20}$/.test(bankAccount))
       return toast("Số tài khoản chỉ gồm chữ số, 6-20 ký tự", "err");
     if (!bankOwner || /\d/.test(bankOwner))

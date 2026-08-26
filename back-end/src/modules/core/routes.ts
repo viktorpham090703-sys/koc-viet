@@ -1682,7 +1682,7 @@ export async function route(request, env, url) {
     const bankOwner = String(bank.owner || "").trim();
     if (!bankName) return err("Nhập tên ngân hàng");
     if (!/^\d{6}$/.test(bankBin))
-      return err("Mã ngân hàng gồm đúng 6 chữ số");
+      return err("Ngân hàng đã chọn không hợp lệ");
     const bankBinError = payoutBankBinError(bankName, bankBin);
     if (bankBinError) return err(bankBinError, 422);
     if (!/^\d{6,20}$/.test(bankAccount))
@@ -3829,7 +3829,7 @@ export async function route(request, env, url) {
 
     if (mode === "payos") {
       if (!koc?.bank_account || !koc?.bank_name || !/^\d{6}$/.test(String(koc?.bank_bin || ''))) {
-        return err("Vui lòng cập nhật đầy đủ ngân hàng nhận tiền và mã ngân hàng 6 số trước khi rút");
+        return err("Vui lòng cập nhật đầy đủ ngân hàng nhận tiền và số tài khoản trước khi rút");
       }
       const bankBinError = payoutBankBinError(koc.bank_name, koc.bank_bin);
       if (bankBinError) {
@@ -6039,7 +6039,7 @@ export async function route(request, env, url) {
     if (!bankName || !bankAccount || !bankOwner)
       return err("Nhập đầy đủ thông tin tài khoản nhận thanh toán");
     if (!/^\d{6}$/.test(bankBin))
-      return err("Mã ngân hàng gồm đúng 6 chữ số");
+      return err("Ngân hàng đã chọn không hợp lệ");
     const bankBinError = payoutBankBinError(bankName, bankBin);
     if (bankBinError) return err(bankBinError, 422);
     const oldAccepting = JSON.parse(k.accepting || "{}");
