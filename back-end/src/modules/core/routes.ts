@@ -1,6 +1,6 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
-import { TIERS, CATEGORIES, tierOf, getDemoAccounts, getDemoAccount, isDemoUser, demoAccountsEnabled } from './seed.js';
+import { TIERS, CATEGORIES, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
@@ -1067,18 +1067,6 @@ export async function route(request, env, url) {
     return J({ user: safeUser(u) }, 200, { 'Set-Cookie': setCookie });
   }
 
-  if (p === '/api/demo-login' && m === 'POST') {
-    if (!demoAccountsEnabled(env)) return err('Tài khoản demo không được bật.', 404);
-    const role = String(body.role || '').trim().toLowerCase();
-    const u = await getDemoAccount(env, role);
-    if (!u) return err('Tài khoản demo không tồn tại.', 404);
-    const allowed = await consumeRateLimit(env, 'demo-login-ip', requestIp(request), 30, 15 * 60);
-    if (!allowed) return err('Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.', 429, { 'Retry-After': '900' });
-    const setCookie = await createSession(env, request, u, true);
-    u._sessionDemo = true;
-    return J({ user: safeUser(u) }, 200, { 'Set-Cookie': setCookie });
-  }
-
   const me = await sessionUser(env, request);
 
   if (p === "/api/me") {
@@ -1295,9 +1283,8 @@ export async function route(request, env, url) {
   // ---------- PUBLIC config ----------
   if (p === "/api/config") {
     const tiers = await getTiers(env);
-    const demoAccounts = await getDemoAccounts(env);
     const provinces = await getAddressKitProvinces();
-    return J({ tiers, categories: CATEGORIES, provinces, demoAccounts, payoutBanks: PAYOUT_BANKS });
+    return J({ tiers, categories: CATEGORIES, provinces, payoutBanks: PAYOUT_BANKS });
   }
 
   // ---------- PUBLIC privacy-safe landing activity ----------
@@ -3700,47 +3687,13 @@ export async function route(request, env, url) {
   }
   if (p === "/api/wallet/deposit" && m === "POST") {
     if (me.role !== "business") return err("Chỉ doanh nghiệp được nạp tiền vào ví", 403);
+    if (body.mode && body.mode !== "payos") {
+      return err("Phương thức nạp tiền không được hỗ trợ", 400);
+    }
     const amount = Number(body.amount);
     if (!Number.isSafeInteger(amount) || amount < 10000) {
       return err("Số tiền nạp tối thiểu là 10.000đ");
     }
-    const mode = body.mode === "payos" ? "payos" : "demo";
-
-    if (mode === "demo") {
-      if (!canUseDemoPayment(env, me, url)) {
-        return err("Nạp tiền demo không được bật trên môi trường này", 403);
-      }
-      const orderCode = newPayOSOrderCode();
-      const depositId = uid();
-      await env.DB.prepare(
-        `INSERT INTO payment_requests
-         (id,booking_id,business_id,provider,order_code,amount,status,purpose,paid_at,created_at,updated_at)
-         VALUES (?,'wallet_topup',?,'demo',?,?,'paid','deposit',?,?,?)`,
-      ).bind(depositId, me.business_id, orderCode, amount, now(), now(), now()).run();
-
-      await postWalletEntry(env, {
-        idempotencyKey: `topup-demo:${depositId}`,
-        eventType: 'wallet_topup',
-        referenceType: 'payment_request',
-        referenceId: depositId,
-        note: `Nạp tiền ví doanh nghiệp (Demo #${orderCode})`,
-        postings: [
-          {
-            account: walletAccount('system', 'payos', 'cash_clearing'),
-            amount: -amount,
-          },
-          {
-            account: walletAccount('business', me.business_id, 'available'),
-            amount,
-          },
-        ],
-      });
-
-      await audit(env, me.id, 'wallet.deposit.demo', me.business_id, `amount=${amount}`);
-      return J({ ok: true, mode: 'demo', amount, message: 'Nạp tiền demo thành công' });
-    }
-
-    // Mode payOS
     const business = await env.DB.prepare(`SELECT * FROM businesses WHERE id=?`).bind(me.business_id).first();
     const orderCode = newPayOSOrderCode();
     const depositId = uid();
@@ -3801,6 +3754,9 @@ export async function route(request, env, url) {
 
   if (p === "/api/wallet/withdraw" && m === "POST") {
     if (me.role !== "koc") return err("Không có ví", 403);
+    if (body.mode && body.mode !== "payos") {
+      return err("Phương thức rút tiền không được hỗ trợ", 400);
+    }
     const koc = await env.DB.prepare(
       "SELECT email,bank_name,bank_account,bank_owner,bank_bin FROM kocs WHERE id=?",
     ).bind(me.koc_id).first();
@@ -3811,8 +3767,6 @@ export async function route(request, env, url) {
     if (!Number.isSafeInteger(amount) || amount < MIN_WITHDRAW_AMOUNT) {
       return err(`Ngưỡng rút tối thiểu ${MIN_WITHDRAW_AMOUNT.toLocaleString('vi-VN')}đ`);
     }
-    const mode = body.mode === "payos" ? "payos" : "demo";
-
     const { results } = await env.DB.prepare(
       "SELECT * FROM wallet_tx WHERE koc_id=?",
     )
@@ -3827,97 +3781,59 @@ export async function route(request, env, url) {
     }
     if (amount > avail) return err("Số dư khả dụng không đủ");
 
-    if (mode === "payos") {
-      if (!koc?.bank_account || !koc?.bank_name || !/^\d{6}$/.test(String(koc?.bank_bin || ''))) {
-        return err("Vui lòng cập nhật đầy đủ ngân hàng nhận tiền và số tài khoản trước khi rút");
-      }
-      const bankBinError = payoutBankBinError(koc.bank_name, koc.bank_bin);
-      if (bankBinError) {
-        return err(`${bankBinError}. Vui lòng sửa trong Hồ sơ trước khi rút tiền.`, 422);
-      }
-      const txId = uid();
-      const referenceId = `wd-${txId.slice(0, 16)}`;
-      try {
-        await createPayOSPayout(env, {
-          referenceId,
-          amount,
-          description: `RUT VI KOC ${me.koc_id.slice(0, 8)}`,
-          toBin: koc.bank_bin,
-          toAccountNumber: koc.bank_account,
-        }, referenceId);
-      } catch (error) {
-        const providerCode = String(error?.providerCode || '')
-          .replace(/[^a-zA-Z0-9_.-]/g, '')
-          .slice(0, 50);
-        const providerDescription = String(error?.providerDescription || '')
-          .replace(/[\u0000-\u001f\u007f]/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 300);
-        const providerDetail = [
-          providerCode ? `payOS ${providerCode}` : '',
-          providerDescription,
-        ].filter(Boolean).join(': ');
-        const message = `Chưa gửi được yêu cầu rút tiền: ${error?.message || 'Vui lòng thử lại sau'}`
-          + (providerDetail ? ` (${providerDetail})` : '');
-        const rateLimited = error?.rateLimited
-          || Number(error?.status) === 429
-          || providerCode === '429';
-        const retryAfter = Number(error?.retryAfter);
-        const responseHeaders = rateLimited && Number.isFinite(retryAfter)
-          ? { 'Retry-After': String(Math.max(0, Math.ceil(retryAfter))) }
-          : undefined;
-        const invalidDestination = error?.invalidDestination || providerCode === '607';
-        return Response.json({
-          error: message,
-          ...(providerCode ? { providerCode } : {}),
-          ...(providerDescription ? { providerDescription } : {}),
-          ...(rateLimited && Number.isFinite(retryAfter)
-            ? { retryAfter: Math.max(0, Math.ceil(retryAfter)) }
-            : {}),
-        }, {
-          status: rateLimited ? 429 : invalidDestination ? 422 : 400,
-          headers: responseHeaders,
-        });
-      }
-
-      await env.DB.prepare(
-        `INSERT INTO wallet_tx (id,koc_id,type,amount,status,note,created_at) VALUES (?,?,?,?,?,?,?)`,
-      )
-        .bind(
-          txId,
-          me.koc_id,
-          "withdraw",
-          amount,
-          "processing",
-          `Rút tiền về ngân hàng (${koc.bank_name})`,
-          now(),
-        )
-        .run();
-
-      try {
-        await transferWalletFunds(env, {
-          idempotencyKey: `withdraw-payos:${txId}`,
-          eventType: 'wallet_withdraw',
-          referenceType: 'wallet_tx',
-          referenceId: txId,
-          note: `KOC rút tiền về ngân hàng (${koc.bank_name})`,
-          source: walletAccount('koc', me.koc_id, 'available'),
-          destinations: [{
-            account: walletAccount('system', 'payos', 'cash_clearing'),
-            amount,
-          }],
-        });
-      } catch (e) {
-        console.error('Wallet withdraw transfer error:', e?.message || e);
-      }
-
-      await audit(env, me.id, "wallet.withdraw_requested_payos", me.koc_id, `amount=${amount}`);
-      return J({ ok: true, mode: 'payos', message: 'Yêu cầu rút tiền đã được gửi thành công' });
+    if (!koc?.bank_account || !koc?.bank_name || !/^\d{6}$/.test(String(koc?.bank_bin || ''))) {
+      return err("Vui lòng cập nhật đầy đủ ngân hàng nhận tiền và số tài khoản trước khi rút");
+    }
+    const bankBinError = payoutBankBinError(koc.bank_name, koc.bank_bin);
+    if (bankBinError) {
+      return err(`${bankBinError}. Vui lòng sửa trong Hồ sơ trước khi rút tiền.`, 422);
+    }
+    const txId = uid();
+    const referenceId = `wd-${txId.slice(0, 16)}`;
+    try {
+      await createPayOSPayout(env, {
+        referenceId,
+        amount,
+        description: `RUT VI KOC ${me.koc_id.slice(0, 8)}`,
+        toBin: koc.bank_bin,
+        toAccountNumber: koc.bank_account,
+      }, referenceId);
+    } catch (error) {
+      const providerCode = String(error?.providerCode || '')
+        .replace(/[^a-zA-Z0-9_.-]/g, '')
+        .slice(0, 50);
+      const providerDescription = String(error?.providerDescription || '')
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 300);
+      const providerDetail = [
+        providerCode ? `payOS ${providerCode}` : '',
+        providerDescription,
+      ].filter(Boolean).join(': ');
+      const message = `Chưa gửi được yêu cầu rút tiền: ${error?.message || 'Vui lòng thử lại sau'}`
+        + (providerDetail ? ` (${providerDetail})` : '');
+      const rateLimited = error?.rateLimited
+        || Number(error?.status) === 429
+        || providerCode === '429';
+      const retryAfter = Number(error?.retryAfter);
+      const responseHeaders = rateLimited && Number.isFinite(retryAfter)
+        ? { 'Retry-After': String(Math.max(0, Math.ceil(retryAfter))) }
+        : undefined;
+      const invalidDestination = error?.invalidDestination || providerCode === '607';
+      return Response.json({
+        error: message,
+        ...(providerCode ? { providerCode } : {}),
+        ...(providerDescription ? { providerDescription } : {}),
+        ...(rateLimited && Number.isFinite(retryAfter)
+          ? { retryAfter: Math.max(0, Math.ceil(retryAfter)) }
+          : {}),
+      }, {
+        status: rateLimited ? 429 : invalidDestination ? 422 : 400,
+        headers: responseHeaders,
+      });
     }
 
-    // mode === "demo"
-    const txId = uid();
     await env.DB.prepare(
       `INSERT INTO wallet_tx (id,koc_id,type,amount,status,note,created_at) VALUES (?,?,?,?,?,?,?)`,
     )
@@ -3926,19 +3842,19 @@ export async function route(request, env, url) {
         me.koc_id,
         "withdraw",
         amount,
-        "paid",
-        "Rút tiền demo về ngân hàng",
+        "processing",
+        `Rút tiền về ngân hàng (${koc.bank_name})`,
         now(),
       )
       .run();
 
     try {
       await transferWalletFunds(env, {
-        idempotencyKey: `withdraw-demo:${txId}`,
+        idempotencyKey: `withdraw-payos:${txId}`,
         eventType: 'wallet_withdraw',
         referenceType: 'wallet_tx',
         referenceId: txId,
-        note: 'KOC rút tiền demo về ngân hàng',
+        note: `KOC rút tiền về ngân hàng (${koc.bank_name})`,
         source: walletAccount('koc', me.koc_id, 'available'),
         destinations: [{
           account: walletAccount('system', 'payos', 'cash_clearing'),
@@ -3946,11 +3862,11 @@ export async function route(request, env, url) {
         }],
       });
     } catch (e) {
-      console.error('Wallet withdraw demo transfer error:', e?.message || e);
+      console.error('Wallet withdraw transfer error:', e?.message || e);
     }
 
-    await audit(env, me.id, "wallet.withdraw_demo", me.koc_id, `amount=${amount}`);
-    return J({ ok: true, mode: 'demo', message: 'Rút tiền demo thành công' });
+    await audit(env, me.id, "wallet.withdraw_requested_payos", me.koc_id, `amount=${amount}`);
+    return J({ ok: true, mode: 'payos', message: 'Yêu cầu rút tiền đã được gửi thành công' });
   }
 
   // ---------- Affiliate ----------
