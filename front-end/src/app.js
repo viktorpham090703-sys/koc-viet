@@ -170,40 +170,6 @@ document.addEventListener("click", (e) => {
 });
 
 async function renderLogin() {
-  // Refresh public config whenever the login screen opens. This keeps demo credentials
-  // in sync after an email/password change without requiring a full page reload.
-  try {
-    state.config = await api("/api/config");
-  } catch (_) {}
-  const roleMeta = {
-    koc: [
-      "https://res.cloudinary.com/drxum5uxt/image/upload/v1785140674/koc_app_wsfxgv.png",
-      "KOC App",
-    ],
-    business: [
-      "https://res.cloudinary.com/drxum5uxt/image/upload/v1785140673/business_ft0lrg.png",
-      "Trang doanh nghiệp",
-    ],
-    admin: [
-      "https://res.cloudinary.com/drxum5uxt/image/upload/v1785140672/admin_qtwjgc.png",
-      "Trang quản trị",
-    ],
-  };
-  const demoAccounts = Array.isArray(state.config?.demoAccounts)
-    ? state.config.demoAccounts.filter(
-        (account) => roleMeta[account.role] && account.email,
-      )
-    : [];
-  const defaultAccount = demoAccounts[0] || { email: "" };
-  const demoList = demoAccounts
-    .map((account, index) => {
-      const [roleLogo, label] = roleMeta[account.role];
-      return `<div class="demo-acc" data-demo-index="${index}">
-      <span class="demo-acc-role"><img class="demo-acc-logo" src="${roleLogo}" alt="">${label}</span>
-      <span class="muted">${esc(account.email)}</span>
-    </div>`;
-    })
-    .join("");
   appEl.innerHTML = `
   <div class="auth auth-login">
     <div class="auth-login-shell">
@@ -221,11 +187,10 @@ async function renderLogin() {
       <div class="auth-card">
       <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
       <form id="li-form">
-        <div class="field"><label for="li-email">Email</label><input id="li-email" name="email" type="email" autocomplete="username" placeholder="Nhập địa chỉ email" value="${esc(defaultAccount.email)}" required></div>
+        <div class="field"><label for="li-email">Email</label><input id="li-email" name="email" type="email" autocomplete="username" placeholder="Nhập địa chỉ email" required></div>
         <div class="field"><div class="auth-label-row"><label for="li-pass">Mật khẩu</label><a href="#/forgot-password">Quên mật khẩu?</a></div><input id="li-pass" name="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required></div>
         <button class="btn primary nv-lift" id="li-btn" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
       </form>
-      ${demoList ? `<div class="auth-divider"><span>Hoặc trải nghiệm nhanh</span></div><div class="auth-demo-list">${demoList}</div>` : ""}
       <div class="auth-quick-links">
         <a href="#/explore" class="btn ghost sm">Khám phá KOC</a>
         <a href="#/tuyen-koc" class="btn ghost sm">Trở thành KOC</a>
@@ -234,22 +199,6 @@ async function renderLogin() {
     </div>
     </div>
   </div>`;
-  document.querySelectorAll(".demo-acc").forEach((el) =>
-    el.addEventListener("click", async () => {
-      const account = demoAccounts[Number(el.dataset.demoIndex)];
-      if (!account) return;
-      el.style.pointerEvents = "none";
-      try {
-        const r = await post("/api/demo-login", { role: account.role });
-        state.user = r.user;
-        toast("Xin chào " + r.user.name, "ok");
-        goHash(r.user.role === "koc" ? "#/home" : "#/dashboard");
-      } catch (error) {
-        toast(error.message, "err");
-        el.style.pointerEvents = "";
-      }
-    }),
-  );
   document.getElementById("li-form").addEventListener("submit", (event) => {
     event.preventDefault();
     doLogin();
