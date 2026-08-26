@@ -1882,7 +1882,6 @@ async function wallet(el) {
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn primary" id="w-deposit-payos">💳 Nạp tiền trực tuyến</button>
-        <button class="btn secondary" id="w-deposit-demo">⚡ Nạp demo</button>
         <a class="btn ghost sm" href="#/orders">📋 Đơn booking</a>
       </div>
     </div>
@@ -1944,22 +1943,14 @@ async function wallet(el) {
   `;
 
   el.querySelector("#w-deposit-payos").addEventListener("click", () =>
-    depositModal("payos", el),
-  );
-  el.querySelector("#w-deposit-demo").addEventListener("click", () =>
-    depositModal("demo", el),
+    depositModal(),
   );
 }
 
-function depositModal(mode, el) {
-  const isPayOS = mode === "payos";
-  const title = isPayOS ? "Nạp tiền trực tuyến" : "Nạp tiền thử nghiệm";
-  const desc = isPayOS
-    ? "Thanh toán nhanh bằng mã QR ngân hàng."
-    : "Nạp tiền mô phỏng thử nghiệm ngay tức thì vào ví doanh nghiệp.";
+function depositModal() {
   const m = modal(`
-    <h2>${title}</h2>
-    <p class="muted" style="margin-bottom:12px">${desc}</p>
+    <h2>Nạp tiền trực tuyến</h2>
+    <p class="muted" style="margin-bottom:12px">Thanh toán nhanh bằng mã QR ngân hàng.</p>
     <div class="field">
       <label>Chọn mốc số tiền hoặc nhập số tiền khác</label>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">
@@ -1970,7 +1961,7 @@ function depositModal(mode, el) {
       </div>
       <input id="dep-amt" type="number" placeholder="Nhập số tiền (tối thiểu 10.000đ)" value="500000" min="10000" step="10000">
     </div>
-    <button class="btn ${isPayOS ? "primary" : "ok"}" id="dep-go" style="width:100%;margin-top:8px">${isPayOS ? "💳 Mở trang thanh toán" : "⚡ Xác nhận nạp thử"}</button>
+    <button class="btn primary" id="dep-go" style="width:100%;margin-top:8px">💳 Mở trang thanh toán</button>
     <button class="btn ghost" id="dep-cancel" style="width:100%;margin-top:6px">Hủy</button>
   `);
 
@@ -1991,15 +1982,11 @@ function depositModal(mode, el) {
     const goBtn = m.querySelector("#dep-go");
     goBtn.disabled = true;
     try {
-      const res = await post("/api/wallet/deposit", { amount, mode });
+      const res = await post("/api/wallet/deposit", { amount });
+      if (!res.checkoutUrl) throw new Error("Không nhận được liên kết thanh toán");
       closeModal();
-      if (res.mode === "payos" && res.checkoutUrl) {
-        toast("Đang mở trang thanh toán...", "ok");
-        window.location.href = res.checkoutUrl;
-      } else {
-        toast(res.message || "Nạp tiền demo thành công", "ok");
-        await wallet(el);
-      }
+      toast("Đang mở trang thanh toán...", "ok");
+      window.location.href = res.checkoutUrl;
     } catch (e) {
       toast(e.message, "err");
       goBtn.disabled = false;
