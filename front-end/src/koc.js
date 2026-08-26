@@ -901,7 +901,6 @@ async function wallet(el) {
       </div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button class="btn" id="w-withdraw-payos" style="flex:1;min-width:140px;background:#ffffff;color:#1e293b;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.15)">🏦 Rút về ngân hàng</button>
-        <button class="btn" id="w-withdraw-demo" style="flex:1;min-width:140px;background:rgba(255,255,255,0.22);color:#ffffff;border:1.5px solid rgba(255,255,255,0.6);font-weight:600">⚡ Rút demo</button>
       </div>
     </div>
     <div class="m-body">
@@ -928,12 +927,7 @@ async function wallet(el) {
   document
     .getElementById("w-withdraw-payos")
     .addEventListener("click", () =>
-      withdrawModal("payos", w.balance, el, w.payout),
-    );
-  document
-    .getElementById("w-withdraw-demo")
-    .addEventListener("click", () =>
-      withdrawModal("demo", w.balance, el, w.payout),
+      withdrawModal(w.balance, el, w.payout),
     );
   const tx = document.getElementById("w-tx");
   if (!w.transactions.length) {
@@ -979,31 +973,27 @@ function walletStatusChip(status) {
   return `<span class="chip ${meta[1]}">${esc(meta[0])}</span>`;
 }
 
-function withdrawModal(mode, balance, el, payout) {
-  const isPayOS = mode === "payos";
-  const title = isPayOS ? "Rút tiền về tài khoản ngân hàng" : "Rút tiền thử nghiệm";
+function withdrawModal(balance, el, payout) {
   const minimumWithdrawLabel = MIN_WITHDRAW_AMOUNT.toLocaleString("vi-VN");
   const hasBank = payout && payout.bank_account && payout.bank_name && /^\d{6}$/.test(String(payout.bank_bin || ""));
-  const m = modal(`<h2>${title}</h2>
+  const m = modal(`<h2>Rút tiền về tài khoản ngân hàng</h2>
     <p class="muted">Khả dụng: <b class="money">${money(balance)}</b> · Tối thiểu ${minimumWithdrawLabel}đ</p>
     ${
-      isPayOS
-        ? hasBank
-          ? `<div style="background:var(--bg-muted);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
+      hasBank
+        ? `<div style="background:var(--bg-muted);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
               <div class="between"><span class="muted">Ngân hàng nhận:</span> ${bankIdentityHtml(state.config?.payoutBanks, payout.bank_name, payout.bank_bin)}</div>
               <div><span class="muted">Số tài khoản:</span> <b>${esc(payout.bank_account)}</b> (${esc(payout.bank_owner || "")})</div>
              </div>`
-          : `<div style="color:var(--error);background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
+        : `<div style="color:var(--error);background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
               ⚠️ Chưa cập nhật thông tin ngân hàng. Vui lòng thiết lập tài khoản nhận tiền trước khi rút.
              </div>`
-        : `<p class="muted" style="font-size:12.5px;margin-top:6px">Rút tiền thử nghiệm mô phỏng trực tiếp về số dư.</p>`
     }
     <div class="field" style="margin-top:12px"><label>Số tiền</label><input id="wd-amt" type="number" placeholder="đ" value="${MIN_WITHDRAW_AMOUNT}" min="${MIN_WITHDRAW_AMOUNT}" step="10000"></div>
     <div class="field"><label>Mã OTP gửi qua email</label><div class="row" style="gap:8px">
       <input id="wd-otp" class="otp-in" inputmode="numeric" maxlength="6" placeholder="••••••" style="flex:1">
       <button class="btn ghost sm" id="wd-send-otp" type="button">Gửi OTP</button>
     </div></div>
-    <button class="btn ${isPayOS ? "primary" : "ok"}" id="wd-go">${isPayOS ? "🏦 Xác nhận rút tiền" : "⚡ Xác nhận rút thử"}</button>
+    <button class="btn primary" id="wd-go">🏦 Xác nhận rút tiền</button>
     <button class="btn ghost" id="wd-cancel" style="margin-top:8px">Hủy</button>`);
   m.querySelector("#wd-cancel").addEventListener("click", closeModal);
   m.querySelector("#wd-send-otp").addEventListener("click", async () => {
@@ -1046,7 +1036,7 @@ function withdrawModal(mode, balance, el, payout) {
     const goBtn = m.querySelector("#wd-go");
     goBtn.disabled = true;
     try {
-      const res = await post("/api/wallet/withdraw", { amount, otp, mode });
+      const res = await post("/api/wallet/withdraw", { amount, otp });
       toast(res.message || "Yêu cầu rút tiền thành công", "ok");
       closeModal();
       wallet(el);
