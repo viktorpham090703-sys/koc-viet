@@ -449,7 +449,7 @@ async function openBookingForm(kocId, el) {
       <select id="bf-type">
         <option value="review">Review sản phẩm — phí cố định</option>
         <option value="advertising">Quảng cáo thương hiệu — phí cố định</option>
-        <option value="affiliate">Tiếp thị liên kết — trả theo doanh số</option>
+        <option value="affiliate">Tiếp thị liên kết — phí ngành hàng + hoa hồng doanh số</option>
         <option value="combo">Gói kết hợp — đánh giá/quảng cáo + hoa hồng bán hàng</option>
       </select></div>
     <div class="field"><label>Gói ngành hàng (giá niêm yết cố định)</label>
@@ -476,13 +476,29 @@ async function openBookingForm(kocId, el) {
   function syncType() {
     const t = typeSel.value;
     const showAff = t === "affiliate" || t === "combo";
-    const showAd = t === "review" || t === "advertising" || t === "combo";
+    const hasListedFee = [
+      "review",
+      "advertising",
+      "affiliate",
+      "combo",
+    ].includes(t);
     affBox.style.display = showAff ? "block" : "none";
-    escBox.style.display = showAd ? "flex" : "none";
-    catField.style.display = showAd ? "block" : "none";
-    m.querySelector("#bf-hint").textContent = showAd
-      ? `${t === "review" ? "Phí đánh giá sản phẩm" : t === "advertising" ? "Phí quảng cáo" : "Phí gói kết hợp"} được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.`
-      : "Tiếp thị liên kết: KOC nhận hoa hồng theo doanh số thực tế; doanh nghiệp trả thêm phí nền tảng 1%.";
+    escBox.style.display = hasListedFee ? "flex" : "none";
+    catField.style.display = hasListedFee ? "block" : "none";
+    const feeLabel =
+      t === "review"
+        ? "Phí đánh giá sản phẩm"
+        : t === "advertising"
+          ? "Phí quảng cáo"
+          : t === "affiliate"
+            ? "Phí booking theo giá ngành hàng"
+            : "Phí gói kết hợp";
+    m.querySelector("#bf-hint").textContent =
+      `${feeLabel} được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. ` +
+      `Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.` +
+      (showAff
+        ? " Hoa hồng bán hàng được ghi nhận riêng theo doanh số và chuyển vào ví KOC sau đối soát; doanh nghiệp trả thêm phí nền tảng 1%."
+        : "");
     m.querySelector("#bf-go").textContent = "Gửi yêu cầu booking";
   }
   typeSel.addEventListener("change", syncType);
@@ -1590,12 +1606,12 @@ async function report(el, page = businessReportPage) {
     </div>
     <div class="card" style="margin-bottom:16px"><h3>Đối soát chi phí — tách bạch 3 khoản</h3>
       <div class="tint-box" style="margin-top:10px">
-        <div class="between"><span>① Phí quảng cáo cố định</span><b class="money">${money(t.spend)}</b></div>
+        <div class="between"><span>① Phí booking theo giá ngành hàng</span><b class="money">${money(t.spend)}</b></div>
         <div class="between"><span>② Hoa hồng KOC (doanh số × % chiết khấu)</span><b class="money">${money(t.commission)}</b></div>
         <div class="between"><span>③ Phí nền tảng 1% (DN trả thêm)</span><b class="money">${money(t.platformFee)}</b></div>
         <div class="between" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px"><span><b>DN thanh toán</b></span><b class="money" style="color:var(--primary)">${money(t.payable)}</b></div>
       </div></div>
-    <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Thời gian</th><th>KOC</th><th>Hình thức</th><th>Chi phí quảng cáo</th><th>Doanh số</th><th>Đơn</th><th>Hoa hồng</th><th>Phí 1%</th><th>Trạng thái</th></tr></thead><tbody>
+    <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Thời gian</th><th>KOC</th><th>Hình thức</th><th>Chi phí booking</th><th>Doanh số</th><th>Đơn</th><th>Hoa hồng</th><th>Phí 1%</th><th>Trạng thái</th></tr></thead><tbody>
       ${r.rows
         .map(
           (
@@ -1620,8 +1636,8 @@ async function report(el, page = businessReportPage) {
   }
   document.getElementById("r-invoice").addEventListener("click", () => {
     modal(`<h2>Hoá đơn phí dịch vụ</h2><div class="tint-box">
-      <div class="between"><span>① Phí quảng cáo cố định</span><b class="money">${money(t.spend)}</b></div>
-      <div class="between"><span>Phí dịch vụ QC (5%)</span><b class="money">${money(t.fee)}</b></div>
+      <div class="between"><span>① Phí booking theo giá ngành hàng</span><b class="money">${money(t.spend)}</b></div>
+      <div class="between"><span>Phần phí nền tảng trong booking (5%)</span><b class="money">${money(t.fee)}</b></div>
       <div class="between"><span>② Hoa hồng KOC</span><b class="money">${money(t.commission)}</b></div>
       <div class="between"><span>③ Phí nền tảng affiliate (1%)</span><b class="money">${money(t.platformFee)}</b></div>
       <div class="between" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px"><span><b>Tổng DN thanh toán</b></span><b class="money">${money(t.payable)}</b></div>

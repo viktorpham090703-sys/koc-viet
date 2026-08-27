@@ -2428,7 +2428,7 @@ export async function route(request, env, url) {
             : "review"
         : bt;
     let price = 0;
-    if (bt === "ad" || bt === "combo") {
+    if (["ad", "affiliate", "combo"].includes(bt)) {
       const priceRow = await env.DB.prepare(
         "SELECT price FROM koc_prices WHERE koc_id=? AND category=?",
       )
@@ -2500,7 +2500,7 @@ export async function route(request, env, url) {
       `INSERT INTO bookings (id,code,business_id,koc_id,category,price,escrow,funding_mode,product_link,requirements,deadline,status,type,booking_type,content_type,platform,product_url,commission_rate,platform_fee_rate,created_at,updated_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     ).bind(id,code,me.business_id,body.koc_id,body.category,
-      price,price,price > 0 ? 'wallet_escrow_v2' : null,body.product_link.trim(),body.requirements||'',body.deadline||'',
+      price,price,price > 0 ? 'wallet_escrow_v2' : 'legacy',body.product_link.trim(),body.requirements||'',body.deadline||'',
       initialStatus,'marketplace',bt,contentType,platform,product_url,commission_rate,0.01,now(),now()).run();
     await audit(env, me.id, 'booking.create', id, `type=${contentType} price=${price} rate=${commission_rate}`);
     const business = await env.DB.prepare(
@@ -3562,7 +3562,8 @@ export async function route(request, env, url) {
       }
       const stmts = [];
       let payoutAmount = 0;
-      // settle 95/5 on the FIXED FEE portion (ad + combo). Affiliate-only has price 0.
+      // Settle 95/5 on the listed category fee for every marketplace booking.
+      // Affiliate commission remains a separate, sales-based wallet flow.
       if (settlementAmount > 0) {
         let kocGet = 0;
         let fee = 0;
@@ -4461,7 +4462,10 @@ export async function route(request, env, url) {
       r.legacy_clicks = Number(r.legacy_clicks) || 0;
       r.legacy_orders = Number(r.legacy_orders) || 0;
       r.legacy_commission = Number(r.legacy_commission) || 0;
-      if (r.status !== "rejected" && (bt === "ad" || bt === "combo"))
+      if (
+        r.status !== "rejected" &&
+        ["ad", "affiliate", "combo"].includes(bt)
+      )
         spend += r.price;
       // new affiliate_orders (exclude cancelled)
       const agg = await env.DB.prepare(
@@ -4489,7 +4493,7 @@ export async function route(request, env, url) {
       commission += r.commission;
       platformFee += r.platform_fee;
     }
-    const adFee = Math.round(spend * 0.05);
+    const serviceFee = Math.round(spend * 0.05);
     const per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
     const total = results.length;
     const pages = Math.max(1, Math.ceil(total / per));
@@ -4508,8 +4512,10 @@ export async function route(request, env, url) {
         gmv,
         commission,
         platformFee,
-        fee: adFee, // legacy field name kept for backward compat (ad service fee 5%)
-        payable: spend + commission + platformFee, // DN total = ad + KOC commission + 1% platform fee
+        // Keep the response key for backward compatibility. This is the 5%
+        // platform share already included in every listed booking fee.
+        fee: serviceFee,
+        payable: spend + commission + platformFee,
       },
     });
   }
