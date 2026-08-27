@@ -3,7 +3,7 @@ import { now, uid } from './db.js';
 import { TIERS, CATEGORIES, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
-import { sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
+import { sendAccountReviewEmail, sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
 import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword } from './lib/password.js';
 import { signJwt, verifyJwt } from './lib/jwt.js';
 import { deleteKocIdentityImages, signedKocIdentityUrl, uploadKocIdentityImages } from './lib/s3Identity.js';
@@ -229,6 +229,36 @@ function parseKoc(r) {
   };
 }
 
+function publicKoc(r) {
+  const koc = parseKoc(r);
+  if (!koc) return null;
+  return {
+    id: koc.id,
+    name: koc.name,
+    tier: koc.tier,
+    province: koc.province,
+    avatar: koc.avatar,
+    cover: koc.cover,
+    bio: koc.bio,
+    followers: Number(koc.followers || 0),
+    followers_verified: koc.followers_verified,
+    engagement: Number(koc.engagement || 0),
+    categories: koc.categories,
+    socials: koc.socials.map((social) => ({
+      platform: String(social?.platform || "").slice(0, 40),
+      handle: String(social?.handle || "").slice(0, 300),
+      followers: Number(social?.followers || 0),
+      verified: Boolean(social?.verified),
+    })).filter((social) => social.platform || social.handle),
+    accepting: koc.accepting,
+    rating: Number(koc.rating || 0),
+    reviews_count: Number(koc.reviews_count || 0),
+    completed_bookings: Number(koc.completed_bookings || 0),
+    ai_clone: koc.ai_clone,
+    leader: koc.leader,
+  };
+}
+
 function publicKocDisplayName(value) {
   const parts = String(value || "")
     .trim()
@@ -246,7 +276,12 @@ async function getTiers(env) {
     const raw = await env.KV.get("tiers_override");
     if (raw) {
       const t = JSON.parse(raw);
-      if (Array.isArray(t) && t.length) return t;
+      const expectedNames = TIERS.map((item) => item.name);
+      if (
+        Array.isArray(t) &&
+        t.length === expectedNames.length &&
+        expectedNames.every((name, index) => t[index]?.name === name)
+      ) return t;
     }
   } catch (e) {}
   return TIERS;
@@ -582,7 +617,7 @@ async function kocEmailContact(env, kocId, existingKoc = null) {
 
 async function sendEmailBestEffort(eventName, recipient, send) {
   if (!recipient) {
-    console.warn(`${eventName} email skipped: KOC has no valid email`);
+    console.warn(`${eventName} email skipped: recipient has no valid email`);
     return false;
   }
   try {
@@ -1327,6 +1362,26 @@ export async function route(request, env, url) {
     );
   }
 
+  // Public, privacy-safe KOL catalogue used by the homepage featured section.
+  // Commercial fields and contact details are intentionally excluded.
+  if (p === "/api/public/kols" && m === "GET") {
+    const { results = [] } = await env.DB.prepare(
+      `SELECT id,name,field,fanbase,avatar,premium
+       FROM kol_profiles
+       WHERE status='active'
+       ORDER BY premium DESC,created_at DESC,id DESC
+       LIMIT 10`,
+    ).all();
+    return Response.json(
+      { kols: results },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=900",
+        },
+      },
+    );
+  }
+
   // ---------- Authenticated email OTP for wallet withdrawal ----------
   if (p === "/api/otp" && m === "POST") {
     if (!me || me.role !== 'koc') return err('Chưa đăng nhập', 401);
@@ -1536,7 +1591,7 @@ export async function route(request, env, url) {
       let list = pr.results;
       if (q.get("maxPrice"))
         list = list.filter((x) => x.price <= Number(q.get("maxPrice")));
-      const k = parseKoc(r);
+      const k = publicKoc(r);
       k.prices = pr.results;
       k.minPrice = pr.results.length
         ? Math.min(...pr.results.map((x) => x.price))
@@ -1571,7 +1626,7 @@ export async function route(request, env, url) {
     )
       .bind(id)
       .all();
-    const k = parseKoc(r);
+    const k = publicKoc(r);
     k.prices = pr.results;
     k.portfolio = port.results;
     k.reviews = rev.results;
@@ -4467,8 +4522,8 @@ export async function route(request, env, url) {
 
   // ---------- KOL profiles (public list) ----------
   if (p === "/api/kols") {
-    const requestedPer = Math.floor(Number(url.searchParams.get("per") || 8));
-    const per = Math.min(12, Math.max(2, Number.isFinite(requestedPer) ? requestedPer : 8));
+    const requestedPer = Math.floor(Number(url.searchParams.get("per") || 16));
+    const per = Math.min(24, Math.max(2, Number.isFinite(requestedPer) ? requestedPer : 16));
     const requestedPage = Math.max(1, Math.floor(Number(url.searchParams.get("page") || 1)) || 1);
     const total = Number(
       (await env.DB.prepare(`SELECT COUNT(*) count FROM kol_profiles WHERE status='active'`).first("count")) || 0,
@@ -4785,6 +4840,19 @@ export async function route(request, env, url) {
         id,
         reason,
       );
+      if (["approve", "reject"].includes(body.action)) {
+        const recipient = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(user.email || "").trim())
+          ? { email: String(user.email).trim().toLowerCase(), name: user.name || "Quý doanh nghiệp" }
+          : null;
+        await sendEmailBestEffort(`business.${body.action}`, recipient, () =>
+          sendAccountReviewEmail(env, recipient.email, {
+            role: "business",
+            name: recipient.name,
+            status,
+            reason,
+          }),
+        );
+      }
       return J({ ok: true, status });
     }
     if (p === "/api/admin/queue") {
@@ -4847,6 +4915,10 @@ export async function route(request, env, url) {
     }
     if (p === "/api/admin/approve" && m === "POST") {
       const status = body.approve ? "active" : "rejected";
+      const koc = await env.DB.prepare(
+        "SELECT id,name,email,status FROM kocs WHERE id=?",
+      ).bind(body.id).first();
+      if (!koc) return err("Không tìm thấy hồ sơ KOC", 404);
       await env.DB.batch([
         env.DB.prepare("UPDATE kocs SET status=? WHERE id=?")
           .bind(status, body.id),
@@ -4855,10 +4927,28 @@ export async function route(request, env, url) {
            WHERE role='koc' AND koc_id=?`,
         ).bind(status, now(), body.id),
       ]);
+      if (koc.status !== status) {
+        const recipient = await kocEmailContact(env, body.id, koc);
+        await sendEmailBestEffort(`koc.${body.approve ? "approve" : "reject"}`, recipient, () =>
+          sendAccountReviewEmail(env, recipient.email, {
+            role: "koc",
+            name: recipient.name,
+            status,
+            reason: String(body.reason || "").trim().slice(0, 300),
+          }),
+        );
+      }
       return J({ ok: true });
     }
     if (p === "/api/admin/approve-bulk" && m === "POST") {
-      const ids = body.ids || [];
+      const ids = [...new Set(Array.isArray(body.ids) ? body.ids.map(String).filter(Boolean) : [])];
+      const contacts = [];
+      for (const id of ids) {
+        const koc = await env.DB.prepare(
+          "SELECT id,name,email,status FROM kocs WHERE id=?",
+        ).bind(id).first();
+        if (koc && koc.status !== "active") contacts.push(await kocEmailContact(env, id, koc));
+      }
       const stmts = ids.map((id) =>
         env.DB.prepare(`UPDATE kocs SET status='active' WHERE id=?`).bind(id),
       );
@@ -4869,6 +4959,15 @@ export async function route(request, env, url) {
         ).bind(now(), id),
       ));
       if (stmts.length) await env.DB.batch(stmts);
+      for (const recipient of contacts) {
+        await sendEmailBestEffort("koc.approve_bulk", recipient, () =>
+          sendAccountReviewEmail(env, recipient.email, {
+            role: "koc",
+            name: recipient.name,
+            status: "active",
+          }),
+        );
+      }
       return J({ ok: true, count: ids.length });
     }
     if (p === "/api/admin/kpi") {
@@ -5371,10 +5470,10 @@ export async function route(request, env, url) {
     }
     if (p === "/api/admin/tiers" && m === "POST") {
       const tiers = Array.isArray(body.tiers) ? body.tiers : [];
-      if (tiers.length !== 4) return err("Cần đủ 4 hạng Nano/Micro/Mid/Macro");
-      const names = ["Nano", "Micro", "Mid", "Macro"];
+      if (tiers.length !== 5) return err("Cần đủ 5 hạng Nano/Micro/Mid/Macro/Mega");
+      const names = ["Nano", "Micro", "Mid", "Macro", "Mega"];
       const clean = [];
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 5; i++) {
         const t = tiers[i] || {};
         const min = Number(t.min),
           max = Number(t.max),

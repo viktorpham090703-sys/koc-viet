@@ -6,9 +6,12 @@ import kolProfiles from './data/kol-profiles.json' with { type: 'json' };
 // Vietnamese seed data. Deterministic (no Math.random) so tests are reproducible.
 export const TIERS = [
   { name: 'Nano',  min: 200000,  max: 1500000,  minF: 1000,   maxF: 10000,   fee: 5 },
-  { name: 'Micro', min: 1000000, max: 5000000,  minF: 10000,  maxF: 50000,   fee: 5 },
-  { name: 'Mid',   min: 4000000, max: 20000000, minF: 50000,  maxF: 500000,  fee: 4 },
-  { name: 'Macro', min: 15000000,max: 80000000, minF: 500000, maxF: 99000000,fee: 3 },
+  { name: 'Micro', min: 1000000, max: 10000000, minF: 10000,  maxF: 100000,  fee: 5 },
+  { name: 'Mid',   min: 8000000, max: 25000000, minF: 100000, maxF: 300000,  fee: 4 },
+  { name: 'Macro', min: 20000000,max: 60000000, minF: 300000, maxF: 1000000, fee: 3 },
+  // Mega has no business maximum. A high technical ceiling keeps the existing
+  // numeric validation/storage contract while the UI presents it as "from".
+  { name: 'Mega',  min: 50000000,max: 9000000000000000, minF: 1000000, maxF: 9000000000000000, fee: 3 },
 ];
 
 export const CATEGORIES = ['Thời trang','Mỹ phẩm','Ẩm thực','Công nghệ','Mẹ & Bé','Du lịch','Gia dụng','Sức khỏe','Thương mại điện tử','Giáo dục','Tài chính cá nhân'];
@@ -25,11 +28,12 @@ export const PROVINCES = [
   'Thành phố Cần Thơ', 'Tỉnh Cà Mau',
 ];
 
-function tierOf(followers, eng) {
-  const score = followers * (1 + eng / 100);
-  if (score >= 500000) return 'Macro';
-  if (score >= 50000) return 'Mid';
-  if (score >= 10000) return 'Micro';
+function tierOf(followers, _eng) {
+  // Tier boundaries are based on follower count only.
+  if (followers >= 1000000) return 'Mega';
+  if (followers >= 300000) return 'Macro';
+  if (followers >= 100000) return 'Mid';
+  if (followers >= 10000) return 'Micro';
   return 'Nano';
 }
 export { tierOf };

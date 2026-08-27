@@ -1355,6 +1355,11 @@ const TIER_BENEFITS = {
     "Quản lý đối tác hỗ trợ trực tiếp",
     "Phí dịch vụ ưu đãi 3%",
   ],
+  Mega: [
+    "Ưu tiên đặc biệt cho chiến dịch quy mô lớn",
+    "Quản lý đối tác và hỗ trợ trực tiếp",
+    "Phí dịch vụ ưu đãi 3%",
+  ],
 };
 
 function tierPanel(k, cfg) {
@@ -1362,8 +1367,8 @@ function tierPanel(k, cfg) {
   const benefits = TIER_BENEFITS[k.tier] || [];
   return `<div class="tier-benefit-card">
     <div class="between"><div><span class="eyebrow">HẠNG HIỆN TẠI</span><h3>${tierBadge(k.tier)} Quyền lợi ${esc(k.tier)}</h3></div><span class="tier-shield">★</span></div>
-    <div class="tier-price-range"><span>Khung giá theo hạng</span><b>${money(tier.min || 0)} – ${money(tier.max || 0)}</b></div>
-    <div class="tier-requirement">Điều kiện tham chiếu: ${num(tier.minF || 0)} – ${num(tier.maxF || 0)} người theo dõi · phí nền tảng ${tier.fee || 0}%</div>
+    <div class="tier-price-range"><span>Khung giá theo hạng</span><b>${tier.name === "Mega" ? `Từ ${money(tier.min || 0)}` : `${money(tier.min || 0)} – ${money(tier.max || 0)}`}</b></div>
+    <div class="tier-requirement">Điều kiện tham chiếu: ${tier.name === "Mega" ? `Từ ${num(tier.minF || 0)}` : `${num(tier.minF || 0)} – ${num(tier.maxF || 0)}`} người theo dõi · phí nền tảng ${tier.fee || 0}%</div>
     <ul>${benefits.map((item) => `<li>✓ ${esc(item)}</li>`).join("")}</ul>
   </div>`;
 }
@@ -1417,12 +1422,21 @@ async function profile(el, editing = false) {
         <button class="chip on-dark" id="pf-edit">✏️ Chỉnh sửa</button></div></div>
       <div class="m-body koc-profile-body">
         <div class="profile-hero">
-          <div class="profile-cover ${k.cover ? "has-image" : ""}">${k.cover ? `<img src="${esc(k.cover)}" alt="Ảnh bìa của ${esc(k.name)}">` : "<span>Ảnh bìa</span>"}</div>
-          <div class="profile-identity"><img class="profile-avatar" src="${esc(avatarUrl(k.avatar))}" alt="Ảnh đại diện">
-            <div><h2>${esc(k.name)}</h2><div>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div>
-            <div class="muted" style="font-size:12px;margin-top:3px">📧 ${esc(k.email || "Chưa cập nhật")}</div></div></div>
-          <p class="profile-bio">${esc(k.bio || "Chưa có phần giới thiệu.")}</p>
+          <div class="profile-visual">
+            <div class="profile-cover ${k.cover ? "has-image" : ""}">${k.cover ? `<img src="${esc(k.cover)}" alt="Ảnh bìa của ${esc(k.name)}">` : "<span>Thêm ảnh bìa để hồ sơ nổi bật hơn</span>"}</div>
+            <div class="profile-cover-overlay" aria-hidden="true"></div>
+            <div class="profile-identity"><img class="profile-avatar" src="${esc(avatarUrl(k.avatar))}" alt="Ảnh đại diện">
+              <div class="profile-identity-copy"><div class="profile-badges">${tierBadge(k.tier)} ${k.followers_verified ? '<span class="chip g">✓ Đã xác minh</span>' : ""}</div>
+              <h2>${esc(k.name)}</h2>
+              <div class="profile-location">📍 ${esc(k.province || "Chưa cập nhật địa phương")}</div>
+              <div class="profile-email">✉ ${esc(k.email || "Chưa cập nhật email")}</div></div>
+            </div>
+          </div>
           <div class="profile-stats"><span><b>${num(k.followers)}</b>Người theo dõi</span><span><b>${Number(k.engagement || 0).toFixed(1)}%</b>Tương tác</span><span><b>${Number(k.rating || 0).toFixed(1)}</b>Đánh giá</span></div>
+          <div class="profile-summary"><div class="profile-summary-heading"><span>GIỚI THIỆU</span><b>Hồ sơ năng lực KOC</b></div>
+            <p class="profile-bio">${esc(k.bio || "Bạn chưa cập nhật phần giới thiệu. Hãy bổ sung thế mạnh và phong cách nội dung để doanh nghiệp hiểu bạn hơn.")}</p>
+            <div class="profile-category-list">${(k.categories || []).map((category) => `<span>${esc(category)}</span>`).join("") || '<span class="is-empty">Chưa cập nhật ngành hàng</span>'}</div>
+          </div>
         </div>
         ${tierPanel(k, cfg)}
         <div class="card profile-section"><h3>Ngành hàng & bảng giá</h3>

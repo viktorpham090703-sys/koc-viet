@@ -340,10 +340,103 @@ async function find(el) {
   el.innerHTML = `<h1>Tìm & đặt booking KOC</h1><p class="muted" style="margin-bottom:16px">Chọn KOC → đặt gói theo bảng giá niêm yết (không thương lượng).</p><div id="mp-embed"></div>`;
   renderMarketplaceEmbed(document.getElementById("mp-embed"), (kocId) =>
     openBookingForm(kocId, el),
+    (kocId) => openKocProfile(kocId, el),
   );
 }
 
 const PLATFORMS = ["Shopee", "Lazada", "TikTok Shop", "Tiki", "Facebook Shop"];
+
+function socialProfileUrl(social) {
+  const handle = String(social?.handle || "").trim();
+  if (!handle) return "";
+  try {
+    const url = new URL(handle);
+    if (["http:", "https:"].includes(url.protocol)) return url.href;
+  } catch (_) {}
+  const username = handle.replace(/^@/, "").trim();
+  if (!username) return "";
+  const platform = String(social?.platform || "").trim().toLowerCase();
+  const bases = {
+    tiktok: "https://www.tiktok.com/@",
+    facebook: "https://www.facebook.com/",
+    instagram: "https://www.instagram.com/",
+    youtube: "https://www.youtube.com/@",
+  };
+  return bases[platform] ? `${bases[platform]}${encodeURIComponent(username)}` : "";
+}
+
+function closeKocProfileModal(dialog, afterClose) {
+  const backdrop = dialog?.closest(".modal-bg");
+  if (!dialog || !backdrop || backdrop.classList.contains("is-koc-profile-closing")) return;
+  backdrop.classList.add("is-koc-profile-closing");
+  dialog.classList.add("is-koc-profile-closing");
+  window.setTimeout(() => {
+    closeModal();
+    if (afterClose) afterClose();
+  }, 280);
+}
+
+async function openKocProfile(kocId, el) {
+  let koc;
+  try {
+    ({ koc } = await api("/api/koc/" + kocId));
+  } catch (error) {
+    return toast(error.message, "err");
+  }
+  const socials = (koc.socials || []).map((social) => ({
+    ...social,
+    url: socialProfileUrl(social),
+  }));
+  const m = modal(`
+    <section class="business-koc-profile">
+      <div class="business-koc-profile-head">
+        ${koc.cover ? `<img class="business-koc-profile-cover" src="${esc(koc.cover)}" alt="Ảnh bìa ${esc(koc.name)}" onerror="this.hidden=true">` : ""}
+        <span class="business-koc-profile-overlay" aria-hidden="true"></span>
+        <button type="button" class="business-koc-profile-close" id="koc-profile-close" aria-label="Đóng hồ sơ">×</button>
+        <div class="business-koc-profile-hero-content">
+          <img class="business-koc-profile-avatar" src="${esc(avatarUrl(koc.avatar))}" alt="Ảnh đại diện ${esc(koc.name)}">
+          <div class="business-koc-profile-identity">
+            <div class="row">${tierBadge(koc.tier)} ${koc.followers_verified ? '<span class="chip g">✓ Đã xác minh</span>' : ''}</div>
+            <h2>${esc(koc.name)}</h2>
+            <p>📍 ${esc(koc.province || "Chưa cập nhật")}</p>
+            <div class="business-koc-profile-rating">${stars(koc.rating)} <span>· ${num(koc.completed_bookings)} booking hoàn thành</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="business-koc-profile-stats">
+        <div><strong>${num(koc.followers)}</strong><span>Người theo dõi</span></div>
+        <div><strong>${Number(koc.engagement || 0).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%</strong><span>Tương tác</span></div>
+        <div><strong>${Number(koc.rating || 0).toFixed(1)}/5</strong><span>Đánh giá</span></div>
+      </div>
+      <div class="business-koc-profile-section">
+        <h3>Giới thiệu</h3>
+        <p>${esc(koc.bio || "KOC chưa cập nhật phần giới thiệu.")}</p>
+        <div class="business-koc-categories">${(koc.categories || []).map((category) => `<span class="chip">${esc(category)}</span>`).join("")}</div>
+      </div>
+      <div class="business-koc-profile-grid">
+        <div class="business-koc-profile-section">
+          <h3>Kênh mạng xã hội</h3>
+          ${socials.length ? `<div class="business-koc-socials">${socials.map((social) => social.url
+            ? `<a href="${esc(social.url)}" target="_blank" rel="noopener noreferrer"><span><b>${esc(social.platform || "Mạng xã hội")}</b><small>${esc(social.handle)}</small></span><strong>${num(social.followers || koc.followers)} follower ↗</strong></a>`
+            : `<div><span><b>${esc(social.platform || "Mạng xã hội")}</b><small>${esc(social.handle)}</small></span><strong>${num(social.followers || koc.followers)} follower</strong></div>`).join("")}</div>`
+            : '<p class="muted">KOC chưa cập nhật kênh mạng xã hội.</p>'}
+        </div>
+        <div class="business-koc-profile-section">
+          <h3>Giá booking niêm yết</h3>
+          ${(koc.prices || []).length ? `<div class="business-koc-prices">${koc.prices.map((price) => `<div><span>${esc(price.category)}</span><b>${money(price.price)}</b></div>`).join("")}</div>` : '<p class="muted">Chưa có gói booking đang mở.</p>'}
+        </div>
+      </div>
+      <div class="business-koc-profile-actions">
+        <span class="business-koc-profile-assurance">✓ Giá minh bạch · Thanh toán được bảo vệ</span>
+        <button type="button" class="btn primary" id="koc-profile-book" ${(koc.prices || []).length ? "" : "disabled"}>Đặt booking KOC này</button>
+      </div>
+    </section>`);
+  m.classList.add("business-koc-profile-modal");
+  m.querySelector("#koc-profile-close").addEventListener("click", () => closeKocProfileModal(m));
+  m.querySelector("#koc-profile-book").addEventListener("click", () => {
+    closeKocProfileModal(m, () => openBookingForm(kocId, el));
+  });
+}
 
 async function openBookingForm(kocId, el) {
   const { koc } = await api("/api/koc/" + kocId);
@@ -1575,17 +1668,19 @@ async function kolPage(
 ) {
   businessKolCatalogPage = Math.max(1, Number(catalogPage) || 1);
   businessKolRequestPage = Math.max(1, Number(requestPage) || 1);
-  const catalogPer = businessKolColumns() * 2;
+  // Show five complete rows per catalogue page at the current column count.
+  const catalogPer = businessKolColumns() * 5;
   const [catalog, reqs] = await Promise.all([
     api(`/api/kols?page=${businessKolCatalogPage}&per=${catalogPer}`),
-    api(`/api/kol/requests?page=${businessKolRequestPage}&per=10`),
+    api(`/api/kol/requests?page=${businessKolRequestPage}&per=2`),
   ]);
   const { kols } = catalog;
   businessKolCatalogPage = catalog.page || 1;
   businessKolRequestPage = reqs.page || 1;
-  el.innerHTML = `<div class="between"><h1>KOL / Nghệ sĩ</h1>
+  el.innerHTML = `<div class="business-kol-page"><div class="between"><h1>KOL / Nghệ sĩ</h1>
     <button class="btn sm" id="k-quote" style="background:#B91C1C;color:#fff">${icon("quoteLead", "btn-icon")} Liên hệ nhận báo giá trực tiếp</button></div>
     <p class="muted" style="margin:8px 0 16px">Giá KOL thường thoả thuận — gửi yêu cầu báo giá, NetViet duyệt & phản hồi. Phân khúc cao cấp có duyệt riêng.</p>
+    <div class="business-kol-catalog-scroll">
     <div class="business-kol-grid">
       ${kols
         .map(
@@ -1599,14 +1694,15 @@ async function kolPage(
         .join("")}
     </div>
     <div class="pager business-kol-catalog-pager" id="business-kol-catalog-pager"></div>
-    <div class="card" style="margin-top:20px"><h3>Yêu cầu KOL đã gửi</h3>
+    </div>
+    <div class="card business-kol-requests"><h3>Yêu cầu KOL đã gửi</h3>
       <div class="table-wrap" style="margin-top:10px">${
         reqs.requests.length
           ? `<table><thead><tr><th>KOL</th><th>Thời gian</th><th>Ngân sách</th><th>Báo giá</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
         ${reqs.requests.map((q) => `<tr><td><b>${esc(q.kolname)}</b><div class="muted" style="font-size:11px">${esc(q.field)}</div></td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(q.created_at)}</td><td class="money">${money(q.budget)}</td><td>${q.quote ? `<b class="money">${money(q.total_amount||q.quote)}</b><div class="muted" style="font-size:10px">KOL ${money(q.quote_kol||q.quote)} · NetViet ${money(q.quote_platform||0)}${Number(q.quote_additional)>0?` · Khác ${money(q.quote_additional)}`:''}</div>` : "—"}</td><td>${kolStatus(q.status)}</td><td><div class="row" style="flex-wrap:wrap">${q.status==='quoted'?`<button class="btn primary sm" data-kol-fund="${q.id}">Chấp nhận & ký quỹ</button>`:''}${q.status==='delivered'?`<a class="btn ghost sm" href="${esc(q.delivery_url)}" target="_blank" rel="noopener">Xem bàn giao</a><button class="btn ok sm" data-kol-approve="${q.id}">Nghiệm thu</button><button class="btn ghost sm" data-kol-revision="${q.id}">Yêu cầu sửa</button>`:''}${['pending','quoted','funded'].includes(q.status)?`<button class="btn ghost sm" data-kol-cancel="${q.id}">Hủy</button>`:''}</div></td></tr>`).join("")}
       </tbody></table>`
           : empty(icon("kolRequest", "teaser-icon"), "Chưa gửi yêu cầu KOL nào")
-      }</div><div class="pager" id="business-kol-pager"></div></div>`;
+      }</div><div class="pager" id="business-kol-pager"></div></div></div>`;
   el.querySelectorAll("[data-kol]").forEach((b) =>
     b.addEventListener("click", () => kolRequestModal(b.dataset.kol, el)),
   );
@@ -1617,7 +1713,10 @@ async function kolPage(
   if (catalog.pages > 1) {
     catalogPager.innerHTML = `<button data-kol-catalog-page="${catalog.page - 1}" ${catalog.page <= 1 ? 'disabled' : ''} aria-label="Trang KOL trước">‹</button><span class="muted">Trang ${catalog.page} / ${catalog.pages} · ${num(catalog.total)} KOL</span><button data-kol-catalog-page="${catalog.page + 1}" ${catalog.page >= catalog.pages ? 'disabled' : ''} aria-label="Trang KOL sau">›</button>`;
     catalogPager.querySelectorAll('[data-kol-catalog-page]').forEach((button) =>
-      button.addEventListener('click', () => kolPage(el, Number(button.dataset.kolCatalogPage), businessKolRequestPage)),
+      button.addEventListener('click', async () => {
+        await kolPage(el, Number(button.dataset.kolCatalogPage), businessKolRequestPage);
+        el.querySelector('.business-kol-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }),
     );
   }
   if(reqs.pages>1){const pager=el.querySelector('#business-kol-pager');pager.innerHTML=`<button data-kol-request-page="${reqs.page-1}" ${reqs.page<=1?'disabled':''}>‹</button><span class="muted">${reqs.page} / ${reqs.pages}</span><button data-kol-request-page="${reqs.page+1}" ${reqs.page>=reqs.pages?'disabled':''}>›</button>`;pager.querySelectorAll('[data-kol-request-page]').forEach(b=>b.addEventListener('click',()=>kolPage(el,businessKolCatalogPage,Number(b.dataset.kolRequestPage))))}

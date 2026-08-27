@@ -196,6 +196,44 @@ export async function sendOtpEmail(env, _request, to, code) {
   });
 }
 
+export async function sendAccountReviewEmail(env, to, account) {
+  const approved = account.status === 'active';
+  const roleLabel = account.role === 'business' ? 'doanh nghiệp' : 'KOC';
+  const subject = approved
+    ? `Hồ sơ ${roleLabel} đã được duyệt | KOC Việt`
+    : `Kết quả xét duyệt hồ sơ ${roleLabel} | KOC Việt`;
+  const heading = approved ? 'Hồ sơ của bạn đã được duyệt' : 'Hồ sơ của bạn chưa được duyệt';
+  const message = approved
+    ? `Tài khoản ${roleLabel} của bạn đã được kích hoạt. Bạn có thể đăng nhập và sử dụng các tính năng dành cho ${roleLabel} trên KOC Việt.`
+    : `Hồ sơ ${roleLabel} của bạn chưa đáp ứng yêu cầu xét duyệt ở thời điểm hiện tại.`;
+  const reason = !approved && account.reason
+    ? `<div style="margin:18px 0;padding:14px 16px;border-radius:8px;background:#fff4ef;color:#7a2e18"><strong>Lý do:</strong> ${escapeHtml(account.reason)}</div>`
+    : '';
+  const htmlContent = `
+    <div style="font-family:Arial,sans-serif;line-height:1.65;color:#172033;max-width:600px">
+      <p style="margin:0 0 8px;color:#f45132;font-size:12px;font-weight:700;letter-spacing:.5px">KOC VIỆT</p>
+      <h2 style="margin:0 0 14px">${heading}</h2>
+      <p>Xin chào ${escapeHtml(account.name || (account.role === 'business' ? 'Quý doanh nghiệp' : 'bạn'))},</p>
+      <p>${message}</p>
+      ${reason}
+      <p style="margin-top:22px;color:#667085;font-size:13px">Đây là email tự động từ KOC Việt. Vui lòng không trả lời email này.</p>
+    </div>`;
+  const textContent = [
+    'KOC VIỆT',
+    heading,
+    `Xin chào ${account.name || (account.role === 'business' ? 'Quý doanh nghiệp' : 'bạn')},`,
+    message,
+    !approved && account.reason ? `Lý do: ${account.reason}` : '',
+  ].filter(Boolean).join('\n\n');
+  return sendTransactionalEmail(env, {
+    to,
+    subject,
+    htmlContent,
+    textContent,
+    tags: ['account-review', roleLabel, approved ? 'approved' : 'rejected'],
+  });
+}
+
 export async function sendBookingCreatedEmail(env, to, booking) {
   const typeLabel = {
     review: 'Review',

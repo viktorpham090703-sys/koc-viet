@@ -17,6 +17,7 @@ import {
   INDUSTRY_ITEMS,
   industryIconSvg,
 } from "./industry-icons.js";
+import { renderHomeKolInsights } from "./kol-insights.js";
 
 export const LANDING_ROUTES = [
   "/trang-chu",
@@ -301,7 +302,7 @@ function pageHome() {
             <span class="lp-proof-badge">Minh bạch 100%</span>
           </div>
           <h3 class="lp-proof-card-title">Giá niêm yết công khai</h3>
-          <p class="lp-proof-card-desc">Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 4 hạng Nano – Micro – Mid – Macro.</p>
+          <p class="lp-proof-card-desc">Lần đầu tiên tại Việt Nam, phí booking KOC minh bạch, phân theo 5 hạng Nano – Micro – Mid – Macro – Mega.</p>
         </article>
         <article class="lp-card lp-proof-card lp-proof-teal">
           <div class="lp-proof-card-top">
@@ -412,6 +413,9 @@ function pageHome() {
   return (
     hero +
     splitSection +
+    // Tạm ẩn hai khối "KOL đang được chú ý" và "Top10 Chỉ số ảnh hưởng".
+    // Bật lại bằng cách bỏ comment ở dòng renderHomeKolInsights() bên dưới.
+    // renderHomeKolInsights() +
     campaignDeskSection +
     whyUs +
     categories +
@@ -586,7 +590,7 @@ function pageKoc() {
         <h2>Làm tốt hơn, nâng hạng cao hơn,<br><span class="lp-coral-text">nhận booking giá trị hơn</span></h2>
       </div>
       <div class="lp-section-media lp-koc-rank-media lp-reveal">${lpMedia({
-        src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1787646254/c%C3%A0nh_l%C3%A0m_t%E1%BB%91t_tzi3vl.png",
+        src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1787820954/1787820881216_1498435957045998974_1498435957045998974_bf7570bc0715d548225ae5899a58abfe_obc5vx.jpg",
         alt: "Lộ trình thăng hạng và mở mức giá KOC",
         ratio: "16/6",
       })}</div>
@@ -1456,29 +1460,53 @@ function pagePricing() {
     </div>
   </section>`;
 
-  const tiers = `<section class="lp-section tint" aria-label="4 Hạng KOC">
+  const tiers = `<section class="lp-section tint" aria-label="5 Hạng KOC">
     <div class="lp-section-inner">
       <div class="lp-section-head">
-        <h2>Khung giá niêm yết theo 4 hạng KOC</h2>
+        <h2>Khung giá niêm yết theo 5 hạng KOC</h2>
       </div>
       <div class="lp-section-media lp-reveal" style="max-width:720px;margin:0 auto 36px auto">${lpMedia({ src: "https://res.cloudinary.com/drxum5uxt/image/upload/v1785745847/c%C3%A0ng_l%C3%A0m_t%E1%BB%91t_khun_gi%C3%A1_c%C3%A0ng_m%E1%BB%9F_1_v2awgu.jpg", alt: "Càng làm tốt, khung giá càng mở", ratio: "16/9" })}</div>
-      <div class="lp-grid-4 lp-pricing-grid">
+      <div class="lp-grid-5 lp-pricing-grid">
         <div class="lp-pricing-card">
           <h3>Nano</h3>
-          <p>~1.000–10.000 follower · Khung giá 200.000đ – 800.000đ/bài · Hợp SME địa phương, sản phẩm cần độ tin cậy gần gũi</p>
+          <ul class="lp-tier-details">
+            <li><span class="lp-tier-detail-icon">◎</span><div><small>Người theo dõi</small><strong>1.000 – dưới 10.000</strong></div></li>
+            <li><span class="lp-tier-detail-icon">₫</span><div><small>Khung giá</small><strong>200.000đ – 1.500.000đ/bài</strong></div></li>
+            <li><span class="lp-tier-detail-icon">✓</span><div><small>Phù hợp</small><span>SME địa phương, sản phẩm cần độ tin cậy gần gũi</span></div></li>
+          </ul>
         </div>
         <div class="lp-pricing-card featured">
           <span class="badge-popular">Phổ biến nhất</span>
           <h3>Micro</h3>
-          <p>10.000–100.000 follower · Khung giá 800.000đ – 3.000.000đ/bài · Cân bằng tốt nhất giữa chi phí và chuyển đổi</p>
+          <ul class="lp-tier-details">
+            <li><span class="lp-tier-detail-icon">◎</span><div><small>Người theo dõi</small><strong>10.000 – dưới 100.000</strong></div></li>
+            <li><span class="lp-tier-detail-icon">₫</span><div><small>Khung giá</small><strong>1.000.000đ – 10.000.000đ/bài</strong></div></li>
+            <li><span class="lp-tier-detail-icon">✓</span><div><small>Phù hợp</small><span>Cân bằng tốt giữa chi phí và chuyển đổi</span></div></li>
+          </ul>
         </div>
         <div class="lp-pricing-card">
           <h3>Mid</h3>
-          <p>100.000–500.000 follower · Khung giá 3.000.000đ – 10.000.000đ/bài · Chiến dịch cần độ phủ vùng hoặc toàn quốc</p>
+          <ul class="lp-tier-details">
+            <li><span class="lp-tier-detail-icon">◎</span><div><small>Người theo dõi</small><strong>100.000 – dưới 300.000</strong></div></li>
+            <li><span class="lp-tier-detail-icon">₫</span><div><small>Khung giá</small><strong>8.000.000đ – 25.000.000đ/bài</strong></div></li>
+            <li><span class="lp-tier-detail-icon">✓</span><div><small>Phù hợp</small><span>Chiến dịch cần độ phủ vùng hoặc toàn quốc</span></div></li>
+          </ul>
         </div>
         <div class="lp-pricing-card">
           <h3>Macro</h3>
-          <p>500.000+ follower · Khung giá từ 10.000.000đ/bài, thoả thuận trong khung · Ra mắt sản phẩm, chiến dịch thương hiệu lớn</p>
+          <ul class="lp-tier-details">
+            <li><span class="lp-tier-detail-icon">◎</span><div><small>Người theo dõi</small><strong>300.000 – dưới 1.000.000</strong></div></li>
+            <li><span class="lp-tier-detail-icon">₫</span><div><small>Khung giá</small><strong>20.000.000đ – 60.000.000đ/bài</strong></div></li>
+            <li><span class="lp-tier-detail-icon">✓</span><div><small>Phù hợp</small><span>Ra mắt sản phẩm, chiến dịch thương hiệu lớn</span></div></li>
+          </ul>
+        </div>
+        <div class="lp-pricing-card">
+          <h3>Mega</h3>
+          <ul class="lp-tier-details">
+            <li><span class="lp-tier-detail-icon">◎</span><div><small>Người theo dõi</small><strong>Từ 1.000.000</strong></div></li>
+            <li><span class="lp-tier-detail-icon">₫</span><div><small>Khung giá</small><strong>Từ 50.000.000đ/bài</strong></div></li>
+            <li><span class="lp-tier-detail-icon">✓</span><div><small>Phù hợp</small><span>Chiến dịch quy mô lớn và đại sứ thương hiệu</span></div></li>
+          </ul>
         </div>
       </div>
       <p class="lp-muted" style="text-align:center;max-width:760px;margin:24px auto 0;font-size:13.5px;color:#64748b;">KOC tự đặt giá cụ thể trong khung của hạng mình, theo từng ngành hàng. Khung giá do nền tảng công bố và điều chỉnh định kỳ theo dữ liệu thị trường — chống phá giá lẫn thổi giá.</p>
@@ -1812,7 +1840,11 @@ function pageSupport() {
             "Được — mỗi ngành một hồ sơ năng lực, bảng giá và chỉ số riêng.",
           ],
         ],
-        { groupTitle: "Tài khoản & Đăng ký", groupId: "faq-tai-khoan", groupIcon: "account" },
+        {
+          groupTitle: "Tài khoản & Đăng ký",
+          groupId: "faq-tai-khoan",
+          groupIcon: "account",
+        },
       )}
       ${lpAccordion(
         [
@@ -1825,7 +1857,11 @@ function pageSupport() {
             "Không. Giá trên hồ sơ là giá cuối do KOC niêm yết trong khung hạng — minh bạch cho cả hai phía.",
           ],
         ],
-        { groupTitle: "Giá & Phí", groupId: "faq-gia-phi", groupIcon: "wallet" },
+        {
+          groupTitle: "Giá & Phí",
+          groupId: "faq-gia-phi",
+          groupIcon: "wallet",
+        },
       )}
       ${lpAccordion(
         [
@@ -1842,7 +1878,11 @@ function pageSupport() {
             "Có — nền tảng nhắc tự động gắn #quangcao theo quy định pháp luật hiện hành.",
           ],
         ],
-        { groupTitle: "Booking & Nội dung", groupId: "faq-booking", groupIcon: "booking" },
+        {
+          groupTitle: "Booking & Nội dung",
+          groupId: "faq-booking",
+          groupIcon: "booking",
+        },
       )}
       ${lpAccordion(
         [
@@ -1855,7 +1895,11 @@ function pageSupport() {
             "Mở khiếu nại trong app; đội ngũ trọng tài của nền tảng đối chiếu dữ liệu giao dịch (được lưu vết đầy đủ) và phân xử theo điều khoản hợp đồng.",
           ],
         ],
-        { groupTitle: "Thanh toán", groupId: "faq-thanh-toan", groupIcon: "payment" },
+        {
+          groupTitle: "Thanh toán",
+          groupId: "faq-thanh-toan",
+          groupIcon: "payment",
+        },
       )}
       ${lpAccordion(
         [
@@ -1868,7 +1912,11 @@ function pageSupport() {
             "Chỉ để xác minh danh tính và chi trả đúng người, mã hoá lưu trữ theo Nghị định 13/2023/NĐ-CP, không chia sẻ bên thứ ba.",
           ],
         ],
-        { groupTitle: "Pháp lý & Dữ liệu", groupId: "faq-phap-ly", groupIcon: "legal" },
+        {
+          groupTitle: "Pháp lý & Dữ liệu",
+          groupId: "faq-phap-ly",
+          groupIcon: "legal",
+        },
       )}
       ${lpAccordion(
         [
@@ -1881,7 +1929,11 @@ function pageSupport() {
             "NetViet booking và sản xuất bên ngoài hệ thống; KOC duyệt cuối từng video trước khi đăng.",
           ],
         ],
-        { groupTitle: "AI Clone Avatar", groupId: "faq-ai-clone", groupIcon: "ai" },
+        {
+          groupTitle: "AI Clone Avatar",
+          groupId: "faq-ai-clone",
+          groupIcon: "ai",
+        },
       )}
     </div>
   </section>`;

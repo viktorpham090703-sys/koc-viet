@@ -2081,7 +2081,7 @@ async function aiclone(el) {
 
 async function tiers(el) {
   const cfg = state.config;
-  el.innerHTML = `<div class="between"><h1>Khung giá 4 hạng</h1><button class="btn primary sm" id="tr-save">💾 Lưu khung giá</button></div>
+  el.innerHTML = `<div class="between"><h1>Khung giá 5 hạng</h1><button class="btn primary sm" id="tr-save">💾 Lưu khung giá</button></div>
     <p class="muted" style="margin-bottom:16px">KOC niêm yết giá phải nằm trong khung của hạng. Sau khi lưu, bảng giá KOC hiện có sẽ được kiểm tra lại theo khung mới.</p>
     <div class="table-wrap"><table><thead><tr><th>Hạng</th><th>Follower tối thiểu</th><th>Follower tối đa</th><th>Giá tối thiểu (đ)</th><th>Giá tối đa (đ)</th><th>Phí dịch vụ (%)</th></tr></thead><tbody>
     ${cfg.tiers
@@ -2099,7 +2099,7 @@ async function tiers(el) {
     <div class="card" style="margin-top:16px"><h3>Quyền lợi theo hạng</h3>
       <ul style="margin:10px 0 0 18px;line-height:2;color:#444">
         <li>Hạng cao hơn: khung giá cao hơn, ưu tiên hiển thị trên trang khám phá KOC</li>
-        <li>Phí dịch vụ giảm dần theo hạng (Nano 5% → Macro 3%)</li>
+        <li>Phí dịch vụ giảm dần theo hạng (Nano 5% → Mega 3%)</li>
         <li>Thăng hạng dựa trên: follower, số booking hoàn thành, điểm đánh giá</li>
       </ul></div>`;
   document.getElementById("tr-save").addEventListener("click", async () => {
