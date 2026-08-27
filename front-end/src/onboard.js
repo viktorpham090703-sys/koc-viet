@@ -724,15 +724,16 @@ export function renderOnboarding(el) {
     const tr = cfg.tiers.find((t) => t.name === d.tier);
     el.innerHTML = wrap(`
       <div class="tint-box"><div class="between"><span>Hạng tự động của bạn</span><span class="tier-badge tier-${d.tier}">${d.tier}</span></div>
-        <div class="muted" style="margin-top:6px">Khung giá cho phép: <b>${money(tr.min)} – ${money(tr.max)}</b></div></div>
+        <div class="muted" style="margin-top:6px">Khung giá cho phép: <b>${tr.name === "Mega" ? `Từ ${money(tr.min)}` : `${money(tr.min)} – ${money(tr.max)}`}</b></div></div>
       <div class="card" style="margin:14px 0;background:var(--screen)">
         <h3 style="font-size:14px;margin-bottom:8px">📊 Cách hệ thống phân hạng KOC</h3>
-        <p class="muted" style="font-size:12.5px;line-height:1.7">Điểm phân hạng dựa trên số người theo dõi và tỉ lệ tương tác. Hệ thống tự động xếp hạng như sau:</p>
+        <p class="muted" style="font-size:12.5px;line-height:1.7">Hạng KOC được xác định theo số người theo dõi. Hệ thống tự động xếp hạng như sau:</p>
         <ul style="margin:8px 0 0 18px;font-size:12.5px;color:var(--text);line-height:1.9">
-          <li><b>Nano</b> — điểm dưới 10.000 (khoảng 1.000 người theo dõi trở lên)</li>
-          <li><b>Micro</b> — điểm từ 10.000 đến dưới 50.000</li>
-          <li><b>Mid</b> — điểm từ 50.000 đến dưới 500.000</li>
-          <li><b>Macro</b> — điểm từ 500.000 trở lên</li>
+          <li><b>Nano</b> — từ 1.000 đến dưới 10.000 người theo dõi</li>
+          <li><b>Micro</b> — từ 10.000 đến dưới 100.000 người theo dõi</li>
+          <li><b>Mid</b> — từ 100.000 đến dưới 300.000 người theo dõi</li>
+          <li><b>Macro</b> — từ 300.000 đến dưới 1.000.000 người theo dõi</li>
+          <li><b>Mega</b> — từ 1.000.000 người theo dõi trở lên</li>
         </ul>
         <p class="muted" style="font-size:12px;margin-top:8px">Hạng càng cao, khung giá niêm yết theo ngành hàng càng rộng. Hạng được xem xét định kỳ theo số người theo dõi, tỉ lệ hoàn thành booking và điểm đánh giá.</p>
       </div>
@@ -1087,9 +1088,10 @@ export function renderOnboarding(el) {
     <table class="contract-table">
       <tr><th>Hạng KOC</th><th>Tiêu chí tham khảo</th><th>% Hoa hồng bán hàng (theo Phụ lục)</th></tr>
       <tr><td>Nano</td><td>Dưới 10.000 người theo dõi</td><td>10%</td></tr>
-      <tr><td>Micro</td><td>10.000 – 50.000 người theo dõi</td><td>12%</td></tr>
-      <tr><td>Mid</td><td>50.000 – 200.000 người theo dõi</td><td>15%</td></tr>
-      <tr><td>Macro</td><td>Trên 200.000 người theo dõi</td><td>16%</td></tr>
+      <tr><td>Micro</td><td>10.000 – dưới 100.000 người theo dõi</td><td>12%</td></tr>
+      <tr><td>Mid</td><td>100.000 – dưới 300.000 người theo dõi</td><td>15%</td></tr>
+      <tr><td>Macro</td><td>300.000 – dưới 1.000.000 người theo dõi</td><td>16%</td></tr>
+      <tr><td>Mega</td><td>Từ 1.000.000 người theo dõi</td><td>16%</td></tr>
     </table>
     <p>4.2. Chu kỳ đối soát: 1 lần/tháng — Bên A tổng hợp sổ thu chi và thông báo số liệu cho Bên B trước khi chi trả.</p>
     <p>4.3. Ngưỡng rút tiền tối thiểu: 1.000.000 đồng; số dư dưới ngưỡng được cộng dồn sang chu kỳ kế tiếp.</p>
@@ -1487,10 +1489,10 @@ export function renderOnboarding(el) {
   render();
 }
 
-function tierOf(followers, eng) {
-  const score = followers * (1 + eng / 100);
-  if (score >= 500000) return "Macro";
-  if (score >= 50000) return "Mid";
-  if (score >= 10000) return "Micro";
+function tierOf(followers, _eng) {
+  if (followers >= 1000000) return "Mega";
+  if (followers >= 300000) return "Macro";
+  if (followers >= 100000) return "Mid";
+  if (followers >= 10000) return "Micro";
   return "Nano";
 }
