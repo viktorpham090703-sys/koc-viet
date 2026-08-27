@@ -1,0 +1,487 @@
+{
+  "cloudinary_rows": 209,
+  "profiles_generated": 202,
+  "duplicates_merged": 7,
+  "source_name_mismatches": [
+    {
+      "cloud_name": "Phạm Huyền Thiên An",
+      "lead_name": "Phương Huyền",
+      "group": "MC",
+      "source_row": 3
+    },
+    {
+      "cloud_name": "Văn Thị Thùy Dương",
+      "lead_name": "Thùy Dương",
+      "group": "MC",
+      "source_row": 6
+    },
+    {
+      "cloud_name": "Nguyễn Tiến Phước",
+      "lead_name": "Tiến Phước",
+      "group": "MC",
+      "source_row": 7
+    },
+    {
+      "cloud_name": "Quách Tuấn Huy",
+      "lead_name": "Tuấn Huy",
+      "group": "MC",
+      "source_row": 8
+    },
+    {
+      "cloud_name": "Đào Phương Anh Đào",
+      "lead_name": "Phương Anh Đào",
+      "group": "Diễn viên",
+      "source_row": 3
+    },
+    {
+      "cloud_name": "Nguyễn Tiến Luật",
+      "lead_name": "Tiến Luật",
+      "group": "Diễn viên",
+      "source_row": 4
+    },
+    {
+      "cloud_name": "Võ Vũ TRường Giang",
+      "lead_name": "Trường Giang",
+      "group": "Diễn viên",
+      "source_row": 5
+    },
+    {
+      "cloud_name": "Trần Thị Nhã Phương",
+      "lead_name": "Nhã Phương",
+      "group": "Diễn viên",
+      "source_row": 6
+    },
+    {
+      "cloud_name": "Trần Thị Diệu Nhi",
+      "lead_name": "Diệu Nhi",
+      "group": "Diễn viên",
+      "source_row": 7
+    },
+    {
+      "cloud_name": "Bùi Anh Tú",
+      "lead_name": "Anh Tú Atus",
+      "group": "Diễn viên",
+      "source_row": 8
+    },
+    {
+      "cloud_name": "Lê Ngọc Minh Hằng",
+      "lead_name": "Minh Hằng",
+      "group": "Diễn viên",
+      "source_row": 11
+    },
+    {
+      "cloud_name": "Trần Thị Kim Ngân",
+      "lead_name": "Khả Ngân",
+      "group": "Diễn viên",
+      "source_row": 12
+    },
+    {
+      "cloud_name": "Nguyễn Thùy Chi",
+      "lead_name": "Chi Pu",
+      "group": "Diễn viên",
+      "source_row": 13
+    },
+    {
+      "cloud_name": "Nguyễn Lan Phương",
+      "lead_name": "Lan Phương",
+      "group": "Diễn viên",
+      "source_row": 14
+    },
+    {
+      "cloud_name": "Nguyễn Thị Quỳnh",
+      "lead_name": "Quỳnh Kool",
+      "group": "Diễn viên",
+      "source_row": 15
+    },
+    {
+      "cloud_name": "Nguyễn Ngọc Bình An",
+      "lead_name": "Kaity Nguyễn",
+      "group": "Diễn viên",
+      "source_row": 16
+    },
+    {
+      "cloud_name": "Vũ Thị Phương Thanh",
+      "lead_name": "Bảo Thanh",
+      "group": "Diễn viên",
+      "source_row": 17
+    },
+    {
+      "cloud_name": "Lương thị Mai Quỳnh",
+      "lead_name": "Quỳnh Lương",
+      "group": "Diễn viên",
+      "source_row": 19
+    },
+    {
+      "cloud_name": "Cao Thái Hà",
+      "lead_name": "Cao Thái Hà (Boorin)",
+      "group": "Diễn viên",
+      "source_row": 20
+    },
+    {
+      "cloud_name": "Vũ Phương Anh",
+      "lead_name": "Jun Vũ",
+      "group": "Diễn viên",
+      "source_row": 22
+    },
+    {
+      "cloud_name": "Đặng Thị Mỹ Dung",
+      "lead_name": "Mi Du",
+      "group": "Diễn viên",
+      "source_row": 23
+    },
+    {
+      "cloud_name": "Lê Ngân Khánh",
+      "lead_name": "Ngân khánh",
+      "group": "Diễn viên",
+      "source_row": 24
+    },
+    {
+      "cloud_name": "Nguyễn Ngọc Thanh Tâm",
+      "lead_name": "Ngọc Thanh Tâm",
+      "group": "Diễn viên",
+      "source_row": 25
+    },
+    {
+      "cloud_name": "Hồ Thị Bích Trâm",
+      "lead_name": "Hồ Bích Trâm",
+      "group": "Diễn viên",
+      "source_row": 27
+    },
+    {
+      "cloud_name": "Trần Thị Kim Tuyến",
+      "lead_name": "Kim Tuyến",
+      "group": "Diễn viên",
+      "source_row": 28
+    },
+    {
+      "cloud_name": "Nguyễn Ngọc Thùy Trang",
+      "lead_name": "Vân Trang",
+      "group": "Diễn viên",
+      "source_row": 29
+    },
+    {
+      "cloud_name": "Nguyễn Hồng Diễm",
+      "lead_name": "Hồng Diễm",
+      "group": "Diễn viên",
+      "source_row": 31
+    },
+    {
+      "cloud_name": "Lương Thị Thu Trang",
+      "lead_name": "Lương Thu Trang",
+      "group": "Diễn viên",
+      "source_row": 32
+    },
+    {
+      "cloud_name": "Hoàng Kim Ngân",
+      "lead_name": "Salim",
+      "group": "Diễn viên",
+      "source_row": 35
+    },
+    {
+      "cloud_name": "Nguyễn Hà My",
+      "lead_name": "Sam",
+      "group": "Diễn viên",
+      "source_row": 36
+    },
+    {
+      "cloud_name": "Nguyễn Kiều Cẩm Thơ",
+      "lead_name": "Puka",
+      "group": "Diễn viên",
+      "source_row": 37
+    },
+    {
+      "cloud_name": "Trần Thị Ngọc Trinh",
+      "lead_name": "Ngọc Trinh",
+      "group": "Diễn viên",
+      "source_row": 38
+    },
+    {
+      "cloud_name": "Phạm Thị Thanh Vân",
+      "lead_name": "Ốc Thanh Vân",
+      "group": "Diễn viên",
+      "source_row": 40
+    },
+    {
+      "cloud_name": "Vũ Ngọc Hoàng Anh",
+      "lead_name": "Vũ Ngọc Hoàng Oanh",
+      "group": "Diễn viên",
+      "source_row": 41
+    },
+    {
+      "cloud_name": "Trần Thị Nam Thư",
+      "lead_name": "Nam Thư",
+      "group": "Diễn viên",
+      "source_row": 42
+    },
+    {
+      "cloud_name": "Phan Minh Huyền",
+      "lead_name": "Huyền Lizzie",
+      "group": "Diễn viên",
+      "source_row": 43
+    },
+    {
+      "cloud_name": "Nguyễn Thùy Anh",
+      "lead_name": "Thùy Anh",
+      "group": "Diễn viên",
+      "source_row": 44
+    },
+    {
+      "cloud_name": "Đỗ Phương Oanh",
+      "lead_name": "Phương Oanh",
+      "group": "Diễn viên",
+      "source_row": 45
+    },
+    {
+      "cloud_name": "Trần Khả Như",
+      "lead_name": "Khả Như",
+      "group": "Diễn viên",
+      "source_row": 46
+    },
+    {
+      "cloud_name": "Lê Công Hạnh",
+      "lead_name": "Liên Bỉnh Phát",
+      "group": "Diễn viên",
+      "source_row": 48
+    },
+    {
+      "cloud_name": "Nguyễn Trường Sinh",
+      "lead_name": "Song Luân",
+      "group": "Diễn viên",
+      "source_row": 49
+    },
+    {
+      "cloud_name": "Nguyễn Trúc Anh",
+      "lead_name": "Trúc Anh",
+      "group": "Diễn viên",
+      "source_row": 52
+    },
+    {
+      "cloud_name": "Đinh Thụy Tường Vi",
+      "lead_name": "Tường Vi",
+      "group": "Diễn viên",
+      "source_row": 53
+    },
+    {
+      "cloud_name": "Huyền Tôn Nữ Nhật Hạ",
+      "lead_name": "Nhật Hạ",
+      "group": "Diễn viên",
+      "source_row": 55
+    },
+    {
+      "cloud_name": "Đỗ Thị Kim Huệ",
+      "lead_name": "Nhật Kim Anh",
+      "group": "Diễn viên",
+      "source_row": 58
+    },
+    {
+      "cloud_name": "Trần Duy Tuấn",
+      "lead_name": "Tuấn Trần",
+      "group": "Diễn viên",
+      "source_row": 60
+    },
+    {
+      "cloud_name": "Võ Ngọc Cảnh",
+      "lead_name": "Võ Cảnh",
+      "group": "Diễn viên",
+      "source_row": 61
+    },
+    {
+      "cloud_name": "Hoàng Văn Thanh",
+      "lead_name": "Lãnh Thanh",
+      "group": "Diễn viên",
+      "source_row": 63
+    },
+    {
+      "cloud_name": "Công Văn Dương",
+      "lead_name": "Công Dương",
+      "group": "Diễn viên",
+      "source_row": 64
+    },
+    {
+      "cloud_name": "Nguyễn Bình An",
+      "lead_name": "Bình An",
+      "group": "Diễn viên",
+      "source_row": 65
+    },
+    {
+      "cloud_name": "Trần Quốc Anh",
+      "lead_name": "B Trần",
+      "group": "Diễn viên",
+      "source_row": 66
+    },
+    {
+      "cloud_name": "Trần Tuấn Nghĩa",
+      "lead_name": "Trần Nghĩa",
+      "group": "Diễn viên",
+      "source_row": 67
+    },
+    {
+      "cloud_name": "Nguyễn Thanh Sơn",
+      "lead_name": "Thanh Sơn",
+      "group": "Diễn viên",
+      "source_row": 68
+    },
+    {
+      "cloud_name": "Nguyễn Phương Thanh Vy",
+      "lead_name": "Rima Thanh Vy",
+      "group": "Diễn viên",
+      "source_row": 70
+    },
+    {
+      "cloud_name": "La Vĩnh Phát",
+      "lead_name": "Phát La",
+      "group": "Diễn viên",
+      "source_row": 71
+    },
+    {
+      "cloud_name": "Lê Thành Dương",
+      "lead_name": "Ngô Kiến Huy",
+      "group": "Diễn viên",
+      "source_row": 72
+    },
+    {
+      "cloud_name": "Nguyễn Quỳnh Châu",
+      "lead_name": "Quỳnh Châu",
+      "group": "Diễn viên",
+      "source_row": 74
+    },
+    {
+      "cloud_name": "Lê Thị Bê La",
+      "lead_name": "Lê Bê La",
+      "group": "Diễn viên",
+      "source_row": 75
+    },
+    {
+      "cloud_name": "Văn Thị Phượng",
+      "lead_name": "Văn Phượng",
+      "group": "Diễn viên",
+      "source_row": 77
+    },
+    {
+      "cloud_name": "Phạm Quỳnh Anh",
+      "lead_name": "Anh Phạm",
+      "group": "Diễn viên",
+      "source_row": 78
+    },
+    {
+      "cloud_name": "Huỳnh Samuel An",
+      "lead_name": "Samuel An Huỳnh",
+      "group": "Diễn viên",
+      "source_row": 79
+    },
+    {
+      "cloud_name": "Đào Hải Triều",
+      "lead_name": "Hải Triều",
+      "group": "Diễn viên",
+      "source_row": 80
+    },
+    {
+      "cloud_name": "Nguyễn Thị Đắc Tín",
+      "lead_name": "Tín Nguyễn",
+      "group": "Diễn viên",
+      "source_row": 81
+    },
+    {
+      "cloud_name": "Nguyễn Thị Ngọc Phước",
+      "lead_name": "Ngọc Phước",
+      "group": "Diễn viên",
+      "source_row": 82
+    },
+    {
+      "cloud_name": "Trần Phan Quốc Bảo",
+      "lead_name": "BB Trần",
+      "group": "Diễn viên",
+      "source_row": 83
+    },
+    {
+      "cloud_name": "Phạm Duy Thuận",
+      "lead_name": "Jun Phạm",
+      "group": "Diễn viên",
+      "source_row": 84
+    },
+    {
+      "cloud_name": "Nguyễn Tuấn Kiệt",
+      "lead_name": "Gin Tuấn Kiệt",
+      "group": "Diễn viên",
+      "source_row": 85
+    },
+    {
+      "cloud_name": "Huỳnh Ngọc Lập",
+      "lead_name": "Huỳnh Lập",
+      "group": "Diễn viên",
+      "source_row": 86
+    },
+    {
+      "cloud_name": "Nguyễn Văn Hải",
+      "lead_name": "Lý Hải",
+      "group": "Diễn viên",
+      "source_row": 87
+    },
+    {
+      "cloud_name": "Nguyễn Hữu Duy Khánh",
+      "lead_name": "Duy Khánh ZhouZhou",
+      "group": "Diễn viên",
+      "source_row": 88
+    },
+    {
+      "cloud_name": "Nguyễn Hữu Sơn Thạch",
+      "lead_name": "S.T Sơn Thạch",
+      "group": "Diễn viên",
+      "source_row": 89
+    },
+    {
+      "cloud_name": "Phạm Lưu Tuấn Tài",
+      "lead_name": "Isaac",
+      "group": "Diễn viên",
+      "source_row": 90
+    },
+    {
+      "cloud_name": "Nguyễn Anh Tuấn",
+      "lead_name": "Will",
+      "group": "Diễn viên",
+      "source_row": 91
+    },
+    {
+      "cloud_name": "Nguyễn Hữu Vi",
+      "lead_name": "Hữu Vi",
+      "group": "Diễn viên",
+      "source_row": 92
+    },
+    {
+      "cloud_name": "Lê Thị Thanh Thúy",
+      "lead_name": "Thanh Thúy",
+      "group": "Diễn viên",
+      "source_row": 94
+    },
+    {
+      "cloud_name": "Nguyễn Kiều Diễm",
+      "lead_name": "Karen Nguyễn",
+      "group": "Diễn viên",
+      "source_row": 95
+    },
+    {
+      "cloud_name": "Nguyễn Thanh Hương",
+      "lead_name": "Thanh Hương",
+      "group": "Diễn viên",
+      "source_row": 96
+    },
+    {
+      "cloud_name": "Nguyễn Quang Sự",
+      "lead_name": "Quang Sự",
+      "group": "Diễn viên",
+      "source_row": 99
+    },
+    {
+      "cloud_name": "Nguyễn Đình Hồng Đào",
+      "lead_name": "Hồng Đào",
+      "group": "Diễn viên",
+      "source_row": 100
+    }
+  ],
+  "invalid_rows": [],
+  "profiles_without_fanbase": [
+    "Ricky Star",
+    "Phương Huyền"
+  ],
+  "profiles_without_channels": []
+}

@@ -4461,16 +4461,25 @@ export async function route(request, env, url) {
 
   // ---------- KOL profiles (public list) ----------
   if (p === "/api/kols") {
+    const requestedPer = Math.floor(Number(url.searchParams.get("per") || 8));
+    const per = Math.min(12, Math.max(2, Number.isFinite(requestedPer) ? requestedPer : 8));
+    const requestedPage = Math.max(1, Math.floor(Number(url.searchParams.get("page") || 1)) || 1);
+    const total = Number(
+      (await env.DB.prepare(`SELECT COUNT(*) count FROM kol_profiles WHERE status='active'`).first("count")) || 0,
+    );
+    const pages = Math.max(1, Math.ceil(total / per));
+    const page = Math.min(requestedPage, pages);
     const { results } = await env.DB.prepare(
-      `SELECT * FROM kol_profiles WHERE status='active' ORDER BY premium DESC, created_at DESC, rowid DESC`,
-    ).all();
+      `SELECT * FROM kol_profiles WHERE status='active'
+       ORDER BY premium DESC, created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
+    ).bind(per, (page - 1) * per).all();
     const kols = results.map((k) => ({
       ...k,
       channels: JSON.parse(k.channels || "[]"),
       price_hidden: !!k.price_hidden,
       premium: !!k.premium,
     }));
-    return J({ kols });
+    return J({ kols, page, per, total, pages });
   }
   // Business sends a KOL booking / quote request
   if (p === "/api/kol/request" && m === "POST") {
