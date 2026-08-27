@@ -37,10 +37,10 @@ export async function renderMarketplacePublic(el) {
 }
 
 // Reusable marketplace for business portal
-export async function renderMarketplaceEmbed(container, onBook) {
+export async function renderMarketplaceEmbed(container, onBook, onView) {
   container.innerHTML = `<div id="mp-filters"></div><div id="mp-list">${skeletonKocGrid(6)}</div>`;
-  renderFilters(document.getElementById('mp-filters'), () => loadMp(!!onBook, onBook));
-  loadMp(!!onBook, onBook);
+  renderFilters(document.getElementById('mp-filters'), () => loadMp(!!onBook, onBook, onView));
+  loadMp(!!onBook, onBook, onView);
 }
 
 function renderFilters(host, onChange, initialFilters = {}) {
@@ -76,7 +76,7 @@ function renderFilters(host, onChange, initialFilters = {}) {
   host.querySelector('#f-search').addEventListener('keydown', e => { if (e.key==='Enter') go(); });
 }
 
-async function loadMp(bookMode, onBook) {
+async function loadMp(bookMode, onBook, onView) {
   const list = document.getElementById('mp-list');
   list.innerHTML = skeletonKocGrid(6);
   const qs = new URLSearchParams({ page: mp.page });
@@ -85,23 +85,30 @@ async function loadMp(bookMode, onBook) {
     const r = await api('/api/kocs?' + qs.toString());
     if (!r.kocs.length) { list.innerHTML = empty('🔍', 'Không tìm thấy KOC phù hợp'); return; }
     list.innerHTML = `<div class="grid-fill-260">
-      ${r.kocs.map(k => kocCard(k, bookMode)).join('')}</div>` + pager(r.page, r.pages, (p)=>{ mp.page=p; loadMp(bookMode,onBook); });
+      ${r.kocs.map(k => kocCard(k, bookMode)).join('')}</div>` + pager(r.page, r.pages, (p)=>{ mp.page=p; loadMp(bookMode,onBook,onView); });
     list.querySelectorAll('[data-view]').forEach(c => c.addEventListener('click', () => {
-      if (bookMode && onBook) onBook(c.dataset.view);
-      else location.hash = '#/koc/' + c.dataset.view;
+      location.hash = '#/koc/' + c.dataset.view;
+    }));
+    list.querySelectorAll('[data-profile]').forEach(button => button.addEventListener('click', () => {
+      if (onView) onView(button.dataset.profile);
+    }));
+    list.querySelectorAll('[data-book]').forEach(button => button.addEventListener('click', () => {
+      if (onBook) onBook(button.dataset.book);
     }));
   } catch (e) { list.innerHTML = empty('⚠️', e.message); }
 }
 
 function kocCard(k, bookMode) {
-  return `<div class="koc-card" data-view="${k.id}">
+  return `<div class="koc-card" ${bookMode ? '' : `data-view="${k.id}"`}>
     <div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}" alt=""><div style="flex:1">
       <div class="between"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}</div>
       <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} follower</div>
     </div></div>
     <div style="margin:10px 0">${(k.categories||[]).slice(0,3).map(c=>`<span class="chip" style="margin-right:4px">${esc(c)}</span>`).join('')}</div>
     <div class="between"><div>${stars(k.rating)}</div><div class="money">từ ${money(k.minPrice)}</div></div>
-    <button class="btn ${bookMode?'primary':'ghost'} sm" style="width:100%;margin-top:10px">${bookMode?'Đặt booking':'Xem hồ sơ'}</button>
+    ${bookMode
+      ? `<div class="koc-card-actions"><button type="button" class="btn ghost sm" data-profile="${k.id}">Xem hồ sơ</button><button type="button" class="btn primary sm" data-book="${k.id}">Đặt booking</button></div>`
+      : '<button class="btn ghost sm" style="width:100%;margin-top:10px">Xem hồ sơ</button>'}
   </div>`;
 }
 

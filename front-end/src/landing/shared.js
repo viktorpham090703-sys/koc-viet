@@ -4,6 +4,7 @@ import {
   ACTIVITY_CATEGORY_CYCLE,
   industryIconSvg,
 } from "./industry-icons.js";
+import { bindHomeKolInsights } from "./kol-insights.js";
 
 export const ROUTES = [
   ["/trang-chu", "Trang chủ"],
@@ -284,6 +285,9 @@ export function lpContactForm(idSuffix, title) {
 export function bindLandingEvents(root) {
   stopKocActivityTicker();
   stopKocActivityTicker = bindKocActivityTicker(root);
+  // Tạm tắt binding/fetch dữ liệu vì hai khối KOL insights đang được ẩn.
+  // Bật lại cùng renderHomeKolInsights() trong pages.js.
+  // bindHomeKolInsights(root);
 
   const burger = root.querySelector("#lp-burger");
   const nav = root.querySelector("#lp-nav");
