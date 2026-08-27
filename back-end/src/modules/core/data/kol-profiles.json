@@ -1,0 +1,4262 @@
+[
+  {
+    "id": "kol_a6e55640cf984c4158c7f6db",
+    "name": "Sơn tùng MTP",
+    "field": "Ca sĩ",
+    "fanbase": "14M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/MTP.Fan",
+        "followers": "14M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737747/kol-gov/registration-avatars/ca-si-002-son-tung-mtp.jpg",
+    "bio": "Điện thoại, thời trang, đồ uống, xe máy, công nghệ, lifestyle",
+    "status": "active",
+    "created_at": 1787788800
+  },
+  {
+    "id": "kol_68b4b462fcba1c62f67923f3",
+    "name": "Mỹ Tâm",
+    "field": "Ca sĩ",
+    "fanbase": "5,7M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mytam.info",
+        "followers": "5,7M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737746/kol-gov/registration-avatars/ca-si-003-my-tam.jpg",
+    "bio": "FMCG, ngân hàng, mỹ phẩm, bảo hiểm, thực phẩm",
+    "status": "active",
+    "created_at": 1787788799
+  },
+  {
+    "id": "kol_6475ce7e8307cae11abd6a07",
+    "name": "Khởi My",
+    "field": "Ca sĩ",
+    "fanbase": "10M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/fc.khoimy",
+        "followers": "10M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737746/kol-gov/registration-avatars/ca-si-004-khoi-my.jpg",
+    "bio": "Gaming, công nghệ, đồ ăn, lifestyle",
+    "status": "active",
+    "created_at": 1787788798
+  },
+  {
+    "id": "kol_a7ccee6ec80212a68f86fc18",
+    "name": "Đông Nhi",
+    "field": "Ca sĩ",
+    "fanbase": "9,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dongnhi",
+        "followers": "9,3M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737746/kol-gov/registration-avatars/ca-si-005-dong-nhi.jpg",
+    "bio": "Mẹ & bé, mỹ phẩm, thời trang, FMCG",
+    "status": "active",
+    "created_at": 1787788797
+  },
+  {
+    "id": "kol_c20583ae9887a05bb90998b2",
+    "name": "Chi Pu",
+    "field": "Ca sĩ / Diễn viên",
+    "fanbase": "8,8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/chipupu93",
+        "followers": "8,8M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EmUZB7nJy/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737747/kol-gov/registration-avatars/ca-si-006-chi-pu.jpg",
+    "bio": "Beauty, thời trang, F&B, điện thoại · Ca Sĩ - Diễn Viên - Người Mẫu - Nhà Sản Xuất",
+    "status": "active",
+    "created_at": 1787788796
+  },
+  {
+    "id": "kol_87a82bd81297fdd3d6c72ed0",
+    "name": "Hồ Ngọc Hà",
+    "field": "Ca sĩ",
+    "fanbase": "5,6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/casihongocha",
+        "followers": "5,6M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737747/kol-gov/registration-avatars/ca-si-007-ho-ngoc-ha.jpg",
+    "bio": "Mỹ phẩm cao cấp, thời trang, trang sức, mẹ & bé",
+    "status": "active",
+    "created_at": 1787788795
+  },
+  {
+    "id": "kol_0f105a7d74c896bba59c1cb6",
+    "name": "Noo Phước Thịnh",
+    "field": "Ca sĩ",
+    "fanbase": "3,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phuocthinh.noo",
+        "followers": "3,3M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737748/kol-gov/registration-avatars/ca-si-008-noo-phuoc-thinh.jpg",
+    "bio": "Thời trang, nước giải khát, công nghệ",
+    "status": "active",
+    "created_at": 1787788794
+  },
+  {
+    "id": "kol_02d08359f754fb6b3afcf916",
+    "name": "Erik",
+    "field": "Ca sĩ",
+    "fanbase": "2,7M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/erikerik.official",
+        "followers": "2,7M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737748/kol-gov/registration-avatars/ca-si-009-erik.jpg",
+    "bio": "Đồ uống, FMCG, ứng dụng",
+    "status": "active",
+    "created_at": 1787788793
+  },
+  {
+    "id": "kol_c347611ef7e891f6d7ad53f6",
+    "name": "Đức Phúc",
+    "field": "Ca sĩ",
+    "fanbase": "3,1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/ducphuc.info",
+        "followers": "3,1M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737748/kol-gov/registration-avatars/ca-si-010-duc-phuc.jpg",
+    "bio": "Đồ uống, thời trang, thực phẩm, ứng dụng",
+    "status": "active",
+    "created_at": 1787788792
+  },
+  {
+    "id": "kol_87d13d9962b20768f8f0920d",
+    "name": "SOOBIN",
+    "field": "Ca sĩ",
+    "fanbase": "2,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/soobin.109",
+        "followers": "2,3M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737749/kol-gov/registration-avatars/ca-si-011-soobin.jpg",
+    "bio": "Thời trang, công nghệ, ô tô, lifestyle",
+    "status": "active",
+    "created_at": 1787788791
+  },
+  {
+    "id": "kol_482e35efcdff102cfc6afba1",
+    "name": "HIEUTHUHAI",
+    "field": "Ca sĩ",
+    "fanbase": "2,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/HIEUTHUHAIOFFICIAL",
+        "followers": "2,3M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737749/kol-gov/registration-avatars/ca-si-012-hieuthuhai.jpg",
+    "bio": "Thời trang, xe máy, đồ uống, công nghệ",
+    "status": "active",
+    "created_at": 1787788790
+  },
+  {
+    "id": "kol_d7de34b17b4691aa77ab8c17",
+    "name": "MONO",
+    "field": "Ca sĩ",
+    "fanbase": "552K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mono.hng",
+        "followers": "552K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737749/kol-gov/registration-avatars/ca-si-013-mono.jpg",
+    "bio": "Thời trang, điện thoại, lifestyle",
+    "status": "active",
+    "created_at": 1787788789
+  },
+  {
+    "id": "kol_5cdad94a35be29992677580e",
+    "name": "Quang Hùng MasterD",
+    "field": "Ca sĩ",
+    "fanbase": "1,4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/quanghungmasterd",
+        "followers": "1,4M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737750/kol-gov/registration-avatars/ca-si-014-quang-hung-masterd.jpg",
+    "bio": "Thời trang, mỹ phẩm nam, lifestyle",
+    "status": "active",
+    "created_at": 1787788788
+  },
+  {
+    "id": "kol_1fd6227a465211891ddf2da7",
+    "name": "Isaac",
+    "field": "Ca sĩ / Diễn viên",
+    "fanbase": "2,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/iamisaac365",
+        "followers": "2,2M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BgUmgbMRg/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737750/kol-gov/registration-avatars/ca-si-015-isaac.jpg",
+    "bio": "Thời trang, mỹ phẩm, điện thoại · Ca sĩ, Diễn viên",
+    "status": "active",
+    "created_at": 1787788787
+  },
+  {
+    "id": "kol_c12b7020de3f16d192d9fb3f",
+    "name": "Bích Phương",
+    "field": "Ca sĩ",
+    "fanbase": "2,9M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/bichphuongofficial?locale=vi_VN",
+        "followers": "2,9M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737750/kol-gov/registration-avatars/ca-si-016-bich-phuong.jpg",
+    "bio": "Mỹ phẩm, thời trang, FMCG",
+    "status": "active",
+    "created_at": 1787788786
+  },
+  {
+    "id": "kol_1f6fa6f69d185e6086d04e73",
+    "name": "Min",
+    "field": "Ca sĩ",
+    "fanbase": "1,6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/min.official.min?locale=vi_VN",
+        "followers": "1,6M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737750/kol-gov/registration-avatars/ca-si-017-min.jpg",
+    "bio": "Beauty, thời trang, lifestyle",
+    "status": "active",
+    "created_at": 1787788785
+  },
+  {
+    "id": "kol_8c29e1cf407073db204ea7b6",
+    "name": "Văn Mai Hương",
+    "field": "Ca sĩ",
+    "fanbase": "3.2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/vmhuong.singer?locale=vi_VN",
+        "followers": "3.2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737751/kol-gov/registration-avatars/ca-si-018-van-mai-huong.jpg",
+    "bio": "Mỹ phẩm, thực phẩm, đồ uống",
+    "status": "active",
+    "created_at": 1787788784
+  },
+  {
+    "id": "kol_4ccd3b1026bbcd694c858267",
+    "name": "Hoàng Thùy Linh",
+    "field": "Ca sĩ",
+    "fanbase": "3,6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoangthuylinh.singer?locale=vi_VN",
+        "followers": "3,6M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737751/kol-gov/registration-avatars/ca-si-019-hoang-thuy-linh.jpg",
+    "bio": "Thời trang, mỹ phẩm, FMCG",
+    "status": "active",
+    "created_at": 1787788783
+  },
+  {
+    "id": "kol_43566e0b7d0513ccdecad3aa",
+    "name": "Tóc Tiên",
+    "field": "Ca sĩ",
+    "fanbase": "2,6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/TocTienOfficial?locale=vi_VN",
+        "followers": "2,6M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737752/kol-gov/registration-avatars/ca-si-020-toc-tien.jpg",
+    "bio": "Mỹ phẩm, nước uống, thời trang FMCG",
+    "status": "active",
+    "created_at": 1787788782
+  },
+  {
+    "id": "kol_f29e32119be9259a7fe08478",
+    "name": "Hari Won",
+    "field": "Ca sĩ",
+    "fanbase": "11M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hariwonstar?locale=vi_VN",
+        "followers": "11M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737752/kol-gov/registration-avatars/ca-si-021-hari-won.jpg",
+    "bio": "Mỹ phẩm, F&B, FMCG",
+    "status": "active",
+    "created_at": 1787788781
+  },
+  {
+    "id": "kol_df588bbbeb699fb81e6cfe43",
+    "name": "Bảo Thy",
+    "field": "Ca sĩ",
+    "fanbase": "6,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/baothyfanpage?locale=vi_VN",
+        "followers": "6,2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737752/kol-gov/registration-avatars/ca-si-022-bao-thy.jpg",
+    "bio": "Mỹ phẩm, thời trang,",
+    "status": "active",
+    "created_at": 1787788780
+  },
+  {
+    "id": "kol_99fb3d522abe6e7ca5cdf228",
+    "name": "Thiều Bảo Trâm",
+    "field": "Ca sĩ",
+    "fanbase": "1,8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/Thieubaotram?locale=vi_VN",
+        "followers": "1,8M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737752/kol-gov/registration-avatars/ca-si-023-thieu-bao-tram.jpg",
+    "bio": "Mỹ phẩm, thời trang, skincare",
+    "status": "active",
+    "created_at": 1787788779
+  },
+  {
+    "id": "kol_c6b3781b2caaaf7b54ccac3f",
+    "name": "Phương Ly",
+    "field": "Ca sĩ",
+    "fanbase": "1,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phuongly.official?locale=vi_VN",
+        "followers": "1,3M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737753/kol-gov/registration-avatars/ca-si-024-phuong-ly.jpg",
+    "bio": "Beauty, thời trang, nước uống",
+    "status": "active",
+    "created_at": 1787788778
+  },
+  {
+    "id": "kol_1b4c9133da73a71132240431",
+    "name": "Orange",
+    "field": "Ca sĩ",
+    "fanbase": "505K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/orangeofficial97/?locale=vi_VN",
+        "followers": "505K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737754/kol-gov/registration-avatars/ca-si-025-orange.jpg",
+    "bio": "Beauty, thời trang, nước uống",
+    "status": "active",
+    "created_at": 1787788777
+  },
+  {
+    "id": "kol_af41ca59355086743d60f9ac",
+    "name": "Phương Mỹ Chi",
+    "field": "Ca sĩ",
+    "fanbase": "3,8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/PhuongMyChi?locale=vi_VN",
+        "followers": "3,8M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737754/kol-gov/registration-avatars/ca-si-026-phuong-my-chi.jpg",
+    "bio": "Giáo dục, thực phẩm, văn hóa",
+    "status": "active",
+    "created_at": 1787788776
+  },
+  {
+    "id": "kol_56f4ef028826dea99ec0bb24",
+    "name": "Wren Evans",
+    "field": "Ca sĩ",
+    "fanbase": "232K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/wren.evans11?locale=vi_VN",
+        "followers": "232K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737755/kol-gov/registration-avatars/ca-si-027-wren-evans.jpg",
+    "bio": "Thời trang, nước giải khát",
+    "status": "active",
+    "created_at": 1787788775
+  },
+  {
+    "id": "kol_c543373e9ebdee88d9afd941",
+    "name": "JSOL",
+    "field": "Ca sĩ",
+    "fanbase": "1,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/jsol.dreams?locale=vi_VN",
+        "followers": "1,2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737754/kol-gov/registration-avatars/ca-si-028-jsol.jpg",
+    "bio": "Mỹ phẩm nam, thời trang",
+    "status": "active",
+    "created_at": 1787788774
+  },
+  {
+    "id": "kol_07b7979b5a61ed601caba1c7",
+    "name": "Ali Hoàng Dương",
+    "field": "Ca sĩ",
+    "fanbase": "606K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/alihoangduongofficial?locale=vi_VN",
+        "followers": "606K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737754/kol-gov/registration-avatars/ca-si-029-ali-hoang-duong.jpg",
+    "bio": "Mỹ phẩm, thực phẩm",
+    "status": "active",
+    "created_at": 1787788773
+  },
+  {
+    "id": "kol_63d15c9d068009307131f970",
+    "name": "Trịnh Thăng Bình",
+    "field": "Ca sĩ",
+    "fanbase": "1,9M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/trinhthangbinh.fanpage?locale=vi_VN",
+        "followers": "1,9M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737755/kol-gov/registration-avatars/ca-si-030-trinh-thang-binh.jpg",
+    "bio": "Thời trang, mỹ phẩm",
+    "status": "active",
+    "created_at": 1787788772
+  },
+  {
+    "id": "kol_3a50e4e19a86ca8acddde22e",
+    "name": "Thanh Duy",
+    "field": "Ca sĩ",
+    "fanbase": "1,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/thanhduyartist?locale=vi_VN",
+        "followers": "1,2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737755/kol-gov/registration-avatars/ca-si-031-thanh-duy.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788771
+  },
+  {
+    "id": "kol_7dec084285873f908e9adb84",
+    "name": "Trúc Nhân",
+    "field": "Ca sĩ",
+    "fanbase": "737K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/truc.nhan.7?locale=vi_VN",
+        "followers": "737K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737756/kol-gov/registration-avatars/ca-si-032-truc-nhan.jpg",
+    "bio": "Đồ uống, FMCG",
+    "status": "active",
+    "created_at": 1787788770
+  },
+  {
+    "id": "kol_7b689e9835a44015f23d7d00",
+    "name": "Quân A.P",
+    "field": "Ca sĩ",
+    "fanbase": "2,7M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/QuanAP.Fanpage?locale=vi_VN",
+        "followers": "2,7M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737756/kol-gov/registration-avatars/ca-si-033-quan-a-p.jpg",
+    "bio": "Thời trang, điện thoại",
+    "status": "active",
+    "created_at": 1787788769
+  },
+  {
+    "id": "kol_5965b44ba70a11da6251bc92",
+    "name": "Trung Quân Idol",
+    "field": "Ca sĩ",
+    "fanbase": "811K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/TrungQuanOfficial/",
+        "followers": "811K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737756/kol-gov/registration-avatars/ca-si-034-trung-quan-idol.jpg",
+    "bio": "Mỹ phẩm, du lịch",
+    "status": "active",
+    "created_at": 1787788768
+  },
+  {
+    "id": "kol_b944fc0984e689314e11bef2",
+    "name": "Vũ.",
+    "field": "Ca sĩ",
+    "fanbase": "1,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoangthaivuofficial/?locale=vi_VN",
+        "followers": "1,2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737756/kol-gov/registration-avatars/ca-si-035-vu.jpg",
+    "bio": "Lifestyle, cà phê",
+    "status": "active",
+    "created_at": 1787788767
+  },
+  {
+    "id": "kol_9772c93bae08c5ff2fb9bb56",
+    "name": "Hà Anh Tuấn",
+    "field": "Ca sĩ",
+    "fanbase": "1,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/haanhtuanlhp?locale=vi_VN",
+        "followers": "1,2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737757/kol-gov/registration-avatars/ca-si-036-ha-anh-tuan.jpg",
+    "bio": "Ngân hàng, ô tô, du lịch",
+    "status": "active",
+    "created_at": 1787788766
+  },
+  {
+    "id": "kol_5f85ca93a13b2515ba709b9d",
+    "name": "Hoàng Dũng",
+    "field": "Ca sĩ",
+    "fanbase": "643K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoangdungmusique?locale=vi_VN",
+        "followers": "643K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737757/kol-gov/registration-avatars/ca-si-037-hoang-dung.jpg",
+    "bio": "Lifestyle, thời trang",
+    "status": "active",
+    "created_at": 1787788765
+  },
+  {
+    "id": "kol_827f4b5d9e061e7fac801060",
+    "name": "Đen Vâu",
+    "field": "Ca sĩ",
+    "fanbase": "5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/denvau?locale=vi_VN",
+        "followers": "5M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737758/kol-gov/registration-avatars/ca-si-038-den-vau.jpg",
+    "bio": "Đồ uống, thời trang, xe máy",
+    "status": "active",
+    "created_at": 1787788764
+  },
+  {
+    "id": "kol_ec9ee07c9d87e6e13a39e0ee",
+    "name": "Binz",
+    "field": "Ca sĩ",
+    "fanbase": "3,1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/officialbinz?locale=vi_VN",
+        "followers": "3,1M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737759/kol-gov/registration-avatars/ca-si-039-binz.jpg",
+    "bio": "Thời trang, nước hoa, ô tô",
+    "status": "active",
+    "created_at": 1787788763
+  },
+  {
+    "id": "kol_a2970f733cab5c46dd592e1d",
+    "name": "Karik",
+    "field": "Ca sĩ",
+    "fanbase": "3,5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/karik.phk?locale=vi_VN",
+        "followers": "3,5M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737758/kol-gov/registration-avatars/ca-si-040-karik.jpg",
+    "bio": "Công nghệ, gaming, đồ uống",
+    "status": "active",
+    "created_at": 1787788762
+  },
+  {
+    "id": "kol_5b089920525e5292c8d52f04",
+    "name": "Rhymastic",
+    "field": "Ca sĩ",
+    "fanbase": "1,8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/Rhymastic.SS?locale=vi_VN",
+        "followers": "1,8M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737758/kol-gov/registration-avatars/ca-si-041-rhymastic.jpg",
+    "bio": "Công nghệ, lifestyle",
+    "status": "active",
+    "created_at": 1787788761
+  },
+  {
+    "id": "kol_f0b139242b497c8a5ac33bf1",
+    "name": "BigDaddy",
+    "field": "Ca sĩ",
+    "fanbase": "1,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/BigDaddyProductionz.4seazons?locale=vi_VN",
+        "followers": "1,2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737759/kol-gov/registration-avatars/ca-si-042-bigdaddy.jpg",
+    "bio": "Đồ uống, thời trang",
+    "status": "active",
+    "created_at": 1787788760
+  },
+  {
+    "id": "kol_e8e9689deac5bac977b64e85",
+    "name": "Emily",
+    "field": "Ca sĩ",
+    "fanbase": "2,4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/fc.emilyvn.4seazons?locale=vi_VN",
+        "followers": "2,4M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737759/kol-gov/registration-avatars/ca-si-043-emily.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788759
+  },
+  {
+    "id": "kol_38d4729badc9ef9ff02a4d1d",
+    "name": "Kay Trần",
+    "field": "Ca sĩ",
+    "fanbase": "381K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/OfficialKayTran?locale=vi_VN",
+        "followers": "381K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737760/kol-gov/registration-avatars/ca-si-044-kay-tran.jpg",
+    "bio": "Thời trang, thể thao",
+    "status": "active",
+    "created_at": 1787788758
+  },
+  {
+    "id": "kol_b8d71924bab6e860a34799e3",
+    "name": "Vũ Cát Tường",
+    "field": "Ca sĩ",
+    "fanbase": "2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/theofficialVCT",
+        "followers": "2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737760/kol-gov/registration-avatars/ca-si-045-vu-cat-tuong.jpg",
+    "bio": "Thời trang, mỹ phẩm, công nghệ",
+    "status": "active",
+    "created_at": 1787788757
+  },
+  {
+    "id": "kol_1cf7d107b573c0e769f12ae4",
+    "name": "Ngô Kiến Huy",
+    "field": "Ca sĩ / Diễn viên",
+    "fanbase": "5,9M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/casingokienhuy",
+        "followers": "5,9M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/18pZuCTVQe/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737760/kol-gov/registration-avatars/ca-si-046-ngo-kien-huy.jpg",
+    "bio": "FMCG, đồ ăn, thời trang , mỹ phẩm · Diễn viên",
+    "status": "active",
+    "created_at": 1787788756
+  },
+  {
+    "id": "kol_14ce3d93c8fa00ccb9c08139",
+    "name": "Han Sara",
+    "field": "Ca sĩ",
+    "fanbase": "1,5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/cobexukimchi",
+        "followers": "1,5M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737761/kol-gov/registration-avatars/ca-si-047-han-sara.jpg",
+    "bio": "Mỹ phẩm, skincare",
+    "status": "active",
+    "created_at": 1787788755
+  },
+  {
+    "id": "kol_a0d8de7ec01dedf78c82133f",
+    "name": "Liz Kim Cương",
+    "field": "Ca sĩ",
+    "fanbase": "393K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/LizKimCuong/?locale=vi_VN",
+        "followers": "393K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737761/kol-gov/registration-avatars/ca-si-048-liz-kim-cuong.jpg",
+    "bio": "Beauty, thời trang",
+    "status": "active",
+    "created_at": 1787788754
+  },
+  {
+    "id": "kol_b173acc7641059d94cb91912",
+    "name": "Dương Hoàng Yến",
+    "field": "Ca sĩ",
+    "fanbase": "904K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoangyenpanda?locale=vi_VN",
+        "followers": "904K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737761/kol-gov/registration-avatars/ca-si-049-duong-hoang-yen.jpg",
+    "bio": "Giáo dục, mỹ phẩm",
+    "status": "active",
+    "created_at": 1787788753
+  },
+  {
+    "id": "kol_3549bf477449db0be4d42586",
+    "name": "Hương Tràm",
+    "field": "Ca sĩ",
+    "fanbase": "1,9M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/CharmyPham?locale=vi_VN",
+        "followers": "1,9M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737762/kol-gov/registration-avatars/ca-si-050-huong-tram.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788752
+  },
+  {
+    "id": "kol_3192bf83f9f4e2aeb0373879",
+    "name": "LyLy",
+    "field": "Ca sĩ",
+    "fanbase": "1.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lylyofficial?locale=vi_VN",
+        "followers": "1.3M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737762/kol-gov/registration-avatars/ca-si-051-lyly.jpg",
+    "bio": "Mỹ phẩm, lifestyle",
+    "status": "active",
+    "created_at": 1787788751
+  },
+  {
+    "id": "kol_ade7a510fbd99aba3411a73d",
+    "name": "Bùi Lan Hương",
+    "field": "Ca sĩ",
+    "fanbase": "97000",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lanhuong.singer?locale=vi_VN",
+        "followers": "97000"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737763/kol-gov/registration-avatars/ca-si-052-bui-lan-huong.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788750
+  },
+  {
+    "id": "kol_09f076a4860fb194c9b54b1f",
+    "name": "Phạm Quỳnh Anh",
+    "field": "Ca sĩ",
+    "fanbase": "1.4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phamquynhanhfanpage?locale=vi_VN",
+        "followers": "1.4M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737763/kol-gov/registration-avatars/ca-si-053-pham-quynh-anh.jpg",
+    "bio": "Mẹ & bé, mỹ phẩm",
+    "status": "active",
+    "created_at": 1787788749
+  },
+  {
+    "id": "kol_cbfab240ec7b19f1d320c8c6",
+    "name": "Minh Hằng",
+    "field": "Ca sĩ / Diễn viên",
+    "fanbase": "8.7M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/csdv.minhhang?locale=vi_VN",
+        "followers": "8.7M"
+      },
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/csdv.minhhang",
+        "followers": "8.7M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1Epu6jbxg6/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737763/kol-gov/registration-avatars/ca-si-054-minh-hang.jpg",
+    "bio": "Mỹ phẩm, thời trang, · Giải Trí - Diễn Viên - Ca Sĩ - Người Mẫu - Nhà Sản Xuất",
+    "status": "active",
+    "created_at": 1787788748
+  },
+  {
+    "id": "kol_3a87106ed751fe538d1c576c",
+    "name": "Lệ Quyên",
+    "field": "Ca sĩ",
+    "fanbase": "382000",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lequyensingervietnam/?locale=vi_VN",
+        "followers": "382000"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737763/kol-gov/registration-avatars/ca-si-055-le-quyen.jpg",
+    "bio": "Trang sức, mỹ phẩm cao cấp",
+    "status": "active",
+    "created_at": 1787788747
+  },
+  {
+    "id": "kol_77065fa9d6aa37ee9f51b445",
+    "name": "Hoàng Hải",
+    "field": "Ca sĩ",
+    "fanbase": "85000",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoanghaisinger?locale=vi_VN",
+        "followers": "85000"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737764/kol-gov/registration-avatars/ca-si-056-hoang-hai.jpg",
+    "bio": "Điện tử, âm thanh, ô tô",
+    "status": "active",
+    "created_at": 1787788746
+  },
+  {
+    "id": "kol_3488b881dea2afeb2b544d8d",
+    "name": "Đàm Vĩnh Hưng",
+    "field": "Ca sĩ",
+    "fanbase": "6.6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dvhfanpage?locale=vi_VN",
+        "followers": "6.6M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737764/kol-gov/registration-avatars/ca-si-057-dam-vinh-hung.jpg",
+    "bio": "Thời trang, trang sức",
+    "status": "active",
+    "created_at": 1787788745
+  },
+  {
+    "id": "kol_a38768dd74353f6f3f6c38ee",
+    "name": "Lam Trường",
+    "field": "Ca sĩ",
+    "fanbase": "1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/tieulamtruong?locale=vi_VN",
+        "followers": "1M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737765/kol-gov/registration-avatars/ca-si-058-lam-truong.jpg",
+    "bio": "Thực phẩm, ngân hàng",
+    "status": "active",
+    "created_at": 1787788744
+  },
+  {
+    "id": "kol_c64e1601e69aabcfda1183a6",
+    "name": "Ưng Hoàng Phúc",
+    "field": "Ca sĩ",
+    "fanbase": "2.9M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/UngHoangPhuc?locale=vi_VN",
+        "followers": "2.9M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737765/kol-gov/registration-avatars/ca-si-059-ung-hoang-phuc.jpg",
+    "bio": "Xe máy, thực phẩm",
+    "status": "active",
+    "created_at": 1787788743
+  },
+  {
+    "id": "kol_8bcd84b877e1095ba13ef98a",
+    "name": "Pháo Northside",
+    "field": "Ca sĩ",
+    "fanbase": "292K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/PhaoNorthside?locale=vi_VN",
+        "followers": "292K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737769/kol-gov/registration-avatars/ca-si-060-phao-northside.jpg",
+    "bio": "Mỹ phẩm, thời trang, đồ uống",
+    "status": "active",
+    "created_at": 1787788742
+  },
+  {
+    "id": "kol_6a21052fdbc750f6792e4434",
+    "name": "tlinh",
+    "field": "Ca sĩ",
+    "fanbase": "910K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/tlinhww?locale=vi_VN",
+        "followers": "910K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737765/kol-gov/registration-avatars/ca-si-061-tlinh.jpg",
+    "bio": "Mỹ phẩm, thời trang, lifestyle",
+    "status": "active",
+    "created_at": 1787788741
+  },
+  {
+    "id": "kol_a6efe2e673f8187330d20181",
+    "name": "MCK",
+    "field": "Ca sĩ",
+    "fanbase": "901K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoanglongmck?locale=vi_VN",
+        "followers": "901K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737766/kol-gov/registration-avatars/ca-si-062-mck.jpg",
+    "bio": "Thời trang, sneaker, đồ uống",
+    "status": "active",
+    "created_at": 1787788740
+  },
+  {
+    "id": "kol_d9452db3b58e0e6786400f16",
+    "name": "Ricky Star",
+    "field": "Ca sĩ",
+    "fanbase": "Chưa cập nhật",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/RickyOTD?locale=vi_VN"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737766/kol-gov/registration-avatars/ca-si-063-ricky-star.jpg",
+    "bio": "Đồ uống, xe máy, lifestyle",
+    "status": "active",
+    "created_at": 1787788739
+  },
+  {
+    "id": "kol_b1d90c06d24045585b156310",
+    "name": "Lou Hoàng",
+    "field": "Ca sĩ",
+    "fanbase": "889K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/LouHoang.Official?locale=vi_VN",
+        "followers": "889K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737767/kol-gov/registration-avatars/ca-si-064-lou-hoang.jpg",
+    "bio": "Điện thoại, thời trang, F&B",
+    "status": "active",
+    "created_at": 1787788738
+  },
+  {
+    "id": "kol_7f34d368cd7b2aa91d70e4ea",
+    "name": "Osad",
+    "field": "Ca sĩ",
+    "fanbase": "524K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/osadofficial310?locale=vi_VN",
+        "followers": "524K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737767/kol-gov/registration-avatars/ca-si-065-osad.jpg",
+    "bio": "Công nghệ, ứng dụng, đồ uống",
+    "status": "active",
+    "created_at": 1787788737
+  },
+  {
+    "id": "kol_0bb2958c86114991e519893a",
+    "name": "Mai Tiến Dũng",
+    "field": "Ca sĩ",
+    "fanbase": "172K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/MaiTienDung?locale=vi_VN",
+        "followers": "172K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737768/kol-gov/registration-avatars/ca-si-066-mai-tien-dung.jpg",
+    "bio": "Mỹ phẩm nam, thời trang, du lịch",
+    "status": "active",
+    "created_at": 1787788736
+  },
+  {
+    "id": "kol_670dd316165c5e69223da995",
+    "name": "Hà Nhi",
+    "field": "Ca sĩ",
+    "fanbase": "1.7M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/HaNhiOfficial?locale=vi_VN",
+        "followers": "1.7M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737767/kol-gov/registration-avatars/ca-si-067-ha-nhi.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788735
+  },
+  {
+    "id": "kol_496c6f1f44b2dd98bbc9f06c",
+    "name": "Juky San",
+    "field": "Ca sĩ",
+    "fanbase": "319K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/JukySan141?locale=vi_VN",
+        "followers": "319K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737769/kol-gov/registration-avatars/ca-si-068-juky-san.jpg",
+    "bio": "Mỹ phẩm, skincare",
+    "status": "active",
+    "created_at": 1787788734
+  },
+  {
+    "id": "kol_1bf7dd8f0f8e02a0366773ec",
+    "name": "Tăng Duy Tân",
+    "field": "Ca sĩ",
+    "fanbase": "940K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/therealtangduytan?locale=vi_VN",
+        "followers": "940K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737769/kol-gov/registration-avatars/ca-si-069-tang-duy-tan.jpg",
+    "bio": "Đồ uống, thời trang",
+    "status": "active",
+    "created_at": 1787788733
+  },
+  {
+    "id": "kol_2dfb2955627db8b947e4d17d",
+    "name": "Hoàng Tôn",
+    "field": "Ca sĩ",
+    "fanbase": "808K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/HoangTon.Official?locale=vi_VN",
+        "followers": "808K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737769/kol-gov/registration-avatars/ca-si-070-hoang-ton.jpg",
+    "bio": "Công nghệ, âm thanh",
+    "status": "active",
+    "created_at": 1787788732
+  },
+  {
+    "id": "kol_31fc3063a558c9967ce06b02",
+    "name": "Hoàng Yến Chibi",
+    "field": "Ca sĩ",
+    "fanbase": "2.5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoangyenfan?locale=vi_VN",
+        "followers": "2.5M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737769/kol-gov/registration-avatars/ca-si-071-hoang-yen-chibi.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788731
+  },
+  {
+    "id": "kol_1d0a14724c0bbd209e32eb1a",
+    "name": "Quốc Thiên",
+    "field": "Ca sĩ",
+    "fanbase": "482K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/quocthiensinger?locale=vi_VN",
+        "followers": "482K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737770/kol-gov/registration-avatars/ca-si-072-quoc-thien.jpg",
+    "bio": "Mỹ phẩm nam, thời trang",
+    "status": "active",
+    "created_at": 1787788730
+  },
+  {
+    "id": "kol_b3cac91a13d975e6b84a3e31",
+    "name": "Jun Phạm",
+    "field": "Ca sĩ / Diễn viên",
+    "fanbase": "2.4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/junpham247?locale=vi_VN",
+        "followers": "2.4M"
+      },
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/junpham247",
+        "followers": "2,4M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1HzGsvt8Bt/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737770/kol-gov/registration-avatars/ca-si-073-jun-pham.jpg",
+    "bio": "Thực phẩm, FMCG, ứng dụng, thời trang · Diễn viên",
+    "status": "active",
+    "created_at": 1787788729
+  },
+  {
+    "id": "kol_873068bc53eac9830a548175",
+    "name": "Bùi Anh Tuấn",
+    "field": "Ca sĩ",
+    "fanbase": "1.8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/casy.buianhtuan?locale=vi_VN",
+        "followers": "1.8M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737771/kol-gov/registration-avatars/ca-si-074-bui-anh-tuan.jpg",
+    "bio": "Thời trang, nước uống",
+    "status": "active",
+    "created_at": 1787788728
+  },
+  {
+    "id": "kol_4bee42d67501dc1b35c05e0e",
+    "name": "Bùi Công Nam",
+    "field": "Ca sĩ",
+    "fanbase": "466K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/buicongnamofficial?locale=vi_VN",
+        "followers": "466K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737771/kol-gov/registration-avatars/ca-si-075-bui-cong-nam.jpg",
+    "bio": "Ngân hàng số, đồ uống, ứng dụng",
+    "status": "active",
+    "created_at": 1787788727
+  },
+  {
+    "id": "kol_ec590ca1e67d3578c8c51728",
+    "name": "Phan Mạnh Quỳnh",
+    "field": "Ca sĩ",
+    "fanbase": "1.8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/PhanManhQuynhOfficial?locale=vi_VN",
+        "followers": "1.8M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737772/kol-gov/registration-avatars/ca-si-076-phan-manh-quynh.jpg",
+    "bio": "Đồ uống, du lịch",
+    "status": "active",
+    "created_at": 1787788726
+  },
+  {
+    "id": "kol_2be21e98348c0af1cd24e005",
+    "name": "Bảo Anh",
+    "field": "Ca sĩ",
+    "fanbase": "2.6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/NguyenHoaiBaoAnhFanPage?locale=vi_VN",
+        "followers": "2.6M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737771/kol-gov/registration-avatars/ca-si-077-bao-anh.jpg",
+    "bio": "Mỹ phẩm, thời trang, đồ uống",
+    "status": "active",
+    "created_at": 1787788725
+  },
+  {
+    "id": "kol_0f59a2d07290b254e2ffcb6f",
+    "name": "Trọng Hiếu (S) TRONG",
+    "field": "Ca sĩ",
+    "fanbase": "1.1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/TrongHieuFanpage?locale=vi_VN",
+        "followers": "1.1M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737772/kol-gov/registration-avatars/ca-si-078-trong-hieu-s-trong.jpg",
+    "bio": "Thời trang, thể thao, đồ uống",
+    "status": "active",
+    "created_at": 1787788724
+  },
+  {
+    "id": "kol_4cb7649feb9fa20ca5a58fb2",
+    "name": "Phạm Đình Thái Ngân",
+    "field": "Ca sĩ",
+    "fanbase": "754K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phamdinhthaingan/?locale=vi_VN",
+        "followers": "754K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737772/kol-gov/registration-avatars/ca-si-079-pham-dinh-thai-ngan.jpg",
+    "bio": "Lifestyle, thời trang",
+    "status": "active",
+    "created_at": 1787788723
+  },
+  {
+    "id": "kol_a7af38b247bf3bbc9e0debf8",
+    "name": "Nguyễn Trần Trung Quân",
+    "field": "Ca sĩ",
+    "fanbase": "1.6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/Nttquanofficial",
+        "followers": "1.6M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737773/kol-gov/registration-avatars/ca-si-080-nguyen-tran-trung-quan.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788722
+  },
+  {
+    "id": "kol_d299894004540e90be329628",
+    "name": "Hoàng Duyên",
+    "field": "Ca sĩ",
+    "fanbase": "161K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/yuihoangduyen.dreams?locale=vi_VN",
+        "followers": "161K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737773/kol-gov/registration-avatars/ca-si-081-hoang-duyen.jpg",
+    "bio": "Mỹ phẩm, skincare",
+    "status": "active",
+    "created_at": 1787788721
+  },
+  {
+    "id": "kol_3f259c0457693e6096996d0c",
+    "name": "RHYDER (Quang Anh)",
+    "field": "Ca sĩ",
+    "fanbase": "414K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/quanganhrhyder?locale=vi_VN",
+        "followers": "414K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737774/kol-gov/registration-avatars/ca-si-082-rhyder-quang-anh.jpg",
+    "bio": "Mỹ phẩm, đồ uống",
+    "status": "active",
+    "created_at": 1787788720
+  },
+  {
+    "id": "kol_6e970457880941535a4c166b",
+    "name": "Dương Domic",
+    "field": "Ca sĩ",
+    "fanbase": "862K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/duongdomicofficial?locale=vi_VN",
+        "followers": "862K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737774/kol-gov/registration-avatars/ca-si-083-duong-domic.jpg",
+    "bio": "Thời trang, đồ uống, lifestyle",
+    "status": "active",
+    "created_at": 1787788719
+  },
+  {
+    "id": "kol_14c0eee0d064880c93b9a07a",
+    "name": "Bùi Trường Linh",
+    "field": "Ca sĩ",
+    "fanbase": "138K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/buitruonglinhhh?locale=vi_VN",
+        "followers": "138K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737774/kol-gov/registration-avatars/ca-si-084-bui-truong-linh.jpg",
+    "bio": "Lifestyle, cà phê, thời trang",
+    "status": "active",
+    "created_at": 1787788718
+  },
+  {
+    "id": "kol_37e312b9cddf83d0d622a4c5",
+    "name": "NEGAV",
+    "field": "Ca sĩ",
+    "fanbase": "732K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/negav.official?locale=vi_VN",
+        "followers": "732K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737774/kol-gov/registration-avatars/ca-si-085-negav.jpg",
+    "bio": "Thời trang, đồ uống, công nghệ",
+    "status": "active",
+    "created_at": 1787788717
+  },
+  {
+    "id": "kol_5f81294c64c31f76ad3b5cde",
+    "name": "Nguyên Hà",
+    "field": "Ca sĩ",
+    "fanbase": "164K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/casinguyenha?locale=vi_VN",
+        "followers": "164K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737775/kol-gov/registration-avatars/ca-si-086-nguyen-ha.jpg",
+    "bio": "Du lịch, lifestyle",
+    "status": "active",
+    "created_at": 1787788716
+  },
+  {
+    "id": "kol_f4f4df4551461e5f39a94988",
+    "name": "Hà Lê",
+    "field": "Ca sĩ",
+    "fanbase": "114K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/halesinger?locale=vi_VN",
+        "followers": "114K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737776/kol-gov/registration-avatars/ca-si-087-ha-le.jpg",
+    "bio": "Thời trang, lifestyle",
+    "status": "active",
+    "created_at": 1787788715
+  },
+  {
+    "id": "kol_9ab00fe0995e5033f43d8e66",
+    "name": "Anh Tú (Voi Bản Đôn)",
+    "field": "Ca sĩ",
+    "fanbase": "2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/anhtusinger?locale=vi_VN",
+        "followers": "2M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737775/kol-gov/registration-avatars/ca-si-088-anh-tu-voi-ban-don.jpg",
+    "bio": "Mỹ phẩm nam, thời trang, FMCG",
+    "status": "active",
+    "created_at": 1787788714
+  },
+  {
+    "id": "kol_779f2a3803b179c5b4fba095",
+    "name": "Kyo York",
+    "field": "Ca sĩ",
+    "fanbase": "2.1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/kyoyorkvn?locale=vi_VN",
+        "followers": "2.1M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737776/kol-gov/registration-avatars/ca-si-089-kyo-york.jpg",
+    "bio": "Du lịch, văn hóa, ẩm thực",
+    "status": "active",
+    "created_at": 1787788713
+  },
+  {
+    "id": "kol_1011a5e365986cf600be885b",
+    "name": "Anh Tú Atus",
+    "field": "Ca sĩ / Diễn viên",
+    "fanbase": "2.2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/buianhtu.atus?locale=vi_VN",
+        "followers": "2.2M"
+      },
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/buianhtu.atus",
+        "followers": "2.2M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BQLSoQvCv/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737777/kol-gov/registration-avatars/ca-si-090-anh-tu-atus.jpg",
+    "bio": "Thực phẩm, đồ uống, sức khỏe · Diễn Viên - Ca Sĩ",
+    "status": "active",
+    "created_at": 1787788712
+  },
+  {
+    "id": "kol_8e0191ff6dedc139c5af6a0d",
+    "name": "Vũ Thảo My",
+    "field": "Ca sĩ",
+    "fanbase": "246K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/vuthaomysinger?locale=vi_VN",
+        "followers": "246K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737776/kol-gov/registration-avatars/ca-si-091-vu-thao-my.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788711
+  },
+  {
+    "id": "kol_84d553d9704efbd26de2178a",
+    "name": "MARZUZ",
+    "field": "Ca sĩ",
+    "fanbase": "130K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/marzuzisntreal?locale=vi_VN",
+        "followers": "130K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737777/kol-gov/registration-avatars/ca-si-092-marzuz.jpg",
+    "bio": "Thời trang, lifestyle",
+    "status": "active",
+    "created_at": 1787788710
+  },
+  {
+    "id": "kol_6ec4dfe10ce9f9f9584f49e0",
+    "name": "52Hz",
+    "field": "Ca sĩ",
+    "fanbase": "263K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/52hzofficial?locale=vi_VN",
+        "followers": "263K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737778/kol-gov/registration-avatars/ca-si-093-52hz.jpg",
+    "bio": "Đồ uống, âm nhạc, lifestyle",
+    "status": "active",
+    "created_at": 1787788709
+  },
+  {
+    "id": "kol_bf6a2d3b9980ff01066da3bd",
+    "name": "Mỹ Mỹ (MyMy)",
+    "field": "Ca sĩ",
+    "fanbase": "174K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mymyismeh?locale=vi_VN",
+        "followers": "174K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737777/kol-gov/registration-avatars/ca-si-094-my-my-mymy.jpg",
+    "bio": "Mỹ phẩm, skincare",
+    "status": "active",
+    "created_at": 1787788708
+  },
+  {
+    "id": "kol_c4558b7505620a68a9efd854",
+    "name": "HURRYKNG",
+    "field": "Ca sĩ",
+    "fanbase": "466K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/HURRYKNG?locale=vi_VN",
+        "followers": "466K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737778/kol-gov/registration-avatars/ca-si-095-hurrykng.jpg",
+    "bio": "Thời trang, đồ uống",
+    "status": "active",
+    "created_at": 1787788707
+  },
+  {
+    "id": "kol_8b282211b52aca5cde249016",
+    "name": "Captain Boy",
+    "field": "Ca sĩ",
+    "fanbase": "1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/CaptainH2D?locale=vi_VN",
+        "followers": "1M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737778/kol-gov/registration-avatars/ca-si-096-captain-boy.jpg",
+    "bio": "Streetwear, công nghệ",
+    "status": "active",
+    "created_at": 1787788706
+  },
+  {
+    "id": "kol_7a50e9cea9f858cb96cccc06",
+    "name": "CoolKid",
+    "field": "Ca sĩ",
+    "fanbase": "108K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/minhsu.coolkid?locale=vi_VN",
+        "followers": "108K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737779/kol-gov/registration-avatars/ca-si-097-coolkid.jpg",
+    "bio": "Thời trang, đồ uống",
+    "status": "active",
+    "created_at": 1787788705
+  },
+  {
+    "id": "kol_59366c4a93bc93731f510241",
+    "name": "WEAN LE",
+    "field": "Ca sĩ",
+    "fanbase": "644K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/weanle.official?locale=vi_VN",
+        "followers": "644K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737779/kol-gov/registration-avatars/ca-si-098-wean-le.jpg",
+    "bio": "Thời trang, sneaker, lifestyle",
+    "status": "active",
+    "created_at": 1787788704
+  },
+  {
+    "id": "kol_db3cb3abd59658b29d6850b4",
+    "name": "Hùng Huỳnh( Gemini)",
+    "field": "Ca sĩ",
+    "fanbase": "243K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/karis.huynh.779857/?locale=vi_VN",
+        "followers": "243K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737779/kol-gov/registration-avatars/ca-si-099-hung-huynh-gemini.jpg",
+    "bio": "Mỹ phẩm, thời trang",
+    "status": "active",
+    "created_at": 1787788703
+  },
+  {
+    "id": "kol_6f9427a83e1c9ce4145a36c5",
+    "name": "Hà An Huy",
+    "field": "Ca sĩ",
+    "fanbase": "174K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/haanhuy.official?locale=vi_VN",
+        "followers": "174K"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737779/kol-gov/registration-avatars/ca-si-100-ha-an-huy.jpg",
+    "bio": "Đồ uống, lifestyle, giáo dục",
+    "status": "active",
+    "created_at": 1787788702
+  },
+  {
+    "id": "kol_d59ef2368ff57b14024bcf84",
+    "name": "Jack 97",
+    "field": "Ca sĩ",
+    "fanbase": "2.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/jack.phuongtuan1204",
+        "followers": "2.3M"
+      }
+    ],
+    "media_kit": null,
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737780/kol-gov/registration-avatars/ca-si-101-jack-97.jpg",
+    "bio": "Thời trang nam, Thể thao, đồ uống",
+    "status": "active",
+    "created_at": 1787788701
+  },
+  {
+    "id": "kol_a2de17ce13212a54e57cda20",
+    "name": "Nguyễn Tú Duyên",
+    "field": "MC",
+    "fanbase": "3,6K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mctuduyen",
+        "followers": "3,6K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1HdSDGd9fJ/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737812/kol-gov/registration-avatars/mc-001-nguyen-tu-duyen.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788700
+  },
+  {
+    "id": "kol_e2a692c013f8a8abc0a769dc",
+    "name": "Pham Anh",
+    "field": "MC",
+    "fanbase": "2,8K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/quanganh.pham.56/?locale=vi_VN",
+        "followers": "2,8K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/drive/folders/1XJQatVG5l79WJcv96Nt7djBU2G73zStx",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737812/kol-gov/registration-avatars/mc-002-pham-anh.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788699
+  },
+  {
+    "id": "kol_f15a97fa01719efe0fca8007",
+    "name": "Phương Huyền",
+    "field": "MC",
+    "fanbase": "Chưa cập nhật",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phuong.huyen.716901/"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1TgdiWYhb3/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737812/kol-gov/registration-avatars/mc-003-pham-huyen-thien-an.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788698
+  },
+  {
+    "id": "kol_9639f2ed8028301e7b2e4d1c",
+    "name": "Thái Sĩ Tường Như",
+    "field": "MC",
+    "fanbase": "5,5K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/tstgnhu/?locale=vi_VN",
+        "followers": "5,5K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/drive/folders/1yFbJ6sBHSYPUdyx5WqmVl_i2UVuT8wvK",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737813/kol-gov/registration-avatars/mc-004-thai-si-tuong-nhu.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788697
+  },
+  {
+    "id": "kol_67adc305e59861b25cd291d5",
+    "name": "Thiên Kim",
+    "field": "MC",
+    "fanbase": "9,6K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mcthienkim/?locale=vi_VN",
+        "followers": "9,6K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/file/d/1KUmvxsud-Nfbcqw_9-kwcua8QVSqXVcp/view",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737814/kol-gov/registration-avatars/mc-005-thien-kim.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788696
+  },
+  {
+    "id": "kol_093bf6e0b049dcda294a0d19",
+    "name": "Thùy Dương",
+    "field": "MC",
+    "fanbase": "3,1K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mc.thuy.duong.2024/",
+        "followers": "3,1K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/file/d/1RlwhEJIBr25DuMTcmjVCfrKzBTPpUrcV/view",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737814/kol-gov/registration-avatars/mc-006-van-thi-thuy-duong.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788695
+  },
+  {
+    "id": "kol_2b4aa1488076a7830c6c4860",
+    "name": "Tiến Phước",
+    "field": "MC",
+    "fanbase": "5,4K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/tienphuoc.nguyen.946/?locale=vi_VN",
+        "followers": "5,4K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/drive/folders/1GT2q2Hj9SwbVyGKeCzwC52r8I_HdGzy5",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737814/kol-gov/registration-avatars/mc-007-nguyen-tien-phuoc.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788694
+  },
+  {
+    "id": "kol_0c9b2c8e366233ccd3d93eac",
+    "name": "Tuấn Huy",
+    "field": "MC",
+    "fanbase": "6K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/tuan.huy.286/?locale=vi_VN",
+        "followers": "6K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/file/d/14510LSkVz1Q8degu67RDP5jQa9rLnQYN/view",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737814/kol-gov/registration-avatars/mc-008-quach-tuan-huy.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788693
+  },
+  {
+    "id": "kol_5267fce0e434ba44d90527d5",
+    "name": "Tuấn Trường",
+    "field": "MC",
+    "fanbase": "6,1K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phi.truong.9237/?locale=vi_VN",
+        "followers": "6,1K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/file/d/1uRZN_o_ZOEDSNp2Q0L2JF6H2M1jO7XJV/view",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737815/kol-gov/registration-avatars/mc-009-tuan-truong.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788692
+  },
+  {
+    "id": "kol_df6250d7365ae35e1e288e8f",
+    "name": "Võ Minh Trọng",
+    "field": "MC",
+    "fanbase": "8,6K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/MinhJack/",
+        "followers": "8,6K"
+      }
+    ],
+    "media_kit": "https://drive.google.com/drive/folders/1wx60AR5FFICd4l_AoIuGjohwVuWvoOAN",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737815/kol-gov/registration-avatars/mc-010-vo-minh-trong.jpg",
+    "bio": "MC / Người dẫn chương trình",
+    "status": "active",
+    "created_at": 1787788691
+  },
+  {
+    "id": "kol_f73d79bfefd05645e0f9f2fb",
+    "name": "Ninh Dương Lan Ngọc",
+    "field": "Diễn viên",
+    "fanbase": "6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/fromninhduonglanngoc",
+        "followers": "6M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/17okhr6y3g/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737780/kol-gov/registration-avatars/dien-vien-002-ninh-duong-lan-ngoc.jpg",
+    "bio": "Giải Trí - Diễn Viên",
+    "status": "active",
+    "created_at": 1787788690
+  },
+  {
+    "id": "kol_0a1b5a254632ce24e9b2bc46",
+    "name": "Phương Anh Đào",
+    "field": "Diễn viên",
+    "fanbase": "818K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/official.phuonganhdao",
+        "followers": "818K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1Cbo3BeDub/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737781/kol-gov/registration-avatars/dien-vien-003-dao-phuong-anh-dao.jpg",
+    "bio": "Giải Trí - Diễn Viên",
+    "status": "active",
+    "created_at": 1787788689
+  },
+  {
+    "id": "kol_cb67fe48dff58b498d5b2b16",
+    "name": "Tiến Luật",
+    "field": "Diễn viên",
+    "fanbase": "3.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dienvienhaitienluat",
+        "followers": "3.3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/MeizanInternationalBrand/photos/anh-t%C3%A0i-ti%E1%BA%BFn-lu%E1%BA%ADt-kh%C3%B3-%C4%91%E1%BB%A1-t%E1%BB%AB-s%C3%A2n-kh%E1%BA%A5u-ra-%C4%91%E1%BA%BFn-si%C3%AAu-th%E1%BB%8Bti%E1%BA%BFn-lu%E1%BA%ADt-kh%C3%B4ng-n%C3%B3i-%C4%91%E1%BB%83-em-l%E1%BA%A5/808871054775349/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737781/kol-gov/registration-avatars/dien-vien-004-nguyen-tien-luat.jpg",
+    "bio": "Giải Trí - Diễn Viên - Nghệ Sĩ Hài - MC",
+    "status": "active",
+    "created_at": 1787788688
+  },
+  {
+    "id": "kol_288da126258582a611933919",
+    "name": "Trường Giang",
+    "field": "Diễn viên",
+    "fanbase": "5.8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/TruongGiangDanhHai",
+        "followers": "5.8M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1HRraitDnj/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737782/kol-gov/registration-avatars/dien-vien-005-vo-vu-truong-giang.jpg",
+    "bio": "Giải Trí - Nghệ Sĩ Hài - Diễn Viên- MC",
+    "status": "active",
+    "created_at": 1787788687
+  },
+  {
+    "id": "kol_1139f236b0d3882063d4a7c5",
+    "name": "Nhã Phương",
+    "field": "Diễn viên",
+    "fanbase": "7.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/nhaphuongnabi",
+        "followers": "7.3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1DDztyygyr/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737781/kol-gov/registration-avatars/dien-vien-006-tran-thi-nha-phuong.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788686
+  },
+  {
+    "id": "kol_276060b142d3a79b01c34658",
+    "name": "Diệu Nhi",
+    "field": "Diễn viên",
+    "fanbase": "2.4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/xdieunhix",
+        "followers": "2.4M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/reel/1270049081618178",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737783/kol-gov/registration-avatars/dien-vien-007-tran-thi-dieu-nhi.jpg",
+    "bio": "Giải Trí - Diễn Viên - Nghệ Sĩ Hài",
+    "status": "active",
+    "created_at": 1787788685
+  },
+  {
+    "id": "kol_fd3a0186af6b034c5a885d2b",
+    "name": "Lê Dương Bảo Lâm",
+    "field": "Diễn viên",
+    "fanbase": "7.6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/duonglamshowbiz",
+        "followers": "7.6M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/photo.php?fbid=1626438878827489&set=pb.100043841783754.-2207520000&type=3&locale=vi_VN",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737782/kol-gov/registration-avatars/dien-vien-009-le-duong-bao-lam.jpg",
+    "bio": "Giải Trí - Diễn Viên - Nghệ Sĩ Hài - MC",
+    "status": "active",
+    "created_at": 1787788684
+  },
+  {
+    "id": "kol_b63c4869b9848b9003a6f224",
+    "name": "Huỳnh Uyển Ân",
+    "field": "Diễn viên",
+    "fanbase": "195K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/annie.huynh.9210",
+        "followers": "195K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1FWpmPbTK3/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737783/kol-gov/registration-avatars/dien-vien-010-huynh-uyen-an.jpg",
+    "bio": "Giải Trí - Diễn Viên",
+    "status": "active",
+    "created_at": 1787788683
+  },
+  {
+    "id": "kol_6827763e6c287cdfee58efcc",
+    "name": "Khả Ngân",
+    "field": "Diễn viên",
+    "fanbase": "1.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/khangansushiofficial",
+        "followers": "1.3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BLRnRdZKv/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737784/kol-gov/registration-avatars/dien-vien-012-tran-thi-kim-ngan.jpg",
+    "bio": "Diễn Viên - Ca Sĩ - Người Mẫu",
+    "status": "active",
+    "created_at": 1787788682
+  },
+  {
+    "id": "kol_ad5c379e0d65a8b8208c3ab3",
+    "name": "Lan Phương",
+    "field": "Diễn viên",
+    "fanbase": "239K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dvlanphuong",
+        "followers": "239K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1DoK23q77X/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737785/kol-gov/registration-avatars/dien-vien-014-nguyen-lan-phuong.jpg",
+    "bio": "Diễn Viên - MC",
+    "status": "active",
+    "created_at": 1787788681
+  },
+  {
+    "id": "kol_cc476c83ec41d3f146acd6cc",
+    "name": "Quỳnh Kool",
+    "field": "Diễn viên",
+    "fanbase": "407K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dienvienquynhkool",
+        "followers": "407K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1bP9L5xUon/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737785/kol-gov/registration-avatars/dien-vien-015-nguyen-thi-quynh.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788680
+  },
+  {
+    "id": "kol_3207f7d6ff1c0069411f7ce0",
+    "name": "Kaity Nguyễn",
+    "field": "Diễn viên",
+    "fanbase": "616K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/kaity.nguyen.7",
+        "followers": "616K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1HvaWjo1zg/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737785/kol-gov/registration-avatars/dien-vien-016-nguyen-ngoc-binh-an.jpg",
+    "bio": "Giải Trí - Diễn Viên - Người Mẫu",
+    "status": "active",
+    "created_at": 1787788679
+  },
+  {
+    "id": "kol_c4d6d0fe4facec14541fbd7a",
+    "name": "Bảo Thanh",
+    "field": "Diễn viên",
+    "fanbase": "889K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/baothanh.bud",
+        "followers": "889K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19QsLfsuv9/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737785/kol-gov/registration-avatars/dien-vien-017-vu-thi-phuong-thanh.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788678
+  },
+  {
+    "id": "kol_15fd9aac0490d82bdec8244e",
+    "name": "Lê Huỳnh Thúy Ngân",
+    "field": "Diễn viên",
+    "fanbase": "4.1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/LeHuynhThuyNgan.Official",
+        "followers": "4.1M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EYgpWtgnH/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737786/kol-gov/registration-avatars/dien-vien-018-le-huynh-thuy-ngan.jpg",
+    "bio": "Giải Trí - Diễn Viên - Người Mẫu - MC",
+    "status": "active",
+    "created_at": 1787788677
+  },
+  {
+    "id": "kol_d1791a053d6195659abb7b2c",
+    "name": "Quỳnh Lương",
+    "field": "Diễn viên",
+    "fanbase": "592K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/profile.php?id=100051859351850",
+        "followers": "592K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19E5Y9JiCB/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737787/kol-gov/registration-avatars/dien-vien-019-luong-thi-mai-quynh.jpg",
+    "bio": "Diễn Viên - Người Mẫu - Nhà Sáng Tạo Nội Dung",
+    "status": "active",
+    "created_at": 1787788676
+  },
+  {
+    "id": "kol_f4045588cca099a686e2ac63",
+    "name": "Cao Thái Hà (Boorin)",
+    "field": "Diễn viên",
+    "fanbase": "369K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/thaiha.cao",
+        "followers": "369K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EVbSHKuMT/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737786/kol-gov/registration-avatars/dien-vien-020-cao-thai-ha.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788675
+  },
+  {
+    "id": "kol_f3b89f4cd2a5cf6f4ce07fa6",
+    "name": "Lâm Thanh Mỹ",
+    "field": "Diễn viên",
+    "fanbase": "16K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lam.thanhmy.1",
+        "followers": "16K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1LYomSp9uP/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737787/kol-gov/registration-avatars/dien-vien-021-lam-thanh-my.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788674
+  },
+  {
+    "id": "kol_9c0293d87447d3986920b266",
+    "name": "Jun Vũ",
+    "field": "Diễn viên",
+    "fanbase": "525K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/junvu",
+        "followers": "525K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EdKSNiAWo/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737787/kol-gov/registration-avatars/dien-vien-022-vu-phuong-anh.jpg",
+    "bio": "Giải Trí - Diễn Viên - Người Mẫu",
+    "status": "active",
+    "created_at": 1787788673
+  },
+  {
+    "id": "kol_09ec6e2d132b4b98168655ac",
+    "name": "Mi Du",
+    "field": "Diễn viên",
+    "fanbase": "2.8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/fanpagemidu",
+        "followers": "2.8M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/18xQrXUD97/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737787/kol-gov/registration-avatars/dien-vien-023-dang-thi-my-dung.jpg",
+    "bio": "Diễn Viên - Người Mẫu - Doanh Nhân",
+    "status": "active",
+    "created_at": 1787788672
+  },
+  {
+    "id": "kol_87d8e69fc3000c532524cba7",
+    "name": "Ngân khánh",
+    "field": "Diễn viên",
+    "fanbase": "5.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/ngankhanhfanpage",
+        "followers": "5.3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/18hrpZCDPx/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737788/kol-gov/registration-avatars/dien-vien-024-le-ngan-khanh.jpg",
+    "bio": "Diễn Viên - Ca Sĩ - Người Mẫu",
+    "status": "active",
+    "created_at": 1787788671
+  },
+  {
+    "id": "kol_fdb72c811cd82838490dd39f",
+    "name": "Ngọc Thanh Tâm",
+    "field": "Diễn viên",
+    "fanbase": "1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/NgocThanhTamOfficial",
+        "followers": "1M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1GjphZHzWy/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737788/kol-gov/registration-avatars/dien-vien-025-nguyen-ngoc-thanh-tam.jpg",
+    "bio": "Giải Trí - Diễn Viên - Nhà Sáng Tạo Nội Dung",
+    "status": "active",
+    "created_at": 1787788670
+  },
+  {
+    "id": "kol_8c32375da42549c50b48f65f",
+    "name": "Ngô Thanh Vân",
+    "field": "Diễn viên",
+    "fanbase": "3.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/veronicangothanhvan",
+        "followers": "3.3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BYoqBEXpu/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737788/kol-gov/registration-avatars/dien-vien-026-ngo-thanh-van.jpg",
+    "bio": "Diễn Viên - Đạo Diễn",
+    "status": "active",
+    "created_at": 1787788669
+  },
+  {
+    "id": "kol_490e147b1faa5079d05fba28",
+    "name": "Hồ Bích Trâm",
+    "field": "Diễn viên",
+    "fanbase": "424K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/HoBichTram.Info",
+        "followers": "424K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19J4QNT8Zn/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737789/kol-gov/registration-avatars/dien-vien-027-ho-thi-bich-tram.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788668
+  },
+  {
+    "id": "kol_b5596f4532b082911cf0009c",
+    "name": "Kim Tuyến",
+    "field": "Diễn viên",
+    "fanbase": "349K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/kim.tuyen1",
+        "followers": "349K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1PPka3QVrc/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737789/kol-gov/registration-avatars/dien-vien-028-tran-thi-kim-tuyen.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788667
+  },
+  {
+    "id": "kol_9f18524e5f629fbe07e72ca8",
+    "name": "Vân Trang",
+    "field": "Diễn viên",
+    "fanbase": "2.3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/vantrang0103",
+        "followers": "2.3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1DSACLjMLf/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737789/kol-gov/registration-avatars/dien-vien-029-nguyen-ngoc-thuy-trang.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788666
+  },
+  {
+    "id": "kol_98f9c6789cd95783b392a977",
+    "name": "Vũ Phạm Diễm My",
+    "field": "Diễn viên",
+    "fanbase": "4.2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/Diemmy9x",
+        "followers": "4.2M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/17x41DFEwb/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737790/kol-gov/registration-avatars/dien-vien-030-vu-pham-diem-my.jpg",
+    "bio": "Giải Trí - Diễn Viên",
+    "status": "active",
+    "created_at": 1787788665
+  },
+  {
+    "id": "kol_5332d3bb94b81693a93f5e95",
+    "name": "Hồng Diễm",
+    "field": "Diễn viên",
+    "fanbase": "225K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/ActressHongDiem",
+        "followers": "225K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/18WeMtRN1p/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737790/kol-gov/registration-avatars/dien-vien-031-nguyen-hong-diem.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788664
+  },
+  {
+    "id": "kol_80bb5adaa10306fa4e7214bd",
+    "name": "Lương Thu Trang",
+    "field": "Diễn viên",
+    "fanbase": "379K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/trang.chip.9699",
+        "followers": "379K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1Btf7NJRvg/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737791/kol-gov/registration-avatars/dien-vien-032-luong-thi-thu-trang.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788663
+  },
+  {
+    "id": "kol_0abce227b597039426a5c834",
+    "name": "Nguyễn Thu Quỳnh",
+    "field": "Diễn viên",
+    "fanbase": "439K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/thu.quynh1",
+        "followers": "439K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/193fKgjU8Q/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737791/kol-gov/registration-avatars/dien-vien-033-nguyen-thu-quynh.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788662
+  },
+  {
+    "id": "kol_98d22b2202bd5bd41e80c1f9",
+    "name": "Vũ Việt Hoa",
+    "field": "Diễn viên",
+    "fanbase": "440K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hoacherry1996",
+        "followers": "440K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1bWjLJf4o2/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737791/kol-gov/registration-avatars/dien-vien-034-vu-viet-hoa.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788661
+  },
+  {
+    "id": "kol_c2135ca1a72e672ce139ad1c",
+    "name": "Salim",
+    "field": "Diễn viên",
+    "fanbase": "1.1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/salim21.official",
+        "followers": "1.1M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/v/1HL2jHS1dT/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737791/kol-gov/registration-avatars/dien-vien-035-hoang-kim-ngan.jpg",
+    "bio": "Diễn Viên - Người Mẫu - Nhà Sáng Tạo Nội Dung",
+    "status": "active",
+    "created_at": 1787788660
+  },
+  {
+    "id": "kol_e96e02d8e47f2a7c03be5117",
+    "name": "Sam",
+    "field": "Diễn viên",
+    "fanbase": "4.1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/samofficial.vn",
+        "followers": "4.1M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/v/1DqNp5tnHy/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737791/kol-gov/registration-avatars/dien-vien-036-nguyen-ha-my.jpg",
+    "bio": "Giải Trí - Diễn Viên - MC - Người Mẫu",
+    "status": "active",
+    "created_at": 1787788659
+  },
+  {
+    "id": "kol_1f675d95a6cf4bab263ddc6c",
+    "name": "Puka",
+    "field": "Diễn viên",
+    "fanbase": "1.4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/PukaOfficial",
+        "followers": "1.4M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EJVg6aEuX/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737792/kol-gov/registration-avatars/dien-vien-037-nguyen-kieu-cam-tho.jpg",
+    "bio": "Giải Trí - Diễn Viên - Nghệ Sĩ Hài - MC",
+    "status": "active",
+    "created_at": 1787788658
+  },
+  {
+    "id": "kol_d546c9fc2f12c29150845b78",
+    "name": "Ngọc Trinh",
+    "field": "Diễn viên",
+    "fanbase": "6.1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/page.ngoctrinh",
+        "followers": "6.1M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/v/18tSfPYrM5/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737793/kol-gov/registration-avatars/dien-vien-038-tran-thi-ngoc-trinh.jpg",
+    "bio": "Người Mẫu - Diễn Viên - Nhà Sáng Tạo Nội Dung",
+    "status": "active",
+    "created_at": 1787788657
+  },
+  {
+    "id": "kol_be4ec462ccd35b55743f0918",
+    "name": "Lê Lý Lan Hương",
+    "field": "Diễn viên",
+    "fanbase": "1.6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lelylanhuong",
+        "followers": "1.6M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/183MZmxJw5/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737792/kol-gov/registration-avatars/dien-vien-039-le-ly-lan-huong.jpg",
+    "bio": "Diễn Viên - Người Mẫu - Nhà Sáng Tạo Nội Dung",
+    "status": "active",
+    "created_at": 1787788656
+  },
+  {
+    "id": "kol_839c228954d7a0bb935e2ea8",
+    "name": "Ốc Thanh Vân",
+    "field": "Diễn viên",
+    "fanbase": "1.6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/octhanhvan.dvmc",
+        "followers": "1.6M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/v/1DPoJW7Bui/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737793/kol-gov/registration-avatars/dien-vien-040-pham-thi-thanh-van.jpg",
+    "bio": "Diễn Viên - MC - Diễn Viên Lồng Tiếng",
+    "status": "active",
+    "created_at": 1787788655
+  },
+  {
+    "id": "kol_e579d07d0a77bca1f20a4e6a",
+    "name": "Vũ Ngọc Hoàng Oanh",
+    "field": "Diễn viên",
+    "fanbase": "1.4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mchoangoanh",
+        "followers": "1.4M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1azZa5NhAP/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737793/kol-gov/registration-avatars/dien-vien-041-vu-ngoc-hoang-anh.jpg",
+    "bio": "Diễn Viên - MC - Người Mẫu",
+    "status": "active",
+    "created_at": 1787788654
+  },
+  {
+    "id": "kol_435f68e8388abf6fc483669a",
+    "name": "Nam Thư",
+    "field": "Diễn viên",
+    "fanbase": "1.7M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/NamThu.Official",
+        "followers": "1.7M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1J9fspBAaW/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737794/kol-gov/registration-avatars/dien-vien-042-tran-thi-nam-thu.jpg",
+    "bio": "Diễn Viên - Nghệ Sĩ Hài - Nhà Sản Xuất",
+    "status": "active",
+    "created_at": 1787788653
+  },
+  {
+    "id": "kol_ebf6fe0f4876e41481dfa5d5",
+    "name": "Huyền Lizzie",
+    "field": "Diễn viên",
+    "fanbase": "364K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phanminhhuyen.official",
+        "followers": "364K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1Bz7oWf5dA/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737794/kol-gov/registration-avatars/dien-vien-043-phan-minh-huyen.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788652
+  },
+  {
+    "id": "kol_7240de0fe1fc914e6ec0c43e",
+    "name": "Thùy Anh",
+    "field": "Diễn viên",
+    "fanbase": "210K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/thuyanhdienvien",
+        "followers": "210K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EsqjfmT3r/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737794/kol-gov/registration-avatars/dien-vien-044-nguyen-thuy-anh.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788651
+  },
+  {
+    "id": "kol_88a704e34802343ddd20e707",
+    "name": "Phương Oanh",
+    "field": "Diễn viên",
+    "fanbase": "1.1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dienvienphuongoanh",
+        "followers": "1.1M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/18NFXaJQLD/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737794/kol-gov/registration-avatars/dien-vien-045-do-phuong-oanh.jpg",
+    "bio": "Diễn Viên - Người Mẫu",
+    "status": "active",
+    "created_at": 1787788650
+  },
+  {
+    "id": "kol_eeb53415cf13711a1a717af8",
+    "name": "Khả Như",
+    "field": "Diễn viên",
+    "fanbase": "1.5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/KhaNhuMeo",
+        "followers": "1.5M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/v/1GZfbdSoEb/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737795/kol-gov/registration-avatars/dien-vien-046-tran-kha-nhu.jpg",
+    "bio": "Diễn Viên - MC - Biên Kịch - Nghệ Sĩ Hài",
+    "status": "active",
+    "created_at": 1787788649
+  },
+  {
+    "id": "kol_fba994522fdc284ef0ca9722",
+    "name": "Nguyễn Quốc Trường",
+    "field": "Diễn viên",
+    "fanbase": "691K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/NguyenQuocTruong1988",
+        "followers": "691K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1Bo2hXowrB/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737795/kol-gov/registration-avatars/dien-vien-047-nguyen-quoc-truong.jpg",
+    "bio": "Diễn Viên - Người Mẫu - Doanh Nhân",
+    "status": "active",
+    "created_at": 1787788648
+  },
+  {
+    "id": "kol_f3fadc18d05bd060bfcb39c5",
+    "name": "Liên Bỉnh Phát",
+    "field": "Diễn viên",
+    "fanbase": "709K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lienbinhphat",
+        "followers": "709K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1F2bUYjnj3/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737796/kol-gov/registration-avatars/dien-vien-048-le-cong-hanh.jpg",
+    "bio": "Giải Trí - Diễn Viên - MC",
+    "status": "active",
+    "created_at": 1787788647
+  },
+  {
+    "id": "kol_dc54dac82e8e870225aacf34",
+    "name": "Song Luân",
+    "field": "Diễn viên",
+    "fanbase": "1.5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/songluan.6se",
+        "followers": "1.5M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1DE1yivhZh/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737795/kol-gov/registration-avatars/dien-vien-049-nguyen-truong-sinh.jpg",
+    "bio": "Giải Trí - Diễn Viên - Ca Sĩ",
+    "status": "active",
+    "created_at": 1787788646
+  },
+  {
+    "id": "kol_97ddf773788ffc05a1b69487",
+    "name": "Hứa Vĩ Văn",
+    "field": "Diễn viên",
+    "fanbase": "994K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/huavivan",
+        "followers": "994K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EFFd7E6iV/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737797/kol-gov/registration-avatars/dien-vien-050-hua-vi-van.jpg",
+    "bio": "Diễn Viên",
+    "status": "active",
+    "created_at": 1787788645
+  },
+  {
+    "id": "kol_3917e4c5c832cb8a414b1acc",
+    "name": "Lê Xuân Tiền",
+    "field": "Diễn viên",
+    "fanbase": "159K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lexuantien.vn2010",
+        "followers": "159K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BTBULXyjz/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737796/kol-gov/registration-avatars/dien-vien-051-le-xuan-tien.jpg",
+    "bio": "Diễn Viên, Người mẫu",
+    "status": "active",
+    "created_at": 1787788644
+  },
+  {
+    "id": "kol_ca62fecdb191fb029a97b130",
+    "name": "Trúc Anh",
+    "field": "Diễn viên",
+    "fanbase": "780K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/trucanh.actress",
+        "followers": "780K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/196KQqVeDV/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737797/kol-gov/registration-avatars/dien-vien-052-nguyen-truc-anh.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788643
+  },
+  {
+    "id": "kol_3c885c447dea8a11a0e9fc64",
+    "name": "Tường Vi",
+    "field": "Diễn viên",
+    "fanbase": "1,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/tuongvipage",
+        "followers": "1,3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/v/1DAD3o25Au/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737797/kol-gov/registration-avatars/dien-vien-053-dinh-thuy-tuong-vi.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788642
+  },
+  {
+    "id": "kol_c16fd3d60fdfd026792f1c41",
+    "name": "Nguyễn Ngọc Thúy Diễm",
+    "field": "Diễn viên",
+    "fanbase": "1,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dv.thuydiem",
+        "followers": "1,3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1Anp252zM9/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737797/kol-gov/registration-avatars/dien-vien-054-nguyen-ngoc-thuy-diem.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788641
+  },
+  {
+    "id": "kol_8bcf0359358c380ad26cc723",
+    "name": "Nhật Hạ",
+    "field": "Diễn viên",
+    "fanbase": "335K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/share/p/1DvYDPLGTZ/",
+        "followers": "335K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1DvYDPLGTZ/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737797/kol-gov/registration-avatars/dien-vien-055-huyen-ton-nu-nhat-ha.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788640
+  },
+  {
+    "id": "kol_3f9fe12443801d7173d1b933",
+    "name": "Bùi Hữu Đằng",
+    "field": "Diễn viên",
+    "fanbase": "92K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/bui.huu.ang.449689",
+        "followers": "92K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/14k9Hor1CKB/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737798/kol-gov/registration-avatars/dien-vien-056-bui-huu-dang.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788639
+  },
+  {
+    "id": "kol_6b7105c33525132e13a5ceff",
+    "name": "Nguyễn Cao Kỳ Duyên",
+    "field": "Diễn viên",
+    "fanbase": "2,8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/mcnguyencaokyduyen",
+        "followers": "2,8M"
+      },
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/duynsiunhin",
+        "followers": "761K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19Bj21fVVo/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737798/kol-gov/registration-avatars/dien-vien-057-nguyen-cao-ky-duyen.jpg",
+    "bio": "Diễn viên, Người mẫu",
+    "status": "active",
+    "created_at": 1787788638
+  },
+  {
+    "id": "kol_64bfbc2169cc788a33e16c51",
+    "name": "Nhật Kim Anh",
+    "field": "Diễn viên",
+    "fanbase": "7,9M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/nhatkimanh85",
+        "followers": "7,9M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BGZM6nNqH/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737799/kol-gov/registration-avatars/dien-vien-058-do-thi-kim-hue.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788637
+  },
+  {
+    "id": "kol_bee904289a0412c316277838",
+    "name": "Tuấn Trần",
+    "field": "Diễn viên",
+    "fanbase": "2,5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/DvTuanTran",
+        "followers": "2,5M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1CVyCtUv5r/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737800/kol-gov/registration-avatars/dien-vien-060-tran-duy-tuan.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788636
+  },
+  {
+    "id": "kol_28a4620264170e0d3c741b0e",
+    "name": "Võ Cảnh",
+    "field": "Diễn viên",
+    "fanbase": "287K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/vo.canh",
+        "followers": "287K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/19CGLmmwmH/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737799/kol-gov/registration-avatars/dien-vien-061-vo-ngoc-canh.jpg",
+    "bio": "Diễn viên, Người mẫu",
+    "status": "active",
+    "created_at": 1787788635
+  },
+  {
+    "id": "kol_40e02f52bc3b770071c8d4e4",
+    "name": "Trần Quốc Anh",
+    "field": "Diễn viên",
+    "fanbase": "439K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/YoonTran.vn",
+        "followers": "439K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BVzVEYh32/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737799/kol-gov/registration-avatars/dien-vien-062-tran-quoc-anh.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788634
+  },
+  {
+    "id": "kol_0994b82c8a78349761d4102c",
+    "name": "Lãnh Thanh",
+    "field": "Diễn viên",
+    "fanbase": "68K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lanhthanh.official",
+        "followers": "68K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19KomFoh8U/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737800/kol-gov/registration-avatars/dien-vien-063-hoang-van-thanh.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788633
+  },
+  {
+    "id": "kol_816cd01508b5a4076eb3ee02",
+    "name": "Công Dương",
+    "field": "Diễn viên",
+    "fanbase": "152K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/congduongofficial",
+        "followers": "152K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1LPutig27S/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737800/kol-gov/registration-avatars/dien-vien-064-cong-van-duong.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788632
+  },
+  {
+    "id": "kol_09a7b28f4e3ead2f33e4bcf5",
+    "name": "Bình An",
+    "field": "Diễn viên",
+    "fanbase": "159K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/DVBinhAn",
+        "followers": "159K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BZPRu5bMq/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737802/kol-gov/registration-avatars/dien-vien-065-nguyen-binh-an.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788631
+  },
+  {
+    "id": "kol_b1bc8c7d5445fb66e877922a",
+    "name": "B Trần",
+    "field": "Diễn viên",
+    "fanbase": "980K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/fanpagebtran",
+        "followers": "980K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19HNonTDV4/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737801/kol-gov/registration-avatars/dien-vien-066-tran-quoc-anh.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788630
+  },
+  {
+    "id": "kol_67055f0b45b26f482b231019",
+    "name": "Trần Nghĩa",
+    "field": "Diễn viên",
+    "fanbase": "170K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/tuannghia1301",
+        "followers": "170K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1JaUR22pq9/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737801/kol-gov/registration-avatars/dien-vien-067-tran-tuan-nghia.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788629
+  },
+  {
+    "id": "kol_e2d0403a97bc72fd406c8a4b",
+    "name": "Thanh Sơn",
+    "field": "Diễn viên",
+    "fanbase": "286K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/thanhson.bao",
+        "followers": "286K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/18v7oKcUAi/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737802/kol-gov/registration-avatars/dien-vien-068-nguyen-thanh-son.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788628
+  },
+  {
+    "id": "kol_87112d0e1cdecbcffc231e04",
+    "name": "Lê Tam Triều Dâng",
+    "field": "Diễn viên",
+    "fanbase": "240K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/share/p/1EWGUGaBJw/",
+        "followers": "240K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EWGUGaBJw/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737802/kol-gov/registration-avatars/dien-vien-069-le-tam-trieu-dang.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788627
+  },
+  {
+    "id": "kol_4de53f0fb66a8d403d94e9e3",
+    "name": "Rima Thanh Vy",
+    "field": "Diễn viên",
+    "fanbase": "75K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/rima.nguyen",
+        "followers": "75K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1CcRDQHuaY/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737802/kol-gov/registration-avatars/dien-vien-070-nguyen-phuong-thanh-vy.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788626
+  },
+  {
+    "id": "kol_9205788c878ed08156a90025",
+    "name": "Phát La",
+    "field": "Diễn viên",
+    "fanbase": "1,1M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phatladayne",
+        "followers": "1,1M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EF5qqyb1L/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737803/kol-gov/registration-avatars/dien-vien-071-la-vinh-phat.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788625
+  },
+  {
+    "id": "kol_4bd27dfb37eef73a2f72cfe2",
+    "name": "Đồng Ánh Quỳnh",
+    "field": "Diễn viên",
+    "fanbase": "60K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/donganhquynhofficial",
+        "followers": "60K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1BZFagdZvu/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737803/kol-gov/registration-avatars/dien-vien-073-dong-anh-quynh.jpg",
+    "bio": "Người mẫu, Diễn viên",
+    "status": "active",
+    "created_at": 1787788624
+  },
+  {
+    "id": "kol_39bcd73c446d9fac8c0082f9",
+    "name": "Quỳnh Châu",
+    "field": "Diễn viên",
+    "fanbase": "237K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dvquynhchau",
+        "followers": "237K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1JHGQ2oGd6/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737803/kol-gov/registration-avatars/dien-vien-074-nguyen-quynh-chau.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788623
+  },
+  {
+    "id": "kol_77372a5a2ad36d40db9c70cc",
+    "name": "Lê Bê La",
+    "field": "Diễn viên",
+    "fanbase": "666K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dienvienlebela",
+        "followers": "666K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EfNHtwemz/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737804/kol-gov/registration-avatars/dien-vien-075-le-thi-be-la.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788622
+  },
+  {
+    "id": "kol_933b7d229785d599aa49f539",
+    "name": "Lê Tú Vi",
+    "field": "Diễn viên",
+    "fanbase": "699K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/share/p/1UnW9ShPUn/",
+        "followers": "699K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1UnW9ShPUn/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737804/kol-gov/registration-avatars/dien-vien-076-le-tu-vi.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788621
+  },
+  {
+    "id": "kol_4d6ab67c27c5f2ce4c89ddf1",
+    "name": "Văn Phượng",
+    "field": "Diễn viên",
+    "fanbase": "327K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/vanphuong7588",
+        "followers": "327K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1CCLzkGeWn/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737805/kol-gov/registration-avatars/dien-vien-077-van-thi-phuong.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788620
+  },
+  {
+    "id": "kol_35ecbc2030d4b1415e2d37fc",
+    "name": "Anh Phạm",
+    "field": "Diễn viên",
+    "fanbase": "182K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/phquyanh",
+        "followers": "182K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/1BmUe6eTcV/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737805/kol-gov/registration-avatars/dien-vien-078-pham-quynh-anh.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788619
+  },
+  {
+    "id": "kol_05553453d753249b55cf66de",
+    "name": "Samuel An Huỳnh",
+    "field": "Diễn viên",
+    "fanbase": "48K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/SamuelAnHuynh",
+        "followers": "48K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19HpRHLLdB/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737806/kol-gov/registration-avatars/dien-vien-079-huynh-samuel-an.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788618
+  },
+  {
+    "id": "kol_99b2ade386ee9b08dfb39ae9",
+    "name": "Hải Triều",
+    "field": "Diễn viên",
+    "fanbase": "1,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/haitieutrangtuoi",
+        "followers": "1,3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1C7C3T16KY/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737806/kol-gov/registration-avatars/dien-vien-080-dao-hai-trieu.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788617
+  },
+  {
+    "id": "kol_cfc21a0a5602fbe6a8706d49",
+    "name": "Tín Nguyễn",
+    "field": "Diễn viên",
+    "fanbase": "854K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/9.tinnguyen",
+        "followers": "854K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/lighton.kols/photos/ch%C3%BAc-m%E1%BB%ABng-t%C3%ADn-nguy%E1%BB%85n-%C4%91%C3%A3-vinh-d%E1%BB%B1-nh%E1%BA%ADn-k%E1%BB%B7-ni%E1%BB%87m-ch%C6%B0%C6%A1ng-t%E1%BA%A1o-fest-lan-to%E1%BA%A3-fan-favorit/1266682448790969/?_rdr",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737806/kol-gov/registration-avatars/dien-vien-081-nguyen-thi-dac-tin.jpg",
+    "bio": "Diễn viên, Dancer",
+    "status": "active",
+    "created_at": 1787788616
+  },
+  {
+    "id": "kol_ff542eaa080f4a7b895d8683",
+    "name": "Ngọc Phước",
+    "field": "Diễn viên",
+    "fanbase": "410K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/ngocphuoc.official",
+        "followers": "410K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/17vkrLGSaG/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737807/kol-gov/registration-avatars/dien-vien-082-nguyen-thi-ngoc-phuoc.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788615
+  },
+  {
+    "id": "kol_512517da30effaffad171986",
+    "name": "BB Trần",
+    "field": "Diễn viên",
+    "fanbase": "1,8M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/bbtran2121",
+        "followers": "1,8M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/14jQP5y6238/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737807/kol-gov/registration-avatars/dien-vien-083-tran-phan-quoc-bao.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788614
+  },
+  {
+    "id": "kol_016a216abfac426abb004b64",
+    "name": "Gin Tuấn Kiệt",
+    "field": "Diễn viên",
+    "fanbase": "2,6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/TuanKietOfficial",
+        "followers": "2,6M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1J2G49r4LW/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737808/kol-gov/registration-avatars/dien-vien-085-nguyen-tuan-kiet.jpg",
+    "bio": "Diễn viên, Ca sĩ",
+    "status": "active",
+    "created_at": 1787788613
+  },
+  {
+    "id": "kol_4b4580771075c1c538afc20d",
+    "name": "Huỳnh Lập",
+    "field": "Diễn viên",
+    "fanbase": "2,5M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dienvienhuynhlap",
+        "followers": "2,5M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19A4zWvD7J/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737808/kol-gov/registration-avatars/dien-vien-086-huynh-ngoc-lap.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788612
+  },
+  {
+    "id": "kol_47870fe1ca98edca76f05d47",
+    "name": "Lý Hải",
+    "field": "Diễn viên",
+    "fanbase": "7,2M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/lyhai.minhha",
+        "followers": "7,2M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EMBgswdNf/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737808/kol-gov/registration-avatars/dien-vien-087-nguyen-van-hai.jpg",
+    "bio": "Diễn viên, Đạo diễn",
+    "status": "active",
+    "created_at": 1787788611
+  },
+  {
+    "id": "kol_97d945649d0f411fccf700b5",
+    "name": "Duy Khánh ZhouZhou",
+    "field": "Diễn viên",
+    "fanbase": "2,4M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/DuyKhanhOfficial",
+        "followers": "2,4M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1GKj6dFD6K/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737808/kol-gov/registration-avatars/dien-vien-088-nguyen-huu-duy-khanh.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788610
+  },
+  {
+    "id": "kol_3729e430c2f59a9aee045624",
+    "name": "S.T Sơn Thạch",
+    "field": "Diễn viên",
+    "fanbase": "1,6M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/ST.365daband",
+        "followers": "1,6M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19CUzzDaTS/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737809/kol-gov/registration-avatars/dien-vien-089-nguyen-huu-son-thach.jpg",
+    "bio": "Ca sĩ, Diễn viên",
+    "status": "active",
+    "created_at": 1787788609
+  },
+  {
+    "id": "kol_bc16f5825a9dafc8c245dc7c",
+    "name": "Will",
+    "field": "Diễn viên",
+    "fanbase": "489K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/Will.365daband",
+        "followers": "489K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1DLWRcchUu/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737809/kol-gov/registration-avatars/dien-vien-091-nguyen-anh-tuan.jpg",
+    "bio": "Ca sĩ, Diễn viên",
+    "status": "active",
+    "created_at": 1787788608
+  },
+  {
+    "id": "kol_b645043906ef3943da2bdf9d",
+    "name": "Hữu Vi",
+    "field": "Diễn viên",
+    "fanbase": "29K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/pikavi05",
+        "followers": "29K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1DyLUq66nS/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737810/kol-gov/registration-avatars/dien-vien-092-nguyen-huu-vi.jpg",
+    "bio": "Diễn viên, Người mẫu",
+    "status": "active",
+    "created_at": 1787788607
+  },
+  {
+    "id": "kol_30575a0351aba4c2ae008181",
+    "name": "Kiều Minh Tuấn",
+    "field": "Diễn viên",
+    "fanbase": "799K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/kieuminhtuan",
+        "followers": "799K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19QDeFxyZD/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737810/kol-gov/registration-avatars/dien-vien-093-kieu-minh-tuan.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788606
+  },
+  {
+    "id": "kol_cb5324b37888e3d58db269a9",
+    "name": "Thanh Thúy",
+    "field": "Diễn viên",
+    "fanbase": "1,3M",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dienvienthanhthuy",
+        "followers": "1,3M"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1LSx4M6oDU/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737810/kol-gov/registration-avatars/dien-vien-094-le-thi-thanh-thuy.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788605
+  },
+  {
+    "id": "kol_b70246f1b1beb8f225b0f02a",
+    "name": "Karen Nguyễn",
+    "field": "Diễn viên",
+    "fanbase": "107K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/KarenNguyen.Official",
+        "followers": "107K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1EGnmeuPkC/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737810/kol-gov/registration-avatars/dien-vien-095-nguyen-kieu-diem.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788604
+  },
+  {
+    "id": "kol_1b72127e463e1242b2c0c529",
+    "name": "Thanh Hương",
+    "field": "Diễn viên",
+    "fanbase": "39K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/dienvienthanhhuongofficial",
+        "followers": "39K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/r/19RxRqJoRy/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737810/kol-gov/registration-avatars/dien-vien-096-nguyen-thanh-huong.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788603
+  },
+  {
+    "id": "kol_65d0f118e131c6a9ae368ec5",
+    "name": "Lương Mạnh Hải",
+    "field": "Diễn viên",
+    "fanbase": "424K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/luongmanhhaiofficially",
+        "followers": "424K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1QDWmvmAyC/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737811/kol-gov/registration-avatars/dien-vien-097-luong-manh-hai.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788602
+  },
+  {
+    "id": "kol_fd0359ef0d2a2e072be1c77a",
+    "name": "Võ Điền Gia Huy",
+    "field": "Diễn viên",
+    "fanbase": "298K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/vodiengiahuyfanpage",
+        "followers": "298K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/1ECouqKy6T/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737812/kol-gov/registration-avatars/dien-vien-098-vo-dien-gia-huy.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788601
+  },
+  {
+    "id": "kol_dd52256721e02c1a8a9e462b",
+    "name": "Quang Sự",
+    "field": "Diễn viên",
+    "fanbase": "117K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/quang.su.9",
+        "followers": "117K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/share/p/19995eet2U/",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737811/kol-gov/registration-avatars/dien-vien-099-nguyen-quang-su.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788600
+  },
+  {
+    "id": "kol_9885c7e20239ac7919c37cad",
+    "name": "Hồng Đào",
+    "field": "Diễn viên",
+    "fanbase": "612K",
+    "channels": [
+      {
+        "platform": "Facebook",
+        "handle": "https://www.facebook.com/hongdaoofficial",
+        "followers": "612K"
+      }
+    ],
+    "media_kit": "https://www.facebook.com/hongdaoofficial/posts/pfbid02hJ97PnyQR6d7cixFJWLkyS4sQzEoXW24wuLyocwHWZqN7e8hkeJuev9R1R5XuQ3Dl",
+    "ref_price": 0,
+    "price_hidden": 1,
+    "premium": 0,
+    "avatar": "https://res.cloudinary.com/drxum5uxt/image/upload/v1787737812/kol-gov/registration-avatars/dien-vien-100-nguyen-dinh-hong-dao.jpg",
+    "bio": "Diễn viên",
+    "status": "active",
+    "created_at": 1787788599
+  }
+]

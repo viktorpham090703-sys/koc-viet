@@ -9,3 +9,4 @@ __pycache__/
 *.pyc
 .freebuff/
 migration-backups/
+database/local-backups/

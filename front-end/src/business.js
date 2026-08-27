@@ -1544,18 +1544,33 @@ function btLabel(t, contentType) {
         t;
 }
 
-let businessKolPage = 1;
-async function kolPage(el, page = businessKolPage) {
-  businessKolPage = Math.max(1, Number(page) || 1);
-  const [{ kols }, reqs] = await Promise.all([
-    api("/api/kols"),
-    api(`/api/kol/requests?page=${businessKolPage}&per=10`),
+let businessKolCatalogPage = 1;
+let businessKolRequestPage = 1;
+function businessKolColumns() {
+  if (window.innerWidth >= 1200) return 4;
+  if (window.innerWidth >= 900) return 3;
+  if (window.innerWidth >= 600) return 2;
+  return 1;
+}
+async function kolPage(
+  el,
+  catalogPage = businessKolCatalogPage,
+  requestPage = businessKolRequestPage,
+) {
+  businessKolCatalogPage = Math.max(1, Number(catalogPage) || 1);
+  businessKolRequestPage = Math.max(1, Number(requestPage) || 1);
+  const catalogPer = businessKolColumns() * 2;
+  const [catalog, reqs] = await Promise.all([
+    api(`/api/kols?page=${businessKolCatalogPage}&per=${catalogPer}`),
+    api(`/api/kol/requests?page=${businessKolRequestPage}&per=10`),
   ]);
-  businessKolPage = reqs.page || 1;
+  const { kols } = catalog;
+  businessKolCatalogPage = catalog.page || 1;
+  businessKolRequestPage = reqs.page || 1;
   el.innerHTML = `<div class="between"><h1>KOL / Nghệ sĩ</h1>
     <button class="btn sm" id="k-quote" style="background:#B91C1C;color:#fff">${icon("quoteLead", "btn-icon")} Liên hệ nhận báo giá trực tiếp</button></div>
     <p class="muted" style="margin:8px 0 16px">Giá KOL thường thoả thuận — gửi yêu cầu báo giá, NetViet duyệt & phản hồi. Phân khúc cao cấp có duyệt riêng.</p>
-    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
+    <div class="business-kol-grid">
       ${kols
         .map(
           (k) => `<div class="card">
@@ -1567,6 +1582,7 @@ async function kolPage(el, page = businessKolPage) {
         )
         .join("")}
     </div>
+    <div class="pager business-kol-catalog-pager" id="business-kol-catalog-pager"></div>
     <div class="card" style="margin-top:20px"><h3>Yêu cầu KOL đã gửi</h3>
       <div class="table-wrap" style="margin-top:10px">${
         reqs.requests.length
@@ -1581,11 +1597,18 @@ async function kolPage(el, page = businessKolPage) {
   document
     .getElementById("k-quote")
     .addEventListener("click", () => quoteLeadModal("business-kol"));
-  if(reqs.pages>1){const pager=el.querySelector('#business-kol-pager');pager.innerHTML=`<button data-kol-page="${reqs.page-1}" ${reqs.page<=1?'disabled':''}>‹</button><span class="muted">${reqs.page} / ${reqs.pages}</span><button data-kol-page="${reqs.page+1}" ${reqs.page>=reqs.pages?'disabled':''}>›</button>`;pager.querySelectorAll('[data-kol-page]').forEach(b=>b.addEventListener('click',()=>kolPage(el,Number(b.dataset.kolPage))))}
-  el.querySelectorAll('[data-kol-fund]').forEach(b=>b.addEventListener('click',async()=>{const q=reqs.requests.find(x=>x.id===b.dataset.kolFund),amount=Number(q.total_amount||q.quote);if(!(await confirmDialog(`Xác nhận khóa ${money(amount)} vào Escrow cho yêu cầu KOL?`)))return;try{await post('/api/kol/action',{id:q.id,action:'fund'});toast('Đã ký quỹ yêu cầu KOL','ok');kolPage(el,businessKolPage)}catch(e){toast(e.message,'err')}}));
-  el.querySelectorAll('[data-kol-approve]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Xác nhận sản phẩm KOL đạt yêu cầu?')))return;try{await post('/api/kol/action',{id:b.dataset.kolApprove,action:'approve_delivery'});toast('Đã nghiệm thu sản phẩm KOL','ok');kolPage(el,businessKolPage)}catch(e){toast(e.message,'err')}}));
-  el.querySelectorAll('[data-kol-revision]').forEach(b=>b.addEventListener('click',async()=>{const note=await promptDialog('Nội dung cần KOL chỉnh sửa:');if(!note)return;try{await post('/api/kol/action',{id:b.dataset.kolRevision,action:'request_revision',note});toast('Đã gửi yêu cầu chỉnh sửa','ok');kolPage(el,businessKolPage)}catch(e){toast(e.message,'err')}}));
-  el.querySelectorAll('[data-kol-cancel]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Hủy yêu cầu KOL và hoàn toàn bộ khoản đang ký quỹ?',{tone:'danger'})))return;try{const x=await post('/api/kol/action',{id:b.dataset.kolCancel,action:'cancel'});toast(`Đã hủy${x.refund?` · hoàn ${money(x.refund)}`:''}`,'ok');kolPage(el,businessKolPage)}catch(e){toast(e.message,'err')}}));
+  const catalogPager = el.querySelector('#business-kol-catalog-pager');
+  if (catalog.pages > 1) {
+    catalogPager.innerHTML = `<button data-kol-catalog-page="${catalog.page - 1}" ${catalog.page <= 1 ? 'disabled' : ''} aria-label="Trang KOL trước">‹</button><span class="muted">Trang ${catalog.page} / ${catalog.pages} · ${num(catalog.total)} KOL</span><button data-kol-catalog-page="${catalog.page + 1}" ${catalog.page >= catalog.pages ? 'disabled' : ''} aria-label="Trang KOL sau">›</button>`;
+    catalogPager.querySelectorAll('[data-kol-catalog-page]').forEach((button) =>
+      button.addEventListener('click', () => kolPage(el, Number(button.dataset.kolCatalogPage), businessKolRequestPage)),
+    );
+  }
+  if(reqs.pages>1){const pager=el.querySelector('#business-kol-pager');pager.innerHTML=`<button data-kol-request-page="${reqs.page-1}" ${reqs.page<=1?'disabled':''}>‹</button><span class="muted">${reqs.page} / ${reqs.pages}</span><button data-kol-request-page="${reqs.page+1}" ${reqs.page>=reqs.pages?'disabled':''}>›</button>`;pager.querySelectorAll('[data-kol-request-page]').forEach(b=>b.addEventListener('click',()=>kolPage(el,businessKolCatalogPage,Number(b.dataset.kolRequestPage))))}
+  el.querySelectorAll('[data-kol-fund]').forEach(b=>b.addEventListener('click',async()=>{const q=reqs.requests.find(x=>x.id===b.dataset.kolFund),amount=Number(q.total_amount||q.quote);if(!(await confirmDialog(`Xác nhận khóa ${money(amount)} vào Escrow cho yêu cầu KOL?`)))return;try{await post('/api/kol/action',{id:q.id,action:'fund'});toast('Đã ký quỹ yêu cầu KOL','ok');kolPage(el)}catch(e){toast(e.message,'err')}}));
+  el.querySelectorAll('[data-kol-approve]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Xác nhận sản phẩm KOL đạt yêu cầu?')))return;try{await post('/api/kol/action',{id:b.dataset.kolApprove,action:'approve_delivery'});toast('Đã nghiệm thu sản phẩm KOL','ok');kolPage(el)}catch(e){toast(e.message,'err')}}));
+  el.querySelectorAll('[data-kol-revision]').forEach(b=>b.addEventListener('click',async()=>{const note=await promptDialog('Nội dung cần KOL chỉnh sửa:');if(!note)return;try{await post('/api/kol/action',{id:b.dataset.kolRevision,action:'request_revision',note});toast('Đã gửi yêu cầu chỉnh sửa','ok');kolPage(el)}catch(e){toast(e.message,'err')}}));
+  el.querySelectorAll('[data-kol-cancel]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Hủy yêu cầu KOL và hoàn toàn bộ khoản đang ký quỹ?',{tone:'danger'})))return;try{const x=await post('/api/kol/action',{id:b.dataset.kolCancel,action:'cancel'});toast(`Đã hủy${x.refund?` · hoàn ${money(x.refund)}`:''}`,'ok');kolPage(el)}catch(e){toast(e.message,'err')}}));
 }
 function kolStatus(s) {
   return statusChip(
