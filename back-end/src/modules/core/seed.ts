@@ -1,6 +1,7 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
 import { hashPassword } from './lib/password.js';
+import kolProfiles from './data/kol-profiles.json' with { type: 'json' };
 
 // Vietnamese seed data. Deterministic (no Math.random) so tests are reproducible.
 export const TIERS = [
@@ -344,29 +345,31 @@ async function doSeed(env) {
   await seedExtras(env);
 }
 
-// Idempotent: seed KOL profiles + one affiliate booking demo. Runs on every boot but only
-// inserts when the tables are empty — so already-seeded (pre-v11) DBs get backfilled too.
+// Idempotent: seed the production KOL catalog + one affiliate booking demo. Runs on every
+// boot but only inserts when the table is empty, so existing production data is untouched.
 export async function seedExtras(env) {
   await seedQcFixtures(env);
   const kolCount = Number(await env.DB.prepare('SELECT COUNT(*) c FROM kol_profiles').first('c'))||0;
   if (kolCount > 0) return;
   const t = now();
-  // ---- KOL / nghệ sĩ profiles (quote-request flow) ----
-  const kolDefs = [
-    ['Sơn Tùng M-TP','Ca sĩ / Nghệ sĩ','~15 triệu fan',[['YouTube','sontungmtp'],['Instagram','@sontungmtp']],500000000,1,1],
-    ['Trấn Thành','MC / Diễn viên','~12 triệu fan',[['Facebook','Trấn Thành'],['TikTok','@tranthanh']],400000000,1,1],
-    ['Chi Pu','Ca sĩ / Diễn viên','~8 triệu fan',[['Instagram','@chipublic']],250000000,1,1],
-    ['Độ Mixi','Streamer','~5 triệu fan',[['YouTube','MixiGaming']],120000000,0,0],
-    ['Ninh Dương Lan Ngọc','Diễn viên','~6 triệu fan',[['Instagram','@lanngoc']],180000000,1,0],
-  ];
-  const kw = [];
-  kolDefs.forEach((d,i)=>{
-    const [name,field,fanbase,channels,ref,hidden,premium] = d;
-    kw.push(env.DB.prepare(`INSERT INTO kol_profiles (id,name,field,fanbase,channels,media_kit,ref_price,price_hidden,premium,avatar,bio,status,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .bind(uid(),name,field,fanbase,JSON.stringify(channels.map(c=>({platform:c[0],handle:c[1]}))),
-        'https://netviet.vn/mediakit/'+i+'.pdf',ref,hidden,premium,`https://i.pravatar.cc/150?u=kol${i}`,
-        `${field} hàng đầu Việt Nam. Booking qua yêu cầu báo giá.`,'active',t-i*3600));
-  });
+  const kw = kolProfiles.map((profile) =>
+    env.DB.prepare(`INSERT INTO kol_profiles (id,name,field,fanbase,channels,media_kit,ref_price,price_hidden,premium,avatar,bio,status,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .bind(
+        profile.id,
+        profile.name,
+        profile.field,
+        profile.fanbase,
+        JSON.stringify(profile.channels || []),
+        profile.media_kit,
+        profile.ref_price,
+        profile.price_hidden,
+        profile.premium,
+        profile.avatar,
+        profile.bio,
+        profile.status,
+        profile.created_at,
+      ),
+  );
   await env.DB.batch(kw);
 
   // ---- one affiliate booking demo (accepted → link generated → orders). Look up real ids. ----
