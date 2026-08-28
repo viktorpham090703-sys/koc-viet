@@ -1957,20 +1957,25 @@ function pageSupport() {
             <div class="lp-channel-item">
               <span class="chan-ico">💬</span>
               <strong>Trung tâm hỗ trợ trong app</strong>
-              <p>Phản hồi dưới 2 giờ làm việc</p>
+              <p>Phản hồi trong tối đa 2 giờ làm việc</p>
               <span class="lp-channel-hours">9:00–18:00 · Thứ 2–Thứ 7</span>
             </div>
             <div class="lp-channel-item featured">
               <span class="chan-ico">📞</span>
               <strong>Hotline NetViet</strong>
               <p>Hỗ trợ trực tiếp từ chuyên viên</p>
+              <div class="lp-channel-contact-list">
+                <a class="lp-channel-contact" href="tel:+84812986898">0812 98 68 98</a>
+                <a class="lp-channel-contact" href="tel:+84813487686">0813 487 686</a>
+              </div>
               <span class="lp-channel-hours">9:00–18:00 · Thứ 2–Thứ 7</span>
             </div>
             <div class="lp-channel-item">
               <span class="chan-ico">✉️</span>
               <strong>Email hỗ trợ</strong>
-              <p>Tiếp nhận &amp; xử lý yêu cầu</p>
-              <span class="lp-channel-hours">Tiếp nhận 24/7 · phản hồi trong giờ làm việc</span>
+              <p>Gửi yêu cầu bất cứ lúc nào</p>
+              <a class="lp-channel-contact" href="mailto:kocviet@netviettv.com.vn">kocviet@netviettv.com.vn</a>
+              <span class="lp-channel-hours">Phản hồi trong tối đa 2 giờ làm việc</span>
             </div>
             <div class="lp-channel-item">
               <span class="chan-ico">👥</span>
