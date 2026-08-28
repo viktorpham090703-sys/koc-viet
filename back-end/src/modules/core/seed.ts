@@ -128,25 +128,19 @@ export async function isDemoUser(env, userId) {
   return Object.values(ids).includes(userId);
 }
 
-const KOC_AVATARS = {
-  'Ngô Quốc Việt': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486258/2._Ng%C3%B4_Qu%E1%BB%91c_Vi%E1%BB%87t_Mid_Du_l%E1%BB%8Bch_C%C3%B4ng_ngh%E1%BB%87_uxfqdc.jpg?_s=public-apps',
-  'Trần Minh Quân': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486258/3._Tr%E1%BA%A7n_Minh_Qu%C3%A2n_Mid_C%C3%B4ng_ngh%E1%BB%87_Gia_d%E1%BB%A5ng_b0us06.jpg?_s=public-apps',
-  'Bùi Ngọc Mai': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486256/4._B%C3%B9i_Ng%E1%BB%8Dc_Mai_Mid_M%E1%BB%B9_ph%E1%BA%A9m_S%E1%BB%A9c_kh%E1%BB%8Fe_H%C3%A0_N%E1%BB%99i_nodqqw.jpg?_s=public-apps',
-  'Lê Phương Anh': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486259/5._L%C3%AA_Ph%C6%B0%C6%A1ng_Anh_Mid_%E1%BA%A8m_th%E1%BB%B1c_Du_l%E1%BB%8Bch_%C4%90%C3%A0_N%E1%BA%B5ng_achpug.jpg?_s=public-apps',
-  'Lý Hải Đăng': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486260/6._L%C3%BD_H%E1%BA%A3i_%C4%90%C4%83ng_Mid_S%E1%BB%A9c_kh%E1%BB%8Fe_Thanh_H%C3%B3a_zbyrdl.jpg?_s=public-apps',
-  'Nguyễn Thu Hà': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486728/Nguy%E1%BB%85n_Thu_H%C3%A0_Macro_M%E1%BB%B9_ph%E1%BA%A9m_Th%E1%BB%9Di_trang_TP.HCM_4.8_gogpqq.jpg?_s=public-apps',
-  'Phạm Gia Bảo': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486815/1._Ph%E1%BA%A1m_Gia_B%E1%BA%A3o_Micro_Th%E1%BB%9Di_trang_TP.HCM_ahqjyy.jpg?_s=public-apps',
-  'Đỗ Thùy Linh': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486817/2._%C4%90%E1%BB%97_Th%C3%B9y_Linh_Micro_Gia_d%E1%BB%A5ng_M%E1%BA%B9_B%C3%A9_gdlxon.jpg?_s=public-apps',
-  'Nguyễn Test': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486816/3._Nguyen_Test_Micro_M%E1%BB%B9_ph%E1%BA%A9m_L%C3%A0m_%C4%91%E1%BA%B9p_H%C3%A0_N%E1%BB%99i_vil2mp.jpg?_s=public-apps',
-  'Võ Thanh Trúc': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486816/3._Nguyen_Test_Micro_M%E1%BB%B9_ph%E1%BA%A9m_L%C3%A0m_%C4%91%E1%BA%B9p_H%C3%A0_N%E1%BB%99i_vil2mp.jpg?_s=public-apps',
-  'QC Auto 210726': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486819/5._QC_Auto_210726_Micro_M%E1%BB%B9_ph%E1%BA%A9m_H%C3%A0_N%E1%BB%99i_g6th0k.jpg?_s=public-apps',
-  'Đặng Hoàng Long': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486819/6._%C4%90%E1%BA%B7ng_Ho%C3%A0ng_Long_Nano_C%C3%B4ng_ngh%E1%BB%87_H%E1%BA%A3i_Ph%C3%B2ng_adpqig.jpg?_s=public-apps',
-  'Phạm Thị D': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486937/1._Ph%E1%BA%A1m_Th%E1%BB%8B_D_Nano_S%E1%BB%A9c_kh%E1%BB%8Fe_H%C3%A0_N%E1%BB%99i_oi1rub.jpg?_s=public-apps',
-  'Hồ Anh Tuân': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486937/1._Ph%E1%BA%A1m_Th%E1%BB%8B_D_Nano_S%E1%BB%A9c_kh%E1%BB%8Fe_H%C3%A0_N%E1%BB%99i_oi1rub.jpg?_s=public-apps',
-  'Hồ Anh Tuấn': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486937/1._Ph%E1%BA%A1m_Th%E1%BB%8B_D_Nano_S%E1%BB%A9c_kh%E1%BB%8Fe_H%C3%A0_N%E1%BB%99i_oi1rub.jpg?_s=public-apps',
-  'New KOC': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486940/3._New_KOC_Nano_Th%E1%BB%9Di_trang_H%C3%A0_N%E1%BB%99i_nandpp.jpg?_s=public-apps',
-  'Trịnh Bảo Ngọc': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486938/4._Tr%E1%BB%8Bnh_B%E1%BA%A3o_Ng%E1%BB%8Dc_Nano_Th%E1%BB%9Di_trang_Du_l%E1%BB%8Bch_kjciqg.jpg?_s=public-apps',
-  'Quang': 'https://res.cloudinary.com/drxum5uxt/image/upload/fl_preserve_transparency/v1785486945/5._Quang_Nano_Th%E1%BB%9Di_trang_H%C3%A0_N%E1%BB%99i_ezylsw.jpg?_s=public-apps',
+export const KOC_AVATARS = {
+  'Nguyễn Thu Hà': '/images/koc-avatars/nguyen-thu-ha.jpg',
+  'Trần Minh Quân': '/images/koc-avatars/tran-minh-quan.jpg',
+  'Lê Phương Anh': '/images/koc-avatars/le-phuong-anh.jpg',
+  'Phạm Gia Bảo': '/images/koc-avatars/pham-gia-bao.jpg',
+  'Võ Thanh Trúc': '/images/koc-avatars/vo-thanh-truc.jpg',
+  'Đặng Hoàng Long': '/images/koc-avatars/dang-hoang-long.jpg',
+  'Bùi Ngọc Mai': '/images/koc-avatars/bui-ngoc-mai.jpg',
+  'Hồ Anh Tuấn': '/images/koc-avatars/ho-anh-tuan.jpg',
+  'Đỗ Thùy Linh': '/images/koc-avatars/do-thuy-linh.jpg',
+  'Ngô Quốc Việt': '/images/koc-avatars/ngo-quoc-viet.jpg',
+  'Trịnh Bảo Ngọc': '/images/koc-avatars/trinh-bao-ngoc.jpg',
+  'Lý Hải Đăng': '/images/koc-avatars/ly-hai-dang.jpg',
 };
 
 async function syncKocAvatars(env) {
@@ -170,7 +164,10 @@ export async function ensureSeedData(env) {
       if (
         guards.get('seeded') === 'done' &&
         guards.get('qc_fixtures_v1') === 'done'
-      ) return;
+      ) {
+        await syncKocAvatars(env);
+        return;
+      }
       await seedIfEmpty(env);
       await seedExtras(env);
     })();
