@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { access } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { TIERS, tierOf } from "./seed.js";
+import { KOC_AVATARS, TIERS, tierOf } from "./seed.js";
 
 test("defines the five KOC tiers and requested price ranges", () => {
   assert.deepEqual(TIERS.map((tier) => tier.name), ["Nano", "Micro", "Mid", "Macro", "Mega"]);
@@ -22,4 +24,28 @@ test("assigns KOC tier using follower boundaries only", () => {
   assert.equal(tierOf(300_000, 0), "Macro");
   assert.equal(tierOf(999_999, 99), "Macro");
   assert.equal(tierOf(1_000_000, 0), "Mega");
+});
+
+test("ships a local portrait for every seeded KOC", async () => {
+  const expectedNames = [
+    "Nguyễn Thu Hà",
+    "Trần Minh Quân",
+    "Lê Phương Anh",
+    "Phạm Gia Bảo",
+    "Võ Thanh Trúc",
+    "Đặng Hoàng Long",
+    "Bùi Ngọc Mai",
+    "Hồ Anh Tuấn",
+    "Đỗ Thùy Linh",
+    "Ngô Quốc Việt",
+    "Trịnh Bảo Ngọc",
+    "Lý Hải Đăng",
+  ];
+
+  assert.deepEqual(Object.keys(KOC_AVATARS), expectedNames);
+  for (const avatar of Object.values(KOC_AVATARS)) {
+    assert.match(avatar, /^\/images\/koc-avatars\/[a-z-]+\.jpg$/);
+    const asset = fileURLToPath(new URL(`../../../../front-end/public${avatar}`, import.meta.url));
+    await access(asset);
+  }
 });
