@@ -1,9 +1,6 @@
 // Shared building blocks for the 8 public marketing landing pages (rendered client-side
 // into #app for the pathnames in LANDING_ROUTES). Pure presentation only.
-import {
-  ACTIVITY_CATEGORY_CYCLE,
-  industryIconSvg,
-} from "./industry-icons.js";
+import { ACTIVITY_CATEGORY_CYCLE, industryIconSvg } from "./industry-icons.js";
 import { bindHomeKolInsights } from "./kol-insights.js";
 
 export const ROUTES = [
@@ -242,7 +239,10 @@ export function lpAccordion(items, opts) {
     legal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5M9 12h7M9 16h7"/></svg>`,
     ai: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="13" rx="3"/><path d="M9 3h6M12 3v4M8 12h.01M16 12h.01M9 16h6"/></svg>`,
   };
-  const icon = groupIcon && icons[groupIcon] ? `<span class="lp-faq-group-icon" aria-hidden="true">${icons[groupIcon]}</span>` : "";
+  const icon =
+    groupIcon && icons[groupIcon]
+      ? `<span class="lp-faq-group-icon" aria-hidden="true">${icons[groupIcon]}</span>`
+      : "";
   const content = `${groupTitle ? `<div class="lp-faq-group-title">${icon}${groupTitle}</div>` : ""}
   ${items
     .map(
@@ -292,7 +292,7 @@ export function bindLandingEvents(root) {
   stopKocActivityTicker = bindKocActivityTicker(root);
   // Tạm tắt binding/fetch dữ liệu vì hai khối KOL insights đang được ẩn.
   // Bật lại cùng renderHomeKolInsights() trong pages.js.
-  // bindHomeKolInsights(root);
+  bindHomeKolInsights(root);
 
   const burger = root.querySelector("#lp-burger");
   const nav = root.querySelector("#lp-nav");
@@ -300,7 +300,10 @@ export function bindLandingEvents(root) {
     const setMenuOpen = (isOpen) => {
       nav.classList.toggle("open", isOpen);
       burger.setAttribute("aria-expanded", String(isOpen));
-      burger.setAttribute("aria-label", isOpen ? "Đóng trình đơn" : "Mở trình đơn");
+      burger.setAttribute(
+        "aria-label",
+        isOpen ? "Đóng trình đơn" : "Mở trình đơn",
+      );
     };
     burger.addEventListener("click", (event) => {
       event.preventDefault();
@@ -350,7 +353,9 @@ export function bindLandingEvents(root) {
             name: name?.value || "",
             phone: phone?.value || "",
             company: company?.value || "",
-            need: requestType ? `[Loại yêu cầu: ${requestType}]\n${need?.value || ""}` : (need?.value || ""),
+            need: requestType
+              ? `[Loại yêu cầu: ${requestType}]\n${need?.value || ""}`
+              : need?.value || "",
             source: "landing-" + (f.dataset.id || "contact"),
           }),
         });
@@ -695,10 +700,10 @@ function bindKocActivityTicker(root) {
   const relativeTime = (occurredAt) => {
     const occurredDate = new Date(Number(occurredAt) * 1000);
     if (Number.isNaN(occurredDate.getTime())) return "vừa xong";
-    const seconds = Math.min(119, Math.max(
-      0,
-      Math.floor((Date.now() - occurredDate.getTime()) / 1000),
-    ));
+    const seconds = Math.min(
+      119,
+      Math.max(0, Math.floor((Date.now() - occurredDate.getTime()) / 1000)),
+    );
     if (seconds < 5) return "vừa xong";
     if (seconds < 60) return `${seconds} giây trước`;
     const mins = Math.floor(seconds / 60);

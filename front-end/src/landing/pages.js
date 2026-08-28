@@ -415,7 +415,7 @@ function pageHome() {
     splitSection +
     // Tạm ẩn hai khối "KOL đang được chú ý" và "Top10 Chỉ số ảnh hưởng".
     // Bật lại bằng cách bỏ comment ở dòng renderHomeKolInsights() bên dưới.
-    // renderHomeKolInsights() +
+    renderHomeKolInsights() +
     campaignDeskSection +
     whyUs +
     categories +

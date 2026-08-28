@@ -48,13 +48,12 @@ export function renderHomeKolInsights() {
     <div class="lp-kol-insights-inner">
       <article class="lp-kol-ranking-card" data-kol-ranking>
         <header class="lp-kol-ranking-head">
-          <h2>KOL đang được chú ý</h2>
+          <div><span class="lp-kol-section-label">GƯƠNG MẶT NỔI BẬT</span><h2>KOL đang được chú ý</h2></div>
         </header>
         <p class="lp-kol-snapshot">Dữ liệu hồ sơ KOL trên KOC Việt</p>
         <div class="lp-kol-featured-grid" data-kol-featured aria-live="polite"></div>
         <div class="lp-kol-rank-list" data-kol-rank-list tabindex="0" aria-label="Danh sách KOL nổi bật"></div>
         <p class="lp-kol-ranking-status" data-kol-ranking-status>Đang tải danh sách KOL...</p>
-        <a class="lp-kol-view-all" href="/#/explore">Xem tất cả <span>→</span></a>
       </article>
 
       <article class="lp-bsi-section">
@@ -77,6 +76,8 @@ export function bindHomeKolInsights(root) {
     .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
     .then(({ kols = [] }) => {
       if (!ranking) return;
+      // Keep the landing ranking concise while still presenting a complete
+      // Top 10: three featured cards and seven supporting profiles.
       const items = kols.slice(0, 10).map((kol, index) => ({
         rank: index + 1,
         name: String(kol.name || "KOL"),
