@@ -23,6 +23,22 @@ export type PushMessage = {
   timestamp?: number
 }
 
+export type PushDeliveryResult = {
+  configured: boolean
+  subscriptionCount: number
+  delivered: number
+  failed: number
+  removed: number
+}
+
+const emptyDelivery = (configured: boolean): PushDeliveryResult => ({
+  configured,
+  subscriptionCount: 0,
+  delivered: 0,
+  failed: 0,
+  removed: 0,
+})
+
 export function pushPublicKey(env: PushEnvironment): string {
   return String(env.VAPID_PUBLIC_KEY || '').trim()
 }
@@ -39,9 +55,9 @@ export async function sendPushToUser(
   env: PushEnvironment,
   userId: string,
   message: PushMessage,
-): Promise<void> {
+): Promise<PushDeliveryResult> {
   const details = vapidDetails(env)
-  if (!details || !userId) return
+  if (!details || !userId) return emptyDelivery(Boolean(details))
 
   let results: Array<Record<string, unknown>> = []
   try {
@@ -51,12 +67,12 @@ export async function sendPushToUser(
     results = response.results || []
   } catch (error) {
     console.warn('web push subscriptions unavailable', error)
-    return
+    return { ...emptyDelivery(true), failed: 1 }
   }
-  if (!results.length) return
+  if (!results.length) return emptyDelivery(true)
 
   const payload = JSON.stringify(message)
-  await Promise.all(results.map(async (row) => {
+  const outcomes = await Promise.all(results.map(async (row) => {
     const endpoint = String(row.endpoint || '')
     const subscription: PushSubscription = {
       endpoint,
@@ -78,14 +94,24 @@ export async function sendPushToUser(
           privateKey: details.privateKey,
         },
       })
+      return 'delivered' as const
     } catch (error) {
       const statusCode = Number((error as { statusCode?: number })?.statusCode || 0)
       if (statusCode === 404 || statusCode === 410) {
         await env.DB.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`)
           .bind(endpoint).run()
-        return
+        return 'removed' as const
       }
       console.warn('web push delivery failed', statusCode || error)
+      return 'failed' as const
     }
   }))
+
+  return {
+    configured: true,
+    subscriptionCount: results.length,
+    delivered: outcomes.filter((outcome) => outcome === 'delivered').length,
+    failed: outcomes.filter((outcome) => outcome === 'failed').length,
+    removed: outcomes.filter((outcome) => outcome === 'removed').length,
+  }
 }
