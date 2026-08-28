@@ -411,21 +411,33 @@ async function notifyUser(
 }
 
 async function notifyKoc(env, kocId, type, title, message, href) {
-  const user = await env.DB.prepare(
-    `SELECT id FROM users WHERE role='koc' AND koc_id=? LIMIT 1`,
-  )
-    .bind(kocId)
-    .first();
-  if (user) await notifyUser(env, user.id, type, title, message, href);
+  const { results = [] } = await env.DB.prepare(
+    `SELECT id FROM users
+     WHERE role='koc' AND koc_id=? AND COALESCE(status,'active')='active'
+     ORDER BY updated_at DESC, created_at DESC`,
+  ).bind(kocId).all();
+  if (!results.length) {
+    console.warn('notification recipient unavailable', { role: 'koc', kocId, type });
+    return [];
+  }
+  return Promise.all(
+    results.map((user) => notifyUser(env, user.id, type, title, message, href)),
+  );
 }
 
 async function notifyBusiness(env, businessId, type, title, message, href) {
-  const user = await env.DB.prepare(
-    `SELECT id FROM users WHERE role='business' AND business_id=? LIMIT 1`,
-  )
-    .bind(businessId)
-    .first();
-  if (user) await notifyUser(env, user.id, type, title, message, href);
+  const { results = [] } = await env.DB.prepare(
+    `SELECT id FROM users
+     WHERE role='business' AND business_id=? AND COALESCE(status,'active')='active'
+     ORDER BY updated_at DESC, created_at DESC`,
+  ).bind(businessId).all();
+  if (!results.length) {
+    console.warn('notification recipient unavailable', { role: 'business', businessId, type });
+    return [];
+  }
+  return Promise.all(
+    results.map((user) => notifyUser(env, user.id, type, title, message, href)),
+  );
 }
 
 async function notifyAdmins(env, type, title, message, href) {
@@ -3509,13 +3521,13 @@ export async function route(request, env, url) {
       // Booking thường tạo link khi KOC nhận; AI Clone tạo link sau khi KOC duyệt video.
       if (b.type !== "aiclone")
         await ensureBookingAffiliateLink(env, b, me.id);
-      await notifyKoc(
+      await notifyBusiness(
         env,
-        b.koc_id,
+        b.business_id,
         "booking",
-        "Đã xác nhận booking",
-        `${b.code} đã chuyển sang trạng thái sản xuất.`,
-        "#/bookings",
+        "KOC đã xác nhận booking",
+        `${b.code} đã được KOC tiếp nhận và chuyển sang giai đoạn sản xuất.`,
+        "#/orders",
       );
     } else if (
       act === "reject" &&
