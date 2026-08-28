@@ -2,6 +2,7 @@ import { api } from "./api.js";
 
 const NOTIFICATION_STATE_CACHE = "koc-viet-notifications-v1";
 const NOTIFICATION_STATE_URL = "/__koc-viet-notification-state__";
+const PWA_ACTIONS_DISMISSED = "koc-viet-pwa-actions-dismissed-v2";
 const POLL_INTERVAL = 60_000;
 
 let deferredInstallPrompt = null;
@@ -25,7 +26,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
 
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
-  sessionStorage.setItem("koc-viet-pwa-actions-dismissed", "1");
+  sessionStorage.setItem(PWA_ACTIONS_DISMISSED, "1");
   renderPwaActions();
 });
 
@@ -98,11 +99,13 @@ function renderPwaActions() {
   const canInstall = !isStandalone() && (Boolean(deferredInstallPrompt) || isIos());
   const canEnableNotifications =
     authenticated && notificationPermission === "default";
+  const canTestNotifications =
+    authenticated && notificationPermission === "granted";
   const wasDismissed =
-    sessionStorage.getItem("koc-viet-pwa-actions-dismissed") === "1";
+    sessionStorage.getItem(PWA_ACTIONS_DISMISSED) === "1";
 
   let host = document.getElementById("pwa-actions");
-  if ((!canInstall && !canEnableNotifications) || wasDismissed) {
+  if ((!canInstall && !canEnableNotifications && !canTestNotifications) || wasDismissed) {
     host?.remove();
     return;
   }
@@ -119,11 +122,16 @@ function renderPwaActions() {
     <img class="pwa-actions__logo" src="/icons/icon-192.png" alt="" aria-hidden="true">
     <div class="pwa-actions__content">
       <strong>KOC Việt</strong>
-      <span>${canEnableNotifications ? "Không bỏ lỡ booking và cập nhật mới" : "Mở nhanh như một ứng dụng"}</span>
+      <span>${canEnableNotifications
+        ? "Không bỏ lỡ booking và cập nhật mới"
+        : canTestNotifications
+          ? "Kiểm tra kết nối trước khi chờ booking mới"
+          : "Mở nhanh như một ứng dụng"}</span>
     </div>
     <div class="pwa-actions__buttons">
       ${canInstall ? '<button type="button" class="pwa-action-button" data-pwa-install>Cài ứng dụng</button>' : ""}
-      ${canEnableNotifications ? '<button type="button" class="pwa-action-button pwa-action-button--accent" data-pwa-notifications>🔔 Bật thông báo</button>' : ""}
+      ${canEnableNotifications ? '<button type="button" class="pwa-action-button pwa-action-button--accent" data-pwa-notifications>Bật thông báo</button>' : ""}
+      ${canTestNotifications ? '<button type="button" class="pwa-action-button pwa-action-button--accent" data-pwa-test>Kiểm tra thông báo</button>' : ""}
     </div>
     <button type="button" class="pwa-actions__close" data-pwa-dismiss aria-label="Đóng">×</button>`;
 
@@ -131,8 +139,11 @@ function renderPwaActions() {
   host
     .querySelector("[data-pwa-notifications]")
     ?.addEventListener("click", requestNotificationPermission);
+  host
+    .querySelector("[data-pwa-test]")
+    ?.addEventListener("click", testPushNotification);
   host.querySelector("[data-pwa-dismiss]")?.addEventListener("click", () => {
-    sessionStorage.setItem("koc-viet-pwa-actions-dismissed", "1");
+    sessionStorage.setItem(PWA_ACTIONS_DISMISSED, "1");
     host.remove();
   });
 }
@@ -219,6 +230,18 @@ async function ensurePushSubscription(options = {}) {
     }
 
     let subscription = await registration.pushManager.getSubscription();
+    if (subscription && !subscriptionUsesPublicKey(subscription, config.publicKey)) {
+      try {
+        await api("/api/push/unsubscribe", {
+          method: "POST",
+          body: { endpoint: subscription.endpoint },
+        });
+      } catch (_) {
+        // The stale browser subscription still needs to be replaced locally.
+      }
+      await subscription.unsubscribe();
+      subscription = null;
+    }
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -241,6 +264,49 @@ async function ensurePushSubscription(options = {}) {
     }
     return false;
   }
+}
+
+async function testPushNotification(event) {
+  const button = event?.currentTarget;
+  const originalLabel = button?.textContent || "Kiểm tra thông báo";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Đang kiểm tra…";
+  }
+
+  try {
+    const pushReady = await ensurePushSubscription({ showErrors: true });
+    if (!pushReady) return;
+
+    const result = await api("/api/push/test", { method: "POST" });
+    const delivery = result.delivery || {};
+    if (Number(delivery.delivered || 0) > 0) {
+      showPwaHint("Đã gửi thông báo thử. Nếu chưa thấy, hãy kiểm tra chế độ Không làm phiền của điện thoại.");
+      return;
+    }
+    if (Number(delivery.subscriptionCount || 0) === 0) {
+      showPwaHint("Máy chủ chưa nhận được đăng ký của thiết bị. Hãy tải lại app rồi thử thêm một lần.");
+      return;
+    }
+    showPwaHint("Dịch vụ push chưa chấp nhận thông báo. Hãy mở lại app để kết nối lại thiết bị.");
+  } catch (error) {
+    console.warn("Không thể gửi thông báo thử KOC Việt", error);
+    showPwaHint("Không gửi được thông báo thử. Vui lòng kiểm tra mạng rồi thử lại.");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+}
+
+function subscriptionUsesPublicKey(subscription, publicKey) {
+  const currentKey = subscription?.options?.applicationServerKey;
+  if (!currentKey) return true;
+  const expectedKey = urlBase64ToUint8Array(publicKey);
+  const currentBytes = new Uint8Array(currentKey);
+  return currentBytes.length === expectedKey.length &&
+    currentBytes.every((value, index) => value === expectedKey[index]);
 }
 
 function urlBase64ToUint8Array(value) {

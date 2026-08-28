@@ -78,6 +78,13 @@
   box-shadow: 0 8px 22px rgba(255, 75, 43, 0.16);
 }
 
+.pwa-action-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+  transform: none;
+  box-shadow: none;
+}
+
 .pwa-action-button:focus-visible,
 .pwa-actions__close:focus-visible {
   outline: 3px solid rgba(255, 75, 43, 0.28);

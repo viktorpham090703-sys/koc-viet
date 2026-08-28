@@ -391,7 +391,7 @@ async function notifyUser(
   message,
   href = "#/notifications",
 ) {
-  if (!userId) return;
+  if (!userId) return null;
   const notificationId = uid();
   const createdAt = now();
   await env.DB.prepare(
@@ -400,7 +400,7 @@ async function notifyUser(
   )
     .bind(notificationId, userId, type, title, message, href, createdAt)
     .run();
-  await sendPushToUser(env, userId, {
+  return sendPushToUser(env, userId, {
     id: notificationId,
     type,
     title,
@@ -2115,6 +2115,17 @@ export async function route(request, env, url) {
       ).bind(endpoint, me.id).run();
     }
     return J({ ok: true });
+  }
+  if (p === "/api/push/test" && m === "POST") {
+    const delivery = await notifyUser(
+      env,
+      me.id,
+      'system',
+      'Thông báo thử từ KOC Việt',
+      'Thiết bị này đã kết nối thành công và sẵn sàng nhận booking mới.',
+      '#/notifications',
+    );
+    return J({ ok: true, delivery });
   }
   if (p === "/api/notifications" && m === "GET") {
     const { results } = await env.DB.prepare(
