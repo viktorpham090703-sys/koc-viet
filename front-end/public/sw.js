@@ -1,4 +1,4 @@
-const SHELL_CACHE = "koc-viet-shell-v1";
+const SHELL_CACHE = "koc-viet-shell-v2";
 const RUNTIME_CACHE = "koc-viet-runtime-v1";
 const NOTIFICATION_STATE_CACHE = "koc-viet-notifications-v1";
 const NOTIFICATION_STATE_URL = "/__koc-viet-notification-state__";
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "/icons/icon-maskable-512.png",
   "/icons/apple-touch-icon.png",
   "/styles/pwa.css",
+  "/styles/portal-responsive.css",
 ];
 
 self.addEventListener("install", (event) => {
@@ -86,13 +87,13 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    showNotification({
+    rememberNotificationId(payload.id).then(() => showNotification({
       id: payload.id || Date.now(),
       title: payload.title || "KOC Việt",
       message: payload.message || payload.body || "Bạn có một cập nhật mới.",
       href: payload.href || payload.url || "/#/notifications",
       timestamp: payload.timestamp || Date.now(),
-    }),
+    })),
   );
 });
 
@@ -212,6 +213,15 @@ async function writeNotificationState(state) {
       headers: { "Content-Type": "application/json" },
     }),
   );
+}
+
+async function rememberNotificationId(id) {
+  if (id === undefined || id === null) return;
+  const previousState = await readNotificationState();
+  const ids = [String(id), ...(previousState?.ids || [])]
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .slice(0, 200);
+  await writeNotificationState({ initialized: true, ids });
 }
 
 function safeNotificationUrl(value) {

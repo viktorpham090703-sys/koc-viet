@@ -16,6 +16,7 @@ import {
 } from './lib/payos.js';
 import { createPayOSPayout } from './lib/payosPayout.js';
 import { PAYOUT_BANKS, payoutBankBinError } from './lib/bankDestination.js';
+import { pushPublicKey, sendPushToUser } from './lib/webPush.js';
 import {
   walletBalances,
   walletTransactions,
@@ -366,12 +367,22 @@ async function notifyUser(
   href = "#/notifications",
 ) {
   if (!userId) return;
+  const notificationId = uid();
+  const createdAt = now();
   await env.DB.prepare(
     `INSERT INTO notifications (id,user_id,type,title,message,href,is_read,created_at)
      VALUES (?,?,?,?,?,?,0,?)`,
   )
-    .bind(uid(), userId, type, title, message, href, now())
+    .bind(notificationId, userId, type, title, message, href, createdAt)
     .run();
+  await sendPushToUser(env, userId, {
+    id: notificationId,
+    type,
+    title,
+    message,
+    href,
+    timestamp: createdAt * 1000,
+  });
 }
 
 async function notifyKoc(env, kocId, type, title, message, href) {
@@ -2045,6 +2056,36 @@ export async function route(request, env, url) {
   const isAdmin = me.role === "admin";
 
   // ---------- In-app notifications ----------
+  if (p === "/api/push/config" && m === "GET") {
+    const publicKey = pushPublicKey(env);
+    return J({ enabled: Boolean(publicKey && env.VAPID_PRIVATE_KEY), publicKey });
+  }
+  if (p === "/api/push/subscribe" && m === "POST") {
+    const endpoint = String(body.endpoint || '').trim();
+    const p256dh = String(body.keys?.p256dh || '').trim();
+    const auth = String(body.keys?.auth || '').trim();
+    if (!endpoint.startsWith('https://') || !p256dh || !auth)
+      return err('Thiết bị gửi thông tin đăng ký push không hợp lệ');
+    if (endpoint.length > 2048 || p256dh.length > 512 || auth.length > 512)
+      return err('Thông tin đăng ký push quá dài');
+    const timestamp = now();
+    await env.DB.prepare(
+      `INSERT INTO push_subscriptions (endpoint,user_id,p256dh,auth,created_at,updated_at)
+       VALUES (?,?,?,?,?,?)
+       ON CONFLICT(endpoint) DO UPDATE SET
+         user_id=excluded.user_id,p256dh=excluded.p256dh,auth=excluded.auth,updated_at=excluded.updated_at`,
+    ).bind(endpoint, me.id, p256dh, auth, timestamp, timestamp).run();
+    return J({ ok: true });
+  }
+  if (p === "/api/push/unsubscribe" && m === "POST") {
+    const endpoint = String(body.endpoint || '').trim();
+    if (endpoint) {
+      await env.DB.prepare(
+        `DELETE FROM push_subscriptions WHERE endpoint=? AND user_id=?`,
+      ).bind(endpoint, me.id).run();
+    }
+    return J({ ok: true });
+  }
   if (p === "/api/notifications" && m === "GET") {
     const { results } = await env.DB.prepare(
       `SELECT * FROM notifications WHERE user_id=?

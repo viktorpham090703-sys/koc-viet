@@ -7,7 +7,11 @@ import { renderKocProfile, renderMarketplacePublic } from "./public.js";
 import { LANDING_ROUTES, renderLandingBody } from "./landing/pages.js";
 import { bindLandingEvents } from "./landing/shared.js";
 import { autoAnimate } from "./animations.js";
-import { initializePwa, setPwaAuthenticated } from "./pwa.js";
+import {
+  disconnectPwaNotifications,
+  initializePwa,
+  setPwaAuthenticated,
+} from "./pwa.js";
 
 export const state = { user: null, config: null };
 const appEl = document.getElementById("app");
@@ -47,6 +51,7 @@ function goHash(newHash) {
 }
 
 export async function logout() {
+  await disconnectPwaNotifications();
   try {
     await post("/api/logout");
   } catch (_) {}
@@ -134,26 +139,39 @@ export function enhancePortal() {
     const burger = document.createElement("button");
     burger.className = "portal-burger";
     burger.setAttribute("aria-label", "Menu");
+    burger.setAttribute("aria-expanded", "false");
+    if (!sidebar.id) sidebar.id = `portal-sidebar-${state.user?.role || "user"}`;
+    burger.setAttribute("aria-controls", sidebar.id);
     burger.textContent = "☰";
     const close = () => {
       sidebar.classList.remove("open");
       portal.classList.remove("drawer-open");
+      burger.setAttribute("aria-expanded", "false");
     };
     const open = () => {
       sidebar.classList.add("open");
       portal.classList.add("drawer-open");
+      burger.setAttribute("aria-expanded", "true");
     };
     burger.addEventListener("click", () =>
       sidebar.classList.contains("open") ? close() : open(),
     );
     topbar.insertBefore(burger, topbar.firstChild);
-    const scrim = document.createElement("div");
+    const scrim = document.createElement("button");
+    scrim.type = "button";
     scrim.className = "portal-scrim";
+    scrim.setAttribute("aria-label", "Đóng menu");
     scrim.addEventListener("click", close);
     portal.appendChild(scrim);
     // Close the drawer after picking a nav item (mobile)
     sidebar.addEventListener("click", (e) => {
       if (e.target.closest("a")) close();
+    });
+    portal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && sidebar.classList.contains("open")) {
+        close();
+        burger.focus();
+      }
     });
   }
 }

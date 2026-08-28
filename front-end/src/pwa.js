@@ -51,6 +51,25 @@ export function setPwaAuthenticated(value) {
   updateNotificationPolling();
 }
 
+export async function disconnectPwaNotifications() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const registration = await getServiceWorkerRegistration();
+    const subscription = await registration?.pushManager?.getSubscription();
+    if (!subscription) return;
+    try {
+      await api("/api/push/unsubscribe", {
+        method: "POST",
+        body: { endpoint: subscription.endpoint },
+      });
+    } finally {
+      await subscription.unsubscribe();
+    }
+  } catch (_) {
+    // Logout must still proceed if the device is offline.
+  }
+}
+
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
 
@@ -141,12 +160,15 @@ async function requestNotificationPermission() {
 
   if (permission === "granted") {
     await primeNotificationState();
-    await showSystemNotification({
-      id: "notifications-enabled",
-      title: "Đã bật thông báo KOC Việt",
-      message: "Bạn sẽ nhận được booking và cập nhật mới ngay trên thiết bị.",
-      href: "/#/notifications",
-    });
+    const pushReady = await ensurePushSubscription({ showErrors: true });
+    if (pushReady) {
+      await showSystemNotification({
+        id: "notifications-enabled",
+        title: "Đã bật thông báo KOC Việt",
+        message: "Bạn sẽ nhận được booking và cập nhật mới ngay cả khi app đang đóng.",
+        href: "/#/notifications",
+      });
+    }
     await registerPeriodicNotificationSync();
     updateNotificationPolling();
     return;
@@ -174,6 +196,58 @@ function updateNotificationPolling() {
   checkForNewNotifications();
   notificationTimer = window.setInterval(checkForNewNotifications, POLL_INTERVAL);
   registerPeriodicNotificationSync();
+  ensurePushSubscription();
+}
+
+async function ensurePushSubscription(options = {}) {
+  if (!authenticated || Notification.permission !== "granted") return false;
+  try {
+    const registration = await getServiceWorkerRegistration();
+    if (!registration?.pushManager) {
+      if (options.showErrors) {
+        showPwaHint("Thiết bị này chưa hỗ trợ Web Push. Thông báo vẫn hiện khi app đang mở.");
+      }
+      return false;
+    }
+
+    const config = await api("/api/push/config");
+    if (!config.enabled || !config.publicKey) {
+      if (options.showErrors) {
+        showPwaHint("Máy chủ chưa cấu hình Web Push. Thông báo vẫn hiện khi app đang mở.");
+      }
+      return false;
+    }
+
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(config.publicKey),
+      });
+    }
+    const serialized = subscription.toJSON();
+    await api("/api/push/subscribe", {
+      method: "POST",
+      body: {
+        endpoint: subscription.endpoint,
+        keys: serialized.keys,
+      },
+    });
+    return true;
+  } catch (error) {
+    console.warn("Không thể đăng ký Web Push KOC Việt", error);
+    if (options.showErrors) {
+      showPwaHint("Chưa thể kết nối thông báo nền. Vui lòng thử lại khi mạng ổn định.");
+    }
+    return false;
+  }
+}
+
+function urlBase64ToUint8Array(value) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  return Uint8Array.from(raw, (character) => character.charCodeAt(0));
 }
 
 async function primeNotificationState() {

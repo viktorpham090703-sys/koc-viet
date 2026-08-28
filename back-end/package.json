@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "test": "tsx --test src/database/d1-adapter.test.ts src/modules/core/seed.test.ts src/modules/core/data/kol-profiles.test.ts src/modules/core/lib/jwt.test.ts src/modules/core/lib/bankDestination.test.ts src/modules/core/lib/payosPayout.test.ts src/modules/core/lib/smtp.test.ts",
     "db:import": "psql -v ON_ERROR_STOP=1 -f ../database/postgresql_full.sql",
+    "push:keys": "web-push generate-vapid-keys",
     "secret:generate": "node -e \"console.log(require('node:crypto').randomBytes(32).toString('hex'))\""
   },
   "dependencies": {
@@ -19,7 +20,8 @@
     "dotenv": "latest",
     "express": "latest",
     "helmet": "latest",
-    "pg": "latest"
+    "pg": "latest",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/compression": "latest",
@@ -27,6 +29,7 @@
     "@types/express": "latest",
     "@types/node": "latest",
     "@types/pg": "latest",
+    "@types/web-push": "^3.6.4",
     "tsx": "latest",
     "typescript": "latest"
   }
