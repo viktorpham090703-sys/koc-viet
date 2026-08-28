@@ -23,7 +23,7 @@ import {
   provinceOptions,
 } from "./ui.js";
 import { state, logout } from "./app.js";
-import { icon } from "./icons.js";
+import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
 import {
   bankIdentityHtml,
@@ -100,7 +100,7 @@ export async function renderKoc(el, hash) {
 
 function bottomNav(active) {
   return `<div class="bottom-nav">
-    <div class="koc-desktop-brand"><img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785140674/koc_app_wsfxgv.png" alt=""><span>KOC Viet</span></div>
+    <div class="koc-desktop-brand"><a class="portal-brand-link" href="#/home" aria-label="KOC Việt — Trang KOC">${brandLogo()}</a></div>
     <nav class="koc-nav-scroll">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}"><span class="ico">${n[1]}</span><span class="koc-nav-label">${n[2]}</span>${n[0] === "#/notifications" ? '<span class="badge-num notification-count" hidden></span>' : ""}</a>`).join("")}</nav>
     <button class="koc-desktop-account" id="koc-shell-logout">Đăng xuất</button>
   </div>`;

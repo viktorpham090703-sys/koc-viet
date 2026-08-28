@@ -22,7 +22,7 @@ import {
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
 import { renderMarketplaceEmbed } from "./public.js";
-import { icon } from "./icons.js";
+import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
 import {
   bankIdentityHtml,
@@ -65,7 +65,7 @@ export async function renderBusiness(el, hash) {
   el.innerHTML = `<div class="portal business-portal">
     ${sidebar(active)}
     <div class="main"><div class="topbar portal-topbar">
-      <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2>Trang doanh nghiệp</h2></div>
+      <div class="portal-context"><span class="portal-context-label">KOC VIET</span><h2>Trang doanh nghiệp</h2></div>
       <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ doanh nghiệp"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "D").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Doanh nghiệp</span></div></a></div></div>
       <div class="content" id="bz-view"></div></div></div>`;
   document.getElementById("bz-logout").addEventListener("click", logout);
@@ -90,7 +90,7 @@ export async function renderBusiness(el, hash) {
 }
 
 function sidebar(active) {
-  return `<div class="sidebar"><div class="brand"><img class="brand-icon" src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785140673/business_ft0lrg.png" alt=""><span class="brand-name">KOC Viet <span>Business</span></span></div>
+  return `<div class="sidebar"><div class="brand"><a class="portal-brand-link" href="#/dashboard" aria-label="KOC Việt — Trang doanh nghiệp">${brandLogo()}</a></div>
     <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav><button class="btn ghost sm portal-sidebar-logout" id="bz-logout">Đăng xuất</button></div>`;
 }
 
@@ -148,7 +148,7 @@ async function aiCloneBooking(el) {
   el.innerHTML = `<div class="between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px">
       <div>
         <h1 class="icon-heading">${icon("aiClone", "teaser-icon")} Booking AI Clone Avatar</h1>
-        <p class="muted">Tạo chiến dịch và sản xuất video tự động từ KOC đã sẵn sàng AI Clone Avatar</p>
+        <p class="muted">Tạo chiến dịch và tự động sản xuất video quảng cáo với AI Clone Avatar của KOC Việt.</p>
       </div>
       <a class="btn ghost sm" href="#/orders">📋 Theo dõi đơn booking</a>
     </div>

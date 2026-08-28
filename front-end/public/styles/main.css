@@ -292,6 +292,8 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
   .koc-portal .bottom-nav a{flex:0 0 auto;display:flex;width:calc(100% - 24px);min-height:46px;margin:2px 12px;padding:10px 13px;align-items:center;gap:12px;border:0;border-radius:10px;text-align:left;font-size:14px;line-height:1.3;color:#cdd6e4;transition:background .18s ease,color .18s ease,transform .18s ease}
   .koc-portal .bottom-nav a:hover{background:rgba(255,255,255,.06);color:#fff;transform:translateX(1px)}
   .koc-portal .bottom-nav a.active{color:#fff;background:rgba(255,255,255,.1);box-shadow:inset 3px 0 0 var(--grad-b)}
+  .koc-portal .bottom-nav .koc-desktop-brand a.portal-brand-link{width:auto;min-height:42px;margin:0;padding:0;border-radius:6px;color:#fff;background:transparent;box-shadow:none;transform:none}
+  .koc-portal .bottom-nav .koc-desktop-brand a.portal-brand-link:hover{color:#fff;background:transparent;transform:none}
   .koc-portal .bottom-nav a.active .ico{filter:drop-shadow(0 2px 5px rgba(0,0,0,.18))}
   .koc-portal .bottom-nav .ico{width:26px;height:26px;flex:0 0 26px;font-size:20px}
   .koc-portal .bottom-nav .nav-icon{width:24px;height:24px}
@@ -457,6 +459,12 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
 .sidebar .brand .brand-name{color:#fff}
 .sidebar .brand .brand-icon{width:32px;height:32px}
 .sidebar .brand img.brand-icon{object-fit:contain;flex:0 0 32px}
+.app-brand-lockup{display:inline-flex;align-items:center;gap:10px;color:inherit;line-height:1}
+.app-brand-lockup img{width:42px;height:42px;flex:0 0 42px;object-fit:contain}
+.app-brand-lockup>span{color:inherit;font-size:20px;font-weight:800;letter-spacing:-.025em;white-space:nowrap}
+.portal-brand-link{display:inline-flex;width:max-content;border-radius:6px;color:inherit;text-decoration:none}
+.portal-brand-link:focus-visible{outline:2px solid var(--grad-b);outline-offset:4px}
+.sidebar .brand .app-brand-lockup>span{color:#fff}
 .sidebar a{display:flex;align-items:center;gap:10px;padding:12px 20px;color:#cdd6e4;font-weight:500;font-size:14px;border-left:3px solid transparent}
 .sidebar a .sidebar-icon{width:24px;height:24px}
 .sidebar a:hover{background:rgba(255,255,255,.06)}
@@ -484,6 +492,12 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
 }
 .business-portal .sidebar .brand,.admin-portal .sidebar .brand{
   min-height:52px;padding:0 12px 18px;margin-bottom:2px;border-bottom:1px solid rgba(255,255,255,.1)
+}
+.business-portal .sidebar a.portal-brand-link,.admin-portal .sidebar a.portal-brand-link{
+  min-height:42px;padding:0;border:0;border-radius:6px;color:#fff;background:transparent;box-shadow:none
+}
+.business-portal .sidebar a.portal-brand-link:hover,.admin-portal .sidebar a.portal-brand-link:hover{
+  color:#fff;background:transparent
 }
 .business-portal .portal-nav,.admin-portal .portal-nav{
   display:flex;min-height:0;flex:1 1 auto;flex-direction:column;gap:4px;padding:4px 0 12px;

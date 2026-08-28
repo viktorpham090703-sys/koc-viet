@@ -2198,9 +2198,17 @@
 }
 
 .lp-home .lp-footer-brand .lp-footer-logo {
-  height: 38px;
-  width: auto;
-  margin-bottom: 14px;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0;
+}
+
+.lp-home .lp-footer-home-link {
+  gap: 13px;
+}
+
+.lp-home .lp-footer-wordmark {
+  font-size: 24px;
 }
 
 .lp-home .lp-footer-brand p {
@@ -3544,6 +3552,32 @@
   font-size: 11.5px;
   font-weight: 650;
   line-height: 1.45;
+}
+
+.lp-home .lp-channel-contact-list {
+  display: grid;
+  gap: 2px;
+}
+
+.lp-home .lp-channel-contact {
+  color: #c9412c;
+  font-size: 12.5px;
+  font-weight: 750;
+  line-height: 1.4;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.lp-home .lp-channel-contact:hover {
+  color: #9f2f1d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lp-home .lp-channel-contact:focus-visible {
+  border-radius: 3px;
+  outline: 3px solid rgba(234, 88, 60, 0.3);
+  outline-offset: 3px;
 }
 
 /* ==========================================================================

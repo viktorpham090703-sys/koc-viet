@@ -39,3 +39,8 @@ export function icon(name, className = "") {
   const classes = ["app-icon", className].filter(Boolean).join(" ");
   return `<img class="${classes}" src="${src}" alt="" aria-hidden="true" decoding="async">`;
 }
+
+export function brandLogo(className = "") {
+  const classes = ["app-brand-lockup", className].filter(Boolean).join(" ");
+  return `<span class="${classes}" aria-hidden="true"><img src="/images/koc-viet-logo.png" alt="" width="42" height="42" decoding="async"><span>KOC VIỆT</span></span>`;
+}
