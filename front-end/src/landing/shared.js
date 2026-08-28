@@ -46,7 +46,10 @@ export function lpFooter() {
     <div class="lp-footer-inner">
       <div class="lp-footer-top">
         <div class="lp-footer-brand">
-          <img class="lp-footer-logo" src="https://pub-84c3902526ad4c82b488275b43b39e3a.r2.dev/agent-assets/57813765-aa6e-4c0d-b03c-ebdab260764c/e239dc0b-bac4-4110-92a2-0f842e7ec1e1.png" alt="KOC Việt" loading="lazy" decoding="async">
+          <a class="lp-footer-home-link" href="/trang-chu" aria-label="KOC Việt — về trang chủ">
+            <img class="lp-footer-logo" src="/images/koc-viet-logo.png" alt="" width="52" height="52" loading="lazy" decoding="async">
+            <span class="lp-footer-wordmark">KOC VIỆT</span>
+          </a>
           <p>KOC Việt — nền tảng booking KOC/KOLs thuộc NetViet.</p>
         </div>
         <div class="lp-footer-cols">
@@ -65,8 +68,10 @@ export function lpFooter() {
           </div>
           <div class="lp-footer-col">
             <h4>Liên hệ</h4>
-            <p>Hotline &amp; email hỗ trợ</p>
-            <p>Giờ làm việc 9:00–18:00</p>
+            <a class="lp-footer-contact-link" href="tel:+84812986898">Hotline: 0812 98 68 98</a>
+            <a class="lp-footer-contact-link" href="tel:+84813487686">Hotline: 0813 487 686</a>
+            <a class="lp-footer-contact-link" href="mailto:kocviet@netviettv.com.vn">Email: kocviet@netviettv.com.vn</a>
+            <p class="lp-footer-hours">Giờ làm việc: 9:00–18:00 · Thứ 2–Thứ 7</p>
           </div>
         </div>
       </div>

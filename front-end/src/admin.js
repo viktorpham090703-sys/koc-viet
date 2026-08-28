@@ -20,7 +20,7 @@ import {
   avatarUrl,
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
-import { icon } from "./icons.js";
+import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
 import { bankIdentityHtml } from "./payout-banks.js";
 
@@ -50,10 +50,10 @@ export async function renderAdmin(el, hash) {
   const keys = NAV.map((n) => n[0].replace("#/", ""));
   const active = "#/" + (keys.includes(page) ? page : "dashboard");
   el.innerHTML = `<div class="portal admin-portal">
-    <div class="sidebar"><div class="brand">${icon("admin", "brand-icon")}<span class="brand-name">KOC Viet <span>Admin</span></span></div>
+    <div class="sidebar"><div class="brand"><a class="portal-brand-link" href="#/dashboard" aria-label="KOC Việt — Trang quản trị">${brandLogo()}</a></div>
       <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav><button class="btn ghost sm portal-sidebar-logout" id="ad-logout">Đăng xuất</button></div>
     <div class="main"><div class="topbar portal-topbar" style="background:var(--navy);color:#fff">
-      <div class="portal-context"><span class="portal-context-label">KOC Viet</span><h2 style="color:#fff">Trang quản trị</h2></div>
+      <div class="portal-context"><span class="portal-context-label">KOC VIET</span><h2 style="color:#fff">Trang quản trị</h2></div>
       <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "A").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Quản trị viên</span></div></div></div>
       <div class="content" id="ad-view"></div></div></div>`;
   document.getElementById("ad-logout").addEventListener("click", logout);
