@@ -1,0 +1,167 @@
+.pwa-actions {
+  position: fixed;
+  z-index: 10020;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: 42px minmax(150px, 1fr) auto 28px;
+  align-items: center;
+  gap: 12px;
+  width: min(620px, calc(100vw - 36px));
+  padding: 12px;
+  color: #17213a;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 75, 43, 0.16);
+  border-radius: 18px;
+  box-shadow: 0 18px 55px rgba(35, 28, 52, 0.2);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  animation: pwa-actions-in 240ms ease-out both;
+}
+
+.pwa-actions__logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.pwa-actions__content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-body, "Be Vietnam Pro", system-ui, sans-serif);
+}
+
+.pwa-actions__content strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.pwa-actions__content span {
+  overflow: hidden;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pwa-actions__buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pwa-action-button {
+  min-height: 38px;
+  padding: 8px 13px;
+  color: #ff4b2b;
+  background: #fff6f2;
+  border: 1px solid rgba(255, 75, 43, 0.2);
+  border-radius: 11px;
+  font: 700 12px/1.2 var(--font-body, "Be Vietnam Pro", system-ui, sans-serif);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.pwa-action-button--accent {
+  color: #fff;
+  background: linear-gradient(135deg, #ff5a2f, #ff174f);
+  border-color: transparent;
+  box-shadow: 0 8px 22px rgba(255, 50, 69, 0.22);
+}
+
+.pwa-action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(255, 75, 43, 0.16);
+}
+
+.pwa-action-button:focus-visible,
+.pwa-actions__close:focus-visible {
+  outline: 3px solid rgba(255, 75, 43, 0.28);
+  outline-offset: 2px;
+}
+
+.pwa-actions__close {
+  align-self: start;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #98a2b3;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font: 400 22px/26px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.pwa-hint {
+  position: fixed;
+  z-index: 10030;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  width: min(520px, calc(100vw - 32px));
+  padding: 13px 16px;
+  color: #fff;
+  background: #17213a;
+  border-radius: 13px;
+  box-shadow: 0 14px 45px rgba(23, 33, 58, 0.25);
+  font: 600 13px/1.5 var(--font-body, "Be Vietnam Pro", system-ui, sans-serif);
+  text-align: center;
+  transform: translateX(-50%);
+  animation: pwa-hint-in 200ms ease-out both;
+}
+
+@keyframes pwa-actions-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pwa-hint-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (max-width: 720px) {
+  .pwa-actions {
+    right: 12px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    grid-template-columns: 36px minmax(0, 1fr) 28px;
+    gap: 9px;
+    width: calc(100vw - 24px);
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .pwa-actions__logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .pwa-actions__buttons {
+    grid-column: 1 / -1;
+  }
+
+  .pwa-action-button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pwa-actions,
+  .pwa-hint {
+    animation: none;
+  }
+
+  .pwa-action-button {
+    transition: none;
+  }
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
+}
