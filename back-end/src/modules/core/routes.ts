@@ -60,6 +60,31 @@ function normalizedSocialHandle(value) {
   }
 }
 
+function faceFocusedAvatarUrl(value) {
+  const source = String(value || '').trim();
+  if (!source) return source;
+
+  try {
+    const url = new URL(source);
+    const uploadMarker = '/image/upload/';
+
+    if (
+      url.hostname === 'res.cloudinary.com' &&
+      url.pathname.includes(uploadMarker) &&
+      !url.pathname.includes('c_fill,g_face')
+    ) {
+      url.pathname = url.pathname.replace(
+        uploadMarker,
+        `${uploadMarker}c_fill,g_face,w_160,h_160,q_auto,f_auto/`,
+      );
+    }
+
+    return url.href;
+  } catch (_) {
+    return source;
+  }
+}
+
 async function deleteBookingByCode(env, bookingCodeOrId) {
   if (!bookingCodeOrId) return false;
   const b = await env.DB.prepare(
@@ -1384,7 +1409,12 @@ export async function route(request, env, url) {
        LIMIT 10`,
     ).all();
     return Response.json(
-      { kols: results },
+      {
+        kols: results.map((kol) => ({
+          ...kol,
+          avatar: faceFocusedAvatarUrl(kol.avatar),
+        })),
+      },
       {
         headers: {
           "Cache-Control": "public, max-age=300, stale-while-revalidate=900",
@@ -4577,6 +4607,7 @@ export async function route(request, env, url) {
     ).bind(per, (page - 1) * per).all();
     const kols = results.map((k) => ({
       ...k,
+      avatar: faceFocusedAvatarUrl(k.avatar),
       channels: JSON.parse(k.channels || "[]"),
       price_hidden: !!k.price_hidden,
       premium: !!k.premium,
