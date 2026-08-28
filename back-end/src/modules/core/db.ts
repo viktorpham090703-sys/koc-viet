@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-08-21-kol-workflow-v1';
+const SCHEMA_GUARD_VERSION = '2026-08-28-web-push-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -254,12 +254,27 @@ const MIGRATIONS = [
   `ALTER TABLE kol_requests ADD COLUMN approved_at INTEGER`,
   `ALTER TABLE kol_requests ADD COLUMN completed_at INTEGER`,
   `ALTER TABLE kol_requests ADD COLUMN cancelled_at INTEGER`,
+  // ---- device push notifications (append-only: migration indexes are persisted) ----
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+     endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+  `CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
+     ON push_subscriptions(user_id, updated_at DESC)`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
 // after swallowing a failed migration. This is required for older persistent
 // databases that can report the latest version while still missing objects.
 async function ensureV14Schema(env) {
+  await env.DB.exec(
+    `CREATE TABLE IF NOT EXISTS push_subscriptions (
+       endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+       created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+  );
+  await env.DB.exec(
+    `CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
+       ON push_subscriptions(user_id, updated_at DESC)`,
+  );
   await env.DB.exec(
     `CREATE TABLE IF NOT EXISTS koc_identity_documents (
        koc_id TEXT PRIMARY KEY, front_image TEXT NOT NULL, back_image TEXT NOT NULL,

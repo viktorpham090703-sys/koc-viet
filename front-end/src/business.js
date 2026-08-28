@@ -1661,6 +1661,31 @@ function businessKolColumns() {
   if (window.innerWidth >= 600) return 2;
   return 1;
 }
+
+function businessKolAvatarUrl(value) {
+  const source = avatarUrl(value);
+
+  try {
+    const url = new URL(source, window.location.origin);
+    const uploadMarker = "/image/upload/";
+
+    if (
+      url.hostname === "res.cloudinary.com" &&
+      url.pathname.includes(uploadMarker) &&
+      !url.pathname.includes("c_fill,g_face")
+    ) {
+      url.pathname = url.pathname.replace(
+        uploadMarker,
+        `${uploadMarker}c_fill,g_face,w_160,h_160,q_auto,f_auto/`,
+      );
+    }
+
+    return url.href;
+  } catch (_) {
+    return source;
+  }
+}
+
 async function kolPage(
   el,
   catalogPage = businessKolCatalogPage,
@@ -1685,7 +1710,7 @@ async function kolPage(
       ${kols
         .map(
           (k) => `<div class="card">
-        <div class="row"><img class="avatar" src="${esc(k.avatar)}"><div><div class="row"><b>${esc(k.name)}</b>${k.premium ? '<span class="chip r">Cao cấp</span>' : ""}</div>
+        <div class="row"><img class="avatar business-kol-avatar" src="${esc(businessKolAvatarUrl(k.avatar))}" alt="Ảnh đại diện ${esc(k.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/default-avatar.svg'"><div><div class="row"><b>${esc(k.name)}</b>${k.premium ? '<span class="chip r">Cao cấp</span>' : ""}</div>
           <div class="muted" style="font-size:12px">${esc(k.field)} · ${esc(k.fanbase)}</div></div></div>
         <div class="tint-box" style="margin:10px 0;font-size:13px">${k.price_hidden ? "Giá: <b>Thoả thuận</b>" : 'Giá tham khảo: <b class="money">' + money(k.ref_price) + "</b>"}</div>
         <button class="btn primary sm" data-kol="${k.id}" style="width:100%">Gửi yêu cầu báo giá</button>
