@@ -1,0 +1,278 @@
+/* Mobile hardening for authenticated KOC, business and admin workspaces. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.portal,
+.portal .main,
+.portal .content,
+.koc-portal,
+.koc-portal #koc-view {
+  min-width: 0;
+}
+
+.portal img,
+.koc-portal img {
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+  body:has(.portal.drawer-open) {
+    overflow: hidden;
+  }
+
+  .business-portal .sidebar,
+  .admin-portal .sidebar {
+    width: min(86vw, 300px);
+    height: 100vh;
+    height: 100dvh;
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: max(14px, env(safe-area-inset-left));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .portal-burger {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    place-items: center;
+    border-radius: 10px;
+  }
+
+  .portal-burger:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .portal-scrim {
+    padding: 0;
+    border: 0;
+  }
+
+  .business-portal .topbar,
+  .admin-portal .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 550;
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .business-portal .content,
+  .admin-portal .content {
+    padding: clamp(16px, 3vw, 28px);
+  }
+
+  .business-portal .content > .between,
+  .admin-portal .content > .between,
+  .business-portal .card > .between,
+  .admin-portal .card > .between {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .business-portal .table-wrap,
+  .admin-portal .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .business-portal .table-wrap table,
+  .admin-portal .table-wrap table {
+    display: table !important;
+    width: 100%;
+    min-width: 720px;
+    overflow: visible !important;
+  }
+
+  .business-portal :is(button, .btn, a.btn),
+  .admin-portal :is(button, .btn, a.btn) {
+    min-height: 44px;
+  }
+
+  .business-portal :is(input, select, textarea),
+  .admin-portal :is(input, select, textarea) {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .business-portal .topbar,
+  .admin-portal .topbar {
+    min-height: 60px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: 8px;
+  }
+
+  .portal-context h2 {
+    max-width: min(42vw, 180px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .portal-logout {
+    min-width: 44px;
+    width: 44px;
+    padding: 0;
+    overflow: hidden;
+    color: transparent;
+    font-size: 0;
+  }
+
+  .portal-logout::before {
+    content: "↪";
+    color: currentColor;
+    color: var(--primary);
+    font-size: 20px;
+  }
+
+  .business-portal .content,
+  .admin-portal .content {
+    padding: 14px max(12px, env(safe-area-inset-right)) 24px max(12px, env(safe-area-inset-left));
+  }
+
+  .business-portal .stat-cards,
+  .admin-portal .stat-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .business-portal .filters,
+  .admin-portal .filters {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    padding: 14px;
+  }
+
+  .business-portal .filters > *,
+  .admin-portal .filters > * {
+    width: 100%;
+    min-width: 0 !important;
+    grid-column: 1 !important;
+  }
+
+  .business-portal .filters :is(button, .btn),
+  .admin-portal .filters :is(button, .btn) {
+    justify-content: center;
+  }
+
+  .business-portal .modal,
+  .admin-portal .modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+    padding: 18px;
+    overflow-y: auto;
+  }
+
+  .business-portal .pager,
+  .admin-portal .pager {
+    max-width: 100%;
+    padding-bottom: 4px;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 599px) {
+  .mobile.koc-portal {
+    width: 100%;
+    max-width: none;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  .koc-portal .m-head.koc-page-heading {
+    width: calc(100% - 20px);
+    margin: 10px 10px 0;
+    padding: 16px;
+  }
+
+  .koc-portal .m-body {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .koc-portal .koc-home-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .koc-portal .koc-home-stats .stat-tile {
+    min-width: 0;
+  }
+
+  .koc-portal .koc-home-stats .stat-tile:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .koc-portal .bottom-nav {
+    display: block;
+    max-width: none;
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow: hidden;
+    box-shadow: 0 -6px 20px rgba(11, 31, 58, .1);
+  }
+
+  .koc-portal .koc-nav-scroll {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .koc-portal .koc-nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .koc-portal .bottom-nav a {
+    flex: 0 0 68px;
+    min-width: 68px;
+    min-height: 58px;
+    padding: 7px 3px 8px;
+    scroll-snap-align: start;
+  }
+
+  .koc-portal .bottom-nav .badge-num {
+    top: 3px;
+  }
+
+  .koc-portal .card > .between,
+  .koc-portal .list-item > .between {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .koc-portal :is(button, .btn, a.btn, input, select) {
+    min-height: 44px;
+  }
+
+  .koc-portal .modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+    padding: 18px;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .business-portal .stat-cards,
+  .admin-portal .stat-cards,
+  .koc-portal .koc-home-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .koc-portal .koc-home-stats .stat-tile:last-child {
+    grid-column: auto;
+  }
+}

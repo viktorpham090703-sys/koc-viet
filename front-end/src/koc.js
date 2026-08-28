@@ -131,7 +131,7 @@ async function home(el) {
         <div style="font-size:26px;font-weight:800" id="hm-bal">…</div></div>
     </div>
     <div class="m-body">
-      <div class="row" style="margin-bottom:12px">
+      <div class="row koc-home-stats" style="margin-bottom:12px">
         <div class="stat-tile"><div class="v">${d.pending}</div><div class="l">Chờ xác nhận</div></div>
         <div class="stat-tile"><div class="v">${d.active}</div><div class="l">Đang chạy</div></div>
         <div class="stat-tile"><div class="v">${tierBadge(k.tier)}</div><div class="l">Hạng · ${stars(k.rating)}</div></div>
