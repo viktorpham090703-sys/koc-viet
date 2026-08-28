@@ -7,6 +7,7 @@ import { renderKocProfile, renderMarketplacePublic } from "./public.js";
 import { LANDING_ROUTES, renderLandingBody } from "./landing/pages.js";
 import { bindLandingEvents } from "./landing/shared.js";
 import { autoAnimate } from "./animations.js";
+import { initializePwa, setPwaAuthenticated } from "./pwa.js";
 
 export const state = { user: null, config: null };
 const appEl = document.getElementById("app");
@@ -27,6 +28,7 @@ async function boot() {
   } catch (_) {
     state.user = null;
   }
+  initializePwa({ authenticated: Boolean(state.user) });
   route();
 }
 
@@ -49,6 +51,7 @@ export async function logout() {
     await post("/api/logout");
   } catch (_) {}
   state.user = null;
+  setPwaAuthenticated(false);
   goHash("#/login");
 }
 
@@ -214,6 +217,7 @@ async function doLogin() {
   try {
     const r = await post("/api/login", { email, password });
     state.user = r.user;
+    setPwaAuthenticated(true);
     toast("Xin chào " + r.user.name, "ok");
     goHash(r.user.role === "koc" ? "#/home" : "#/dashboard");
   } catch (e) {
