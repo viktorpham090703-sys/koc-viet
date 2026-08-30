@@ -30,6 +30,7 @@ import {
   bindBankPicker,
   selectedPayoutBank,
 } from "./payout-banks.js";
+import { socialProfileUrl } from "./social-channels.js";
 
 const NAV = [
   ["#/dashboard", icon("overview", "sidebar-icon"), "Tổng quan"],
@@ -345,25 +346,6 @@ async function find(el) {
 }
 
 const PLATFORMS = ["Shopee", "Lazada", "TikTok Shop", "Tiki", "Facebook Shop"];
-
-function socialProfileUrl(social) {
-  const handle = String(social?.handle || "").trim();
-  if (!handle) return "";
-  try {
-    const url = new URL(handle);
-    if (["http:", "https:"].includes(url.protocol)) return url.href;
-  } catch (_) {}
-  const username = handle.replace(/^@/, "").trim();
-  if (!username) return "";
-  const platform = String(social?.platform || "").trim().toLowerCase();
-  const bases = {
-    tiktok: "https://www.tiktok.com/@",
-    facebook: "https://www.facebook.com/",
-    instagram: "https://www.instagram.com/",
-    youtube: "https://www.youtube.com/@",
-  };
-  return bases[platform] ? `${bases[platform]}${encodeURIComponent(username)}` : "";
-}
 
 function closeKocProfileModal(dialog, afterClose) {
   const backdrop = dialog?.closest(".modal-bg");

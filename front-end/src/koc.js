@@ -31,6 +31,13 @@ import {
   bindBankPicker,
   selectedPayoutBank,
 } from "./payout-banks.js";
+import {
+  MAX_SOCIAL_CHANNELS,
+  normalizeSocialDrafts,
+  isValidSocialUrl,
+  socialChannelPickerHtml,
+  socialProfileUrl,
+} from "./social-channels.js";
 
 const MIN_WITHDRAW_AMOUNT = 10_000;
 
@@ -1443,7 +1450,13 @@ async function profile(el, editing = false) {
           ${(k.prices || []).map((item) => `<div class="profile-price"><span>${esc(item.category)}</span><b class="money">${money(item.price)}</b></div>`).join("") || '<p class="muted">Chưa có bảng giá.</p>'}
         </div>
         <div class="card profile-section"><h3>Kênh mạng xã hội</h3>
-          ${(k.socials || []).map((item) => `<div class="profile-price"><span>${esc(item.platform)} · ${esc(item.handle)}</span><b>${num(item.followers || k.followers)} followers</b></div>`).join("") || '<p class="muted">Chưa cập nhật.</p>'}
+          ${(k.socials || []).map((item) => {
+            const url = socialProfileUrl(item);
+            const content = `<span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span><strong>${num(item.followers || k.followers)} followers</strong>`;
+            return url
+              ? `<a class="profile-social-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${content}</a>`
+              : `<div class="profile-social-link">${content}</div>`;
+          }).join("") || '<p class="muted">Chưa cập nhật.</p>'}
         </div>
         <div class="card profile-section"><h3>Tài khoản nhận thanh toán</h3>
           <div class="profile-price"><span>Ngân hàng</span>${bankIdentityHtml(cfg.payoutBanks, k.bank_name, k.bank_bin)}</div>
@@ -1465,6 +1478,7 @@ async function profile(el, editing = false) {
   const catList = [...new Set(cfg.categories.concat(cats))];
   let avatarSource = k.avatar || "";
   let coverSource = k.cover || "";
+  let socialDrafts = normalizeSocialDrafts(k.socials, { withFallback: true });
   el.innerHTML = `<div class="m-head koc-page-heading koc-profile-heading"><div class="between"><h2 style="color:#fff">✏️ Chỉnh sửa hồ sơ</h2><button class="chip on-dark" id="pf-cancel">Hủy</button></div></div>
     <div class="m-body koc-profile-edit-body">
       <div class="image-editor">
@@ -1479,7 +1493,7 @@ async function profile(el, editing = false) {
       <div class="field"><label>Giới thiệu</label><textarea id="pf-bio" rows="3">${esc(k.bio || "")}</textarea></div>
       <div class="field"><label>Email liên hệ / đăng nhập</label><input id="pf-email" type="email" value="${esc(k.email || "")}" placeholder="email@domain.com"></div>
       <div class="field"><label>Tỉnh/Thành phố</label><select id="pf-prov">${provinceOptions(cfg.provinces, k.province)}</select></div>
-      <div class="field"><label>Kênh MXH chính ${k.followers_verified ? '<span class="chip g">✓ Đã xác minh</span>' : ""}</label><input id="pf-social" value="${esc((k.socials[0] && k.socials[0].platform + " " + k.socials[0].handle) || "")}" placeholder="TikTok @handle" ${k.followers_verified ? "readonly" : ""}>${k.followers_verified ? '<small class="hint">Liên hệ admin nếu cần đổi kênh và xác minh lại.</small>' : ""}</div>
+      <div id="pf-socials"></div>
       ${tierPanel(k, cfg)}
       <div class="field"><label>Ngành hàng & bảng giá</label>
         <div id="pf-cats" class="profile-category-picker">${catList.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "selected" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>
@@ -1502,6 +1516,54 @@ async function profile(el, editing = false) {
     </div>`;
 
   bindBankPicker(el.querySelector('[data-bank-picker="pf-bank-select"]'), cfg.payoutBanks);
+
+  function collectSocialDrafts() {
+    const currentByPlatform = new Map(
+      socialDrafts.map((social) => [social.platform, social]),
+    );
+    const inputs = [...el.querySelectorAll("#pf-socials [data-social-link]")];
+    if (!inputs.length) return;
+    socialDrafts = inputs.map((input, index) => ({
+      ...currentByPlatform.get(input.dataset.platform),
+      platform: input.dataset.platform,
+      handle: input.value.trim(),
+      followers: index === 0 ? k.followers : Number(currentByPlatform.get(input.dataset.platform)?.followers || k.followers),
+    }));
+  }
+
+  function renderSocialDrafts() {
+    const container = el.querySelector("#pf-socials");
+    container.innerHTML = socialChannelPickerHtml({
+      socials: socialDrafts,
+      prefix: "pf",
+      escapeHtml: esc,
+      primaryVerified: k.followers_verified,
+    });
+    container.querySelectorAll("[data-social-toggle]").forEach((button) =>
+      button.addEventListener("click", () => {
+        collectSocialDrafts();
+        const platform = button.dataset.socialToggle;
+        const index = socialDrafts.findIndex(
+          (social) => social.platform === platform,
+        );
+        if (index >= 0) {
+          if (index === 0 && k.followers_verified) {
+            toast("Kênh chính đã xác minh không thể gỡ", "err");
+            return;
+          }
+          socialDrafts.splice(index, 1);
+        } else {
+          if (socialDrafts.length >= MAX_SOCIAL_CHANNELS) {
+            toast(`Chỉ được chọn tối đa ${MAX_SOCIAL_CHANNELS} kênh`, "err");
+            return;
+          }
+          socialDrafts.push({ platform, handle: "", followers: k.followers });
+        }
+        renderSocialDrafts();
+      }),
+    );
+  }
+  renderSocialDrafts();
 
   const processFile = async (input, target, width, height, assign) => {
     const file = input.files?.[0];
@@ -1594,16 +1656,24 @@ async function profile(el, editing = false) {
     el.querySelectorAll("[data-price]").forEach((input) => {
       prices[input.dataset.price] = Number(input.value) || 0;
     });
-    const social = el.querySelector("#pf-social").value.trim();
-    const socials = social
-      ? [
-          {
-            platform: social.split(" ")[0] || "MXH",
-            handle: social.split(" ").slice(1).join(" ") || social,
-            followers: k.followers,
-          },
-        ]
-      : [];
+    collectSocialDrafts();
+    if (!socialDrafts.length)
+      return toast("Chọn ít nhất một kênh mạng xã hội", "err");
+    const missingLink = socialDrafts.find((social) => !social.handle);
+    if (missingLink)
+      return toast(`Nhập link kênh ${missingLink.platform}`, "err");
+    const invalidLink = socialDrafts.find(
+      (social) => !isValidSocialUrl(social.handle),
+    );
+    if (invalidLink)
+      return toast(
+        `Link ${invalidLink.platform} phải bắt đầu bằng http:// hoặc https://`,
+        "err",
+      );
+    const socials = socialDrafts.map((social, index) => ({
+      ...social,
+      followers: index === 0 ? k.followers : Number(social.followers || k.followers),
+    }));
     const bank = selectedPayoutBank(el.querySelector("#pf-bank-select"));
     const bankName = bank.name;
     const bankBin = bank.bin;

@@ -6,6 +6,12 @@ import {
   bindBankPicker,
   selectedPayoutBank,
 } from "./payout-banks.js";
+import {
+  MAX_SOCIAL_CHANNELS,
+  normalizeSocialDrafts,
+  isValidSocialUrl,
+  socialChannelPickerHtml,
+} from "./social-channels.js";
 import Tesseract from "tesseract.js";
 
 // Multi-step KOC onboarding funnel → "chờ duyệt"
@@ -28,7 +34,7 @@ export function renderOnboarding(el) {
     province: cfg.provinces[0],
     categories: [],
     customCategory: "",
-    socials: [],
+    socials: normalizeSocialDrafts([], { withFallback: true }),
     followers: 0,
     followerVerification: {
       inputKey: "",
@@ -92,6 +98,11 @@ export function renderOnboarding(el) {
     return platform || handle;
   };
   const resetFollowerVerification = () => {
+    if (d.socials[0]) {
+      delete d.socials[0].verified;
+      delete d.socials[0].verificationSource;
+      delete d.socials[0].verifiedAt;
+    }
     d.followerVerification = {
       inputKey: "",
       challengeToken: "",
@@ -470,7 +481,6 @@ export function renderOnboarding(el) {
   // ---------- Step 1: Hồ sơ (tỉnh/thành, ngành hàng + "Khác", follower...) ----------
   function renderStep1() {
     const catList = cfg.categories.concat(["Khác"]);
-    const social = d.socials[0] || { platform: "TikTok", handle: "" };
     const verification = d.followerVerification;
     el.innerHTML = wrap(`
       <div class="field"><label>Tỉnh/Thành phố</label><select id="o-prov">${provinceOptions(cfg.provinces, d.province)}</select></div>
@@ -478,10 +488,13 @@ export function renderOnboarding(el) {
         <div id="o-cats" style="display:flex;flex-wrap:wrap;gap:8px">${catList.map((c) => `<button type="button" class="chip" data-c="${esc(c)}" style="cursor:pointer;padding:8px 14px;${d.categories.includes(c) ? "background:var(--primary);color:#fff" : ""}">${esc(c)}</button>`).join("")}</div>
         ${d.categories.includes("Khác") ? `<div class="field" style="margin-top:8px"><input id="o-cat-other" value="${esc(d.customCategory)}" placeholder="Nhập tên ngành hàng khác"></div>` : ""}
       </div>
-      <div class="field"><label>Nền tảng chính</label><select id="o-platform">
-        ${["TikTok", "Facebook", "Instagram", "YouTube"].map((platform) => `<option value="${platform}" ${platform === social.platform ? "selected" : ""}>${platform}</option>`).join("")}
-      </select></div>
-      <div class="field"><label>Tên tài khoản hoặc đường dẫn hồ sơ</label><input id="o-handle" value="${esc(social.handle || "")}" placeholder="@tenkenh hoặc https://..."></div>
+      ${socialChannelPickerHtml({
+        socials: d.socials,
+        prefix: "o",
+        escapeHtml: esc,
+        primaryVerified: verification.verified,
+        primaryLabel: "Kênh chính để xác minh follower",
+      })}
       <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="0" step="1" value="${d.followers}" ${verification.verified ? "readonly" : ""}></div>
       <div class="field"><label>Tỷ lệ tương tác (%)</label><input id="o-eng" type="number" step="0.1" value="${d.engagement}"></div>
       <div class="tint-box" style="margin:4px 0 14px">
@@ -522,6 +535,35 @@ export function renderOnboarding(el) {
         render();
       }),
     );
+    el.querySelectorAll("[data-social-toggle]").forEach((button) =>
+      button.addEventListener("click", () => {
+        collect1();
+        const platform = button.dataset.socialToggle;
+        const index = d.socials.findIndex(
+          (social) => social.platform === platform,
+        );
+        if (index >= 0) {
+          if (index === 0 && d.followerVerification.verified) {
+            toast("Kênh chính đã xác minh không thể gỡ", "err");
+            return;
+          }
+          d.socials.splice(index, 1);
+        } else {
+          if (d.socials.length >= MAX_SOCIAL_CHANNELS) {
+            toast(`Chỉ được chọn tối đa ${MAX_SOCIAL_CHANNELS} kênh`, "err");
+            return;
+          }
+          d.socials.push({ platform, handle: "", followers: d.followers });
+        }
+        if (
+          d.followerVerification.inputKey &&
+          d.followerVerification.inputKey !== followerInputKey()
+        ) {
+          resetFollowerVerification();
+        }
+        render();
+      }),
+    );
     el.querySelector("#o-follower-challenge")?.addEventListener(
       "click",
       createFollowerChallenge,
@@ -551,19 +593,17 @@ export function renderOnboarding(el) {
     if (bio) d.bio = bio.value;
     const other = el.querySelector("#o-cat-other");
     if (other) d.customCategory = other.value;
-    const platform = el.querySelector("#o-platform");
-    const handle = el.querySelector("#o-handle");
-    if (platform && handle) {
-      const handleValue = handle.value.trim();
-      d.socials = handleValue
-        ? [
-            {
-              platform: platform.value,
-              handle: handleValue,
-              followers: d.followers,
-            },
-          ]
-        : [];
+    const currentByPlatform = new Map(
+      d.socials.map((social) => [social.platform, social]),
+    );
+    const socialInputs = [...el.querySelectorAll("[data-social-link]")];
+    if (socialInputs.length) {
+      d.socials = socialInputs.map((input, index) => ({
+        ...currentByPlatform.get(input.dataset.platform),
+        platform: input.dataset.platform,
+        handle: input.value.trim(),
+        followers: index === 0 ? d.followers : Number(currentByPlatform.get(input.dataset.platform)?.followers || d.followers),
+      }));
     }
     if (
       oldVerificationKey &&
@@ -668,6 +708,7 @@ export function renderOnboarding(el) {
           followers: d.followers,
           verified: true,
         },
+        ...d.socials.slice(1),
       ];
       d.followerVerification = {
         inputKey: followerInputKey(),
@@ -705,6 +746,22 @@ export function renderOnboarding(el) {
       d.categories = d.categories.map((c) =>
         c === "Khác" ? d.customCategory.trim() : c,
       );
+    }
+    if (!d.socials.length) {
+      toast("Chọn ít nhất một kênh mạng xã hội", "err");
+      return false;
+    }
+    const missingLink = d.socials.find((social) => !social.handle);
+    if (missingLink) {
+      toast(`Nhập link kênh ${missingLink.platform}`, "err");
+      return false;
+    }
+    const invalidLink = d.socials.find(
+      (social) => !isValidSocialUrl(social.handle),
+    );
+    if (invalidLink) {
+      toast(`Link ${invalidLink.platform} phải bắt đầu bằng http:// hoặc https://`, "err");
+      return false;
     }
     if (
       !d.followerVerification.verified ||
