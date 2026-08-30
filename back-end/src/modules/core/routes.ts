@@ -40,7 +40,16 @@ const SOCIAL_PLATFORMS = {
   facebook: 'Facebook',
   instagram: 'Instagram',
   youtube: 'YouTube',
+  threads: 'Threads',
+  x: 'X (Twitter)',
+  twitter: 'X (Twitter)',
+  'x (twitter)': 'X (Twitter)',
+  linkedin: 'LinkedIn',
+  zalo: 'Zalo',
+  pinterest: 'Pinterest',
+  twitch: 'Twitch',
 };
+const MAX_SOCIAL_CHANNELS = 6;
 
 function normalizedSocialPlatform(value) {
   const key = String(value || '').trim().toLowerCase();
@@ -58,6 +67,71 @@ function normalizedSocialHandle(value) {
   } catch (_) {
     return raw.replace(/^@+/, '');
   }
+}
+
+function validSocialReference(value) {
+  const raw = String(value || '').trim();
+  try {
+    const url = new URL(raw);
+    return (
+      ['http:', 'https:'].includes(url.protocol) &&
+      !url.username &&
+      !url.password
+    );
+  } catch (_) {
+    return /^@?[\p{L}\p{N}._-]{1,100}$/u.test(raw);
+  }
+}
+
+export function validateSocialsInput(value) {
+  if (!Array.isArray(value)) return { socials: [], error: '' };
+  if (value.length > MAX_SOCIAL_CHANNELS) {
+    return {
+      socials: [],
+      error: `Chỉ được đăng ký tối đa ${MAX_SOCIAL_CHANNELS} kênh mạng xã hội`,
+    };
+  }
+
+  const seen = new Set();
+  const socials = [];
+  for (const item of value) {
+    const platform = normalizedSocialPlatform(item?.platform);
+    const handle = String(item?.handle || '').trim();
+    if (!platform) {
+      return { socials: [], error: 'Kênh mạng xã hội không được hỗ trợ' };
+    }
+    if (seen.has(platform)) {
+      return { socials: [], error: `Kênh ${platform} đã được chọn trùng` };
+    }
+    if (!validSocialReference(handle) || handle.length > 300) {
+      return { socials: [], error: `Link kênh ${platform} không hợp lệ` };
+    }
+    const followerValue = Number(item?.followers);
+    seen.add(platform);
+    socials.push({
+      platform,
+      handle,
+      followers:
+        Number.isSafeInteger(followerValue) &&
+        followerValue >= 0 &&
+        followerValue <= 2_000_000_000
+          ? followerValue
+          : 0,
+    });
+  }
+  return { socials, error: '' };
+}
+
+export function preserveVerifiedPrimarySocial(currentSocial, requestedSocials) {
+  if (!currentSocial) return requestedSocials;
+  return [
+    currentSocial,
+    ...requestedSocials.filter(
+      (social) =>
+        normalizedSocialPlatform(social.platform) !==
+        normalizedSocialPlatform(currentSocial.platform),
+    ),
+  ].slice(0, MAX_SOCIAL_CHANNELS);
 }
 
 function faceFocusedAvatarUrl(value) {
@@ -1489,10 +1563,10 @@ export async function route(request, env, url) {
     if (!(await isEmailVerified(env, email, "onboard")))
       return err("Email chưa được xác thực OTP", 403);
     if (!platform)
-      return err("Nền tảng phải là TikTok, Facebook, Instagram hoặc YouTube");
+      return err("Kênh mạng xã hội không được hỗ trợ");
     if (
-      !normalizedSocialHandle(handle) ||
-      handle.length > 200 ||
+      !validSocialReference(handle) ||
+      handle.length > 300 ||
       /[\r\n]/.test(handle)
     )
       return err("Nhập handle hoặc URL hồ sơ mạng xã hội");
@@ -1747,16 +1821,35 @@ export async function route(request, env, url) {
       followers > 2_000_000_000
     )
       return err("Số người theo dõi đã xác minh không hợp lệ");
-    const verifiedSocials = [
-      {
-        platform: followerProof.platform,
-        handle: followerProof.handle,
-        followers,
-        verified: true,
-        verificationSource: followerProof.source,
-        verifiedAt: followerProof.verifiedAt,
-      },
-    ];
+    const socialResult = validateSocialsInput(body.socials);
+    if (socialResult.error) return err(socialResult.error);
+    const verifiedPrimarySocial = {
+      platform: followerProof.platform,
+      handle: followerProof.handle,
+      followers,
+      verified: true,
+      verificationSource: followerProof.source,
+      verifiedAt: followerProof.verifiedAt,
+    };
+    const requestedPrimarySocial = socialResult.socials[0];
+    if (
+      requestedPrimarySocial &&
+      (normalizedSocialPlatform(requestedPrimarySocial.platform) !==
+        normalizedSocialPlatform(verifiedPrimarySocial.platform) ||
+        !socialHandlesMatch(
+          requestedPrimarySocial.handle,
+          verifiedPrimarySocial.handle,
+        ))
+    ) {
+      return err("Kênh chính không khớp với kênh đã xác minh", 409);
+    }
+    const verifiedSocials = preserveVerifiedPrimarySocial(
+      verifiedPrimarySocial,
+      socialResult.socials.slice(1).map((social) => ({
+        ...social,
+        followers: social.followers || followers,
+      })),
+    );
     const eng = Number(body.engagement) || 0;
     const tier = tierOf(followers, eng);
     const tiersNow = await getTiers(env);
@@ -6109,9 +6202,12 @@ export async function route(request, env, url) {
       return err("Ảnh vượt quá dung lượng cho phép sau khi tối ưu");
     if (!isImageSource(avatar) || !isImageSource(cover))
       return err("Định dạng ảnh không hợp lệ");
-    let socials = Array.isArray(body.socials)
-      ? body.socials.slice(0, 6)
-      : JSON.parse(k.socials || "[]");
+    let socials = JSON.parse(k.socials || "[]");
+    if (Array.isArray(body.socials)) {
+      const socialResult = validateSocialsInput(body.socials);
+      if (socialResult.error) return err(socialResult.error);
+      socials = socialResult.socials;
+    }
     if (k.followers_verified) {
       const currentSocials = JSON.parse(k.socials || "[]");
       const currentSocial = currentSocials[0] || {};
@@ -6128,7 +6224,7 @@ export async function route(request, env, url) {
           "Kênh mạng xã hội đã được xác minh. Hãy liên hệ admin để đổi kênh và xác minh lại.",
           409,
         );
-      socials = currentSocials;
+      socials = preserveVerifiedPrimarySocial(currentSocial, socials.slice(1));
     }
     const categories = Array.isArray(body.categories)
       ? [
