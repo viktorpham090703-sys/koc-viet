@@ -165,8 +165,8 @@ function pageHome() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
           </div>
           <div class="lp-stat-info">
-            <span class="lp-stat-num">5%+</span>
-            <span class="lp-stat-lbl">Mức phí dịch vụ duy nhất</span>
+            <span class="lp-stat-num">0 Đồng</span>
+            <span class="lp-stat-lbl">Phí dịch vụ booking</span>
           </div>
         </div>
       </div>
@@ -724,7 +724,7 @@ function pageBusiness() {
     className: "lp-business-hero",
     eyebrow: "DÀNH CHO DOANH NGHIỆP & NHÃN HÀNG",
     h1: `<span class="lp-hero-line">Booking KOC,</span><span class="coral lp-hero-line">dễ như đặt xe.</span>`,
-    sub: `Không cần qua nhiều tầng agency. Chọn KOC, xem giá công khai và hiệu quả thực tế, rồi chốt booking trực tiếp trên KOC Việt.<span class="lp-business-hero-budget">Từ ngân sách 3 triệu đến 3 tỷ, đều có KOC phù hợp.</span>`,
+    sub: `Không cần qua nhiều tầng agency. Chọn KOC, xem giá công khai và hiệu quả thực tế, rồi chốt booking trực tiếp trên KOC Việt.<span class="lp-business-hero-budget">Từ ngân sách 0 Đồng đến tiền tỷ, đều có KOC/KOLs phù hợp.</span>`,
     ctas: [
       { href: "/#/explore", label: "Tìm KOC ngay — miễn phí" },
       {
