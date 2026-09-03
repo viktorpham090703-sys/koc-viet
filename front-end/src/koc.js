@@ -187,7 +187,15 @@ async function campaigns(el, page = kocCampaignPage) {
       <div class="campaign-koc-card-footer">${c.status==='invited'?`<div class="campaign-koc-actions"><button class="btn primary sm" data-campaign-accept="${c.id}">Nhận chiến dịch</button><button class="btn ghost sm" data-campaign-decline="${c.id}">Từ chối</button></div>`:''}
       ${['accepted','revision_requested'].includes(c.status)?`<div class="campaign-submit-form"><div class="field"><label>Link bài đăng / video</label><input data-campaign-url="${c.id}" value="${esc(c.submission_url||'')}" placeholder="https://..."></div><div class="field"><label>Ghi chú bàn giao</label><textarea data-campaign-note="${c.id}" rows="2">${esc(c.submission_note||'')}</textarea></div><button class="btn primary sm" data-campaign-submit="${c.id}">Gửi doanh nghiệp duyệt</button></div>`:''}
       ${!['invited','accepted','revision_requested'].includes(c.status)?`<div class="campaign-koc-waiting">${c.status==='submitted'?'Đang chờ doanh nghiệp duyệt':c.status==='approved'?'Đã duyệt · Chờ Admin giải ngân':c.status==='settled'?'Khoản tiền đã vào Ví KOC':c.status==='declined'?'Bạn đã từ chối lời mời này':'Đang xử lý'}</div>`:''}</div>
-    </article>`).join(''):empty('📣','Chưa có lời mời chiến dịch lớn')}</div>
+    </article>`).join(''):`<section class="campaign-koc-empty" aria-labelledby="campaign-empty-title">
+      <div class="campaign-koc-empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h2l3.5 4.5a1 1 0 0 0 1.75-.66V15l6.2 2.48A1.1 1.1 0 0 0 20 16.46V7.54a1.1 1.1 0 0 0-1.55-1.02L7 11H5a2 2 0 0 0-2 2"/><path d="M7 11v4"/><path d="M21 10v4"/></svg>
+      </div>
+      <span class="campaign-koc-empty-eyebrow">Trung tâm chiến dịch</span>
+      <h2 id="campaign-empty-title">Chưa có chiến dịch mới</h2>
+      <p>Khi có chiến dịch phù hợp với hạng, ngành hàng và khu vực của bạn, lời mời sẽ xuất hiện tại đây.</p>
+      <div class="campaign-koc-empty-notice"><i aria-hidden="true"></i><span>Bạn sẽ được thông báo ngay khi có lời mời mới</span></div>
+    </section>`}</div>
     ${r.pages>1?`<nav class="campaign-koc-pager" aria-label="Phân trang chiến dịch"><button class="btn ghost sm" data-campaign-page="${r.page-1}" ${r.page<=1?'disabled':''}>← Trước</button><span>Trang <b>${r.page}</b> / ${r.pages}</span><button class="btn ghost sm" data-campaign-page="${r.page+1}" ${r.page>=r.pages?'disabled':''}>Sau →</button></nav>`:''}</div>`;
   el.querySelectorAll('[data-campaign-page]').forEach(b=>b.addEventListener('click',()=>campaigns(el,Number(b.dataset.campaignPage))));
   el.querySelectorAll('[data-campaign-accept]').forEach(b=>b.addEventListener('click',async()=>{try{await post('/api/campaign/allocation/action',{id:b.dataset.campaignAccept,action:'accept'});toast('Đã nhận chiến dịch','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
