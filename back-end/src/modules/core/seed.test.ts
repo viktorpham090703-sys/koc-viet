@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { KOC_AVATARS, TIERS, tierOf } from "./seed.js";
+import {
+  KOC_AVATARS,
+  KOC_DEMO_PRICES,
+  KOC_PROFILE_AVATAR_OVERRIDES,
+  TIERS,
+  syncKocCatalog,
+  tierOf,
+} from "./seed.js";
 
 test("defines the five KOC tiers and requested price ranges", () => {
   assert.deepEqual(TIERS.map((tier) => tier.name), ["Nano", "Micro", "Mid", "Macro", "Mega"]);
@@ -47,5 +54,66 @@ test("ships a local portrait for every seeded KOC", async () => {
     assert.match(avatar, /^\/images\/koc-avatars\/[a-z-]+\.jpg$/);
     const asset = fileURLToPath(new URL(`../../../../front-end/public${avatar}`, import.meta.url));
     await access(asset);
+  }
+});
+
+test("replaces Nguyễn Hồ Việt Khoa's external avatar with a local portrait", async () => {
+  assert.deepEqual(KOC_PROFILE_AVATAR_OVERRIDES, {
+    "58b98467-00a6-43cd-9775-656c85c91208":
+      "/images/koc-avatars/nguyen-ho-viet-khoa.jpg",
+  });
+
+  const [avatar] = Object.values(KOC_PROFILE_AVATAR_OVERRIDES);
+  const asset = fileURLToPath(new URL(`../../../../front-end/public${avatar}`, import.meta.url));
+  await access(asset);
+});
+
+test("syncs Nguyễn Hồ Việt Khoa's avatar by stable profile ID", async () => {
+  const batched: Array<{ sql: string; values: unknown[] }> = [];
+  const env = {
+    DB: {
+      prepare(sql: string) {
+        return {
+          bind(...values: unknown[]) {
+            return { sql, values };
+          },
+        };
+      },
+      async batch(statements: Array<{ sql: string; values: unknown[] }>) {
+        batched.push(...statements);
+      },
+    },
+  };
+
+  await syncKocCatalog(env);
+
+  assert.ok(batched.some(({ sql, values }) =>
+    sql === "UPDATE kocs SET avatar=? WHERE id=?"
+      && values[0] === "/images/koc-avatars/nguyen-ho-viet-khoa.jpg"
+      && values[1] === "58b98467-00a6-43cd-9775-656c85c91208"));
+});
+
+test("keeps every sample KOC price attractive without dropping below its tier floor", () => {
+  const expectedPriceWindows: Record<string, [number, number]> = {
+    "Nguyễn Thu Hà": [20_000_000, 24_000_000],
+    "Trần Minh Quân": [8_000_000, 10_000_000],
+    "Lê Phương Anh": [1_000_000, 1_800_000],
+    "Phạm Gia Bảo": [1_000_000, 1_800_000],
+    "Võ Thanh Trúc": [1_000_000, 1_800_000],
+    "Đặng Hoàng Long": [200_000, 450_000],
+    "Bùi Ngọc Mai": [8_000_000, 10_000_000],
+    "Hồ Anh Tuấn": [200_000, 450_000],
+    "Đỗ Thùy Linh": [1_000_000, 1_800_000],
+    "Ngô Quốc Việt": [20_000_000, 24_000_000],
+    "Trịnh Bảo Ngọc": [200_000, 450_000],
+    "Lý Hải Đăng": [1_000_000, 1_800_000],
+  };
+
+  assert.deepEqual(Object.keys(KOC_DEMO_PRICES), Object.keys(KOC_AVATARS));
+  for (const [name, prices] of Object.entries(KOC_DEMO_PRICES)) {
+    const [min, max] = expectedPriceWindows[name];
+    for (const price of Object.values(prices)) {
+      assert.ok(price >= min && price <= max, `${name}: ${price}`);
+    }
   }
 });

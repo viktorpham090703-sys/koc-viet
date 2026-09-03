@@ -11,6 +11,7 @@ import {
   lpMedia,
   lpFeatureRow,
   lpVideoPlayer,
+  KOC_ACTIVITY_FALLBACK,
 } from "./shared.js";
 import {
   ACTIVITY_CATEGORY_CYCLE,
@@ -32,51 +33,7 @@ export const LANDING_ROUTES = [
 
 // ---------- 1. Trang chủ (/home) ----------
 function pageHome() {
-  const activitySeedRows = [
-    {
-      name: "Kim L.",
-      category: "Ẩm thực & F&B",
-      text: "Nhận booking review sản phẩm mới và lên lịch đăng nội dung",
-      time: "8 giây trước",
-    },
-    {
-      name: "Ngọc A.",
-      category: "Thời trang",
-      text: "Bắt đầu chiến dịch ra mắt bộ sưu tập mùa mới",
-      time: "30 giây trước",
-    },
-    {
-      name: "Minh T.",
-      category: "Làm đẹp",
-      text: "Hoàn tất hồ sơ, bảng giá và sẵn sàng nhận booking",
-      time: "52 giây trước",
-    },
-    {
-      name: "Lan H.",
-      category: "Mẹ & Bé",
-      text: "Nhận lời mời trải nghiệm sản phẩm chăm sóc gia đình",
-      time: "1 phút trước",
-    },
-    {
-      name: "Quang D.",
-      category: "Công nghệ",
-      text: "Đã duyệt nội dung cho chiến dịch thiết bị thông minh",
-      time: "1 phút trước",
-    },
-    {
-      name: "Huyền N.",
-      category: "Du lịch",
-      text: "Nhận chiến dịch trải nghiệm điểm đến địa phương",
-      time: "2 phút trước",
-    },
-    {
-      name: "An P.",
-      category: "Sức khỏe",
-      text: "Hoàn tất nghiệm thu và nhận thanh toán an toàn",
-      time: "2 phút trước",
-    },
-  ];
-  const activityRows = activitySeedRows
+  const activityRows = KOC_ACTIVITY_FALLBACK
     .map((item, index) => {
       const tone = ACTIVITY_CATEGORY_CYCLE[index]?.tone || "orange";
       return `<article class="lp-activity-row-item">
@@ -84,7 +41,7 @@ function pageHome() {
           <span class="lp-cat-icon-wrap">${industryIconSvg(item.category, "lp-cat-icon")}<span class="lp-cat-dot ${tone}"></span></span>
           <span>${item.category}</span>
         </div>
-        <div class="lp-user-cell"><img class="lp-user-avatar" src="/default-avatar.svg" alt="${item.name}" /><span class="lp-user-name">${item.name}</span></div>
+        <div class="lp-user-cell"><img class="lp-user-avatar" src="${item.avatar}" alt="" loading="lazy" decoding="async" /><span class="lp-user-name">${item.name}</span></div>
         <div class="lp-activity-desc">${item.text}</div>
         <div class="lp-activity-timestamp">${item.time}</div>
       </article>`;
