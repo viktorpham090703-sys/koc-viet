@@ -1674,7 +1674,8 @@ export async function route(request, env, url) {
   if (p === "/api/kocs") {
     const q = url.searchParams;
     const page = Math.max(1, parseInt(q.get("page") || "1"));
-    const per = 6;
+    // Marketplace desktop layout uses four columns; three complete rows per page.
+    const per = 12;
     const where = [`status='active'`];
     const bind = [];
     if (q.get("category")) {

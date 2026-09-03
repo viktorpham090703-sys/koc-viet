@@ -78,7 +78,7 @@ function renderFilters(host, onChange, initialFilters = {}) {
 
 async function loadMp(bookMode, onBook, onView) {
   const list = document.getElementById('mp-list');
-  list.innerHTML = skeletonKocGrid(6);
+  list.innerHTML = skeletonKocGrid(12);
   const qs = new URLSearchParams({ page: mp.page });
   Object.entries(mp.filters).forEach(([k,v]) => { if (v) qs.set(k, v); });
   try {
