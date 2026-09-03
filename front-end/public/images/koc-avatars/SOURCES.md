@@ -1,6 +1,6 @@
 # Nguồn ảnh KOC mẫu
 
-Các ảnh trong thư mục này là ảnh chụp thật được tải từ Pexels theo giấy phép sử dụng miễn phí. Tên KOC trong dữ liệu là hồ sơ mẫu và không phải danh tính của người trong ảnh.
+Thư mục này gồm ảnh chụp từ Pexels theo giấy phép sử dụng miễn phí và ảnh chân dung hư cấu được tạo riêng cho ứng dụng. Tên KOC trong dữ liệu không phải danh tính của người trong ảnh.
 
 | Hồ sơ mẫu | Giới tính | Nguồn ảnh |
 | --- | --- | --- |
@@ -16,3 +16,4 @@ Các ảnh trong thư mục này là ảnh chụp thật được tải từ Pex
 | Ngô Quốc Việt | Nam | https://www.pexels.com/photo/southeast-asian-man-in-classic-fashion-34477658/ |
 | Trịnh Bảo Ngọc | Nữ | https://www.pexels.com/photo/portrait-of-woman-with-vietnamese-flag-in-hanoi-28868868/ |
 | Lý Hải Đăng | Nam | https://www.pexels.com/photo/portrait-of-man-in-traditional-vietnamese-attire-30629169/ |
+| Nguyễn Hồ Việt Khoa | Nam | Chân dung hư cấu do OpenAI ImageGen tạo ngày 03/09/2026; không đại diện cho danh tính người thật. |
