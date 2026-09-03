@@ -1,5 +1,5 @@
 import { post } from "./api.js";
-import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions } from "./ui.js";
+import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions, copyToClipboard } from "./ui.js";
 import { state } from "./app.js";
 import {
   bankPickerHtml,
@@ -508,8 +508,16 @@ export function renderOnboarding(el) {
             ? `<div style="margin-top:10px"><b>${Number(d.followers).toLocaleString("vi-VN")} người theo dõi</b> · Mức độ khớp ${Math.round(Number(verification.confidence || 0) * 100)}%</div>
                <button type="button" class="btn ghost sm" id="o-follower-reset" style="margin-top:10px">Xác minh lại</button>`
             : verification.challengeToken
-              ? `<ol style="font-size:13px;line-height:1.6;margin:10px 0 10px 20px">
-                   <li>Sao chép mã <b class="copybox" style="padding:3px 7px">${esc(verification.code)}</b>.</li>
+               ? `<ol style="font-size:13px;line-height:1.6;margin:10px 0 10px 20px">
+                    <li>
+                      <span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        Sao chép mã
+                        <b class="copybox" style="padding:3px 7px">${esc(verification.code)}</b>
+                        <button type="button" class="btn ghost sm" id="o-follower-copy-code" aria-label="Sao chép mã xác minh" title="Sao chép mã xác minh" style="padding:5px 8px;min-width:34px;line-height:1">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                      </span>
+                    </li>
                    <li>Đặt mã vào phần giới thiệu của đúng hồ sơ.</li>
                    <li>Chụp một ảnh thấy rõ tên tài khoản, số người theo dõi và mã trong phần giới thiệu.</li>
                  </ol>
@@ -569,6 +577,27 @@ export function renderOnboarding(el) {
     el.querySelector("#o-follower-new-code")?.addEventListener(
       "click",
       createFollowerChallenge,
+    );
+    el.querySelector("#o-follower-copy-code")?.addEventListener(
+      "click",
+      async (event) => {
+        const button = event.currentTarget;
+        const copied = await copyToClipboard(verification.code);
+        if (!copied) {
+          toast("Không thể sao chép mã. Vui lòng sao chép thủ công.", "err");
+          return;
+        }
+        button.innerHTML = '<span aria-hidden="true" style="font-size:16px">✓</span>';
+        button.setAttribute("aria-label", "Đã sao chép mã xác minh");
+        button.title = "Đã sao chép";
+        toast("Đã sao chép mã xác minh", "ok");
+        window.setTimeout(() => {
+          if (!button.isConnected) return;
+          button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+          button.setAttribute("aria-label", "Sao chép mã xác minh");
+          button.title = "Sao chép mã xác minh";
+        }, 1800);
+      },
     );
     el.querySelector("#o-follower-verify")?.addEventListener(
       "click",
@@ -1092,12 +1121,15 @@ export function renderOnboarding(el) {
     const signedMode = !!opts.signed;
     return `
     <div class="contract-party">
-      <span class="party-label">BÊN A — NỀN TẢNG</span><br>
+      <span class="party-label">BÊN A (Bên cung cấp nền tảng — “NetViet”)</span><br>
       <b>CÔNG TY CỔ PHẦN TẬP ĐOÀN CÔNG NGHỆ VÀ TRUYỀN THÔNG NETVIET</b><br>
       Trụ sở chính: Tầng 2, Tòa nhà Chelsea Park, 116 Trung Kính, Phường Yên Hòa, TP. Hà Nội.<br>
       Văn phòng đại diện: 180 Điện Biên Phủ, Phường Xuân Hòa, TP. Hồ Chí Minh.<br>
-      Mã số thuế: 0111412305 · Người đại diện: Nguyễn Thu Hương — Tổng giám đốc<br>
-      Hotline: 0812.98.68.98 / 0813.487.686 · Email: kocviet@netviettv.com.vn · Website: netviet.live
+      Mã số thuế: 0111412305.<br>
+      Người đại diện theo pháp luật: Nguyễn Thu Hương - Chức vụ: Tổng giám đốc.<br>
+      Hotline: 0812.98.68.98 / 0813.487.686 &nbsp;&nbsp;&nbsp; Email: kocviet@netviettv.com.vn<br>
+      Website: netviet.live<br>
+      (Sau đây gọi là “Bên A” hoặc “NetViet”)
     </div>
 
     <div class="contract-party">
@@ -1107,79 +1139,80 @@ export function renderOnboarding(el) {
       Địa chỉ thường trú: ${esc(d.address) || "[•]"}<br>
       Số điện thoại: ${esc(d.phone) || "[•]"} · Email: ${esc(d.email) || "[•]"}<br>
       Kênh mạng xã hội chính: ${d.socials[0] ? esc(socialLabel(d.socials[0])) : "[•]"} · Số người theo dõi tại thời điểm ký: ${d.followers || "[•]"}<br>
-      STK ngân hàng nhận chi trả: ${esc(d.bankAccount) || "[•]"} tại ${esc(d.bankName) || "[•]"}
+      Số tài khoản ngân hàng nhận chi trả: ${esc(d.bankAccount) || "[•]"} tại Ngân hàng ${esc(d.bankName) || "[•]"}<br>
+      (Sau đây gọi là “Bên B” hoặc “KOC”)
     </div>
 
-    <p>Xét rằng Bên B đã hoàn tất đăng ký, xác minh danh tính và được Bên A phê duyệt hồ sơ trên Nền tảng NetViet, hai Bên thống nhất ký kết Hợp đồng hợp tác với các điều khoản như sau:</p>
+    <p>Xét rằng Bên B đã hoàn tất đăng ký, xác minh danh tính điện tử (eKYC) và được Bên A phê duyệt hồ sơ trên Nền tảng NetViet, hai Bên thống nhất ký kết Hợp đồng hợp tác với các điều khoản như sau:</p>
 
     <p class="contract-article-title">Điều 1. Giải thích từ ngữ</p>
-    <p class="term-def"><b>"Nền tảng":</b> Hệ thống dành cho KOC, doanh nghiệp và đội ngũ quản trị do Bên A vận hành.</p>
-    <p class="term-def"><b>"AI Clone Avatar":</b> Video/âm thanh được tổng hợp bằng công nghệ trí tuệ nhân tạo, tái tạo hình ảnh và giọng nói của Bên B với độ giống cao, dùng để sản xuất nội dung theo booking đã được Bên B phê duyệt.</p>
-    <p class="term-def"><b>"Booking":</b> Yêu cầu hợp tác quảng cáo hoặc tiếp thị do doanh nghiệp tạo trên Nền tảng, gồm: đánh giá sản phẩm, quảng cáo, tiếp thị liên kết, video đại diện và gói kết hợp.</p>
-    <p class="term-def"><b>"Luồng A – NetViet điều phối":</b> Bên A dùng AI matching để phân bổ booking phù hợp cho Bên B.</p>
-    <p class="term-def"><b>"Cách B – Doanh nghiệp tự đặt":</b> Doanh nghiệp tự tìm và đặt booking trực tiếp với Bên B qua hồ sơ công khai.</p>
-    <p class="term-def"><b>"Ví đảm bảo":</b> Khoản tiền do Bên A tạm giữ để bảo vệ hai bên cho đến khi booking được xác nhận hoàn thành.</p>
-    <p class="term-def"><b>"Ví nội bộ":</b> Ví trên App ghi nhận thu nhập của Bên B (phí booking, hoa hồng), từ đó Bên B yêu cầu rút về ngân hàng.</p>
-    <p class="term-def"><b>"Sổ thu chi":</b> Lịch sử ghi nhận doanh số, đơn hàng, hoa hồng và các khoản chi trả một cách minh bạch.</p>
-    <p class="term-def"><b>"Đơn hàng hợp lệ":</b> Đơn đã thanh toán thành công, không bị hủy/trả hàng/hoàn tiền trong thời hạn đối soát.</p>
-    <p class="term-def"><b>"Thời gian ghi nhận":</b> Khoảng thời gian [•] ngày kể từ khi khách hàng nhấp hoặc tương tác với đường dẫn, mã giới thiệu của Bên B để ghi nhận đơn phát sinh.</p>
+    <p class="term-def"><b>“Nền tảng”/“App”:</b> Hệ thống KOC App, Business Portal và Admin Panel do Bên A vận hành.</p>
+    <p class="term-def"><b>“AI Clone Avatar”:</b> Video/âm thanh được tổng hợp bằng công nghệ trí tuệ nhân tạo, tái tạo hình ảnh và giọng nói của Bên B với độ giống cao, dùng để sản xuất nội dung theo booking đã được Bên B phê duyệt.</p>
+    <p class="term-def"><b>“Booking”:</b> Yêu cầu hợp tác quảng cáo/tiếp thị do doanh nghiệp tạo trên Nền tảng, gồm các loại: Booking Review, Booking Quảng cáo, Booking Affiliate, Booking AI Clone Avatar và Booking kết hợp (Combo).</p>
+    <p class="term-def"><b>“Luồng A – NetViet điều phối”:</b> Bên A dùng AI matching để phân bổ booking phù hợp cho Bên B.</p>
+    <p class="term-def"><b>“Luồng B – Marketplace tự booking”:</b> Doanh nghiệp tự tìm và đặt booking trực tiếp với Bên B qua hồ sơ công khai.</p>
+    <p class="term-def"><b>“Ví Escrow”:</b> Ví ký quỹ trung gian của Bên A, giữ tiền doanh nghiệp thanh toán cho đến khi booking được xác nhận hoàn thành.</p>
+    <p class="term-def"><b>“Ví nội bộ”:</b> Ví trên App ghi nhận thu nhập của Bên B (phí booking, hoa hồng), từ đó Bên B yêu cầu rút về ngân hàng.</p>
+    <p class="term-def"><b>“Ledger”:</b> Sổ đối soát điện tử ghi nhận doanh số, đơn hàng, hoa hồng và các khoản chi trả, lưu vết bất biến.</p>
+    <p class="term-def"><b>“Đơn hàng hợp lệ”:</b> Đơn đã thanh toán thành công, không bị hủy/trả hàng/hoàn tiền trong thời hạn đối soát.</p>
+    <p class="term-def"><b>“Cửa sổ theo dõi”:</b> Khoảng thời gian [•] ngày kể từ khi khách hàng click/tương tác với link/mã của Bên B để ghi nhận đơn phát sinh.</p>
 
     <p class="contract-article-title">Điều 2. Phạm vi hợp tác</p>
-    <p>2.1. Bên A cấp cho Bên B quyền truy cập Nền tảng để: (a) nhận booking từ doanh nghiệp theo Cách A hoặc Cách B; (b) sử dụng kênh mạng xã hội đã đăng ký để đăng nội dung quảng bá sản phẩm; (c) gắn đường dẫn giới thiệu và nhận hoa hồng bán hàng.</p>
+    <p>2.1. Bên A cấp cho Bên B quyền truy cập Nền tảng để: (a) nhận booking từ doanh nghiệp qua Luồng A hoặc Luồng B; (b) sử dụng kênh mạng xã hội đăng ký để đăng nội dung quảng bá sản phẩm; (c) gắn link affiliate và nhận hoa hồng chuyển đổi.</p>
     <p>2.2. Bên B hợp tác với tư cách đối tác độc lập, tự chủ về thời gian và cách thức thực hiện; quan hệ giữa hai Bên không phải là quan hệ lao động theo Bộ luật Lao động.</p>
     <p>2.3. Phạm vi hợp tác áp dụng cho toàn bộ booking phát sinh qua Nền tảng trong thời hạn hiệu lực của Hợp đồng.</p>
 
     <p class="contract-article-title">Điều 3. Các hình thức Booking</p>
     <p>Bên B có thể tham gia một hoặc nhiều hình thức booking dưới đây; mỗi hình thức có cơ chế ghi nhận, đối soát và chi trả riêng, không bù trừ lẫn nhau trừ khi có thỏa thuận khác:</p>
     <p><b>Booking Review/Quảng cáo:</b> Bên B tạo hoặc đăng tải nội dung review/quảng cáo theo yêu cầu doanh nghiệp, nhận phí booking cố định.</p>
-    <p><b>Booking tiếp thị liên kết:</b> Bên B quảng bá sản phẩm qua đường dẫn hoặc mã giới thiệu riêng và nhận hoa hồng theo doanh số hợp lệ (Điều 6).</p>
-    <p><b>Booking video đại diện:</b> Đối tác sản xuất của Bên A dùng hình ảnh và giọng nói đã được Bên B cho phép để tạo video; Bên B duyệt, đăng tải và nhận phí booking hoặc hoa hồng bán hàng.</p>
-    <p><b>Booking kết hợp:</b> Kết hợp quảng cáo và tiếp thị liên kết trong cùng một booking.</p>
+    <p><b>Booking Affiliate:</b> Bên B quảng bá sản phẩm qua link/mã giới thiệu riêng và nhận hoa hồng theo doanh số hợp lệ (Điều 6).</p>
+    <p><b>Booking AI Clone Avatar:</b> Đối tác sản xuất của Bên A dùng hình ảnh/giọng nói AI Clone của Bên B (đã cấp phép) để tạo video; Bên B duyệt và đăng tải, nhận phí booking và/hoặc hoa hồng affiliate.</p>
+    <p><b>Booking Combo:</b> Kết hợp cấu phần quảng cáo và affiliate trong cùng một booking.</p>
 
     <p class="contract-article-title">Điều 4. Chính sách hoa hồng và chi trả — Luồng A (NetViet điều phối)</p>
-    <p>4.1. Đối với booking do Bên A điều phối, Bên B được chi trả gồm: (a) phí cố định theo từng công việc; và (b) phần trăm hoa hồng tính trên doanh thu hợp lệ qua đường dẫn riêng của Bên B, theo khung tham khảo dưới đây (mức chi tiết áp dụng theo Phụ lục Chính sách hoa hồng do Bên A công bố, điều chỉnh theo từng thời kỳ với thông báo trước tối thiểu 15 ngày):</p>
+    <p>4.1. Đối với booking do Bên A điều phối, Bên B được chi trả gồm: (a) Booking fee cố định theo từng job, thể hiện trong xác nhận booking; và (b) % hoa hồng affiliate tính trên doanh thu chuyển đổi hợp lệ qua link/UTM riêng của Bên B, theo khung tham khảo dưới đây (mức chi tiết áp dụng theo Phụ lục Chính sách hoa hồng do Bên A công bố, có thể điều chỉnh theo từng thời kỳ với thông báo trước tối thiểu 15 ngày):</p>
     <table class="contract-table">
-      <tr><th>Hạng KOC</th><th>Tiêu chí tham khảo</th><th>% Hoa hồng bán hàng (theo Phụ lục)</th></tr>
-      <tr><td>Nano</td><td>Dưới 10.000 người theo dõi</td><td>10%</td></tr>
-      <tr><td>Micro</td><td>10.000 – dưới 100.000 người theo dõi</td><td>12%</td></tr>
-      <tr><td>Mid</td><td>100.000 – dưới 300.000 người theo dõi</td><td>15%</td></tr>
-      <tr><td>Macro</td><td>300.000 – dưới 1.000.000 người theo dõi</td><td>16%</td></tr>
-      <tr><td>Mega</td><td>Từ 1.000.000 người theo dõi</td><td>16%</td></tr>
+      <tr><th>Hạng KOC</th><th>Tiêu chí tham khảo</th><th>% Hoa hồng affiliate (theo Phụ lục)</th></tr>
+      <tr><td>Nano</td><td>Dưới 10.000 follower</td><td>[10]%</td></tr>
+      <tr><td>Micro</td><td>10.000 – 50.000 follower</td><td>[12]%</td></tr>
+      <tr><td>Mid</td><td>50.000 – 200.000 follower</td><td>[15]%</td></tr>
+      <tr><td>Macro</td><td>Trên 200.000 follower</td><td>[16]%</td></tr>
     </table>
-    <p>4.2. Chu kỳ đối soát: 1 lần/tháng — Bên A tổng hợp sổ thu chi và thông báo số liệu cho Bên B trước khi chi trả.</p>
-    <p>4.3. Ngưỡng rút tiền tối thiểu: 1.000.000 đồng; số dư dưới ngưỡng được cộng dồn sang chu kỳ kế tiếp.</p>
-    <p>4.4. Chi trả thực hiện vào Ví nội bộ trên App; Bên B có thể yêu cầu rút về tài khoản ngân hàng đã đăng ký, xử lý trong vòng 7 ngày làm việc.</p>
+    <p>4.2. Chu kỳ đối soát: [1 lần/tháng] — Bên A tổng hợp Ledger và thông báo số liệu cho Bên B trước khi chi trả.</p>
+    <p>4.3. Ngưỡng rút tiền tối thiểu: [1.000.000] đồng; số dư dưới ngưỡng được cộng dồn sang chu kỳ kế tiếp.</p>
+    <p>4.4. Chi trả thực hiện vào Ví nội bộ trên App; Bên B có thể yêu cầu rút về tài khoản ngân hàng đã đăng ký, xử lý trong vòng [7] ngày làm việc.</p>
     <p>4.5. Bên A khấu trừ thuế thu nhập cá nhân (nếu có) theo quy định pháp luật trước khi chi trả, hoặc hướng dẫn Bên B tự kê khai tùy hình thức hợp tác.</p>
 
-    <p class="contract-article-title">Điều 5. Doanh nghiệp đặt booking trực tiếp (Cách B) — Phí dịch vụ 5%</p>
-    <p>5.1. Bên B được quyền niêm yết hồ sơ năng lực và mức giá dịch vụ trên trang khám phá KOC để doanh nghiệp tìm kiếm và đặt booking trực tiếp.</p>
-    <p>5.2. Mọi giao dịch Luồng B bắt buộc thực hiện qua hệ thống thanh toán của Bên A: sau khi Bên B đăng nội dung lên nền tảng và nộp đường dẫn bài đăng, doanh nghiệp thanh toán 100% giá trị booking trực tuyến; khi giao dịch được xác nhận thành công, Bên A giữ lại 5% phí dịch vụ và ghi nhận 95% vào Ví nội bộ của Bên B.</p>
-    <p>5.3. Nghiêm cấm giao dịch ngoài hệ thống: Bên B không được thỏa thuận, báo giá riêng hoặc nhận thanh toán trực tiếp từ doanh nghiệp ngoài Ví đảm bảo đối với booking phát sinh từ việc doanh nghiệp biết đến/liên hệ Bên B qua Nền tảng. Vi phạm bị coi là vi phạm nghiêm trọng; Bên A không chịu trách nhiệm đối với mâu thuẫn phát sinh từ giao dịch ngoài hệ thống.</p>
+    <p class="contract-article-title">Điều 5. Booking trực tiếp qua Marketplace (Luồng B) — Phí dịch vụ 5%</p>
+    <p>5.1. Bên B được quyền niêm yết hồ sơ năng lực, mức giá dịch vụ trên Marketplace để doanh nghiệp tìm kiếm và đặt booking trực tiếp.</p>
+    <p>5.2. Mọi giao dịch Luồng B bắt buộc thực hiện qua Ví Escrow của Bên A: doanh nghiệp thanh toán tạm giữ 100% giá trị booking vào Ví Escrow trước khi Bên B triển khai; Bên A giữ lại 5% phí dịch vụ trên tổng giá trị booking khi giải ngân; Bên B nhận 95% sau khi doanh nghiệp xác nhận hoàn thành.</p>
+    <p>5.3. Nghiêm cấm giao dịch ngoài hệ thống: Bên B không được thỏa thuận, báo giá riêng hoặc nhận thanh toán trực tiếp từ doanh nghiệp ngoài Ví Escrow đối với booking phát sinh từ việc doanh nghiệp biết đến/liên hệ Bên B qua Nền tảng. Vi phạm bị coi là vi phạm nghiêm trọng; Bên A không chịu trách nhiệm đối với mâu thuẫn phát sinh từ giao dịch ngoài hệ thống.</p>
+    <p>5.4. Cam kết chênh lệch báo giá ưu tiên Nền tảng: Đối với các booking mà doanh nghiệp/khách hàng biết đến hoặc tiếp cận Bên B thông qua KOC Việt, khi được doanh nghiệp/khách hàng yêu cầu báo giá dịch vụ tương tự ở các kênh khác ngoài Nền tảng, Bên B cam kết mức báo giá niêm yết hoặc chào bán trên KOC Việt cho cùng phạm vi công việc phải thấp hơn tối thiểu 5% so với mức báo giá Bên B cung cấp trực tiếp ở kênh khác, nhằm bảo đảm quyền lợi cho doanh nghiệp khi giao dịch qua Nền tảng và ngăn ngừa hành vi lách phí dịch vụ. Trường hợp phát hiện Bên B báo giá trên KOC Việt cao hơn hoặc bằng mức báo giá tại kênh khác (không bảo đảm mức chênh lệch tối thiểu 5%), hành vi này bị coi là vi phạm nghiêm trọng khoản 5.3 Điều này và bị xử lý theo chế tài quy định tại Điều 13.</p>
 
-    <p class="contract-article-title">Điều 6. Booking tiếp thị liên kết — Chương trình liên kết bán hàng</p>
-    <p>6.1. <b>Định nghĩa và phạm vi.</b> Đây là hình thức Bên B tự lựa chọn sản phẩm hoặc dịch vụ từ danh mục do doanh nghiệp đối tác đăng tải để quảng bá, không phụ thuộc vào một booking quảng cáo cụ thể theo Điều 4 hoặc Điều 5.</p>
-    <p>6.2. <b>Quy trình thực hiện.</b> (a) Bên B chọn sản phẩm trong danh mục; (b) Nền tảng tự động cấp đường dẫn hoặc mã giới thiệu riêng cho Bên B; (c) Bên B sáng tạo nội dung quảng bá sử dụng đường dẫn hoặc mã đã cấp; (d) Nội dung phải gắn nhãn quảng cáo hoặc tiếp thị liên kết theo quy định pháp luật.</p>
-    <p>6.3. <b>Ghi nhận đơn hàng.</b> Đơn phát sinh qua đường dẫn hoặc mã của Bên B được hệ thống ghi nhận trong 3 ngày kể từ khi khách hàng nhấp hoặc tương tác. Chỉ đơn hàng hợp lệ mới được dùng để tính hoa hồng.</p>
-    <p>6.4. <b>Mức hoa hồng và phí nền tảng.</b> Mức hoa hồng áp dụng theo từng doanh nghiệp hoặc nhà cung cấp, được công bố khi Bên B chọn sản phẩm. Bên A thu phí nền tảng 1% trên tổng doanh số bán hàng được ghi nhận; phí này do DOANH NGHIỆP chi trả và không trừ vào hoa hồng của Bên B.</p>
-    <p>6.5. <b>Đối soát và chi trả.</b> Chu kỳ đối soát: hàng tuần; chu kỳ chi trả: 1 tháng/lần. Hoa hồng ghi có vào Ví nội bộ, áp dụng cùng cơ chế rút tiền, ngưỡng tối thiểu và khấu trừ thuế TNCN tại Điều 4.</p>
+    <p class="contract-article-title">Điều 6. Booking Affiliate — Chương trình liên kết bán hàng</p>
+    <p>6.1. <b>Định nghĩa và phạm vi.</b> Booking Affiliate là hình thức Bên B tự lựa chọn sản phẩm/dịch vụ từ Danh mục Affiliate do doanh nghiệp đối tác đăng tải để quảng bá, không phụ thuộc vào một booking quảng cáo cụ thể theo Điều 4 hoặc Điều 5.</p>
+    <p>6.2. <b>Quy trình thực hiện.</b> (a) Bên B chọn sản phẩm trên Danh mục Affiliate; (b) Nền tảng tự động cấp link/mã giới thiệu gắn định danh riêng của Bên B; (c) Bên B sáng tạo nội dung quảng bá sử dụng link/mã đã cấp; (d) Nội dung phải gắn nhãn quảng cáo/tiếp thị liên kết theo quy định pháp luật.</p>
+    <p>6.3. <b>Ghi nhận đơn hàng.</b> Đơn phát sinh qua link/mã của Bên B được hệ thống ghi nhận trong Cửa sổ theo dõi [3] ngày kể từ khi khách hàng click/tương tác. Chỉ Đơn hàng hợp lệ mới là căn cứ tính hoa hồng.</p>
+    <p>6.4. <b>Mức hoa hồng và phí nền tảng.</b> Mức hoa hồng áp dụng theo từng doanh nghiệp/nhà cung cấp, công bố công khai tại thời điểm Bên B chọn sản phẩm. Bên A thu phí nền tảng 1% trên tổng doanh số affiliate được ghi nhận; phí này do DOANH NGHIỆP chi trả và không trừ vào hoa hồng của Bên B. Mức chi tiết theo Phụ lục Chính sách hoa hồng affiliate, thông báo trước tối thiểu 15 ngày.</p>
+    <p>6.5. <b>Đối soát và chi trả.</b> Chu kỳ đối soát: [hàng tuần]; chu kỳ chi trả: [1 tháng/lần]. Hoa hồng ghi có vào Ví nội bộ, áp dụng cùng cơ chế rút tiền, ngưỡng tối thiểu và khấu trừ thuế TNCN tại Điều 4.</p>
     <p>6.6. <b>Nghiêm cấm gian lận.</b> Bên B không được dùng công cụ tự động, phần mềm giả lập click. Bên A có quyền từ chối chi trả hoa hồng gian lận và tạm khóa tài khoản, áp dụng chế tài tại Điều 13.</p>
-    <p>6.7. <b>Tính độc lập.</b> Bên B có thể đồng thời tham gia booking tiếp thị liên kết và các booking khác; thu nhập từ tiếp thị liên kết được ghi nhận, đối soát và chi trả riêng biệt.</p>
+    <p>6.7. <b>Tính độc lập.</b> Bên B có thể đồng thời tham gia Booking Affiliate và các booking khác; thu nhập từ Booking Affiliate được ghi nhận, đối soát và chi trả riêng biệt.</p>
 
     <p class="contract-article-title">Điều 7. Đối soát và thanh toán theo từng hạng mục booking</p>
     <p>Nguyên tắc đối soát minh bạch: mọi bản ghi doanh số truy vết được về đơn hàng gốc; Bên B, doanh nghiệp và Bên A cùng xem một nguồn số liệu.</p>
     <table class="contract-table">
       <tr><th>Hạng mục</th><th>Bên B nhận</th><th>Bên A thu</th><th>Chu kỳ</th></tr>
-      <tr><td>Cách A (điều phối)</td><td>Phí booking + % hoa hồng bán hàng</td><td>Theo chính sách nội bộ</td><td>1 lần/tháng</td></tr>
-      <tr><td>Cách B (doanh nghiệp tự đặt)</td><td>95% giá trị booking</td><td>5% phí dịch vụ</td><td>Sau khi hoàn thành</td></tr>
-      <tr><td>Tiếp thị liên kết</td><td>Doanh số × % hoa hồng</td><td>1% (do doanh nghiệp trả)</td><td>1 lần/tháng</td></tr>
-      <tr><td>Booking video đại diện</td><td>Phí booking hoặc hoa hồng bán hàng</td><td>Theo booking</td><td>Theo loại nội dung</td></tr>
+      <tr><td>Luồng A (điều phối)</td><td>Booking fee + % hoa hồng affiliate</td><td>Theo chính sách nội bộ</td><td>[1 lần/tháng]</td></tr>
+      <tr><td>Luồng B (Marketplace)</td><td>95% giá trị booking</td><td>5% phí dịch vụ</td><td>Sau khi hoàn thành</td></tr>
+      <tr><td>Booking Affiliate</td><td>Doanh số × % hoa hồng</td><td>1% (do DN trả)</td><td>[1 lần/tháng]</td></tr>
+      <tr><td>Booking AI Clone Avatar</td><td>Booking fee và/hoặc hoa hồng affiliate</td><td>Theo booking</td><td>Theo loại cấu phần</td></tr>
     </table>
     <p>7.1. Đơn hàng bị hủy/trả/hoàn trong thời hạn đối soát bị trừ ngược khỏi doanh số ghi nhận.</p>
     <p>7.2. Bên B có quyền tra cứu lịch sử thu nhập, đơn hàng và trạng thái chi trả trên App bất kỳ lúc nào.</p>
-    <p>7.3. Mọi số liệu đối soát đều có lịch sử rõ ràng và không thể tự ý chỉnh sửa.</p>
+    <p>7.3. Mọi số liệu đối soát được lưu trong Ledger bất biến (append-only), không chỉnh sửa thủ công.</p>
 
     <p class="contract-article-title">Điều 8. Bảo mật và dữ liệu cá nhân</p>
-    <p>8.1. Bên A tuân thủ Nghị định 13/2023/NĐ-CP: dữ liệu định danh (CCCD, ảnh chân dung) và dữ liệu sinh trắc học (giọng nói, khuôn mặt dùng để tạo video đại diện) chỉ được thu thập, lưu trữ, sử dụng cho mục đích xác minh, chi trả và tạo nội dung theo booking đã phê duyệt; được bảo vệ khi lưu trữ và truyền tải.</p>
+    <p>8.1. Bên A tuân thủ Nghị định 13/2023/NĐ-CP: dữ liệu định danh (CCCD, ảnh selfie) và dữ liệu sinh trắc học (giọng nói, khuôn mặt dùng huấn luyện AI Clone) chỉ được thu thập, lưu trữ, sử dụng cho mục đích xác minh, chi trả và tạo nội dung theo booking đã phê duyệt; được mã hóa khi lưu trữ và truyền tải.</p>
     <p>8.2. Bên B đồng ý cho Bên A xử lý dữ liệu cá nhân theo đúng mục đích tại Hợp đồng và có quyền rút lại sự đồng ý, yêu cầu xóa dữ liệu theo quy định pháp luật, trừ dữ liệu cần lưu giữ để đối soát tài chính hoặc giải quyết tranh chấp.</p>
     <p>8.3. Bên B cam kết cung cấp thông tin trung thực, chính xác và chịu trách nhiệm nếu cung cấp thông tin, danh tính giả mạo.</p>
 
@@ -1190,18 +1223,18 @@ export function renderOnboarding(el) {
     <p>9.4. Việc chấm dứt Hợp đồng không làm mất quyền của Bên B yêu cầu chấm dứt sử dụng hình ảnh, giọng nói cho nội dung mới theo Điều 16.</p>
 
     <p class="contract-article-title">Điều 10. Quyền và nghĩa vụ của Bên A</p>
-    <p>10.1. <b>Quyền:</b> (a) Duyệt/từ chối hồ sơ, tạm khóa tài khoản vi phạm; (b) Điều phối booking qua AI matching; (c) Vận hành AI Clone Avatar Studio, kiểm duyệt nội dung trước khi gửi Bên B; (d) Điều chỉnh chính sách hoa hồng theo quy trình thông báo tại Điều 4.1.</p>
-    <p>10.2. <b>Nghĩa vụ:</b> (a) Bảo đảm hệ thống vận hành ổn định, minh bạch số liệu đối soát; (b) Chi trả đúng hạn theo chu kỳ công bố; (c) Không sử dụng hình ảnh, giọng nói của Bên B ngoài phạm vi đã phê duyệt; (d) Bảo mật dữ liệu theo Điều 8 và bảo vệ hình ảnh, nội dung theo Điều 9; (e) Hỗ trợ Bên B qua Trung tâm hỗ trợ trên Nền tảng.</p>
+    <p>10.1. <b>Quyền.</b> (a) Duyệt/từ chối hồ sơ, tạm khóa tài khoản vi phạm; (b) Điều phối booking qua AI matching; (c) Vận hành AI Clone Studio, kiểm duyệt nội dung trước khi gửi Bên B; (d) Điều chỉnh chính sách hoa hồng theo quy trình thông báo tại Điều 4.1.</p>
+    <p>10.2. <b>Nghĩa vụ.</b> (a) Bảo đảm hệ thống vận hành ổn định, minh bạch số liệu đối soát; (b) Chi trả đúng hạn theo chu kỳ công bố; (c) Không sử dụng hình ảnh, giọng nói của Bên B ngoài phạm vi đã phê duyệt; (d) Bảo mật dữ liệu theo Điều 8 và bảo vệ hình ảnh, nội dung theo Điều 9; (e) Hỗ trợ Bên B qua Trung tâm hỗ trợ trên Nền tảng.</p>
 
     <p class="contract-article-title">Điều 11. Quyền và nghĩa vụ của Bên B</p>
-    <p>11.1. <b>Quyền:</b> (a) Nhận hoặc từ chối booking phù hợp; (b) Xem trước và phê duyệt mọi nội dung AI Clone Avatar trước khi công bố; (c) Yêu cầu đối soát, tra cứu lịch sử thu nhập; (d) Yêu cầu gỡ bỏ nội dung sai phạm vi theo Điều 9.2.</p>
-    <p>11.2. <b>Nghĩa vụ:</b> (a) Phản hồi duyệt booking trong 24h và duyệt nội dung đúng thời hạn tại Điều 7.2; (b) Không thực hiện giao dịch ngoài hệ thống theo Điều 5.3; (c) Gắn nhãn quảng cáo theo quy định pháp luật; (d) Không sử dụng dữ liệu, khách hàng tiếp cận qua Nền tảng cho mục đích cạnh tranh trái tinh thần hợp tác; (e) Đăng tải đúng nội dung đã phê duyệt và duy trì tối thiểu theo cam kết của booking.</p>
+    <p>11.1. <b>Quyền.</b> (a) Nhận hoặc từ chối booking phù hợp; (b) Xem trước và phê duyệt mọi nội dung AI Clone trước khi công bố; (c) Yêu cầu đối soát, tra cứu lịch sử thu nhập; (d) Yêu cầu gỡ bỏ nội dung sai phạm vi theo Điều 9.2.</p>
+    <p>11.2. <b>Nghĩa vụ.</b> (a) Phản hồi duyệt booking trong 24h và duyệt nội dung đúng thời hạn tại Điều 7.2; (b) Không thực hiện giao dịch ngoài hệ thống theo Điều 9.3; (c) Gắn nhãn quảng cáo theo quy định pháp luật; (d) Không sử dụng dữ liệu, khách hàng tiếp cận qua Nền tảng cho mục đích cạnh tranh trái tinh thần hợp tác; (e) Đăng tải đúng nội dung đã phê duyệt và duy trì tối thiểu theo cam kết của booking.</p>
 
     <p class="contract-article-title">Điều 12. Sở hữu trí tuệ</p>
     <p>Nhãn hiệu, logo, giao diện và mã nguồn của Nền tảng thuộc quyền sở hữu của Bên A; Bên B không được sao chép, phân phối lại dưới bất kỳ hình thức nào ngoài mục đích thực hiện Hợp đồng này.</p>
 
     <p class="contract-article-title">Điều 13. Vi phạm và bồi thường thiệt hại</p>
-    <p>13.1. Bên vi phạm gây thiệt hại cho Bên còn lại có trách nhiệm bồi thường theo thiệt hại thực tế phát sinh, mức bồi thường không vượt quá tổng giá trị các booking phát sinh trong 1 tháng gần nhất, trừ trường hợp vi phạm nghiêm trọng tại khoản 13.2.</p>
+    <p>13.1. Bên vi phạm gây thiệt hại cho Bên còn lại có trách nhiệm bồi thường theo thiệt hại thực tế phát sinh, mức bồi thường không vượt quá tổng giá trị các booking phát sinh trong [1] tháng gần nhất, trừ trường hợp vi phạm nghiêm trọng tại khoản 13.2.</p>
     <p>13.2. Đối với vi phạm nghiêm trọng (gian lận hồ sơ/KYC, giao dịch ngoài hệ thống, sử dụng/đăng tải nội dung chưa được phê duyệt, sử dụng AI Clone Avatar sai mục đích gây tổn hại), Bên bị vi phạm có quyền đơn phương chấm dứt Hợp đồng ngay lập tức, tạm khóa/chấm dứt tài khoản và thu hồi khoản lợi bất hợp pháp mà không cần tuân thủ thời hạn báo trước.</p>
 
     <p class="contract-article-title">Điều 14. Chấm dứt hợp đồng</p>
@@ -1214,30 +1247,30 @@ export function renderOnboarding(el) {
     <p>Sự kiện bất khả kháng (thiên tai, dịch bệnh, thay đổi chính sách pháp luật, sự cố hạ tầng kỹ thuật diện rộng nằm ngoài khả năng kiểm soát...) làm Bên bị ảnh hưởng được miễn trách nhiệm tương ứng với phần nghĩa vụ không thể thực hiện, với điều kiện thông báo kịp thời cho Bên còn lại và áp dụng biện pháp khắc phục hợp lý.</p>
 
     <p class="contract-article-title">Điều 16. Giải quyết tranh chấp</p>
-    <p>Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp đồng này được hai Bên ưu tiên giải quyết thông qua thương lượng, hòa giải. Trường hợp không đạt thỏa thuận trong vòng 30 ngày kể từ ngày phát sinh tranh chấp, một trong hai Bên có quyền khởi kiện tại Tòa án có thẩm quyền theo quy định pháp luật Việt Nam.</p>
+    <p>Mọi tranh chấp phát sinh từ hoặc liên quan đến Hợp đồng này được hai Bên ưu tiên giải quyết thông qua thương lượng, hòa giải. Trường hợp không đạt thỏa thuận trong vòng 30 ngày kể từ ngày phát sinh tranh chấp, một trong hai Bên có quyền khởi kiện tại Tòa án có thẩm quyền tại [•] theo quy định pháp luật Việt Nam.</p>
 
     <p class="contract-article-title">Điều 17. Hiệu lực và giá trị pháp lý của chữ ký điện tử</p>
-    <p>17.1. Hợp đồng được giao kết bằng phương thức điện tử: Bên B xác nhận đã đọc và đồng ý toàn bộ điều khoản (tick xác nhận) kết hợp xác thực bằng chữ ký điện tử. Hình thức này có giá trị pháp lý tương đương văn bản giấy có chữ ký tay theo Luật Giao dịch điện tử số 20/2023/QH15.</p>
-    <p>17.2. Thời điểm ký kết được xác định theo timestamp hệ thống ghi nhận khi Bên B hoàn tất ký tên; dữ liệu ký kết được lưu trữ bất biến kèm mã băm (hash) chống chỉnh sửa, phục vụ đối soát và giải quyết tranh chấp.</p>
+    <p>17.1. Hợp đồng được giao kết bằng phương thức điện tử: Bên B xác nhận đã đọc và đồng ý toàn bộ điều khoản (tick xác nhận) kết hợp xác thực bằng mã OTP/chữ ký số gửi tới số điện thoại/email đã đăng ký. Hình thức này có giá trị pháp lý tương đương văn bản giấy có chữ ký tay theo Luật Giao dịch điện tử số 20/2023/QH15.</p>
+    <p>17.2. Thời điểm ký kết được xác định theo timestamp hệ thống ghi nhận khi Bên B hoàn tất xác nhận OTP; dữ liệu ký kết được lưu trữ bất biến kèm mã băm (hash) chống chỉnh sửa, phục vụ đối soát và giải quyết tranh chấp.</p>
     <p>17.3. Hợp đồng có hiệu lực kể từ thời điểm Bên A xác nhận phê duyệt hồ sơ và kích hoạt tài khoản chính thức cho Bên B trên Nền tảng.</p>
     <p>17.4. Hợp đồng được lập thành 01 bản điện tử duy nhất, lưu trữ trên hệ thống của Bên A; hai Bên có thể tải bản sao có giá trị như bản chính bất kỳ lúc nào qua tài khoản của mình.</p>
 
     <div class="contract-signblock">
       <div>
         <div class="sign-label">ĐẠI DIỆN BÊN A (NETVIET)</div>
-        (Ký điện tử / chữ ký số)<br>Nguyễn Thu Hương — Tổng giám đốc
+        (Ký điện tử / chữ ký số)<br>Họ tên: [•]<br>Chức vụ: [•]
       </div>
       <div>
         <div class="sign-label">BÊN B (KOC/KOL)</div>
         ${
           signedMode && d.signature
-            ? `<img src="${d.signature}" alt="Chữ ký KOC" style="max-width:180px;max-height:70px;display:block;margin:4px 0">Họ tên: ${esc(d.name) || "[•]"}<br>Ký lúc: ${fmtDateTime(d.signedAt)}`
-            : `(Chưa ký)<br>Họ tên: ${esc(d.name) || "[•]"}`
+            ? `<img src="${d.signature}" alt="Chữ ký KOC" style="max-width:180px;max-height:70px;display:block;margin:4px 0">(Xác nhận tick + OTP)<br>Họ tên: ${esc(d.name) || "[•]"}<br>Timestamp: ${fmtDateTime(d.signedAt)}<br>Hash: ${esc(d.hash) || "[•]"}`
+            : `(Xác nhận tick + OTP)<br>Họ tên: ${esc(d.name) || "[•]"}<br>Timestamp: [•]<br>Hash: [•]`
         }
       </div>
     </div>
 
-    <p class="contract-endnote">Ghi chú: Đây là bản hợp đồng điện tử do NetViet phát hành trên Nền tảng KOC Việt, áp dụng cho Bên B nêu trên.</p>`;
+    <p class="contract-endnote">Ghi chú: Đây là bản mẫu hợp đồng do NetViet soạn thảo. Trước khi ban hành, đề nghị bộ phận pháp chế/luật sư rà soát để bảo đảm phù hợp quy định pháp luật hiện hành và điền đầy đủ các trường [•].</p>`;
   }
 
   function signedContractSnapshot() {
@@ -1246,7 +1279,7 @@ export function renderOnboarding(el) {
         <div class="contract-header">
           <p class="contract-title">HỢP ĐỒNG HỢP TÁC KOC/KOL — ĐÃ KÝ</p>
           <p class="contract-subtitle">Ký kết bằng phương thức điện tử theo Luật Giao dịch điện tử số 20/2023/QH15</p>
-          <p class="doc-no">Ký lúc: ${fmtDateTime(d.signedAt)}</p>
+          <p class="doc-no">Số: HĐ-KOC-[•]/[NĂM]-NETVIET · Ký lúc: ${fmtDateTime(d.signedAt)}</p>
         </div>
         <div class="contract-scroll" style="max-height:none;overflow:visible">
           <div class="contract-basis">
@@ -1280,7 +1313,7 @@ export function renderOnboarding(el) {
         <div class="contract-header">
           <p class="contract-title">HỢP ĐỒNG HỢP TÁC KOC/KOL</p>
           <p class="contract-subtitle">Ký kết bằng phương thức điện tử theo Luật Giao dịch điện tử số 20/2023/QH15</p>
-          <p class="doc-no">Mã hợp đồng sẽ được cấp ngay sau khi bạn hoàn tất đăng ký</p>
+          <p class="doc-no">Số: HĐ-KOC-[•]/[NĂM]-NETVIET</p>
         </div>
         <div class="contract-scroll" id="o-terms">
           <div class="contract-basis">
@@ -1435,7 +1468,7 @@ export function renderOnboarding(el) {
         <div class="contract-header">
           <p class="contract-title">HỢP ĐỒNG HỢP TÁC KOC/KOL — ĐÃ KÝ</p>
           <p class="contract-subtitle">Xem lại toàn văn hợp đồng kèm chữ ký trước khi hoàn tất đăng ký</p>
-          <p class="doc-no">Ký lúc: ${fmtDateTime(d.signedAt)}</p>
+          <p class="doc-no">Số: HĐ-KOC-[•]/[NĂM]-NETVIET · Ký lúc: ${fmtDateTime(d.signedAt)}</p>
         </div>
         <div class="contract-scroll" id="o-terms-review">
           <div class="contract-basis">
