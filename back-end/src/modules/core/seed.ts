@@ -28,7 +28,7 @@ export const PROVINCES = [
   'Thành phố Cần Thơ', 'Tỉnh Cà Mau',
 ];
 
-function tierOf(followers, _eng) {
+function tierOf(followers) {
   // Tier boundaries are based on follower count only.
   if (followers >= 1000000) return 'Mega';
   if (followers >= 300000) return 'Macro';

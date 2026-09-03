@@ -476,7 +476,6 @@ async function kocDetail(k) {
     <div class="tint-box" style="margin:12px 0">
       <div class="between"><span>Trạng thái</span><b>${statusChip(k.status)}</b></div>
       <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Chưa xác minh</span>'}</b></div>
-      <div class="between"><span>Tương tác</span><b>${k.engagement}%</b></div>
       <div class="between"><span>Đánh giá</span><b>${stars(k.rating)} · ${num(k.completed_bookings || 0)} booking</b></div>
       <div class="between"><span>Ngành hàng</span><b>${(k.categories || []).join(", ")}</b></div>
       <div class="between"><span>Kênh mạng xã hội</span><b style="font-size:12px">${(k.socials || []).map((social) => `${esc(social.platform || "")} ${esc(social.handle || "")}`).join(" · ") || "—"}</b></div>

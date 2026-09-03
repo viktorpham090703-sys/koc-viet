@@ -1,4 +1,4 @@
-export const MAX_SOCIAL_CHANNELS = 6;
+export const MAX_SOCIAL_CHANNELS = 5;
 
 export const SOCIAL_CHANNELS = Object.freeze([
   {
@@ -25,31 +25,6 @@ export const SOCIAL_CHANNELS = Object.freeze([
     platform: "Threads",
     placeholder: "https://www.threads.net/@tenkenh",
     profileBase: "https://www.threads.net/@",
-  },
-  {
-    platform: "X (Twitter)",
-    placeholder: "https://x.com/tenkenh",
-    profileBase: "https://x.com/",
-  },
-  {
-    platform: "LinkedIn",
-    placeholder: "https://www.linkedin.com/in/tenkenh",
-    profileBase: "https://www.linkedin.com/in/",
-  },
-  {
-    platform: "Zalo",
-    placeholder: "https://zalo.me/so-dien-thoai",
-    profileBase: "https://zalo.me/",
-  },
-  {
-    platform: "Pinterest",
-    placeholder: "https://www.pinterest.com/tenkenh",
-    profileBase: "https://www.pinterest.com/",
-  },
-  {
-    platform: "Twitch",
-    placeholder: "https://www.twitch.tv/tenkenh",
-    profileBase: "https://www.twitch.tv/",
   },
 ]);
 

@@ -7,7 +7,10 @@ import { sendAccountReviewEmail, sendBookingCreatedEmail, sendPaymentSuccessEmai
 import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword } from './lib/password.js';
 import { signJwt, verifyJwt } from './lib/jwt.js';
 import { deleteKocIdentityImages, signedKocIdentityUrl, uploadKocIdentityImages } from './lib/s3Identity.js';
-import { analyzeFollowerOcrEvidence } from './lib/followerOcr.js';
+import {
+  analyzeFollowerOcrEvidence,
+  followerOcrFailureMessage,
+} from './lib/followerOcr.js';
 import { canonicalProvinceName, getAddressKitProvinces, provinceFilterAliases } from './lib/addressKit.js';
 import {
   createPayOSPaymentLink,
@@ -41,15 +44,8 @@ const SOCIAL_PLATFORMS = {
   instagram: 'Instagram',
   youtube: 'YouTube',
   threads: 'Threads',
-  x: 'X (Twitter)',
-  twitter: 'X (Twitter)',
-  'x (twitter)': 'X (Twitter)',
-  linkedin: 'LinkedIn',
-  zalo: 'Zalo',
-  pinterest: 'Pinterest',
-  twitch: 'Twitch',
 };
-const MAX_SOCIAL_CHANNELS = 6;
+const MAX_SOCIAL_CHANNELS = 5;
 
 function normalizedSocialPlatform(value) {
   const key = String(value || '').trim().toLowerCase();
@@ -123,7 +119,9 @@ export function validateSocialsInput(value) {
 }
 
 export function preserveVerifiedPrimarySocial(currentSocial, requestedSocials) {
-  if (!currentSocial) return requestedSocials;
+  if (!currentSocial || !normalizedSocialPlatform(currentSocial.platform)) {
+    return requestedSocials.slice(0, MAX_SOCIAL_CHANNELS);
+  }
   return [
     currentSocial,
     ...requestedSocials.filter(
@@ -316,10 +314,16 @@ function requestIp(request) {
 
 function parseKoc(r) {
   if (!r) return null;
+  const { engagement: _engagement, ...koc } = r;
   return {
-    ...r,
+    ...koc,
     categories: JSON.parse(r.categories || "[]"),
-    socials: JSON.parse(r.socials || "[]"),
+    socials: JSON.parse(r.socials || "[]")
+      .filter((social) => normalizedSocialPlatform(social?.platform))
+      .map((social) => ({
+        ...social,
+        platform: normalizedSocialPlatform(social.platform),
+      })),
     accepting: JSON.parse(r.accepting || "{}"),
     // PostgreSQL returns BIGINT flags as strings; Boolean("0") is true.
     // Normalize numerically so zero-valued flags stay false in API responses.
@@ -342,7 +346,6 @@ function publicKoc(r) {
     bio: koc.bio,
     followers: Number(koc.followers || 0),
     followers_verified: koc.followers_verified,
-    engagement: Number(koc.engagement || 0),
     categories: koc.categories,
     socials: koc.socials.map((social) => ({
       platform: String(social?.platform || "").slice(0, 40),
@@ -1622,14 +1625,12 @@ export async function route(request, env, url) {
       ocrText: body.ocrText,
       ocrConfidence: body.ocrConfidence,
       ownershipCode: challenge.code,
-      handle: challenge.handle,
       claimedFollowers: challenge.claimedFollowers,
     });
     if (analysis.failedChecks.length) {
       return J(
         {
-          error:
-            "Hệ thống chưa đọc đủ thông tin. Hãy chụp rõ tên tài khoản, số người theo dõi và mã trong phần giới thiệu rồi thử lại.",
+          error: followerOcrFailureMessage(analysis.failedChecks),
           code: "FOLLOWER_OCR_EVIDENCE_REJECTED",
           failedChecks: analysis.failedChecks,
           analysis: {
@@ -1850,8 +1851,7 @@ export async function route(request, env, url) {
         followers: social.followers || followers,
       })),
     );
-    const eng = Number(body.engagement) || 0;
-    const tier = tierOf(followers, eng);
+    const tier = tierOf(followers);
     const tiersNow = await getTiers(env);
     const tr = tiersNow.find((t) => t.name === tier);
     // validate prices in tier range
@@ -1937,7 +1937,7 @@ export async function route(request, env, url) {
         1,
         followerProof.verifiedAt,
         followerProof.source,
-        eng,
+        0,
         JSON.stringify(cats),
         JSON.stringify(verifiedSocials),
         "pending",

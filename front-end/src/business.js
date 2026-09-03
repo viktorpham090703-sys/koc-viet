@@ -387,7 +387,6 @@ async function openKocProfile(kocId, el) {
       </div>
       <div class="business-koc-profile-stats">
         <div><strong>${num(koc.followers)}</strong><span>Người theo dõi</span></div>
-        <div><strong>${Number(koc.engagement || 0).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%</strong><span>Tương tác</span></div>
         <div><strong>${Number(koc.rating || 0).toFixed(1)}/5</strong><span>Đánh giá</span></div>
       </div>
       <div class="business-koc-profile-section">

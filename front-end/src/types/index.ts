@@ -18,7 +18,7 @@ export interface AppConfig {
 
 export interface Koc {
   id: string; name: string; tier: string; province?: string; avatar?: string
-  bio?: string; followers: number; engagement: number; rating: number
+  bio?: string; followers: number; rating: number
   categories: string[]; prices?: Array<{ category: string; price: number }>
 }
 

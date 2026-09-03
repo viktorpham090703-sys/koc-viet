@@ -5,28 +5,41 @@ import {
   validateSocialsInput,
 } from './routes.js'
 
-test('validates and normalizes multiple distinct social channels', () => {
+test('validates and normalizes the five supported social channels', () => {
   const result = validateSocialsInput([
     { platform: 'tiktok', handle: 'https://www.tiktok.com/@kocviet', followers: 12000 },
+    { platform: 'Facebook', handle: 'https://www.facebook.com/kocviet' },
+    { platform: 'Instagram', handle: 'https://www.instagram.com/kocviet' },
+    { platform: 'YouTube', handle: 'https://www.youtube.com/@kocviet' },
     { platform: 'Threads', handle: 'https://www.threads.net/@kocviet' },
-    { platform: 'twitter', handle: 'https://x.com/kocviet' },
-    { platform: 'Zalo', handle: 'https://zalo.me/0900000000' },
   ])
 
   assert.equal(result.error, '')
   assert.deepEqual(result.socials.map((social) => social.platform), [
     'TikTok',
+    'Facebook',
+    'Instagram',
+    'YouTube',
     'Threads',
-    'X (Twitter)',
-    'Zalo',
   ])
 })
 
-test('rejects duplicate platforms and more than six channels', () => {
+test('rejects removed social platforms', () => {
+  for (const platform of ['X', 'Twitter', 'LinkedIn', 'Zalo', 'Pinterest', 'Twitch']) {
+    assert.match(
+      validateSocialsInput([
+        { platform, handle: `https://example.com/${platform}` },
+      ]).error,
+      /không được hỗ trợ/,
+    )
+  }
+})
+
+test('rejects duplicate platforms and more than five channels', () => {
   assert.match(
     validateSocialsInput([
-      { platform: 'X', handle: 'https://x.com/one' },
-      { platform: 'Twitter', handle: 'https://x.com/two' },
+      { platform: 'TikTok', handle: 'https://www.tiktok.com/@one' },
+      { platform: 'tiktok', handle: 'https://www.tiktok.com/@two' },
     ]).error,
     /đã được chọn trùng/,
   )
@@ -38,10 +51,9 @@ test('rejects duplicate platforms and more than six channels', () => {
       'Instagram',
       'YouTube',
       'Threads',
-      'LinkedIn',
-      'Zalo',
+      'TikTok',
     ].map((platform) => ({ platform, handle: `https://example.com/${platform}` }))).error,
-    /tối đa 6/,
+    /tối đa 5/,
   )
 
   assert.match(
@@ -75,4 +87,21 @@ test('keeps verified primary metadata while allowing secondary channels to chang
   assert.equal(merged[0], primary)
   assert.equal(merged[0].verified, true)
   assert.equal(merged[1].platform, 'Instagram')
+})
+
+test('does not preserve a verified primary channel from a removed platform', () => {
+  const requested = [
+    { platform: 'TikTok', handle: 'https://tiktok.com/@kocviet', followers: 25000 },
+  ]
+  const merged = preserveVerifiedPrimarySocial(
+    {
+      platform: 'X (Twitter)',
+      handle: 'https://x.com/legacy-koc',
+      followers: 25000,
+      verified: true,
+    },
+    requested,
+  )
+
+  assert.deepEqual(merged, requested)
 })
