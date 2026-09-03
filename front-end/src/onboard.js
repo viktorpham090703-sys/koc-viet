@@ -45,7 +45,6 @@ export function renderOnboarding(el) {
       confidence: 0,
       verifiedAt: 0,
     },
-    engagement: 5,
     bio: "",
     prices: {},
     tier: "Nano",
@@ -496,7 +495,6 @@ export function renderOnboarding(el) {
         primaryLabel: "Kênh chính để xác minh follower",
       })}
       <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="0" step="1" value="${d.followers}" ${verification.verified ? "readonly" : ""}></div>
-      <div class="field"><label>Tỷ lệ tương tác (%)</label><input id="o-eng" type="number" step="0.1" value="${d.engagement}"></div>
       <div class="tint-box" style="margin:4px 0 14px">
         <div class="between" style="gap:10px">
           <div>
@@ -587,8 +585,6 @@ export function renderOnboarding(el) {
     if (prov) d.province = prov.value;
     const fol = el.querySelector("#o-fol");
     if (fol) d.followers = Number(fol.value) || 0;
-    const eng = el.querySelector("#o-eng");
-    if (eng) d.engagement = Number(eng.value) || 0;
     const bio = el.querySelector("#o-bio");
     if (bio) d.bio = bio.value;
     const other = el.querySelector("#o-cat-other");
@@ -777,7 +773,7 @@ export function renderOnboarding(el) {
 
   // ---------- Step 2: Phân hạng tự động + giải thích + bảng giá ----------
   function renderStep2() {
-    d.tier = tierOf(d.followers, d.engagement);
+    d.tier = tierOf(d.followers);
     const tr = cfg.tiers.find((t) => t.name === d.tier);
     el.innerHTML = wrap(`
       <div class="tint-box"><div class="between"><span>Hạng tự động của bạn</span><span class="tier-badge tier-${d.tier}">${d.tier}</span></div>
@@ -1507,7 +1503,6 @@ export function renderOnboarding(el) {
         categories: d.categories,
         followers: d.followers,
         followerVerificationToken: d.followerVerification.proofToken,
-        engagement: d.engagement,
         bio: d.bio,
         socials: d.socials,
         prices: d.prices,
@@ -1546,7 +1541,7 @@ export function renderOnboarding(el) {
   render();
 }
 
-function tierOf(followers, _eng) {
+function tierOf(followers) {
   if (followers >= 1000000) return "Mega";
   if (followers >= 300000) return "Macro";
   if (followers >= 100000) return "Mid";

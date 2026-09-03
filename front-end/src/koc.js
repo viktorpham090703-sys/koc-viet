@@ -1439,7 +1439,7 @@ async function profile(el, editing = false) {
               <div class="profile-email">✉ ${esc(k.email || "Chưa cập nhật email")}</div></div>
             </div>
           </div>
-          <div class="profile-stats"><span><b>${num(k.followers)}</b>Người theo dõi</span><span><b>${Number(k.engagement || 0).toFixed(1)}%</b>Tương tác</span><span><b>${Number(k.rating || 0).toFixed(1)}</b>Đánh giá</span></div>
+          <div class="profile-stats"><span><b>${num(k.followers)}</b>Người theo dõi</span><span><b>${Number(k.rating || 0).toFixed(1)}</b>Đánh giá</span></div>
           <div class="profile-summary"><div class="profile-summary-heading"><span>GIỚI THIỆU</span><b>Hồ sơ năng lực KOC</b></div>
             <p class="profile-bio">${esc(k.bio || "Bạn chưa cập nhật phần giới thiệu. Hãy bổ sung thế mạnh và phong cách nội dung để doanh nghiệp hiểu bạn hơn.")}</p>
             <div class="profile-category-list">${(k.categories || []).map((category) => `<span>${esc(category)}</span>`).join("") || '<span class="is-empty">Chưa cập nhật ngành hàng</span>'}</div>

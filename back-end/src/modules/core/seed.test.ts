@@ -16,14 +16,14 @@ test("defines the five KOC tiers and requested price ranges", () => {
 });
 
 test("assigns KOC tier using follower boundaries only", () => {
-  assert.equal(tierOf(9_999, 99), "Nano");
-  assert.equal(tierOf(10_000, 0), "Micro");
-  assert.equal(tierOf(99_999, 99), "Micro");
-  assert.equal(tierOf(100_000, 0), "Mid");
-  assert.equal(tierOf(299_999, 99), "Mid");
-  assert.equal(tierOf(300_000, 0), "Macro");
-  assert.equal(tierOf(999_999, 99), "Macro");
-  assert.equal(tierOf(1_000_000, 0), "Mega");
+  assert.equal(tierOf(9_999), "Nano");
+  assert.equal(tierOf(10_000), "Micro");
+  assert.equal(tierOf(99_999), "Micro");
+  assert.equal(tierOf(100_000), "Mid");
+  assert.equal(tierOf(299_999), "Mid");
+  assert.equal(tierOf(300_000), "Macro");
+  assert.equal(tierOf(999_999), "Macro");
+  assert.equal(tierOf(1_000_000), "Mega");
 });
 
 test("ships a local portrait for every seeded KOC", async () => {
