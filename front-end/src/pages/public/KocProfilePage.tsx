@@ -26,7 +26,7 @@ export function KocProfilePage() {
             <p>{koc.bio}</p>
             <p className="muted">
               {koc.province} · {Number(koc.followers).toLocaleString("vi-VN")}{" "}
-              người theo dõi · {koc.engagement}% tương tác
+              người theo dõi
             </p>
             <div className="row">
               {koc.categories.map((item) => (

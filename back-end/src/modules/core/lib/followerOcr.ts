@@ -1,6 +1,22 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 const MAX_OCR_TEXT_LENGTH = 20_000;
-const MIN_OCR_CONFIDENCE = 35;
+
+const OCR_FAILURE_MESSAGES = {
+  ownershipCode: 'không nhận ra đúng mã xác minh',
+  followerCount: 'số người theo dõi trong ảnh không khớp với số đã nhập',
+};
+
+export function followerOcrFailureMessage(failedChecks) {
+  const details = [...new Set(Array.isArray(failedChecks) ? failedChecks : [])]
+    .map((check) => OCR_FAILURE_MESSAGES[check])
+    .filter(Boolean);
+
+  if (!details.length) {
+    return 'Không thể xác minh ảnh. Vui lòng kiểm tra ảnh và thử lại.';
+  }
+
+  return `Ảnh chưa đạt: ${details.join('; ')}. Hãy chụp rõ đúng các mục trên rồi thử lại.`;
+}
 
 function foldText(value) {
   return String(value || '')
@@ -11,18 +27,6 @@ function foldText(value) {
 
 function compactAlphaNumeric(value) {
   return foldText(value).replace(/[^\p{L}\p{N}]/gu, '');
-}
-
-function normalizedHandle(value) {
-  let raw = String(value || '').trim().toLowerCase();
-  try {
-    const parsed = new URL(raw);
-    raw = parsed.pathname.split('/').filter(Boolean).pop() || '';
-  } catch (_) {}
-  try {
-    raw = decodeURIComponent(raw);
-  } catch (_) {}
-  return compactAlphaNumeric(raw.replace(/^@/, ''));
 }
 
 function ownershipCodeVisible(text, expectedCode) {
@@ -40,12 +44,6 @@ function ownershipCodeVisible(text, expectedCode) {
       .replace(/S/g, '5');
     return suffix === expectedSuffix;
   });
-}
-
-function handleVisible(text, expectedHandle) {
-  const expected = normalizedHandle(expectedHandle);
-  if (!expected) return false;
-  return compactAlphaNumeric(text).includes(expected);
 }
 
 function followerCandidates(text) {
@@ -98,7 +96,6 @@ export function analyzeFollowerOcrEvidence({
   ocrText,
   ocrConfidence,
   ownershipCode,
-  handle,
   claimedFollowers,
 }) {
   const text = String(ocrText || '').trim();
@@ -110,12 +107,9 @@ export function analyzeFollowerOcrEvidence({
   const textValid =
     text.length >= 10 && text.length <= MAX_OCR_TEXT_LENGTH;
   const checks = {
-    ocrText: textValid,
     ownershipCode: textValid && ownershipCodeVisible(text, ownershipCode),
-    handle: textValid && handleVisible(text, handle),
     followerCount:
       textValid && followerCountVisible(text, claimedFollowers),
-    confidence: confidencePercent >= MIN_OCR_CONFIDENCE,
   };
 
   return {

@@ -1521,7 +1521,7 @@ function pagePricing() {
       <div class="lp-grid-2">
         <article class="lp-card lp-proof-card lp-proof-coral">
           <h3 class="lp-proof-card-title">Hạng được tính bằng gì?</h3>
-          <p class="lp-proof-card-desc">Ba nhóm tiêu chí được đánh giá tự động: (1) quy mô — số người theo dõi đã xác minh; (2) chất lượng — tỉ lệ tương tác và khả năng tạo đơn hàng; (3) uy tín — tỉ lệ hoàn thành booking đúng hạn và điểm đánh giá từ doanh nghiệp. Hạng được xem xét mỗi quý; kết quả tốt có thể được xét sớm.</p>
+          <p class="lp-proof-card-desc">Ba nhóm tiêu chí được đánh giá tự động: (1) quy mô — số người theo dõi đã xác minh; (2) chất lượng — khả năng tạo đơn hàng; (3) uy tín — tỉ lệ hoàn thành booking đúng hạn và điểm đánh giá từ doanh nghiệp. Hạng được xem xét mỗi quý; kết quả tốt có thể được xét sớm.</p>
         </article>
         <article class="lp-card lp-proof-card lp-proof-teal">
           <h3 class="lp-proof-card-title">Lên hạng được gì?</h3>
