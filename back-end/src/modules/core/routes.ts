@@ -1881,7 +1881,7 @@ export async function route(request, env, url) {
     const contractSignature = String(contract.signature || "");
     const contractHtml = String(contract.html || "");
     const contractSignedAt = Number(contract.signedAt);
-    const contractVersion = "KOC-2026-01";
+    const contractVersion = "KOC-2026-02";
     if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(contractSignature))
       return err("Chữ ký hợp đồng không hợp lệ");
     if (contractSignature.length > 500_000)

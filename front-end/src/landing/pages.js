@@ -734,7 +734,7 @@ function pageBusiness() {
       },
     ],
     img: {
-      src: "/images/business-hero-seamless.png",
+      src: "/images/business-hero-transparent-v2.png",
       alt: "Doanh nghiệp booking KOC dễ dàng như đặt xe",
     },
     waveFill: "#ffffff",
@@ -980,7 +980,7 @@ function pageMarketplace() {
     ctas: [{ href: "/#/explore", label: "Khám phá marketplace" }],
     extra: `<div class="lp-box on-dark lp-marketplace-filter-summary">Tìm theo: Ngành hàng, Tỉnh/Thành, Hạng KOC, Khoảng giá, Đánh giá ⭐️</div>`,
     img: {
-      src: "/images/marketplace-hero-seamless.png",
+      src: "/images/marketplace-hero-transparent-v2.png",
       alt: "Cả một thị trường KOC trong bộ lọc",
     },
     waveFill: "#ffffff",

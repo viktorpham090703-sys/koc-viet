@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { Cards,Cta,Faq,Hero,LeadForm,Media,Section,Shell,Steps } from './LandingComponents'
 const img={
   koc: '/images/koc-hero-seamless.png',
-  business: '/images/business-hero-seamless.png',
-  market: '/images/marketplace-hero-seamless.png',
+  business: '/images/business-hero-transparent-v2.png',
+  market: '/images/marketplace-hero-transparent-v2.png',
   ai: '/images/aiclone-hero-seamless.png',
   price: '/images/pricing-hero-seamless.png',
   community: '/images/community-hero-seamless.png',
