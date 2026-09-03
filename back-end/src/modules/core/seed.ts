@@ -143,10 +143,51 @@ export const KOC_AVATARS = {
   'Lý Hải Đăng': '/images/koc-avatars/ly-hai-dang.jpg',
 };
 
-async function syncKocAvatars(env) {
-  const stmts = Object.entries(KOC_AVATARS).map(([name, avatar]) =>
-    env.DB.prepare('UPDATE kocs SET avatar=? WHERE name=?').bind(avatar, name));
-  if (stmts.length) await env.DB.batch(stmts);
+// Stable replacements for existing KOC profiles that previously used external,
+// randomly generated avatars. Keying by profile ID avoids changing a different
+// account that happens to share the same display name.
+export const KOC_PROFILE_AVATAR_OVERRIDES = {
+  '58b98467-00a6-43cd-9775-656c85c91208': '/images/koc-avatars/nguyen-ho-viet-khoa.jpg',
+};
+
+// Introductory prices for the platform's sample KOCs. They sit close to the
+// floor of each tier to encourage a first booking without devaluing creator
+// work. Real KOCs and admin-configured tier bands are never overwritten.
+export const KOC_DEMO_PRICES = {
+  'Nguyễn Thu Hà': { 'Mỹ phẩm': 22_000_000, 'Thời trang': 24_000_000 },
+  'Trần Minh Quân': { 'Công nghệ': 9_000_000, 'Gia dụng': 8_500_000 },
+  'Lê Phương Anh': { 'Ẩm thực': 1_500_000, 'Du lịch': 1_700_000 },
+  'Phạm Gia Bảo': { 'Thời trang': 1_300_000 },
+  'Võ Thanh Trúc': { 'Mẹ & Bé': 1_200_000, 'Sức khỏe': 1_400_000 },
+  'Đặng Hoàng Long': { 'Công nghệ': 350_000 },
+  'Bùi Ngọc Mai': { 'Mỹ phẩm': 9_000_000, 'Sức khỏe': 9_500_000 },
+  'Hồ Anh Tuấn': { 'Ẩm thực': 300_000 },
+  'Đỗ Thùy Linh': { 'Gia dụng': 1_200_000, 'Mẹ & Bé': 1_400_000 },
+  'Ngô Quốc Việt': { 'Du lịch': 22_000_000, 'Công nghệ': 23_000_000 },
+  'Trịnh Bảo Ngọc': { 'Thời trang': 250_000, 'Du lịch': 300_000 },
+  'Lý Hải Đăng': { 'Sức khỏe': 1_300_000 },
+};
+
+export async function syncKocCatalog(env) {
+  const demoPhone = (index) => `09${10_000_000 + index * 111_111}`;
+  const sampleIndex = new Map(Object.keys(KOC_AVATARS).map((name, index) => [name, index]));
+  const avatarStatements = Object.entries(KOC_AVATARS).map(([name, avatar], index) =>
+    env.DB.prepare('UPDATE kocs SET avatar=? WHERE name=? AND phone=?')
+      .bind(avatar, name, demoPhone(index)));
+  const profileAvatarStatements = Object.entries(KOC_PROFILE_AVATAR_OVERRIDES).map(([id, avatar]) =>
+    env.DB.prepare('UPDATE kocs SET avatar=? WHERE id=?')
+      .bind(avatar, id));
+  const priceStatements = Object.entries(KOC_DEMO_PRICES).flatMap(
+    ([name, prices]) => Object.entries(prices).map(([category, price]) =>
+      env.DB.prepare(
+        `UPDATE koc_prices SET price=?
+         WHERE category=? AND koc_id IN (
+           SELECT id FROM kocs WHERE name=? AND phone=?
+         )`,
+      ).bind(price, category, name, demoPhone(sampleIndex.get(name)))),
+  );
+  const statements = [...avatarStatements, ...profileAvatarStatements, ...priceStatements];
+  if (statements.length) await env.DB.batch(statements);
 }
 
 let _seedReady = false;
@@ -165,7 +206,7 @@ export async function ensureSeedData(env) {
         guards.get('seeded') === 'done' &&
         guards.get('qc_fixtures_v1') === 'done'
       ) {
-        await syncKocAvatars(env);
+        await syncKocCatalog(env);
         return;
       }
       await seedIfEmpty(env);
@@ -192,7 +233,7 @@ export async function seedIfEmpty(env) {
     for (let i = 0; i < 150; i++) {
       const st = await seedState(env);
       if (st === 'done') {
-        await syncKocAvatars(env);
+        await syncKocCatalog(env);
         return;
       }
       await new Promise(r => setTimeout(r, 100));
@@ -202,7 +243,7 @@ export async function seedIfEmpty(env) {
   try {
     await doSeed(env);
     await env.DB.prepare(`UPDATE _meta SET v='done' WHERE k='seeded'`).run();
-    await syncKocAvatars(env);
+    await syncKocCatalog(env);
   } catch (e) {
     // Failed midway — clear the guard so a later request can retry cleanly.
     try { await env.DB.prepare(`DELETE FROM _meta WHERE k='seeded'`).run(); } catch (_) {}
@@ -251,7 +292,8 @@ async function doSeed(env) {
     // prices per category within tier range (deterministic)
     const tr = TIERS.find(x => x.name === tier);
     cats.forEach((c, ci) => {
-      const price = Math.round((tr.min + (tr.max - tr.min) * det(i*7 + ci + 3, 0.3, 0.7)) / 100000) * 100000;
+      const price = KOC_DEMO_PRICES[name]?.[c]
+        ?? Math.round((tr.min + (tr.max - tr.min) * det(i*7 + ci + 3, 0.3, 0.7)) / 100000) * 100000;
       stmts.push(env.DB.prepare(`INSERT INTO koc_prices (id,koc_id,category,price) VALUES (?,?,?,?)`)
         .bind(uid(), id, c, price));
     });

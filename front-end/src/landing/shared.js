@@ -14,6 +14,83 @@ export const ROUTES = [
   ["/ho-tro", "Hỗ trợ"],
 ];
 
+// Privacy-safe representative portraits for the public activity ledger. These
+// local assets are documented Vietnamese portraits and deliberately do not use
+// user-uploaded avatars, so the public feed stays visually consistent while
+// names remain masked.
+export const KOC_ACTIVITY_FALLBACK = [
+  {
+    name: "KOC Nguyễn H.",
+    avatar: "/images/koc-avatars/nguyen-thu-ha.jpg",
+    type: "registered",
+    text: "Đã hoàn tất hồ sơ và sẵn sàng nhận booking",
+    category: "Ẩm thực & F&B",
+    dot: "green",
+    ageSeconds: 8,
+    time: "8 giây trước",
+  },
+  {
+    name: "KOC Trần Q.",
+    avatar: "/images/koc-avatars/tran-minh-quan.jpg",
+    type: "registered",
+    text: "Đã cập nhật bảng giá và mở lịch nhận chiến dịch",
+    category: "Thời trang",
+    dot: "red",
+    ageSeconds: 30,
+    time: "30 giây trước",
+  },
+  {
+    name: "KOC Lê A.",
+    avatar: "/images/koc-avatars/le-phuong-anh.jpg",
+    type: "booking_received",
+    text: "Tiếp nhận booking chiến dịch mới",
+    category: "Làm đẹp",
+    dot: "orange",
+    ageSeconds: 52,
+    time: "52 giây trước",
+  },
+  {
+    name: "KOC Võ T.",
+    avatar: "/images/koc-avatars/vo-thanh-truc.jpg",
+    type: "booking_completed",
+    text: "Hoàn tất nghiệm thu và thanh toán an toàn",
+    category: "Mẹ & Bé",
+    dot: "green",
+    ageSeconds: 60,
+    time: "1 phút trước",
+  },
+  {
+    name: "KOC Đặng L.",
+    avatar: "/images/koc-avatars/dang-hoang-long.jpg",
+    type: "booking_received",
+    text: "Bắt đầu booking nội dung công nghệ mới",
+    category: "Công nghệ",
+    dot: "blue",
+    ageSeconds: 75,
+    time: "1 phút trước",
+  },
+  {
+    name: "KOC Ngô V.",
+    avatar: "/images/koc-avatars/ngo-quoc-viet.jpg",
+    type: "registered",
+    text: "Đã hoàn tất hồ sơ và sẵn sàng nhận booking",
+    category: "Du lịch",
+    dot: "orange",
+    ageSeconds: 92,
+    time: "1 phút trước",
+  },
+  {
+    name: "KOC Bùi M.",
+    avatar: "/images/koc-avatars/bui-ngoc-mai.jpg",
+    type: "booking_completed",
+    text: "Nhận booking nội dung chăm sóc sức khỏe",
+    category: "Sức khỏe",
+    dot: "green",
+    ageSeconds: 110,
+    time: "1 phút trước",
+  },
+];
+
 let stopKocActivityTicker = () => {};
 
 export function lpHeader(active) {
@@ -599,71 +676,10 @@ function bindKocActivityTicker(root) {
   ]);
 
   const controller = new AbortController();
-  let activities = [
-    {
-      name: "Kim L.",
-      avatar: "",
-      type: "booking_received",
-      occurredAt: Math.floor(Date.now() / 1000) - 960,
-      text: "Nhận booking review sản phẩm mới và lên lịch đăng nội dung",
-      category: "Ẩm thực & F&B",
-      dot: "green",
-    },
-    {
-      name: "Ngọc A.",
-      avatar: "",
-      type: "booking_received",
-      occurredAt: Math.floor(Date.now() / 1000) - 1020,
-      text: "Bắt đầu chiến dịch ra mắt bộ sưu tập mùa mới",
-      category: "Thời trang",
-      dot: "red",
-    },
-    {
-      name: "Minh T.",
-      avatar: "",
-      type: "registered",
-      occurredAt: Math.floor(Date.now() / 1000) - 1560,
-      text: "Hoàn tất hồ sơ, bảng giá và sẵn sàng nhận booking",
-      category: "Làm đẹp",
-      dot: "orange",
-    },
-    {
-      name: "Lan H.",
-      avatar: "",
-      type: "booking_completed",
-      occurredAt: Math.floor(Date.now() / 1000) - 3600,
-      text: "Nhận lời mời trải nghiệm sản phẩm chăm sóc gia đình",
-      category: "Mẹ & Bé",
-      dot: "green",
-    },
-    {
-      name: "Quang D.",
-      avatar: "",
-      type: "booking_completed",
-      occurredAt: Math.floor(Date.now() / 1000) - 3600,
-      text: "Đã duyệt nội dung cho chiến dịch thiết bị thông minh",
-      category: "Công nghệ",
-      dot: "blue",
-    },
-    {
-      name: "Huyền N.",
-      avatar: "",
-      type: "booking_received",
-      occurredAt: Math.floor(Date.now() / 1000) - 4200,
-      text: "Nhận chiến dịch trải nghiệm điểm đến địa phương",
-      category: "Du lịch",
-      dot: "orange",
-    },
-    {
-      name: "An P.",
-      avatar: "",
-      type: "booking_completed",
-      occurredAt: Math.floor(Date.now() / 1000) - 4800,
-      text: "Hoàn tất nghiệm thu và nhận thanh toán an toàn",
-      category: "Sức khỏe",
-      dot: "green",
-    },
-  ];
+  let activities = KOC_ACTIVITY_FALLBACK.map((item) => ({
+    ...item,
+    occurredAt: Math.floor(Date.now() / 1000) - item.ageSeconds,
+  }));
   const seedActivities = activities.map((item) => ({ ...item }));
   let startIndex = 0;
   let rotateTimer = 0;
@@ -710,17 +726,6 @@ function bindKocActivityTicker(root) {
     return `${mins} phút trước`;
   };
 
-  const safeAvatar = (value) => {
-    try {
-      const url = new URL(String(value || ""), window.location.origin);
-      return url.protocol === "https:" || url.protocol === "http:"
-        ? url.href
-        : "";
-    } catch (_) {
-      return "";
-    }
-  };
-
   const render = () => {
     const activeEl = listContainer || singleCard;
     if (!activities.length || stopped || !activeEl || !activeEl.isConnected) {
@@ -739,7 +744,9 @@ function bindKocActivityTicker(root) {
       for (let i = 0; i < visibleCount; i++) {
         const item = activities[(startIndex + i) % activities.length];
         const timeStr = relativeTime(item.displayedAt || item.occurredAt);
-        const avatar = safeAvatar(item.avatar) || "/default-avatar.svg";
+        // The public feed uses a privacy-safe Vietnamese portrait pool rather
+        // than exposing arbitrary user-uploaded profile images.
+        const avatar = KOC_ACTIVITY_FALLBACK[i % KOC_ACTIVITY_FALLBACK.length].avatar;
         const catInfo = defaultCategories[i % defaultCategories.length];
         const categoryLabel = item.category || catInfo.cat;
         const dotColor = ["green", "red", "orange", "blue"].includes(item.dot)
@@ -760,7 +767,7 @@ function bindKocActivityTicker(root) {
               <span>${esc(categoryLabel)}</span>
             </div>
             <div class="lp-user-cell">
-              <img class="lp-user-avatar" src="${esc(avatar)}" alt="${esc(item.name)}" onerror="this.src='/default-avatar.svg'" />
+              <img class="lp-user-avatar" src="${esc(avatar)}" alt="" loading="lazy" decoding="async" onerror="this.src='/images/koc-avatars/nguyen-thu-ha.jpg'" />
               <span class="lp-user-name">${esc(item.name)}</span>
             </div>
             <div class="lp-activity-desc">${esc(textContent)}</div>
