@@ -3,8 +3,8 @@ import { now, uid } from './db.js';
 import { TIERS, CATEGORIES, KOC_AVATARS, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
-import { sendAccountReviewEmail, sendBookingCreatedEmail, sendPaymentSuccessEmail } from './lib/smtp.js';
-import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword } from './lib/password.js';
+import { sendAccountReviewEmail, sendBookingCreatedEmail, sendPaymentSuccessEmail, sendPartnerAccountCreatedEmail } from './lib/smtp.js';
+import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword, generateTempPassword } from './lib/password.js';
 import { signJwt, verifyJwt } from './lib/jwt.js';
 import { deleteKocIdentityImages, signedKocIdentityUrl, uploadKocIdentityImages } from './lib/s3Identity.js';
 import { canonicalProvinceName, getAddressKitProvinces, provinceFilterAliases } from './lib/addressKit.js';
@@ -1286,7 +1286,7 @@ export async function route(request, env, url) {
       return err("Mật khẩu hiện tại không chính xác", 401);
     const passwordHash = await hashPassword(newPassword);
     await env.DB.prepare(
-      "UPDATE users SET password=?,session_version=session_version+1,updated_at=? WHERE id=?",
+      "UPDATE users SET password=?,must_change_password=0,session_version=session_version+1,updated_at=? WHERE id=?",
     )
       .bind(passwordHash, now(), me.id)
       .run();
@@ -2051,6 +2051,8 @@ export async function route(request, env, url) {
 
   // ---------- everything below needs auth ----------
   if (!me) return err("Chưa đăng nhập", 401);
+  if (Number(me.must_change_password || 0) > 0)
+    return err("Vui lòng đổi mật khẩu trước khi tiếp tục", 403);
   const isAdmin = me.role === "admin";
 
   // ---------- In-app notifications ----------
@@ -4715,6 +4717,83 @@ export async function route(request, env, url) {
     return err('Hành động không hợp lệ');
   }
 
+  // ================= PARTNER =================
+  if (p === "/api/partner/overview" && m === "GET") {
+    if (me.role !== "partner") return err("403", 403);
+    const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
+      .bind(me.partner_id).first();
+    if (!partner) return err("Không tìm thấy đối tác", 404);
+    const memberCount = Number(
+      await env.DB.prepare(
+        `SELECT COUNT(*) c FROM partner_members WHERE partner_id=? AND status='active'`,
+      ).bind(me.partner_id).first("c"),
+    ) || 0;
+    const earnedTotal = Number(
+      await env.DB.prepare(
+        `SELECT COALESCE(SUM(amount),0) s FROM partner_earnings WHERE partner_id=?`,
+      ).bind(me.partner_id).first("s"),
+    ) || 0;
+    const earnedBookings = Number(
+      await env.DB.prepare(
+        `SELECT COUNT(*) c FROM partner_earnings WHERE partner_id=?`,
+      ).bind(me.partner_id).first("c"),
+    ) || 0;
+    const walletRevenue = await walletBalance(env, "partner", me.partner_id, "revenue");
+    const recent = await env.DB.prepare(
+      `SELECT pe.*, b.code booking_code, k.name koc_name
+       FROM partner_earnings pe
+       LEFT JOIN bookings b ON b.id=pe.booking_id
+       LEFT JOIN kocs k ON k.id=pe.koc_id
+       WHERE pe.partner_id=? ORDER BY pe.created_at DESC LIMIT 8`,
+    ).bind(me.partner_id).all();
+    return J({
+      partner: {
+        name: partner.name, avatar: partner.avatar,
+        fee_rate: partner.fee_rate, status: partner.status,
+      },
+      memberCount, earnedTotal, earnedBookings, walletRevenue,
+      recentEarnings: recent.results,
+    });
+  }
+  if (p === "/api/partner/kocs" && m === "GET") {
+    if (me.role !== "partner") return err("403", 403);
+    const { results } = await env.DB.prepare(
+      `SELECT pm.koc_id, pm.assigned_at,
+              k.name, k.tier, k.province, k.avatar, k.completed_bookings, k.rating,
+              (SELECT COALESCE(SUM(amount),0) FROM partner_earnings pe
+               WHERE pe.partner_id=pm.partner_id AND pe.koc_id=pm.koc_id) earned
+       FROM partner_members pm JOIN kocs k ON k.id=pm.koc_id
+       WHERE pm.partner_id=? AND pm.status='active'
+       ORDER BY pm.assigned_at DESC`,
+    ).bind(me.partner_id).all();
+    return J({ kocs: results });
+  }
+  if (p === "/api/partner/report" && m === "GET") {
+    if (me.role !== "partner") return err("403", 403);
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
+    const per = Math.min(50, Math.max(5, parseInt(url.searchParams.get("per") || "10")));
+    const total = Number(
+      await env.DB.prepare(
+        `SELECT COUNT(*) c FROM partner_earnings WHERE partner_id=?`,
+      ).bind(me.partner_id).first("c"),
+    ) || 0;
+    const { results } = await env.DB.prepare(
+      `SELECT pe.*, b.code booking_code, k.name koc_name
+       FROM partner_earnings pe
+       LEFT JOIN bookings b ON b.id=pe.booking_id
+       LEFT JOIN kocs k ON k.id=pe.koc_id
+       WHERE pe.partner_id=? ORDER BY pe.created_at DESC LIMIT ? OFFSET ?`,
+    ).bind(me.partner_id, per, (page - 1) * per).all();
+    const totals = await env.DB.prepare(
+      `SELECT COALESCE(SUM(base_service_fee),0) baseFee, COALESCE(SUM(amount),0) amount
+       FROM partner_earnings WHERE partner_id=?`,
+    ).bind(me.partner_id).first();
+    return J({
+      rows: results, page, per, total, pages: Math.max(1, Math.ceil(total / per)),
+      totals: { baseFee: Number(totals.baseFee || 0), amount: Number(totals.amount || 0) },
+    });
+  }
+
   // ================= ADMIN =================
   if (isAdmin) {
     // ---------- Business account management ----------
@@ -4961,8 +5040,10 @@ export async function route(request, env, url) {
                 (SELECT COALESCE(SUM(amount),0) FROM partner_earnings pe
                  WHERE pe.partner_id=p.id) earned_total,
                 (SELECT COUNT(*) FROM partner_earnings pe
-                 WHERE pe.partner_id=p.id) earned_bookings
+                 WHERE pe.partner_id=p.id) earned_bookings,
+                u.id account_user_id, u.email account_email, u.status account_status
          FROM partners p
+         LEFT JOIN users u ON u.partner_id=p.id AND u.role='partner'
          ORDER BY p.created_at DESC, p.rowid DESC`,
       ).all();
       for (const row of results) {
@@ -4994,6 +5075,11 @@ export async function route(request, env, url) {
       ).bind(id).first();
       if (!partner) return err("Không tìm thấy đối tác", 404);
       partner.wallet_revenue = await walletBalance(env, 'partner', partner.id, 'revenue');
+      const account = await env.DB.prepare(
+        `SELECT id,email,status,locked_reason,created_at,updated_at
+         FROM users WHERE partner_id=? AND role='partner'`,
+      ).bind(id).first();
+      partner.account = account || null;
       const members = await env.DB.prepare(
         `SELECT pm.koc_id, pm.assigned_at, pm.status,
                 k.name, k.tier, k.province, k.avatar,
@@ -5153,6 +5239,66 @@ export async function route(request, env, url) {
       await audit(env, me.id, "partner.members", id,
         `add=${add.length} remove=${remove.length}`);
       return J({ ok: true, added: add.length, removed: remove.length });
+    }
+    if (p === "/api/admin/partners/account" && m === "POST") {
+      const id = String(body.id || "");
+      const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
+        .bind(id).first();
+      if (!partner) return err("Không tìm thấy đối tác", 404);
+      const existing = await env.DB.prepare(
+        "SELECT id FROM users WHERE partner_id=? AND role='partner'",
+      ).bind(id).first();
+      if (existing) return err("Đối tác này đã có tài khoản đăng nhập");
+      const email = String(body.email || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err("Email không hợp lệ");
+      const duplicate = await env.DB.prepare("SELECT id FROM users WHERE email=?")
+        .bind(email).first();
+      if (duplicate) return err("Email này đã được dùng cho một tài khoản khác");
+      const tempPassword = generateTempPassword();
+      try {
+        await sendPartnerAccountCreatedEmail(env, email, {
+          name: partner.name, email, tempPassword,
+        });
+      } catch (e) {
+        return err(
+          `Không gửi được email cấp tài khoản: ${e?.message || "lỗi không xác định"}. Vui lòng thử lại.`,
+        );
+      }
+      const passwordHash = await hashPassword(tempPassword);
+      const userId = uid();
+      await env.DB.prepare(
+        `INSERT INTO users
+         (id,email,password,role,name,partner_id,status,must_change_password,created_at,updated_at)
+         VALUES (?,?,?,'partner',?,?,'active',1,?,?)`,
+      ).bind(userId, email, passwordHash, partner.name, id, now(), now()).run();
+      await audit(env, me.id, "partner.account_create", id, `email=${email}`);
+      return J({ ok: true, email });
+    }
+    if (p === "/api/admin/partners/account/reset" && m === "POST") {
+      const id = String(body.id || "");
+      const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
+        .bind(id).first();
+      if (!partner) return err("Không tìm thấy đối tác", 404);
+      const account = await env.DB.prepare(
+        "SELECT * FROM users WHERE partner_id=? AND role='partner'",
+      ).bind(id).first();
+      if (!account) return err("Đối tác chưa có tài khoản đăng nhập", 404);
+      const tempPassword = generateTempPassword();
+      try {
+        await sendPartnerAccountCreatedEmail(env, account.email, {
+          name: partner.name, email: account.email, tempPassword,
+        });
+      } catch (e) {
+        return err(
+          `Không gửi được email đặt lại mật khẩu: ${e?.message || "lỗi không xác định"}. Vui lòng thử lại.`,
+        );
+      }
+      const passwordHash = await hashPassword(tempPassword);
+      await env.DB.prepare(
+        `UPDATE users SET password=?,must_change_password=1,session_version=session_version+1,updated_at=? WHERE id=?`,
+      ).bind(passwordHash, now(), account.id).run();
+      await audit(env, me.id, "partner.account_reset", id, `email=${account.email}`);
+      return J({ ok: true });
     }
 
     if (p === "/api/admin/queue") {
@@ -6522,6 +6668,8 @@ function safeUser(u) {
     name: u.name,
     koc_id: u.koc_id,
     business_id: u.business_id,
+    partner_id: u.partner_id,
+    must_change_password: Number(u.must_change_password || 0) > 0,
     demo: !!u._sessionDemo,
   };
 }

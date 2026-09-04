@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-09-04-partner-program-v2';
+const SCHEMA_GUARD_VERSION = '2026-09-04-partner-program-v3';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -293,6 +293,9 @@ const MIGRATIONS = [
   `ALTER TABLE partners ADD COLUMN bank_account TEXT`,
   `ALTER TABLE partners ADD COLUMN bank_owner TEXT`,
   `ALTER TABLE partners ALTER COLUMN business_id DROP NOT NULL`,
+  // ---- partner login accounts: admin-issued, forced password change on first login ----
+  `ALTER TABLE users ADD COLUMN partner_id TEXT`,
+  `ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
@@ -367,6 +370,8 @@ async function ensureV14Schema(env) {
     ['locked_reason', `ALTER TABLE users ADD COLUMN locked_reason TEXT`],
     ['updated_at', `ALTER TABLE users ADD COLUMN updated_at INTEGER`],
     ['session_version', `ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0`],
+    ['partner_id', `ALTER TABLE users ADD COLUMN partner_id TEXT`],
+    ['must_change_password', `ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`],
   ];
   for (const [name, sql] of requiredUserColumns) {
     if (!existingUserColumns.has(name)) await env.DB.prepare(sql).run();
