@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-08-28-web-push-v1';
+const SCHEMA_GUARD_VERSION = '2026-09-04-partner-program-v2';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -260,6 +260,39 @@ const MIGRATIONS = [
      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
   `CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
      ON push_subscriptions(user_id, updated_at DESC)`,
+  // ---- KOC Viet partner program: a standalone, admin-managed partner earns a
+  // share of the 5% service fee on each booking of the KOCs assigned to it.
+  // Additive only. ----
+  `CREATE TABLE IF NOT EXISTS partners (
+     id TEXT PRIMARY KEY, name TEXT NOT NULL, avatar TEXT,
+     bank_name TEXT, bank_bin TEXT, bank_account TEXT, bank_owner TEXT,
+     fee_rate REAL NOT NULL DEFAULT 0.3, status TEXT NOT NULL DEFAULT 'active',
+     note TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+  `CREATE TABLE IF NOT EXISTS partner_members (
+     id TEXT PRIMARY KEY, partner_id TEXT NOT NULL, koc_id TEXT NOT NULL,
+     status TEXT NOT NULL DEFAULT 'active', assigned_at INTEGER NOT NULL,
+     assigned_by TEXT, removed_at INTEGER )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_active_koc
+     ON partner_members(koc_id) WHERE status='active'`,
+  `CREATE INDEX IF NOT EXISTS idx_partner_members_partner
+     ON partner_members(partner_id, status)`,
+  `CREATE TABLE IF NOT EXISTS partner_earnings (
+     id TEXT PRIMARY KEY, booking_id TEXT NOT NULL, partner_id TEXT NOT NULL,
+     koc_id TEXT NOT NULL, base_service_fee INTEGER NOT NULL, rate REAL NOT NULL,
+     amount INTEGER NOT NULL, created_at INTEGER NOT NULL )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_earnings_booking
+     ON partner_earnings(booking_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_partner_earnings_partner
+     ON partner_earnings(partner_id, created_at DESC)`,
+  // Bring forward a `partners` table created by an earlier build of this feature
+  // (business-linked, no avatar/bank columns). Each ALTER is idempotent: it
+  // fails harmlessly when the column already exists on a fresh install.
+  `ALTER TABLE partners ADD COLUMN avatar TEXT`,
+  `ALTER TABLE partners ADD COLUMN bank_name TEXT`,
+  `ALTER TABLE partners ADD COLUMN bank_bin TEXT`,
+  `ALTER TABLE partners ADD COLUMN bank_account TEXT`,
+  `ALTER TABLE partners ADD COLUMN bank_owner TEXT`,
+  `ALTER TABLE partners ALTER COLUMN business_id DROP NOT NULL`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
@@ -647,6 +680,62 @@ async function ensureV14Schema(env) {
     ).run();
   } catch (e) {
     console.warn('booking video index migration skipped', e && e.message || e);
+  }
+
+  // KOC Viet partner program. Rebuild from the real table shape so a swallowed
+  // ALTER/CREATE on an older database is repaired on the next guard bump.
+  for (const sql of [
+    `CREATE TABLE IF NOT EXISTS partners (
+       id TEXT PRIMARY KEY, name TEXT NOT NULL, avatar TEXT,
+       bank_name TEXT, bank_bin TEXT, bank_account TEXT, bank_owner TEXT,
+       fee_rate REAL NOT NULL DEFAULT 0.3, status TEXT NOT NULL DEFAULT 'active',
+       note TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL )`,
+    `CREATE TABLE IF NOT EXISTS partner_members (
+       id TEXT PRIMARY KEY, partner_id TEXT NOT NULL, koc_id TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'active', assigned_at INTEGER NOT NULL,
+       assigned_by TEXT, removed_at INTEGER )`,
+    `CREATE TABLE IF NOT EXISTS partner_earnings (
+       id TEXT PRIMARY KEY, booking_id TEXT NOT NULL, partner_id TEXT NOT NULL,
+       koc_id TEXT NOT NULL, base_service_fee INTEGER NOT NULL, rate REAL NOT NULL,
+       amount INTEGER NOT NULL, created_at INTEGER NOT NULL )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_active_koc
+       ON partner_members(koc_id) WHERE status='active'`,
+    `CREATE INDEX IF NOT EXISTS idx_partner_members_partner
+       ON partner_members(partner_id, status)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_earnings_booking
+       ON partner_earnings(booking_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_partner_earnings_partner
+       ON partner_earnings(partner_id, created_at DESC)`,
+  ]) {
+    try {
+      await env.DB.prepare(sql).run();
+    } catch (e) {
+      console.warn('partner program schema migration skipped', e && e.message || e);
+    }
+  }
+  // Upgrade a `partners` table left by an earlier build of this feature
+  // (business-linked, missing the standalone avatar/bank columns).
+  const partnerColumns = await env.DB.prepare(`PRAGMA table_info(partners)`).all();
+  const existingPartnerColumns = new Set(
+    (partnerColumns.results || []).map(column => column.name),
+  );
+  if (existingPartnerColumns.has('id')) {
+    for (const [name, sql] of [
+      ['avatar', `ALTER TABLE partners ADD COLUMN avatar TEXT`],
+      ['bank_name', `ALTER TABLE partners ADD COLUMN bank_name TEXT`],
+      ['bank_bin', `ALTER TABLE partners ADD COLUMN bank_bin TEXT`],
+      ['bank_account', `ALTER TABLE partners ADD COLUMN bank_account TEXT`],
+      ['bank_owner', `ALTER TABLE partners ADD COLUMN bank_owner TEXT`],
+    ]) {
+      if (!existingPartnerColumns.has(name)) {
+        try { await env.DB.prepare(sql).run(); } catch (e) { /* idempotent */ }
+      }
+    }
+    if (existingPartnerColumns.has('business_id')) {
+      try {
+        await env.DB.prepare(`ALTER TABLE partners ALTER COLUMN business_id DROP NOT NULL`).run();
+      } catch (e) { /* already nullable or unsupported */ }
+    }
   }
 }
 

@@ -22,11 +22,17 @@ import {
 import { state, logout, enhancePortal } from "./app.js";
 import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
-import { bankIdentityHtml } from "./payout-banks.js";
+import {
+  bankIdentityHtml,
+  bankPickerHtml,
+  bindBankPicker,
+  selectedPayoutBank,
+} from "./payout-banks.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
   ["#/businesses", "🏢", "Quản lý doanh nghiệp"],
+  ["#/partners", "🤝", "Đối tác KOC Việt"],
   ["#/queue", icon("approval", "sidebar-icon"), "Quản lý KOC"],
   ["#/allbookings", icon("booking", "sidebar-icon"), "Booking toàn sàn"],
   ["#/complaints", icon("complaint", "sidebar-icon"), "Khiếu nại"],
@@ -62,6 +68,7 @@ export async function renderAdmin(el, hash) {
   try {
     if (active === "#/dashboard") await kpi(view);
     else if (active === "#/businesses") await businessesAdmin(view);
+    else if (active === "#/partners") await partnersAdmin(view);
     else if (active === "#/queue") await kocManagement(view, kocSection);
     else if (active === "#/allbookings") await allBookings(view);
     else if (active === "#/complaints") await complaintsAdmin(view);
@@ -271,6 +278,343 @@ async function businessStatus(id, action, el) {
   } catch (e) {
     toast(e.message, "err");
   }
+}
+
+// ---------- KOC Viet partner program ----------
+const partnerPct = (rate) => {
+  const value = Number(rate) * 100;
+  return (Number.isInteger(value) ? value : value.toFixed(1)) + "%";
+};
+
+async function partnersAdmin(el) {
+  el.innerHTML = spinner();
+  const r = await api("/api/admin/partners");
+  const rows = r.partners || [];
+  const earnedTotal = rows.reduce((sum, p) => sum + Number(p.earned_total || 0), 0);
+  el.innerHTML = `<div class="between"><div><h1>Đối tác KOC Việt</h1>
+      <p class="muted">Đối tác được hưởng một phần phí dịch vụ 5% trên mỗi booking của các KOC thuộc đối tác đó.</p></div>
+      <button class="btn primary" id="pt-new">+ Tạo đối tác</button></div>
+    <div class="stat-cards" style="margin:16px 0">
+      ${scard("Đối tác", num(rows.length))}
+      ${scard("KOC được gán", num(rows.reduce((s, p) => s + Number(p.member_count || 0), 0)))}
+      ${scard("Tổng hoa hồng đã chia", money(earnedTotal))}
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Đối tác</th><th>Tỷ lệ chia</th><th>KOC</th><th>Hoa hồng tích luỹ</th><th>Số dư ví</th><th>Trạng thái</th><th></th>
+    </tr></thead><tbody>
+      ${
+        rows.length
+          ? rows.map((p) => `<tr>
+        <td><div class="row" style="gap:8px">
+          <div style="width:30px;height:30px;border-radius:8px;overflow:hidden;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">${p.avatar ? `<img src="${esc(p.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">` : "🤝"}</div>
+          <b>${esc(p.name)}</b></div></td>
+        <td>${partnerPct(p.fee_rate)} <span class="muted" style="font-size:11px">của 5%</span></td>
+        <td>${num(p.member_count)}</td>
+        <td class="money">${money(p.earned_total)}<div class="muted" style="font-size:11px">${num(p.earned_bookings)} booking</div></td>
+        <td class="money">${money(p.wallet_revenue)}</td>
+        <td>${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</td>
+        <td><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button></td>
+      </tr>`).join("")
+          : `<tr><td colspan="7">${empty("🤝", "Chưa có đối tác nào")}</td></tr>`
+      }
+    </tbody></table></div>`;
+  document.getElementById("pt-new").addEventListener("click", () => partnerCreate(el));
+  el.querySelectorAll("[data-pt-view]").forEach((b) =>
+    b.addEventListener("click", () => partnerDetail(b.dataset.ptView, el)),
+  );
+}
+
+function partnerKocPickerHtml(kocs, { checked = [] } = {}) {
+  const checkedSet = new Set(checked);
+  if (!kocs.length)
+    return `<div class="muted" style="padding:12px;text-align:center">Không có KOC nào khả dụng.</div>`;
+  return kocs
+    .map(
+      (k, i) => `<label class="pt-koc-row" style="display:flex;align-items:center;gap:10px;padding:9px 8px;cursor:pointer;${i ? "border-top:1px solid var(--line)" : ""}">
+        <input type="checkbox" value="${esc(k.id)}" ${checkedSet.has(k.id) ? "checked" : ""} style="width:auto;flex:none;margin:0">
+        <img class="avatar" src="${esc(avatarUrl(k.avatar))}" alt="" style="width:34px;height:34px;flex:none">
+        <span style="flex:1;min-width:0">
+          <b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(k.name)}</b>
+          <span class="muted" style="font-size:11px">${esc(k.tier || "—")}${k.province ? " · " + esc(k.province) : ""}</span>
+        </span>
+      </label>`,
+    )
+    .join("");
+}
+
+function partnerBankFieldsHtml(id, banks, partner = {}) {
+  return `<div class="field"><label for="${id}-trigger">Ngân hàng nhận tiền (tuỳ chọn)</label>
+      ${bankPickerHtml(id, banks, partner.bank_name || "", partner.bank_bin || "")}</div>
+    <div class="row" style="gap:8px">
+      <div class="field" style="flex:1;margin:0"><label>Số tài khoản</label>
+        <input id="${id}-account" inputmode="numeric" value="${esc(partner.bank_account || "")}" placeholder="Chỉ chữ số"></div>
+      <div class="field" style="flex:1;margin:0"><label>Chủ tài khoản</label>
+        <input id="${id}-owner" value="${esc(partner.bank_owner || "")}" placeholder="Tên in trên thẻ"></div>
+    </div>`;
+}
+
+function readPartnerBank(id) {
+  const bank = selectedPayoutBank(document.getElementById(id));
+  return {
+    bank_name: bank.name || "",
+    bank_bin: bank.bin || "",
+    bank_account: document.getElementById(id + "-account").value.trim(),
+    bank_owner: document.getElementById(id + "-owner").value.trim(),
+  };
+}
+
+function partnerAvatarFieldHtml(prefix, avatar = "") {
+  const img = `<img src="${esc(avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+  return `<div class="field"><label>Ảnh đại diện (tuỳ chọn)</label>
+    <div class="row" style="gap:12px;align-items:center">
+      <div id="${prefix}-preview" style="width:56px;height:56px;border-radius:12px;overflow:hidden;background:var(--tint);flex:none"${avatar ? "" : " hidden"}>${avatar ? img : ""}</div>
+      <label class="btn ghost sm">Chọn ảnh<input id="${prefix}-file" type="file" accept="image/*" hidden></label>
+      <button type="button" class="btn ghost sm" id="${prefix}-clear"${avatar ? "" : " hidden"}>Xoá ảnh</button>
+    </div>
+  </div>`;
+}
+
+function bindPartnerAvatar(prefix, onChange) {
+  const input = document.getElementById(prefix + "-file");
+  const preview = document.getElementById(prefix + "-preview");
+  const clearBtn = document.getElementById(prefix + "-clear");
+  if (!input) return;
+  const render = (value) => {
+    if (preview) {
+      preview.innerHTML = value
+        ? `<img src="${value}" alt="" style="width:100%;height:100%;object-fit:cover">`
+        : "";
+      preview.hidden = !value;
+    }
+    if (clearBtn) clearBtn.hidden = !value;
+  };
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) return toast("Chỉ chấp nhận tệp ảnh", "err");
+    if (file.size > 2 * 1024 * 1024) return toast("Ảnh tối đa 2MB", "err");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result || "");
+      onChange(value);
+      render(value);
+    };
+    reader.readAsDataURL(file);
+  });
+  clearBtn?.addEventListener("click", () => {
+    input.value = "";
+    onChange("");
+    render("");
+  });
+}
+
+async function partnerCreate(listEl) {
+  const banks = state.config?.payoutBanks || [];
+  const kocResp = await api("/api/admin/partners/assignable-kocs");
+  let kocs = kocResp.kocs || [];
+  let avatar = "";
+  modal(`<h2>Tạo đối tác</h2>
+    <div class="field" style="margin-top:12px"><label>Tên đối tác</label>
+      <input id="pt-name" placeholder="Tên đối tác / công ty" autofocus></div>
+    ${partnerAvatarFieldHtml("pt-avatar")}
+    <div class="field"><label>Tỷ lệ chia sẻ trên phí 5%</label>
+      <input id="pt-rate" type="number" step="1" min="1" max="100" value="30"> <span class="muted">% (đối tác hưởng 30% của 5%)</span>
+    </div>
+    ${partnerBankFieldsHtml("pt-bank", banks)}
+    <div class="field"><label>Ghi chú (tuỳ chọn)</label><input id="pt-note"></div>
+    <div class="field"><label>Gán KOC vào đối tác</label>
+      <input id="pt-koc-search" placeholder="Tìm KOC theo tên…" style="margin-bottom:6px">
+      <div id="pt-koc-list" style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:4px">
+        ${partnerKocPickerHtml(kocs)}
+      </div>
+    </div>
+    <div class="row" style="gap:8px;margin-top:14px">
+      <button class="btn primary" id="pt-save">Tạo đối tác</button>
+      <button class="btn ghost" id="pt-cancel">Huỷ</button>
+    </div>`);
+  bindBankPicker(document.querySelector('[data-bank-picker="pt-bank"]'), banks);
+  bindPartnerAvatar("pt-avatar", (v) => (avatar = v));
+  const listBox = document.getElementById("pt-koc-list");
+  let searchTimer;
+  document.getElementById("pt-koc-search").addEventListener("input", (e) => {
+    clearTimeout(searchTimer);
+    const term = e.target.value.trim();
+    searchTimer = setTimeout(async () => {
+      const resp = await api(
+        "/api/admin/partners/assignable-kocs" + (term ? "?search=" + encodeURIComponent(term) : ""),
+      );
+      kocs = resp.kocs || [];
+      const stillChecked = [...listBox.querySelectorAll("input:checked")].map((i) => i.value);
+      listBox.innerHTML = partnerKocPickerHtml(kocs, { checked: stillChecked });
+    }, 250);
+  });
+  document.getElementById("pt-cancel").addEventListener("click", closeModal);
+  document.getElementById("pt-save").addEventListener("click", async () => {
+    const name = document.getElementById("pt-name").value.trim();
+    if (!name) return toast("Nhập tên đối tác", "err");
+    const ratePct = Number(document.getElementById("pt-rate").value);
+    if (!(ratePct > 0 && ratePct <= 100)) return toast("Tỷ lệ phải trong khoảng 1–100%", "err");
+    const kocIds = [...listBox.querySelectorAll("input:checked")].map((i) => i.value);
+    try {
+      await post("/api/admin/partners", {
+        name,
+        avatar,
+        fee_rate: ratePct / 100,
+        ...readPartnerBank("pt-bank"),
+        note: document.getElementById("pt-note").value.trim(),
+        koc_ids: kocIds,
+      });
+      toast("Đã tạo đối tác", "ok");
+      closeModal();
+      partnersAdmin(listEl);
+    } catch (e) {
+      toast(e.message, "err");
+    }
+  });
+}
+
+async function partnerDetail(id, listEl) {
+  const banks = state.config?.payoutBanks || [];
+  const r = await api("/api/admin/partners/" + id);
+  const p = r.partner;
+  const members = r.members || [];
+  const earnings = r.earnings || [];
+  let avatar = p.avatar || "";
+  modal(`<div class="between"><div class="row" style="gap:10px">
+      ${avatar ? `<div style="width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--tint);flex:none"><img src="${esc(avatar)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>` : ""}
+      <h2 style="margin:0">${esc(p.name)}</h2></div>
+      ${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</div>
+    <div class="tint-box" style="margin:14px 0">
+      <div class="between"><span>Ngân hàng nhận</span>${bankIdentityHtml(banks, p.bank_name, p.bank_bin, "—")}</div>
+      <div class="between"><span>Số tài khoản</span><b>${esc(p.bank_account || "—")}</b></div>
+      <div class="between"><span>Chủ tài khoản</span><b>${esc(p.bank_owner || "—")}</b></div>
+      <div class="between"><span>Số dư ví (chờ chi trả)</span><b class="money">${money(p.wallet_revenue)}</b></div>
+    </div>
+    <h3>Cấu hình</h3>
+    <div class="field" style="margin:8px 0 0"><label>Tên đối tác</label>
+      <input id="pt-d-name" value="${esc(p.name)}"></div>
+    ${partnerAvatarFieldHtml("pt-d-avatar", avatar)}
+    <div class="row" style="gap:8px;align-items:flex-end;margin:0 0 12px">
+      <div class="field" style="margin:0"><label>Tỷ lệ chia (% của 5%)</label>
+        <input id="pt-d-rate" type="number" step="1" min="1" max="100" value="${Math.round(Number(p.fee_rate) * 100)}"></div>
+      <div class="field" style="margin:0"><label>Trạng thái</label>
+        <select id="pt-d-status">
+          <option value="active" ${p.status === "active" ? "selected" : ""}>Hoạt động</option>
+          <option value="paused" ${p.status === "paused" ? "selected" : ""}>Tạm dừng</option>
+        </select></div>
+    </div>
+    ${partnerBankFieldsHtml("pt-d-bank", banks, p)}
+    <button class="btn primary sm" id="pt-d-save" style="margin:4px 0 16px">Lưu thay đổi</button>
+    <div class="between"><h3>KOC thuộc đối tác (${members.length})</h3>
+      <button class="btn ghost sm" id="pt-d-add">+ Thêm KOC</button></div>
+    <div class="table-wrap" style="margin:8px 0 16px"><table><thead><tr><th>KOC</th><th>Hạng</th><th>Hoa hồng</th><th></th></tr></thead><tbody>
+      ${
+        members.length
+          ? members.map((m) => `<tr>
+        <td><b>${esc(m.name)}</b></td><td>${esc(m.tier || "—")}</td>
+        <td class="money">${money(m.earned)}</td>
+        <td><button class="btn danger sm" data-pt-remove="${esc(m.koc_id)}">Gỡ</button></td>
+      </tr>`).join("")
+          : `<tr><td colspan="4">${empty("🙋", "Chưa gán KOC nào")}</td></tr>`
+      }
+    </tbody></table></div>
+    <h3>Hoa hồng gần đây</h3>
+    <div class="table-wrap" style="margin:8px 0"><table><thead><tr><th>Booking</th><th>KOC</th><th>Phí 5%</th><th>Tỷ lệ</th><th>Đối tác nhận</th><th>Thời gian</th></tr></thead><tbody>
+      ${
+        earnings.length
+          ? earnings.map((e) => `<tr>
+        <td>${esc(e.booking_code || e.booking_id)}</td><td>${esc(e.koc_name || "—")}</td>
+        <td class="money">${money(e.base_service_fee)}</td><td>${partnerPct(e.rate)}</td>
+        <td class="money">${money(e.amount)}</td>
+        <td class="muted" style="font-size:11px;white-space:nowrap">${fmtDate(e.created_at)}</td>
+      </tr>`).join("")
+          : `<tr><td colspan="6">${empty("💸", "Chưa phát sinh hoa hồng")}</td></tr>`
+      }
+    </tbody></table></div>
+    <button class="btn ghost" id="pt-d-close">Đóng</button>`);
+  document.getElementById("pt-d-close").addEventListener("click", closeModal);
+  bindBankPicker(document.querySelector('[data-bank-picker="pt-d-bank"]'), banks);
+  bindPartnerAvatar("pt-d-avatar", (v) => (avatar = v));
+  document.getElementById("pt-d-save").addEventListener("click", async () => {
+    const name = document.getElementById("pt-d-name").value.trim();
+    if (!name) return toast("Nhập tên đối tác", "err");
+    const ratePct = Number(document.getElementById("pt-d-rate").value);
+    if (!(ratePct > 0 && ratePct <= 100)) return toast("Tỷ lệ phải trong khoảng 1–100%", "err");
+    try {
+      await post("/api/admin/partners/update", {
+        id,
+        name,
+        avatar,
+        fee_rate: ratePct / 100,
+        status: document.getElementById("pt-d-status").value,
+        ...readPartnerBank("pt-d-bank"),
+      });
+      toast("Đã lưu", "ok");
+      closeModal();
+      partnersAdmin(listEl);
+    } catch (e) {
+      toast(e.message, "err");
+    }
+  });
+  el_bindPartnerRemove(id, listEl);
+  document.getElementById("pt-d-add").addEventListener("click", () => partnerAddMembers(id, listEl));
+
+  function el_bindPartnerRemove(partnerId, list) {
+    document.querySelectorAll("[data-pt-remove]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        if (!(await confirmDialog("Gỡ KOC này khỏi đối tác? Các booking mới sẽ không còn chia hoa hồng."))) return;
+        try {
+          await post("/api/admin/partners/members", { id: partnerId, remove: [b.dataset.ptRemove] });
+          toast("Đã gỡ KOC", "ok");
+          closeModal();
+          partnerDetail(partnerId, list);
+        } catch (e) {
+          toast(e.message, "err");
+        }
+      }),
+    );
+  }
+}
+
+async function partnerAddMembers(id, listEl) {
+  const resp = await api("/api/admin/partners/assignable-kocs");
+  let kocs = resp.kocs || [];
+  modal(`<h2>Thêm KOC vào đối tác</h2>
+    <input id="pt-a-search" placeholder="Tìm KOC theo tên…" style="margin:10px 0 6px">
+    <div id="pt-a-list" style="max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:4px">
+      ${partnerKocPickerHtml(kocs)}
+    </div>
+    <div class="row" style="gap:8px;margin-top:14px">
+      <button class="btn primary" id="pt-a-save">Thêm</button>
+      <button class="btn ghost" id="pt-a-cancel">Huỷ</button>
+    </div>`);
+  const listBox = document.getElementById("pt-a-list");
+  let searchTimer;
+  document.getElementById("pt-a-search").addEventListener("input", (e) => {
+    clearTimeout(searchTimer);
+    const term = e.target.value.trim();
+    searchTimer = setTimeout(async () => {
+      const r2 = await api(
+        "/api/admin/partners/assignable-kocs" + (term ? "?search=" + encodeURIComponent(term) : ""),
+      );
+      kocs = r2.kocs || [];
+      const stillChecked = [...listBox.querySelectorAll("input:checked")].map((i) => i.value);
+      listBox.innerHTML = partnerKocPickerHtml(kocs, { checked: stillChecked });
+    }, 250);
+  });
+  document.getElementById("pt-a-cancel").addEventListener("click", () => partnerDetail(id, listEl));
+  document.getElementById("pt-a-save").addEventListener("click", async () => {
+    const kocIds = [...listBox.querySelectorAll("input:checked")].map((i) => i.value);
+    if (!kocIds.length) return toast("Chọn ít nhất 1 KOC", "err");
+    try {
+      await post("/api/admin/partners/members", { id, add: kocIds });
+      toast("Đã thêm KOC", "ok");
+      closeModal();
+      partnerDetail(id, listEl);
+    } catch (e) {
+      toast(e.message, "err");
+    }
+  });
 }
 
 async function kpi(el) {

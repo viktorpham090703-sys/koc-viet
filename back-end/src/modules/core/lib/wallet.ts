@@ -1,7 +1,7 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now } from '../db.js';
 
-const OWNER_TYPES = new Set(['business', 'koc', 'platform', 'system']);
+const OWNER_TYPES = new Set(['business', 'koc', 'platform', 'system', 'partner']);
 const BUCKETS = new Set([
   'available',
   'escrow',
