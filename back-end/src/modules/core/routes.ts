@@ -38,6 +38,16 @@ const SOCIAL_PLATFORMS = {
   threads: 'Threads',
 };
 const MAX_SOCIAL_CHANNELS = 5;
+export const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
+
+export function validKocRegistrationFollowerCount(value) {
+  const followers = Number(value);
+  return (
+    Number.isSafeInteger(followers) &&
+    followers >= MIN_KOC_REGISTRATION_FOLLOWERS &&
+    followers <= 2_000_000_000
+  );
+}
 
 function normalizedSocialPlatform(value) {
   const key = String(value || '').trim().toLowerCase();
@@ -1658,12 +1668,8 @@ export async function route(request, env, url) {
     if (!identityImages.front || !identityImages.back || !identityImages.selfie)
       return err("Ảnh xác minh không hợp lệ hoặc vượt quá dung lượng cho phép");
     const followers = Number(body.followers);
-    if (
-      !Number.isSafeInteger(followers) ||
-      followers < 0 ||
-      followers > 2_000_000_000
-    )
-      return err("Số người theo dõi không hợp lệ");
+    if (!validKocRegistrationFollowerCount(followers))
+      return err("Bạn cần có ít nhất 1.000 người theo dõi để đăng ký");
     const socialResult = validateSocialsInput(body.socials);
     if (socialResult.error) return err(socialResult.error);
     if (!socialResult.socials.length)

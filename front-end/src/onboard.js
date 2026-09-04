@@ -13,6 +13,8 @@ import {
   socialChannelPickerHtml,
 } from "./social-channels.js";
 
+const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
+
 // Multi-step KOC onboarding funnel → "chờ duyệt"
 // Steps: 0 Email & OTP · 1 Hồ sơ · 2 Phân hạng & Bảng giá · 3 eKYC & Thanh toán · 4 Hợp đồng · 5 Hoàn tất
 export function renderOnboarding(el) {
@@ -458,8 +460,8 @@ export function renderOnboarding(el) {
         escapeHtml: esc,
         primaryLabel: "Kênh chính",
       })}
-      <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="0" max="2000000000" step="1" value="${d.followers}"></div>
-      <p class="muted" style="font-size:12px;margin:-6px 0 14px">Nhập tổng số người theo dõi hiện tại. Đội ngũ quản trị sẽ kiểm duyệt thông tin hồ sơ.</p>
+      <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="${MIN_KOC_REGISTRATION_FOLLOWERS}" max="2000000000" step="1" value="${d.followers}" aria-describedby="o-fol-help"></div>
+      <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">Bạn cần có tối thiểu 1.000 người theo dõi để đăng ký tài khoản KOC. Đội ngũ quản trị sẽ kiểm duyệt thông tin hồ sơ.</p>
       <div class="field"><label>Giới thiệu</label><textarea id="o-bio" rows="2">${esc(d.bio)}</textarea></div>`);
     bindChrome();
     el.querySelectorAll("#o-cats [data-c]").forEach((b) =>
@@ -547,10 +549,10 @@ export function renderOnboarding(el) {
     }
     if (
       !Number.isSafeInteger(d.followers) ||
-      d.followers < 0 ||
+      d.followers < MIN_KOC_REGISTRATION_FOLLOWERS ||
       d.followers > 2_000_000_000
     ) {
-      toast("Nhập số người theo dõi hợp lệ", "err");
+      toast("Bạn cần có ít nhất 1.000 người theo dõi để đăng ký", "err");
       return false;
     }
     return true;
