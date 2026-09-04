@@ -1,5 +1,5 @@
 import { api, post } from "./api.js";
-import { toast, spinner, esc } from "./ui.js";
+import { toast, spinner, esc, passwordInputHtml, bindPasswordToggles } from "./ui.js";
 import { renderKoc } from "./koc.js";
 import { renderBusiness } from "./business.js";
 import { renderAdmin } from "./admin.js";
@@ -145,11 +145,12 @@ function renderForcedPasswordChange() {
     <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
     <h2 style="text-align:center;margin-bottom:6px">Đổi mật khẩu</h2>
     <p class="muted" style="text-align:center;margin-bottom:14px">Vì lý do bảo mật, vui lòng đặt mật khẩu mới trước khi tiếp tục.</p>
-    <div class="field"><label>Mật khẩu tạm thời</label><input id="fc-current" type="password" autocomplete="current-password"></div>
-    <div class="field"><label>Mật khẩu mới</label><input id="fc-new" type="password" minlength="8" maxlength="128" autocomplete="new-password"></div>
-    <div class="field"><label>Xác nhận mật khẩu mới</label><input id="fc-confirm" type="password" autocomplete="new-password"></div>
+    <div class="field"><label>Mật khẩu tạm thời</label>${passwordInputHtml("fc-current", 'autocomplete="current-password"')}</div>
+    <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("fc-new", 'minlength="8" maxlength="128" autocomplete="new-password"')}</div>
+    <div class="field"><label>Xác nhận mật khẩu mới</label>${passwordInputHtml("fc-confirm", 'autocomplete="new-password"')}</div>
     <button class="btn primary" id="fc-save" style="margin-top:6px">Đổi mật khẩu</button>
   </div></div>`;
+  bindPasswordToggles(appEl);
   document.getElementById("fc-save").addEventListener("click", async () => {
     const current = document.getElementById("fc-current").value;
     const next = document.getElementById("fc-new").value;
@@ -259,7 +260,7 @@ async function renderLogin() {
       <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
       <form id="li-form">
         <div class="field"><label for="li-email">Email</label><input id="li-email" name="email" type="email" autocomplete="username" placeholder="Nhập địa chỉ email" required></div>
-        <div class="field"><div class="auth-label-row"><label for="li-pass">Mật khẩu</label><a href="#/forgot-password">Quên mật khẩu?</a></div><input id="li-pass" name="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required></div>
+        <div class="field"><div class="auth-label-row"><label for="li-pass">Mật khẩu</label><a href="#/forgot-password">Quên mật khẩu?</a></div>${passwordInputHtml("li-pass", 'name="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required')}</div>
         <button class="btn primary nv-lift" id="li-btn" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
       </form>
       <div class="auth-quick-links">
@@ -270,6 +271,7 @@ async function renderLogin() {
     </div>
     </div>
   </div>`;
+  bindPasswordToggles(appEl);
   document.getElementById("li-form").addEventListener("submit", (event) => {
     event.preventDefault();
     doLogin();
@@ -346,9 +348,9 @@ function renderForgotPassword(el) {
       <p class="muted" style="text-align:center;margin-bottom:14px">Nhập mã đã gửi tới <b>${esc(email)}</b> và mật khẩu mới.</p>
       <div class="field"><label>Mã xác thực</label><input id="fp-code" class="otp-in" maxlength="6" placeholder="••••••"></div>
       <div class="err" id="fp-code-err" style="display:none"></div>
-      <div class="field"><label>Mật khẩu mới</label><input id="fp-pass" type="password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"></div>
+      <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("fp-pass", 'minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
       <div class="err" id="fp-pass-err" style="display:none"></div>
-      <div class="field"><label>Xác nhận mật khẩu</label><input id="fp-pass2" type="password"></div>
+      <div class="field"><label>Xác nhận mật khẩu</label>${passwordInputHtml("fp-pass2")}</div>
       <div class="err" id="fp-pass2-err" style="display:none"></div>
       <button class="btn primary" id="fp-reset" style="margin-top:6px">Đặt lại mật khẩu</button>
       <div class="row" style="gap:8px;margin-top:10px">
@@ -356,6 +358,7 @@ function renderForgotPassword(el) {
         <button type="button" class="btn ghost sm" id="fp-back" style="flex:1">← Nhập lại email</button>
       </div>
     </div></div>`;
+    bindPasswordToggles(el);
     document.getElementById("fp-back").addEventListener("click", () => {
       stage = "email";
       render();

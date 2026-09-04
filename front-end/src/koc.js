@@ -21,6 +21,8 @@ import {
   copyToClipboard,
   avatarUrl,
   provinceOptions,
+  passwordInputHtml,
+  bindPasswordToggles,
 } from "./ui.js";
 import { state, logout } from "./app.js";
 import { brandLogo, icon } from "./icons.js";
@@ -1528,9 +1530,9 @@ async function profile(el, editing = false) {
       <section class="card password-change-section">
         <div class="password-change-heading"><div><h3>Đổi mật khẩu</h3><p class="muted">Sau khi đổi thành công, bạn cần đăng nhập lại trên thiết bị này.</p></div><span class="password-security-mark">Bảo mật</span></div>
         <div class="password-change-fields">
-          <div class="field"><label>Mật khẩu hiện tại</label><input id="pf-current-password" type="password" autocomplete="current-password" maxlength="128"></div>
-          <div class="field"><label>Mật khẩu mới</label><input id="pf-new-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"></div>
-          <div class="field"><label>Xác nhận mật khẩu mới</label><input id="pf-confirm-password" type="password" autocomplete="new-password" minlength="8" maxlength="128"></div>
+          <div class="field"><label>Mật khẩu hiện tại</label>${passwordInputHtml("pf-current-password", 'autocomplete="current-password" maxlength="128"')}</div>
+          <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("pf-new-password", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
+          <div class="field"><label>Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-confirm-password", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
         </div>
         <button class="btn ghost" id="pf-change-password" type="button">Cập nhật mật khẩu</button>
       </section>
@@ -1538,6 +1540,7 @@ async function profile(el, editing = false) {
     </div>`;
 
   bindBankPicker(el.querySelector('[data-bank-picker="pf-bank-select"]'), cfg.payoutBanks);
+  bindPasswordToggles(el);
 
   function collectSocialDrafts() {
     const currentByPlatform = new Map(
