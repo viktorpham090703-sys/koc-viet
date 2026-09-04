@@ -10,7 +10,7 @@
 Tài liệu này dùng để kiểm tra thủ công các luồng quan trọng của hệ thống:
 
 1. Khởi động hệ thống, đăng nhập và phân quyền.
-2. KOC onboarding và xác minh ảnh follower.
+2. KOC onboarding, điều kiện tối thiểu 1.000 follower và kiểm duyệt hồ sơ.
 3. Đăng ký doanh nghiệp.
 4. Booking Marketplace từ lúc tạo đến lúc giải ngân.
 5. Ví doanh nghiệp, nạp tiền PayOS và KOC rút tiền qua PayOS Payout.
@@ -73,7 +73,7 @@ Lưu ý quan trọng:
 - Tài khoản/kênh PayOS Payout phải có đủ số dư thực tế. Số dư ví KOC trong database không đảm bảo tài khoản ngân hàng dùng để payout có đủ tiền.
 - Khi PayOS từ chối payout, hệ thống phải hiển thị lỗi nhà cung cấp và không tạo giao dịch rút thành công trong ví.
 - Chỉ test PayOS bằng tài khoản/kênh test hoặc số tiền nhỏ đã được người phụ trách tài chính phê duyệt.
-- OTP, challenge xác minh follower và một số trạng thái ngắn hạn được giữ trong bộ nhớ backend; khởi động lại backend sẽ làm các mã đang dùng hết hiệu lực.
+- OTP và một số trạng thái ngắn hạn được giữ trong bộ nhớ backend; khởi động lại backend sẽ làm các mã đang dùng hết hiệu lực.
 
 ### 2.4. Quy ước ghi nhận kết quả
 
@@ -172,7 +172,7 @@ Các bước:
 1. Mở <https://kocviet.com/#/tuyen-koc> và bắt đầu đăng ký.
 2. Nhập email, nhận OTP và xác minh.
 3. Nhập hồ sơ, chọn một kênh được hỗ trợ: TikTok, Facebook, Instagram, YouTube hoặc Threads.
-4. Nhập tổng số follower hiện tại.
+4. Nhập tổng số follower hiện tại (tối thiểu `1.000`).
 5. Nhập bảng giá theo hạng được tính từ follower.
 6. Tải giấy tờ định danh, nhập ngân hàng/BIN, số tài khoản và chủ tài khoản.
 7. Đọc, ký hợp đồng và hoàn tất.
@@ -186,7 +186,7 @@ Kết quả mong đợi:
 
 ### ONB-KOC-02 — Follower không hợp lệ
 
-Nhập follower âm, số thập phân hoặc vượt quá `2.000.000.000`.
+Nhập follower dưới `1.000`, số thập phân hoặc vượt quá `2.000.000.000`.
 
 Kết quả mong đợi:
 
