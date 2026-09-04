@@ -558,6 +558,53 @@ CREATE INDEX IF NOT EXISTS idx_payout_requests_koc_created
 CREATE INDEX IF NOT EXISTS idx_booking_video_version
   ON booking_video_submissions (booking_id, version DESC);
 
+-- KOC Viet partner program: a standalone, admin-managed partner earns a share
+-- of the 5% service fee on bookings of its KOCs.
+CREATE TABLE IF NOT EXISTS partners (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  avatar TEXT,
+  bank_name TEXT,
+  bank_bin TEXT,
+  bank_account TEXT,
+  bank_owner TEXT,
+  fee_rate DOUBLE PRECISION NOT NULL DEFAULT 0.3,
+  status TEXT NOT NULL DEFAULT 'active',
+  note TEXT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS partner_members (
+  id TEXT PRIMARY KEY,
+  partner_id TEXT NOT NULL,
+  koc_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  assigned_at BIGINT NOT NULL,
+  assigned_by TEXT,
+  removed_at BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS partner_earnings (
+  id TEXT PRIMARY KEY,
+  booking_id TEXT NOT NULL,
+  partner_id TEXT NOT NULL,
+  koc_id TEXT NOT NULL,
+  base_service_fee BIGINT NOT NULL,
+  rate DOUBLE PRECISION NOT NULL,
+  amount BIGINT NOT NULL,
+  created_at BIGINT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_active_koc
+  ON partner_members (koc_id) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_partner_members_partner
+  ON partner_members (partner_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_earnings_booking
+  ON partner_earnings (booking_id);
+CREATE INDEX IF NOT EXISTS idx_partner_earnings_partner
+  ON partner_earnings (partner_id, created_at DESC);
+
 COMMIT;
 
 -- Data exported from local Cloudflare D1/SQLite.

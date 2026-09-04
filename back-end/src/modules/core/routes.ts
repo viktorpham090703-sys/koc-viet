@@ -38,6 +38,16 @@ const SOCIAL_PLATFORMS = {
   threads: 'Threads',
 };
 const MAX_SOCIAL_CHANNELS = 5;
+export const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
+
+export function validKocRegistrationFollowerCount(value) {
+  const followers = Number(value);
+  return (
+    Number.isSafeInteger(followers) &&
+    followers >= MIN_KOC_REGISTRATION_FOLLOWERS &&
+    followers <= 2_000_000_000
+  );
+}
 
 function normalizedSocialPlatform(value) {
   const key = String(value || '').trim().toLowerCase();
@@ -902,7 +912,8 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
     }
     const fee = Math.round(Number(payment.amount) * 0.05);
     const kocGet = Number(payment.amount) - fee;
-    const batchResults = await env.DB.batch([
+    const partnerSplit = await splitServiceFeeWithPartner(env, booking.koc_id, fee);
+    const settlementStmts = [
       env.DB.prepare(
         `UPDATE payment_requests
          SET status='paid',provider_reference=?,paid_at=?,failure_reason=NULL,updated_at=?
@@ -946,33 +957,72 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
         `UPDATE payment_requests SET status='cancelled',updated_at=?
          WHERE booking_id=? AND id!=? AND status IN ('creating','pending','failed')`,
       ).bind(now(), booking.id, payment.id),
-    ]);
+    ];
+    if (partnerSplit.partnerCut > 0) {
+      settlementStmts.push(
+        env.DB.prepare(
+          `INSERT OR IGNORE INTO partner_earnings
+           (id,booking_id,partner_id,koc_id,base_service_fee,rate,amount,created_at)
+           VALUES (?,?,?,?,?,?,?,?)`,
+        ).bind(
+          `pe:${booking.id}`,
+          booking.id,
+          partnerSplit.partnerId,
+          booking.koc_id,
+          fee,
+          partnerSplit.partnerRate,
+          partnerSplit.partnerCut,
+          now(),
+        ),
+        env.DB.prepare(
+          `INSERT OR IGNORE INTO ledger
+           (id,kind,amount,ref,note,created_at) VALUES (?,?,?,?,?,?)`,
+        ).bind(
+          `${payment.id}:partner`,
+          'partner_share',
+          partnerSplit.partnerCut,
+          booking.id,
+          `Chia sẻ đối tác ${booking.code}`,
+          now(),
+        ),
+      );
+    }
+    const batchResults = await env.DB.batch(settlementStmts);
     const paymentChanged = Number(batchResults[0]?.meta?.changes || 0) > 0;
     const bookingCompleted = Number(batchResults[4]?.meta?.changes || 0) > 0;
     if (!paymentChanged) return { found: true, changed: false, booking };
 
     if (kocGet > 0) {
       try {
+        const postings = [
+          {
+            account: walletAccount('system', 'payos', 'cash_clearing'),
+            amount: -Number(payment.amount),
+          },
+          {
+            account: walletAccount('koc', booking.koc_id, 'available'),
+            amount: kocGet,
+          },
+        ];
+        if (partnerSplit.netvietCut > 0) {
+          postings.push({
+            account: walletAccount('platform', 'netviet', 'revenue'),
+            amount: partnerSplit.netvietCut,
+          });
+        }
+        if (partnerSplit.partnerCut > 0) {
+          postings.push({
+            account: walletAccount('partner', partnerSplit.partnerId, 'revenue'),
+            amount: partnerSplit.partnerCut,
+          });
+        }
         await postWalletEntry(env, {
           idempotencyKey: `payos-payout:${payment.id}`,
           eventType: 'booking_settled',
           referenceType: 'payment_request',
           referenceId: payment.id,
           note: `Chuyển tiền booking ${booking.code} vào ví KOC`,
-          postings: [
-            {
-              account: walletAccount('system', 'payos', 'cash_clearing'),
-              amount: -Number(payment.amount),
-            },
-            {
-              account: walletAccount('koc', booking.koc_id, 'available'),
-              amount: kocGet,
-            },
-            {
-              account: walletAccount('platform', 'netviet', 'revenue'),
-              amount: fee,
-            },
-          ],
+          postings,
         });
       } catch (e) {
         console.error('PayOS wallet settlement error:', e?.message || e);
@@ -1658,12 +1708,8 @@ export async function route(request, env, url) {
     if (!identityImages.front || !identityImages.back || !identityImages.selfie)
       return err("Ảnh xác minh không hợp lệ hoặc vượt quá dung lượng cho phép");
     const followers = Number(body.followers);
-    if (
-      !Number.isSafeInteger(followers) ||
-      followers < 0 ||
-      followers > 2_000_000_000
-    )
-      return err("Số người theo dõi không hợp lệ");
+    if (!validKocRegistrationFollowerCount(followers))
+      return err("Bạn cần có ít nhất 1.000 người theo dõi để đăng ký");
     const socialResult = validateSocialsInput(body.socials);
     if (socialResult.error) return err(socialResult.error);
     if (!socialResult.socials.length)
@@ -3580,6 +3626,9 @@ export async function route(request, env, url) {
           fee = platformFee;
         }
         payoutAmount = kocGet;
+        const partnerSplit = isAiClone
+          ? { partnerId: null, partnerRate: 0, partnerCut: 0, netvietCut: fee }
+          : await splitServiceFeeWithPartner(env, b.koc_id, fee);
         stmts.push(
           env.DB.prepare(
             `INSERT INTO wallet_tx (id,koc_id,type,amount,status,note,created_at) VALUES (?,?,?,?,?,?,?)`,
@@ -3607,6 +3656,36 @@ export async function route(request, env, url) {
             now(),
           ),
         );
+        if (partnerSplit.partnerCut > 0) {
+          stmts.push(
+            env.DB.prepare(
+              `INSERT OR IGNORE INTO partner_earnings
+               (id,booking_id,partner_id,koc_id,base_service_fee,rate,amount,created_at)
+               VALUES (?,?,?,?,?,?,?,?)`,
+            ).bind(
+              `pe:${b.id}`,
+              b.id,
+              partnerSplit.partnerId,
+              b.koc_id,
+              fee,
+              partnerSplit.partnerRate,
+              partnerSplit.partnerCut,
+              now(),
+            ),
+          );
+          stmts.push(
+            env.DB.prepare(
+              `INSERT INTO ledger (id,kind,amount,ref,note,created_at) VALUES (?,?,?,?,?,?)`,
+            ).bind(
+              uid(),
+              "partner_share",
+              partnerSplit.partnerCut,
+              b.id,
+              `Chia sẻ đối tác ${b.code}`,
+              now(),
+            ),
+          );
+        }
         if (settlementAmount > 0) {
           try {
             const paidPayment = await env.DB.prepare(
@@ -3621,26 +3700,38 @@ export async function route(request, env, url) {
                   ? walletAccount('business', b.business_id, 'escrow')
                   : walletAccount('business', b.business_id, 'available'));
 
+            const releasePostings = [
+              {
+                account: srcAccount,
+                amount: -settlementAmount,
+              },
+              {
+                account: walletAccount('koc', b.koc_id, 'available'),
+                amount: payoutAmount,
+              },
+            ];
+            const netvietRelease = isAiClone
+              ? settlementAmount - payoutAmount
+              : partnerSplit.netvietCut;
+            if (netvietRelease > 0) {
+              releasePostings.push({
+                account: walletAccount('platform', 'netviet', 'revenue'),
+                amount: netvietRelease,
+              });
+            }
+            if (partnerSplit.partnerCut > 0) {
+              releasePostings.push({
+                account: walletAccount('partner', partnerSplit.partnerId, 'revenue'),
+                amount: partnerSplit.partnerCut,
+              });
+            }
             await postWalletEntry(env, {
               idempotencyKey: `payout-release-v10:${b.id}`,
               eventType: 'booking_settled',
               referenceType: 'booking',
               referenceId: b.id,
               note: `Chuyển tiền booking ${b.code} vào ví KOC`,
-              postings: [
-                {
-                  account: srcAccount,
-                  amount: -settlementAmount,
-                },
-                {
-                  account: walletAccount('koc', b.koc_id, 'available'),
-                  amount: payoutAmount,
-                },
-                {
-                  account: walletAccount('platform', 'netviet', 'revenue'),
-                  amount: settlementAmount - payoutAmount,
-                },
-              ],
+              postings: releasePostings,
             });
           } catch (e) {
             console.error('Wallet release error:', e?.message || e);
@@ -4860,6 +4951,210 @@ export async function route(request, env, url) {
       }
       return J({ ok: true, status });
     }
+
+    // ---------- KOC Viet partner program ----------
+    if (p === "/api/admin/partners" && m === "GET") {
+      const { results } = await env.DB.prepare(
+        `SELECT p.*,
+                (SELECT COUNT(*) FROM partner_members pm
+                 WHERE pm.partner_id=p.id AND pm.status='active') member_count,
+                (SELECT COALESCE(SUM(amount),0) FROM partner_earnings pe
+                 WHERE pe.partner_id=p.id) earned_total,
+                (SELECT COUNT(*) FROM partner_earnings pe
+                 WHERE pe.partner_id=p.id) earned_bookings
+         FROM partners p
+         ORDER BY p.created_at DESC, p.rowid DESC`,
+      ).all();
+      for (const row of results) {
+        row.wallet_revenue = await walletBalance(env, 'partner', row.id, 'revenue');
+      }
+      return J({ partners: results });
+    }
+    if (p === "/api/admin/partners/assignable-kocs" && m === "GET") {
+      const search = String(url.searchParams.get("search") || "").trim();
+      const bind = [];
+      let clause = `WHERE k.status='active'
+        AND NOT EXISTS (SELECT 1 FROM partner_members pm
+                        WHERE pm.koc_id=k.id AND pm.status='active')`;
+      if (search) {
+        clause += ` AND (k.name LIKE ? OR k.email LIKE ? OR k.phone LIKE ?)`;
+        const term = `%${search}%`;
+        bind.push(term, term, term);
+      }
+      const { results } = await env.DB.prepare(
+        `SELECT k.id, k.name, k.tier, k.province, k.avatar FROM kocs k
+         ${clause} ORDER BY k.name ASC LIMIT 100`,
+      ).bind(...bind).all();
+      return J({ kocs: results });
+    }
+    if (p.startsWith("/api/admin/partners/") && p.split("/").length === 5 && m === "GET") {
+      const id = p.split("/")[4];
+      const partner = await env.DB.prepare(
+        `SELECT * FROM partners WHERE id=?`,
+      ).bind(id).first();
+      if (!partner) return err("Không tìm thấy đối tác", 404);
+      partner.wallet_revenue = await walletBalance(env, 'partner', partner.id, 'revenue');
+      const members = await env.DB.prepare(
+        `SELECT pm.koc_id, pm.assigned_at, pm.status,
+                k.name, k.tier, k.province, k.avatar,
+                (SELECT COALESCE(SUM(amount),0) FROM partner_earnings pe
+                 WHERE pe.partner_id=pm.partner_id AND pe.koc_id=pm.koc_id) earned
+         FROM partner_members pm JOIN kocs k ON k.id=pm.koc_id
+         WHERE pm.partner_id=? AND pm.status='active'
+         ORDER BY pm.assigned_at DESC`,
+      ).bind(id).all();
+      const earnings = await env.DB.prepare(
+        `SELECT pe.*, b.code booking_code, k.name koc_name
+         FROM partner_earnings pe
+         LEFT JOIN bookings b ON b.id=pe.booking_id
+         LEFT JOIN kocs k ON k.id=pe.koc_id
+         WHERE pe.partner_id=? ORDER BY pe.created_at DESC LIMIT 100`,
+      ).bind(id).all();
+      return J({ partner, members: members.results, earnings: earnings.results });
+    }
+    if (p === "/api/admin/partners" && m === "POST") {
+      const name = String(body.name || "").trim().slice(0, 160);
+      if (!name) return err("Nhập tên đối tác");
+      let feeRate = body.fee_rate == null || body.fee_rate === ""
+        ? 0.3
+        : Number(body.fee_rate);
+      if (!Number.isFinite(feeRate) || feeRate <= 0 || feeRate > 1)
+        return err("Tỷ lệ chia sẻ phải trong khoảng (0, 1] — ví dụ 0.3 cho 30%");
+      feeRate = Math.round(feeRate * 10000) / 10000;
+      const bank = normalizePartnerBank(body);
+      if (bank.error) return err(bank.error);
+      const avatar = String(body.avatar || "").slice(0, 700000);
+      const note = String(body.note || "").trim().slice(0, 500);
+      const kocIds = Array.isArray(body.koc_ids)
+        ? [...new Set(body.koc_ids.map((v) => String(v)))].filter(Boolean)
+        : [];
+      if (kocIds.length) {
+        const placeholders = kocIds.map(() => "?").join(",");
+        const conflict = await env.DB.prepare(
+          `SELECT k.name FROM partner_members pm JOIN kocs k ON k.id=pm.koc_id
+           WHERE pm.status='active' AND pm.koc_id IN (${placeholders})`,
+        ).bind(...kocIds).all();
+        if (conflict.results.length)
+          return err(
+            `KOC đã thuộc đối tác khác: ${conflict.results.map((r) => r.name).join(", ")}`,
+          );
+      }
+      const partnerId = uid();
+      const stmts = [
+        env.DB.prepare(
+          `INSERT INTO partners
+           (id,name,avatar,bank_name,bank_bin,bank_account,bank_owner,fee_rate,status,note,created_at,updated_at)
+           VALUES (?,?,?,?,?,?,?,?,'active',?,?,?)`,
+        ).bind(
+          partnerId, name, avatar,
+          bank.bankName, bank.bankBin, bank.bankAccount, bank.bankOwner,
+          feeRate, note, now(), now(),
+        ),
+      ];
+      for (const kocId of kocIds) {
+        stmts.push(
+          env.DB.prepare(
+            `INSERT INTO partner_members (id,partner_id,koc_id,status,assigned_at,assigned_by)
+             VALUES (?,?,?,'active',?,?)`,
+          ).bind(uid(), partnerId, kocId, now(), me.id),
+        );
+      }
+      await env.DB.batch(stmts);
+      await audit(env, me.id, "partner.create", partnerId,
+        `name=${name} rate=${feeRate} kocs=${kocIds.length}`);
+      return J({ ok: true, id: partnerId });
+    }
+    if (p === "/api/admin/partners/update" && m === "POST") {
+      const id = String(body.id || "");
+      const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
+        .bind(id).first();
+      if (!partner) return err("Không tìm thấy đối tác", 404);
+      const name = String(body.name ?? partner.name).trim().slice(0, 160)
+        || partner.name;
+      let feeRate = body.fee_rate == null || body.fee_rate === ""
+        ? Number(partner.fee_rate)
+        : Number(body.fee_rate);
+      if (!Number.isFinite(feeRate) || feeRate <= 0 || feeRate > 1)
+        return err("Tỷ lệ chia sẻ phải trong khoảng (0, 1]");
+      feeRate = Math.round(feeRate * 10000) / 10000;
+      const status = body.status == null
+        ? partner.status
+        : String(body.status);
+      if (!["active", "paused"].includes(status))
+        return err("Trạng thái đối tác không hợp lệ");
+      const note = body.note == null
+        ? partner.note
+        : String(body.note).trim().slice(0, 500);
+      const avatar = body.avatar == null
+        ? partner.avatar
+        : String(body.avatar).slice(0, 700000);
+      const bankProvided = ["bank_name", "bank_bin", "bank_account", "bank_owner"]
+        .some((k) => body[k] != null);
+      let bankName = partner.bank_name, bankBin = partner.bank_bin,
+        bankAccount = partner.bank_account, bankOwner = partner.bank_owner;
+      if (bankProvided) {
+        const bank = normalizePartnerBank(body);
+        if (bank.error) return err(bank.error);
+        ({ bankName, bankBin, bankAccount, bankOwner } = bank);
+      }
+      await env.DB.prepare(
+        `UPDATE partners SET name=?,avatar=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=?,
+                fee_rate=?,status=?,note=?,updated_at=? WHERE id=?`,
+      ).bind(
+        name, avatar, bankName, bankBin, bankAccount, bankOwner,
+        feeRate, status, note, now(), id,
+      ).run();
+      await audit(env, me.id, "partner.update", id,
+        `rate=${feeRate} status=${status}`);
+      return J({ ok: true });
+    }
+    if (p === "/api/admin/partners/members" && m === "POST") {
+      const id = String(body.id || "");
+      const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
+        .bind(id).first();
+      if (!partner) return err("Không tìm thấy đối tác", 404);
+      const add = Array.isArray(body.add)
+        ? [...new Set(body.add.map((v) => String(v)))].filter(Boolean)
+        : [];
+      const remove = Array.isArray(body.remove)
+        ? [...new Set(body.remove.map((v) => String(v)))].filter(Boolean)
+        : [];
+      if (!add.length && !remove.length) return err("Không có thay đổi");
+      if (add.length) {
+        const placeholders = add.map(() => "?").join(",");
+        const conflict = await env.DB.prepare(
+          `SELECT k.name FROM partner_members pm JOIN kocs k ON k.id=pm.koc_id
+           WHERE pm.status='active' AND pm.partner_id!=? AND pm.koc_id IN (${placeholders})`,
+        ).bind(id, ...add).all();
+        if (conflict.results.length)
+          return err(
+            `KOC đã thuộc đối tác khác: ${conflict.results.map((r) => r.name).join(", ")}`,
+          );
+      }
+      const stmts = [];
+      for (const kocId of add) {
+        stmts.push(
+          env.DB.prepare(
+            `INSERT OR IGNORE INTO partner_members
+             (id,partner_id,koc_id,status,assigned_at,assigned_by)
+             VALUES (?,?,?,'active',?,?)`,
+          ).bind(uid(), id, kocId, now(), me.id),
+        );
+      }
+      for (const kocId of remove) {
+        stmts.push(
+          env.DB.prepare(
+            `UPDATE partner_members SET status='removed',removed_at=?
+             WHERE partner_id=? AND koc_id=? AND status='active'`,
+          ).bind(now(), id, kocId),
+        );
+      }
+      if (stmts.length) await env.DB.batch(stmts);
+      await audit(env, me.id, "partner.members", id,
+        `add=${add.length} remove=${remove.length}`);
+      return J({ ok: true, added: add.length, removed: remove.length });
+    }
+
     if (p === "/api/admin/queue") {
       const { results } = await env.DB.prepare(
         `SELECT * FROM kocs WHERE status IN ('pending','leader_ok') ORDER BY created_at DESC,rowid DESC`,
@@ -4895,7 +5190,18 @@ export async function route(request, env, url) {
         const prices = await env.DB.prepare(
           `SELECT category,price FROM koc_prices WHERE koc_id=? ORDER BY category`,
         ).bind(row.id).all();
-        kocs.push({ ...parseKoc(row), prices: prices.results });
+        const partner = await env.DB.prepare(
+          `SELECT p.id, p.name, p.status FROM partner_members pm
+           JOIN partners p ON p.id=pm.partner_id
+           WHERE pm.koc_id=? AND pm.status='active' LIMIT 1`,
+        ).bind(row.id).first();
+        kocs.push({
+          ...parseKoc(row),
+          prices: prices.results,
+          partner_id: partner?.id || null,
+          partner_name: partner?.name || null,
+          partner_status: partner?.status || null,
+        });
       }
       return J({
         kocs,
@@ -4989,9 +5295,13 @@ export async function route(request, env, url) {
            WHERE bp.booking_id=b.id AND bp.status='paid'
          )`,
       ).first("s");
-      const fee = await env.DB.prepare(
+      const grossFee = await env.DB.prepare(
         `SELECT COALESCE(SUM(amount),0) s FROM ledger WHERE kind='service_fee'`,
       ).first("s");
+      const partnerShare = await env.DB.prepare(
+        `SELECT COALESCE(SUM(amount),0) s FROM ledger WHERE kind='partner_share'`,
+      ).first("s");
+      const fee = Math.max(0, Number(grossFee || 0) - Number(partnerShare || 0));
       const funnel = {};
       for (const st of [
         "pending",
@@ -5037,6 +5347,8 @@ export async function route(request, env, url) {
         businesses: Number(bz),
         gmv: Number(gmv),
         fee: Number(fee),
+        grossFee: Number(grossFee || 0),
+        partnerShare: Number(partnerShare || 0),
         funnel,
         provinces: officialProvinces.map(province => ({ province, c: provinceCounts.get(province) || 0 })),
         targetKoc: 300000,
@@ -5238,6 +5550,17 @@ export async function route(request, env, url) {
            COALESCE((SELECT SUM(total_amount) FROM campaigns WHERE status='completed'),0) escrow`,
       ).first();
       const kolTotals=await env.DB.prepare(`SELECT COALESCE(SUM(CASE WHEN status='completed' THEN quote_kol ELSE 0 END),0) koc,COALESCE(SUM(CASE WHEN status='completed' THEN total_amount ELSE 0 END),0) escrow FROM kol_requests`).first();
+      const partnerShareTotal = Number(
+        await env.DB.prepare(
+          `SELECT COALESCE(SUM(amount),0) s FROM ledger WHERE kind='partner_share'`,
+        ).first("s"),
+      ) || 0;
+      const partnerWalletRevenue = Number(
+        await env.DB.prepare(
+          `SELECT COALESCE(SUM(balance),0) s FROM wallet_accounts
+           WHERE owner_type='partner' AND bucket='revenue'`,
+        ).first("s"),
+      ) || 0;
       return J({
         ledger: results, audit: audit.results, settlements: settlements.results || [],
         pagination: {
@@ -5248,8 +5571,11 @@ export async function route(request, env, url) {
         totals: {
           escrow: Number(settlementTotals.escrow || 0) + Number(campaignTotals.escrow || 0)+Number(kolTotals.escrow||0),
           koc: Number(settlementTotals.koc || 0) + Number(campaignTotals.koc || 0)+Number(kolTotals.koc||0),
-          netviet: Number(settlementTotals.netviet || 0),
+          netviet: Math.max(0, Number(settlementTotals.netviet || 0) - partnerShareTotal),
+          netvietGross: Number(settlementTotals.netviet || 0),
+          partnerShare: partnerShareTotal,
           platformWalletRevenue,
+          partnerWalletRevenue,
         },
       });
     }
@@ -6216,5 +6542,61 @@ async function upd(env, id, fields) {
   await env.DB.prepare(`UPDATE bookings SET ${set} WHERE id=?`)
     .bind(...keys.map((k) => fields[k]), now(), id)
     .run();
+}
+
+// ---- KOC Viet partner program ----
+// Validate the optional payout-bank block on a partner create/update payload.
+function normalizePartnerBank(body) {
+  const bankName = String(body.bank_name || '').trim().slice(0, 80);
+  const bankBin = String(body.bank_bin || '').trim().slice(0, 12);
+  const bankAccount = String(body.bank_account || '').trim().slice(0, 40);
+  const bankOwner = String(body.bank_owner || '').trim().slice(0, 120);
+  if (!bankName && !bankBin && !bankAccount && !bankOwner) {
+    return { bankName: '', bankBin: '', bankAccount: '', bankOwner: '' };
+  }
+  if (!bankName || !bankBin) return { error: 'Chọn ngân hàng nhận tiền cho đối tác' };
+  const binError = payoutBankBinError(bankName, bankBin);
+  if (binError) return { error: binError };
+  if (!/^\d{6}$/.test(bankBin)) return { error: 'Mã ngân hàng không hợp lệ' };
+  if (!/^\d{6,20}$/.test(bankAccount)) return { error: 'Số tài khoản chỉ gồm 6-20 chữ số' };
+  if (!bankOwner || /\d/.test(bankOwner))
+    return { error: 'Nhập tên chủ tài khoản hợp lệ (không chứa số)' };
+  return { bankName, bankBin, bankAccount, bankOwner };
+}
+
+// Return the active partner a KOC belongs to (with its fee share), or null.
+async function resolveKocPartner(env, kocId) {
+  if (!kocId) return null;
+  const row = await env.DB.prepare(
+    `SELECT p.id partner_id, p.fee_rate
+     FROM partner_members pm
+     JOIN partners p ON p.id = pm.partner_id
+     WHERE pm.koc_id = ? AND pm.status = 'active' AND p.status = 'active'
+     LIMIT 1`,
+  ).bind(kocId).first();
+  if (!row) return null;
+  const rate = Number(row.fee_rate);
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  return {
+    partnerId: String(row.partner_id),
+    feeRate: Math.min(1, rate),
+  };
+}
+
+// Split the KOC Viet 5% service fee between the platform and the KOC's partner.
+// serviceFee is the integer VND amount KOC Viet keeps on the booking.
+async function splitServiceFeeWithPartner(env, kocId, serviceFee) {
+  const fee = Math.max(0, Math.round(Number(serviceFee) || 0));
+  const partner = fee > 0 ? await resolveKocPartner(env, kocId) : null;
+  if (!partner) {
+    return { partnerId: null, partnerRate: 0, partnerCut: 0, netvietCut: fee };
+  }
+  const partnerCut = Math.max(0, Math.min(fee, Math.round(fee * partner.feeRate)));
+  return {
+    partnerId: partner.partnerId,
+    partnerRate: partner.feeRate,
+    partnerCut,
+    netvietCut: fee - partnerCut,
+  };
 }
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
