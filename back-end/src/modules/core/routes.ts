@@ -35,7 +35,7 @@ const SESSION_COOKIE = 'kv_session';
 const SESSION_IDLE_SECONDS = 12 * 60 * 60;
 const FOLLOWER_CHALLENGE_TTL_SECONDS = 30 * 60;
 const FOLLOWER_PROOF_TTL_SECONDS = 24 * 60 * 60;
-const FOLLOWER_OCR_RATE_LIMIT = 5;
+const FOLLOWER_OCR_RATE_LIMIT = 15;
 const FOLLOWER_OCR_RATE_WINDOW_SECONDS = 60 * 60;
 const MIN_WITHDRAW_AMOUNT = 10_000;
 const SOCIAL_PLATFORMS = {
@@ -1618,7 +1618,7 @@ export async function route(request, env, url) {
       return err("Phiên xác thực email đã hết hạn", 403);
     if (!(await followerOcrRateAllowed(env, challenge.email)))
       return err(
-        "Bạn đã dùng quá 5 lượt xác minh trong một giờ. Vui lòng thử lại sau.",
+        "Bạn đã dùng quá 15 lượt xác minh trong một giờ. Vui lòng thử lại sau.",
         429,
       );
 
