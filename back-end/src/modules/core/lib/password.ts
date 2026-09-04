@@ -58,6 +58,17 @@ export function validatePassword(password) {
   return "";
 }
 
+// Admin-issued temporary passwords (e.g. a new partner login). Random,
+// readable (no ambiguous 0/O/1/l/I), and always long enough to satisfy
+// validatePassword regardless of future length rules.
+const TEMP_PASSWORD_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz";
+export function generateTempPassword(length = 12) {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  let value = "";
+  for (const byte of bytes) value += TEMP_PASSWORD_ALPHABET[byte % TEMP_PASSWORD_ALPHABET.length];
+  return value;
+}
+
 export function passwordNeedsRehash(stored) {
   const parts = String(stored || "").split("$");
   return parts.length !== 4 || parts[0] !== PREFIX || Number(parts[1]) !== ITERATIONS;
