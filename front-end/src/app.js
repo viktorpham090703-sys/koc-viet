@@ -3,6 +3,7 @@ import { toast, spinner, esc } from "./ui.js";
 import { renderKoc } from "./koc.js";
 import { renderBusiness } from "./business.js";
 import { renderAdmin } from "./admin.js";
+import { renderPartner } from "./partner.js";
 import { renderKocProfile, renderMarketplacePublic } from "./public.js";
 import { LANDING_ROUTES, renderLandingBody } from "./landing/pages.js";
 import { bindLandingEvents } from "./landing/shared.js";
@@ -108,6 +109,9 @@ async function route() {
   if (!state.user) {
     return renderLogin();
   }
+  if (state.user.must_change_password) {
+    return renderForcedPasswordChange();
+  }
 
   if (state.user.role === "koc") {
     await renderKoc(appEl, hash);
@@ -118,12 +122,58 @@ async function route() {
     enhancePortal();
     return;
   }
+  if (state.user.role === "partner") {
+    await renderPartner(appEl, hash);
+    enhancePortal();
+    return;
+  }
   if (state.user.role === "admin") {
     await renderAdmin(appEl, hash);
     enhancePortal();
     return;
   }
   renderLogin();
+}
+
+// A partner (or any future role) whose account was just issued a temporary
+// password must set their own before reaching any portal. Enforced again
+// server-side (every API but /api/me, /api/logout, /api/change-password
+// rejects requests while must_change_password is set) — this screen is the
+// UX side of that gate, not the only one.
+function renderForcedPasswordChange() {
+  appEl.innerHTML = `<div class="auth"><div class="auth-card">
+    <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
+    <h2 style="text-align:center;margin-bottom:6px">Đổi mật khẩu</h2>
+    <p class="muted" style="text-align:center;margin-bottom:14px">Vì lý do bảo mật, vui lòng đặt mật khẩu mới trước khi tiếp tục.</p>
+    <div class="field"><label>Mật khẩu tạm thời</label><input id="fc-current" type="password" autocomplete="current-password"></div>
+    <div class="field"><label>Mật khẩu mới</label><input id="fc-new" type="password" minlength="8" maxlength="128" autocomplete="new-password"></div>
+    <div class="field"><label>Xác nhận mật khẩu mới</label><input id="fc-confirm" type="password" autocomplete="new-password"></div>
+    <button class="btn primary" id="fc-save" style="margin-top:6px">Đổi mật khẩu</button>
+  </div></div>`;
+  document.getElementById("fc-save").addEventListener("click", async () => {
+    const current = document.getElementById("fc-current").value;
+    const next = document.getElementById("fc-new").value;
+    const confirmation = document.getElementById("fc-confirm").value;
+    if (!current) return toast("Nhập mật khẩu tạm thời", "err");
+    if (next.length < 8) return toast("Mật khẩu mới phải có ít nhất 8 ký tự", "err");
+    if (next !== confirmation) return toast("Mật khẩu xác nhận không khớp", "err");
+    if (current === next) return toast("Mật khẩu mới phải khác mật khẩu hiện tại", "err");
+    const btn = document.getElementById("fc-save");
+    btn.disabled = true;
+    btn.textContent = "Đang cập nhật…";
+    try {
+      await post("/api/change-password", {
+        current_password: current,
+        new_password: next,
+      });
+      toast("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.", "ok");
+      setTimeout(() => logout(), 1200);
+    } catch (e) {
+      toast(e.message, "err");
+      btn.disabled = false;
+      btn.textContent = "Đổi mật khẩu";
+    }
+  });
 }
 
 // Additive mobile/tablet enhancement for the Admin & Business portals: inject a hamburger

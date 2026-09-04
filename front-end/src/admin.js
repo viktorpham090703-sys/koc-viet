@@ -300,7 +300,7 @@ async function partnersAdmin(el) {
       ${scard("Tổng hoa hồng đã chia", money(earnedTotal))}
     </div>
     <div class="table-wrap"><table><thead><tr>
-      <th>Đối tác</th><th>Tỷ lệ chia</th><th>KOC</th><th>Hoa hồng tích luỹ</th><th>Số dư ví</th><th>Trạng thái</th><th></th>
+      <th>Đối tác</th><th>Tỷ lệ chia</th><th>KOC</th><th>Hoa hồng tích luỹ</th><th>Số dư ví</th><th>Trạng thái</th><th>Tài khoản</th><th></th>
     </tr></thead><tbody>
       ${
         rows.length
@@ -313,9 +313,10 @@ async function partnersAdmin(el) {
         <td class="money">${money(p.earned_total)}<div class="muted" style="font-size:11px">${num(p.earned_bookings)} booking</div></td>
         <td class="money">${money(p.wallet_revenue)}</td>
         <td>${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</td>
+        <td>${p.account_user_id ? '<span class="chip g">Đã cấp</span>' : '<span class="chip n">Chưa cấp</span>'}</td>
         <td><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button></td>
       </tr>`).join("")
-          : `<tr><td colspan="7">${empty("🤝", "Chưa có đối tác nào")}</td></tr>`
+          : `<tr><td colspan="8">${empty("🤝", "Chưa có đối tác nào")}</td></tr>`
       }
     </tbody></table></div>`;
   document.getElementById("pt-new").addEventListener("click", () => partnerCreate(el));
@@ -374,6 +375,36 @@ function partnerAvatarFieldHtml(prefix, avatar = "") {
   </div>`;
 }
 
+// Downscale to a small square JPEG before it becomes a data: URL. Avatars are
+// stored inline (no S3 upload involved — same as KOC/business avatars), and an
+// unresized photo easily produces a multi-MB base64 string that gets silently
+// truncated by the backend's field-length cap, corrupting the image so it
+// saves but never renders. Mirrors koc.js's optimizeProfileImage.
+async function optimizePartnerAvatar(file, size = 160, quality = 0.85) {
+  if (!file || !file.type.startsWith("image/"))
+    throw new Error("Vui lòng chọn file ảnh");
+  if (file.size > 10 * 1024 * 1024) throw new Error("Ảnh gốc tối đa 10MB");
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("Không đọc được file ảnh"));
+      image.src = objectUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const side = Math.min(image.naturalWidth, image.naturalHeight);
+    const sx = (image.naturalWidth - side) / 2;
+    const sy = (image.naturalHeight - side) / 2;
+    canvas.getContext("2d").drawImage(image, sx, sy, side, side, 0, 0, size, size);
+    return canvas.toDataURL("image/jpeg", quality);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 function bindPartnerAvatar(prefix, onChange) {
   const input = document.getElementById(prefix + "-file");
   const preview = document.getElementById(prefix + "-preview");
@@ -388,18 +419,19 @@ function bindPartnerAvatar(prefix, onChange) {
     }
     if (clearBtn) clearBtn.hidden = !value;
   };
-  input.addEventListener("change", () => {
+  input.addEventListener("change", async () => {
     const file = input.files?.[0];
     if (!file) return;
-    if (!/^image\//.test(file.type)) return toast("Chỉ chấp nhận tệp ảnh", "err");
-    if (file.size > 2 * 1024 * 1024) return toast("Ảnh tối đa 2MB", "err");
-    const reader = new FileReader();
-    reader.onload = () => {
-      const value = String(reader.result || "");
+    input.disabled = true;
+    try {
+      const value = await optimizePartnerAvatar(file);
       onChange(value);
       render(value);
-    };
-    reader.readAsDataURL(file);
+    } catch (e) {
+      toast(e.message, "err");
+    } finally {
+      input.disabled = false;
+    }
   });
   clearBtn?.addEventListener("click", () => {
     input.value = "";
@@ -490,6 +522,18 @@ async function partnerDetail(id, listEl) {
       <div class="between"><span>Chủ tài khoản</span><b>${esc(p.bank_owner || "—")}</b></div>
       <div class="between"><span>Số dư ví (chờ chi trả)</span><b class="money">${money(p.wallet_revenue)}</b></div>
     </div>
+    <h3>Tài khoản đăng nhập</h3>
+    <div class="tint-box" style="margin:8px 0 16px">
+      ${
+        p.account
+          ? `<div class="between"><span>Email đăng nhập</span><b>${esc(p.account.email)}</b></div>
+             <div class="between"><span>Trạng thái</span>${p.account.status === "active" ? '<span class="chip g">Hoạt động</span>' : `<span class="chip n">${esc(p.account.status)}</span>`}</div>
+             <div style="margin-top:10px"><button class="btn ghost sm" id="pt-d-account-reset">Đặt lại mật khẩu & gửi lại email</button></div>`
+          : `<p class="muted" style="margin:0 0 10px">Đối tác chưa có tài khoản đăng nhập.</p>
+             <div class="field" style="margin:0 0 8px"><label>Email đăng nhập</label><input id="pt-d-account-email" type="email" placeholder="email@doanhnghiep.vn"></div>
+             <button class="btn primary sm" id="pt-d-account-create">Cấp tài khoản đăng nhập</button>`
+      }
+    </div>
     <h3>Cấu hình</h3>
     <div class="field" style="margin:8px 0 0"><label>Tên đối tác</label>
       <input id="pt-d-name" value="${esc(p.name)}"></div>
@@ -535,6 +579,43 @@ async function partnerDetail(id, listEl) {
   document.getElementById("pt-d-close").addEventListener("click", closeModal);
   bindBankPicker(document.querySelector('[data-bank-picker="pt-d-bank"]'), banks);
   bindPartnerAvatar("pt-d-avatar", (v) => (avatar = v));
+  document.getElementById("pt-d-account-create")?.addEventListener("click", async () => {
+    const email = document.getElementById("pt-d-account-email").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Email không hợp lệ", "err");
+    const btn = document.getElementById("pt-d-account-create");
+    btn.disabled = true;
+    btn.textContent = "Đang cấp tài khoản…";
+    try {
+      await post("/api/admin/partners/account", { id, email });
+      toast("Đã cấp tài khoản và gửi email cho đối tác", "ok");
+      closeModal();
+      partnerDetail(id, listEl);
+    } catch (e) {
+      toast(e.message, "err");
+      btn.disabled = false;
+      btn.textContent = "Cấp tài khoản đăng nhập";
+    }
+  });
+  document.getElementById("pt-d-account-reset")?.addEventListener("click", async () => {
+    if (
+      !(await confirmDialog(
+        "Đặt lại mật khẩu cho tài khoản này? Mật khẩu mới sẽ được gửi qua email, mật khẩu cũ sẽ không còn dùng được.",
+      ))
+    )
+      return;
+    const btn = document.getElementById("pt-d-account-reset");
+    btn.disabled = true;
+    btn.textContent = "Đang gửi…";
+    try {
+      await post("/api/admin/partners/account/reset", { id });
+      toast("Đã đặt lại mật khẩu và gửi email mới", "ok");
+    } catch (e) {
+      toast(e.message, "err");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Đặt lại mật khẩu & gửi lại email";
+    }
+  });
   document.getElementById("pt-d-save").addEventListener("click", async () => {
     const name = document.getElementById("pt-d-name").value.trim();
     if (!name) return toast("Nhập tên đối tác", "err");

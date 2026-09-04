@@ -27,12 +27,14 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   koc_id TEXT,
   business_id TEXT,
+  partner_id TEXT,
   session_version BIGINT NOT NULL DEFAULT 0,
   created_at BIGINT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',
   locked_at BIGINT,
   locked_reason TEXT,
-  updated_at BIGINT
+  updated_at BIGINT,
+  must_change_password BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS kocs (

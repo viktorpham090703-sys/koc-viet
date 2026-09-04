@@ -234,6 +234,38 @@ export async function sendAccountReviewEmail(env, to, account) {
   });
 }
 
+export async function sendPartnerAccountCreatedEmail(env, to, account) {
+  const subject = 'Tài khoản đối tác KOC Việt đã được tạo';
+  const safeName = escapeHtml(account.name || 'Quý đối tác');
+  const safeEmail = escapeHtml(account.email || '');
+  const safePassword = escapeHtml(account.tempPassword || '');
+  const htmlContent = `
+    <div style="font-family:Arial,sans-serif;line-height:1.65;color:#172033;max-width:600px">
+      <p style="margin:0 0 8px;color:#f45132;font-size:12px;font-weight:700;letter-spacing:.5px">KOC VIỆT</p>
+      <h2 style="margin:0 0 14px">Tài khoản đối tác đã được tạo</h2>
+      <p>Xin chào ${safeName},</p>
+      <p>Admin KOC Việt vừa tạo tài khoản đăng nhập cổng đối tác cho bạn. Thông tin đăng nhập:</p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:16px 0">
+        <tr><td style="padding:10px 14px;background:#f1f5f3;border:1px solid #d5dfda;border-radius:7px 7px 0 0"><b>Email:</b> ${safeEmail}</td></tr>
+        <tr><td style="padding:10px 14px;background:#f1f5f3;border:1px solid #d5dfda;border-top:none;border-radius:0 0 7px 7px"><b>Mật khẩu tạm thời:</b> <span style="font-family:monospace;font-size:15px;letter-spacing:1px">${safePassword}</span></td></tr>
+      </table>
+      <p>Vì lý do bảo mật, bạn sẽ được yêu cầu <strong>đổi mật khẩu ngay trong lần đăng nhập đầu tiên</strong>.</p>
+      <p style="margin-top:22px;color:#667085;font-size:13px">Đây là email tự động từ KOC Việt. Vui lòng không chia sẻ mật khẩu này với bất kỳ ai. Nếu bạn không yêu cầu tài khoản này, hãy liên hệ ngay với KOC Việt.</p>
+    </div>`;
+  const textContent = [
+    'KOC VIỆT',
+    'Tài khoản đối tác đã được tạo',
+    `Xin chào ${account.name || 'Quý đối tác'},`,
+    'Admin KOC Việt vừa tạo tài khoản đăng nhập cổng đối tác cho bạn.',
+    `Email: ${account.email || ''}`,
+    `Mật khẩu tạm thời: ${account.tempPassword || ''}`,
+    'Bạn sẽ được yêu cầu đổi mật khẩu ngay trong lần đăng nhập đầu tiên.',
+  ].join('\n');
+  return sendTransactionalEmail(env, {
+    to, subject, htmlContent, textContent, tags: ['partner-account'],
+  });
+}
+
 export async function sendBookingCreatedEmail(env, to, booking) {
   const typeLabel = {
     review: 'Review',
