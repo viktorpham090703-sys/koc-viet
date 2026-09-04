@@ -4785,12 +4785,12 @@ export async function route(request, env, url) {
        WHERE pe.partner_id=? ORDER BY pe.created_at DESC LIMIT ? OFFSET ?`,
     ).bind(me.partner_id, per, (page - 1) * per).all();
     const totals = await env.DB.prepare(
-      `SELECT COALESCE(SUM(base_service_fee),0) baseFee, COALESCE(SUM(amount),0) amount
+      `SELECT COALESCE(SUM(base_service_fee),0) base_fee, COALESCE(SUM(amount),0) amount
        FROM partner_earnings WHERE partner_id=?`,
     ).bind(me.partner_id).first();
     return J({
       rows: results, page, per, total, pages: Math.max(1, Math.ceil(total / per)),
-      totals: { baseFee: Number(totals.baseFee || 0), amount: Number(totals.amount || 0) },
+      totals: { baseFee: Number(totals.base_fee || 0), amount: Number(totals.amount || 0) },
     });
   }
   if (p === "/api/partner/profile" && m === "GET") {
