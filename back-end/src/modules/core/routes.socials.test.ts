@@ -78,7 +78,7 @@ test('keeps verified primary metadata while allowing secondary channels to chang
     handle: '@verified-koc',
     followers: 25000,
     verified: true,
-    verificationSource: 'tesseract_ocr',
+    verificationSource: 'manual_review',
   }
   const merged = preserveVerifiedPrimarySocial(primary, [
     { platform: 'Instagram', handle: 'https://instagram.com/kocviet', followers: 25000 },

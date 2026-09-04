@@ -348,12 +348,10 @@ def build_marketing_guide():
              "• Chọn nền tảng mạng xã hội chính của bạn: TikTok, Facebook, Instagram, YouTube hoặc Threads.\n"
              "• Nhập số lượng người theo dõi (Follower) thực tế trên kênh.")
 
-    add_step(doc, "Bước 3", "Xác minh kênh chính chủ qua ảnh chụp màn hình (Tính năng độc quyền)",
-             "• Hệ thống sẽ tự động tạo một mã xác minh độc nhất (Ví dụ: KOCV-839201).\n"
-             "• Bạn mở ứng dụng mạng xã hội (ví dụ TikTok), dán mã này vào phần Tiểu sử (Bio / Giới thiệu kênh cá nhân).\n"
-             "• Chụp ảnh màn hình trang cá nhân sao cho nhìn thấy rõ: (1) Mã xác minh vừa dán và (2) Số người theo dõi.\n"
-             "• Quay lại website KOC Việt và tải ảnh chụp màn hình lên.\n"
-             "➔ Kết quả mong đợi: Hệ thống tự động quét ảnh, nhận diện đúng mã và số follower, hiển thị dấu tích xanh thành công.")
+    add_step(doc, "Bước 3", "Kiểm tra thông tin kênh và số người theo dõi",
+             "• Kiểm tra link kênh mạng xã hội đã nhập đúng và có thể truy cập.\n"
+             "• Kiểm tra tổng số người theo dõi là số nguyên không âm và đúng với thông tin hiện tại trên kênh.\n"
+             "➔ Kết quả mong đợi: Hệ thống ghi nhận thông tin và chuyển hồ sơ sang bước phân hạng; Admin sẽ kiểm duyệt trước khi kích hoạt.")
 
     add_step(doc, "Bước 4", "Thiết lập bảng giá dịch vụ theo hạng KOC",
              "• Dựa vào số người theo dõi, hệ thống tự động xếp hạng bạn vào nhóm phù hợp (Nano, Micro, Mid, Macro hoặc Mega).\n"
@@ -373,7 +371,7 @@ def build_marketing_guide():
     add_callout(
         doc,
         "MẸO KIỂM TRA BẮT LỖI (DÀNH CHO TESTER)",
-        "Hãy thử tải lên một ảnh chụp màn hình bị mờ hoặc ảnh không có mã KOCV trong phần tiểu sử. Hệ thống phải hiển thị thông báo lỗi bằng tiếng Việt rất rõ ràng (ví dụ: 'Không tìm thấy mã xác minh trong ảnh, vui lòng kiểm tra lại') và không cho phép bấm sang bước kế tiếp.",
+        "Hãy thử nhập link kênh không hợp lệ hoặc số follower âm. Hệ thống phải hiển thị thông báo lỗi bằng tiếng Việt rõ ràng và không cho phép sang bước kế tiếp.",
         fill=SUCCESS_BG,
         border_color=SUCCESS_GREEN
     )
@@ -555,7 +553,7 @@ def build_marketing_guide():
         ["STT", "Tính năng cần test", "Vai trò", "Thao tác chính", "Kết quả mong đợi", "Đánh giá"],
         [
             ("1", "Đăng ký KOC mới", "KOC", "Điền email, nhận OTP, điền thông tin cá nhân", "Xác thực OTP thành công, chuyển sang bước tạo hồ sơ", "[  ] Đạt"),
-            ("2", "Xác minh kênh mạng xã hội", "KOC", "Dán mã KOCV vào Bio kênh, chụp màn hình tải lên", "Hệ thống quét ảnh nhận đúng mã và số follower", "[  ] Đạt"),
+            ("2", "Khai báo kênh mạng xã hội", "KOC", "Nhập link kênh và tổng số follower", "Hệ thống ghi nhận thông tin để Admin kiểm duyệt", "[  ] Đạt"),
             ("3", "Admin duyệt KOC", "Admin", "Vào #/queue, xem chi tiết và bấm Duyệt", "KOC đăng nhập được và xuất hiện trên chợ #/find", "[  ] Đạt"),
             ("4", "Đăng ký Doanh nghiệp", "Brand", "Điền thông tin công ty, MST, tải giấy phép KD", "Gửi thành công, trạng thái chờ Admin duyệt", "[  ] Đạt"),
             ("5", "Admin duyệt Doanh nghiệp", "Admin", "Vào #/businesses, tìm tên công ty và bấm Duyệt", "Doanh nghiệp đăng nhập được vào #/dashboard", "[  ] Đạt"),
