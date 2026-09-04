@@ -1,9 +1,20 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  MIN_KOC_REGISTRATION_FOLLOWERS,
   preserveVerifiedPrimarySocial,
+  validKocRegistrationFollowerCount,
   validateSocialsInput,
 } from './routes.js'
+
+test('requires at least 1,000 followers for KOC registration', () => {
+  assert.equal(MIN_KOC_REGISTRATION_FOLLOWERS, 1000)
+  assert.equal(validKocRegistrationFollowerCount(999), false)
+  assert.equal(validKocRegistrationFollowerCount(1000), true)
+  assert.equal(validKocRegistrationFollowerCount('25000'), true)
+  assert.equal(validKocRegistrationFollowerCount(1000.5), false)
+  assert.equal(validKocRegistrationFollowerCount(2_000_000_001), false)
+})
 
 test('validates and normalizes the five supported social channels', () => {
   const result = validateSocialsInput([

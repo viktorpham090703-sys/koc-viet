@@ -346,11 +346,11 @@ def build_marketing_guide():
     add_step(doc, "Bước 2", "Điền thông tin cá nhân & Kênh mạng xã hội",
              "• Nhập họ tên, số điện thoại, tỉnh/thành phố nơi bạn đang sinh sống.\n"
              "• Chọn nền tảng mạng xã hội chính của bạn: TikTok, Facebook, Instagram, YouTube hoặc Threads.\n"
-             "• Nhập số lượng người theo dõi (Follower) thực tế trên kênh.")
+             "• Nhập số lượng người theo dõi (Follower) thực tế trên kênh; tài khoản KOC cần có tối thiểu 1.000 người theo dõi.")
 
     add_step(doc, "Bước 3", "Kiểm tra thông tin kênh và số người theo dõi",
              "• Kiểm tra link kênh mạng xã hội đã nhập đúng và có thể truy cập.\n"
-             "• Kiểm tra tổng số người theo dõi là số nguyên không âm và đúng với thông tin hiện tại trên kênh.\n"
+             "• Kiểm tra tổng số người theo dõi là số nguyên từ 1.000 trở lên và đúng với thông tin hiện tại trên kênh.\n"
              "➔ Kết quả mong đợi: Hệ thống ghi nhận thông tin và chuyển hồ sơ sang bước phân hạng; Admin sẽ kiểm duyệt trước khi kích hoạt.")
 
     add_step(doc, "Bước 4", "Thiết lập bảng giá dịch vụ theo hạng KOC",
@@ -371,7 +371,7 @@ def build_marketing_guide():
     add_callout(
         doc,
         "MẸO KIỂM TRA BẮT LỖI (DÀNH CHO TESTER)",
-        "Hãy thử nhập link kênh không hợp lệ hoặc số follower âm. Hệ thống phải hiển thị thông báo lỗi bằng tiếng Việt rõ ràng và không cho phép sang bước kế tiếp.",
+        "Hãy thử nhập link kênh không hợp lệ hoặc số follower dưới 1.000. Hệ thống phải hiển thị thông báo lỗi bằng tiếng Việt rõ ràng và không cho phép sang bước kế tiếp.",
         fill=SUCCESS_BG,
         border_color=SUCCESS_GREEN
     )
