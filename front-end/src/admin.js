@@ -780,13 +780,9 @@ async function queue(el) {
     });
 }
 function kocQueueCard(k) {
-  const followerVerifiedLabel =
-    k.followers_verification_source === "tesseract_ocr"
-      ? "✓ Đã đọc từ ảnh"
-      : "✓ Người theo dõi đã xác minh";
   return `<div class="card" style="margin-bottom:12px"><div class="between">
     <div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div>
-       <div class="row"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Người theo dõi chưa xác minh</span>'}${k.status === "leader_ok" ? '<span class="chip b">Trưởng nhóm đã duyệt</span>' : ""}</div>
+       <div class="row"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}${k.followers_verified ? '<span class="chip g">✓ Người theo dõi đã xác minh</span>' : '<span class="chip w">Người theo dõi chưa xác minh</span>'}${k.status === "leader_ok" ? '<span class="chip b">Trưởng nhóm đã duyệt</span>' : ""}</div>
        <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} người theo dõi · ${(k.categories || []).join(", ")}</div></div></div>
     <div class="row"><button class="btn ghost sm" data-detail="${k.id}">Chi tiết</button>
       <button class="btn ok sm" data-approve="${k.id}">Duyệt</button>
@@ -812,14 +808,10 @@ async function kocDetail(k) {
   } catch (_) {
     k = { ...k, kyc_front_image: "", kyc_back_image: "", kyc_selfie_image: "" };
   }
-  const followerVerifiedLabel =
-    k.followers_verification_source === "tesseract_ocr"
-      ? "✓ Đã đọc từ ảnh"
-      : "✓ Đã xác minh";
   modal(`<div class="row"><img class="avatar lg" src="${esc(avatarUrl(k.avatar))}"><div><h2>${esc(k.name)}</h2>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div></div>
     <div class="tint-box" style="margin:12px 0">
       <div class="between"><span>Trạng thái</span><b>${statusChip(k.status)}</b></div>
-      <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? `<span class="chip g">${followerVerifiedLabel}</span>` : '<span class="chip w">Chưa xác minh</span>'}</b></div>
+      <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? '<span class="chip g">✓ Đã xác minh</span>' : '<span class="chip w">Chưa xác minh</span>'}</b></div>
       <div class="between"><span>Đánh giá</span><b>${stars(k.rating)} · ${num(k.completed_bookings || 0)} booking</b></div>
       <div class="between"><span>Ngành hàng</span><b>${(k.categories || []).join(", ")}</b></div>
       <div class="between"><span>Kênh mạng xã hội</span><b style="font-size:12px">${(k.socials || []).map((social) => `${esc(social.platform || "")} ${esc(social.handle || "")}`).join(" · ") || "—"}</b></div>
