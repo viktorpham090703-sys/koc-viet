@@ -153,7 +153,7 @@ Luồng chuẩn:
 ```text
 Email & OTP
 → Hồ sơ và mạng xã hội
-→ Xác minh mã KOCV + follower
+→ Nhập follower và kênh mạng xã hội
 → Phân hạng và bảng giá
 → Danh tính và ngân hàng
 → Hợp đồng
@@ -166,69 +166,44 @@ Email & OTP
 
 - Dùng email chưa tồn tại.
 - SMTP và S3 đã cấu hình.
-- Chuẩn bị ảnh hồ sơ mạng xã hội có thể đọc rõ mã `KOCV-XXXXXX` và số follower đã khai báo.
 
 Các bước:
 
 1. Mở <https://kocviet.com/#/tuyen-koc> và bắt đầu đăng ký.
 2. Nhập email, nhận OTP và xác minh.
 3. Nhập hồ sơ, chọn một kênh được hỗ trợ: TikTok, Facebook, Instagram, YouTube hoặc Threads.
-4. Nhập follower và tạo mã xác minh.
-5. Đưa đúng mã `KOCV-XXXXXX` vào phần giới thiệu trên hồ sơ mạng xã hội.
-6. Chụp ảnh thấy rõ mã và follower, sau đó tải ảnh lên để OCR.
-7. Nhập bảng giá theo hạng được tính từ follower.
-8. Tải giấy tờ định danh, nhập ngân hàng/BIN, số tài khoản và chủ tài khoản.
-9. Đọc, ký hợp đồng và hoàn tất.
-10. Đăng nhập Admin → `#/queue` → duyệt KOC.
+4. Nhập tổng số follower hiện tại.
+5. Nhập bảng giá theo hạng được tính từ follower.
+6. Tải giấy tờ định danh, nhập ngân hàng/BIN, số tài khoản và chủ tài khoản.
+7. Đọc, ký hợp đồng và hoàn tất.
+8. Đăng nhập Admin → `#/queue` → kiểm tra thông tin và duyệt KOC.
 
 Kết quả mong đợi:
 
-- Ảnh được xác minh khi **mã KOCV** và **số follower** cùng khớp.
-- Hệ thống không dùng URL/username trong ảnh để quyết định ảnh đạt hay không.
+- Số follower được lưu ở trạng thái chưa xác minh để Admin kiểm duyệt.
 - Tạo tài khoản/hồ sơ KOC ở trạng thái chờ duyệt.
 - Sau khi Admin duyệt, KOC đăng nhập và xuất hiện trong Marketplace.
 
-### ONB-KOC-02 — Ảnh thiếu mã xác minh
+### ONB-KOC-02 — Follower không hợp lệ
 
-Tải ảnh có follower đúng nhưng không có mã KOCV.
-
-Kết quả mong đợi:
-
-- HTTP `422`.
-- Thông báo nêu cụ thể không nhận ra đúng mã xác minh.
-- Không cấp `proofToken`; không cho sang bước tiếp theo.
-
-### ONB-KOC-03 — Follower không khớp
-
-Khai báo một số follower khác số hiển thị trong ảnh.
+Nhập follower âm, số thập phân hoặc vượt quá `2.000.000.000`.
 
 Kết quả mong đợi:
 
-- HTTP `422`.
-- Thông báo nêu cụ thể follower trong ảnh không khớp số đã nhập.
+- Frontend không cho sang bước tiếp theo.
+- Backend từ chối dữ liệu nếu gọi API trực tiếp.
+- Không tạo tài khoản KOC.
 
-### ONB-KOC-04 — Ảnh sai cả mã và follower
+### ONB-KOC-03 — Thiếu kênh mạng xã hội hợp lệ
 
-Kết quả mong đợi: thông báo liệt kê đủ cả hai mục sai.
-
-### ONB-KOC-05 — Challenge hết hạn hoặc đã dùng
-
-1. Dùng challenge cũ sau 30 phút, hoặc dùng lại challenge đã xác minh thành công.
-2. Thử tiếp tục onboarding sau khi `proofToken` quá 24 giờ.
+Không chọn kênh hoặc nhập URL kênh không hợp lệ.
 
 Kết quả mong đợi:
 
-- Challenge hết hạn trả `410` và yêu cầu tạo mã mới.
-- Token đã dùng không thể dùng lại.
-- Proof hết hạn không hoàn tất onboarding được.
+- Hiển thị lỗi tiếng Việt rõ ràng.
+- Không cho hoàn tất hồ sơ.
 
-### ONB-KOC-06 — Giới hạn OCR
-
-Thực hiện quá 5 lần xác minh trong một giờ cho cùng email.
-
-Kết quả mong đợi: lần vượt giới hạn trả `429` và không chạy xác minh tiếp.
-
-### ONB-KOC-07 — Admin từ chối hồ sơ
+### ONB-KOC-04 — Admin từ chối hồ sơ
 
 1. Hoàn tất một hồ sơ KOC mới.
 2. Admin từ chối và nhập lý do.
@@ -644,7 +619,7 @@ npm.cmd --prefix front-end test
 npm.cmd run build
 ```
 
-Các test backend hiện có bao phủ adapter PostgreSQL, seed, thông báo, mạng xã hội, JWT, ngân hàng nhận tiền, OCR follower, PayOS Payout, SMTP và dữ liệu KOL. Test frontend hiện có kiểm tra danh sách kênh mạng xã hội.
+Các test backend hiện có bao phủ adapter PostgreSQL, seed, thông báo, mạng xã hội, JWT, ngân hàng nhận tiền, PayOS Payout, SMTP và dữ liệu KOL. Test frontend hiện có kiểm tra danh sách kênh mạng xã hội.
 
 ## 17. Tiêu chí hoàn thành vòng test
 
@@ -655,7 +630,7 @@ Một bản build được xem là đạt khi:
 - Các luồng có tiền đều đối chiếu đúng `available`, `escrow`, KOC và phí nền tảng.
 - Không có giải ngân, hoàn tiền, nạp tiền hoặc rút tiền trùng.
 - Phân quyền API đúng cho KOC, Business và Admin.
-- OTP, OCR và tích hợp ngoài báo lỗi rõ ràng khi thiếu cấu hình.
+- OTP và các tích hợp ngoài báo lỗi rõ ràng khi thiếu cấu hình.
 - `npm.cmd test`, frontend test và `npm.cmd run build` đều pass.
 
 ## 18. Mẫu báo cáo lỗi

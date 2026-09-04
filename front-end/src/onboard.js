@@ -1,5 +1,5 @@
 import { post } from "./api.js";
-import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions, copyToClipboard } from "./ui.js";
+import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions } from "./ui.js";
 import { state } from "./app.js";
 import {
   bankPickerHtml,
@@ -12,7 +12,6 @@ import {
   isValidSocialUrl,
   socialChannelPickerHtml,
 } from "./social-channels.js";
-import Tesseract from "tesseract.js";
 
 // Multi-step KOC onboarding funnel → "chờ duyệt"
 // Steps: 0 Email & OTP · 1 Hồ sơ · 2 Phân hạng & Bảng giá · 3 eKYC & Thanh toán · 4 Hợp đồng · 5 Hoàn tất
@@ -36,15 +35,6 @@ export function renderOnboarding(el) {
     customCategory: "",
     socials: normalizeSocialDrafts([], { withFallback: true }),
     followers: 0,
-    followerVerification: {
-      inputKey: "",
-      challengeToken: "",
-      code: "",
-      proofToken: "",
-      verified: false,
-      confidence: 0,
-      verifiedAt: 0,
-    },
     bio: "",
     prices: {},
     tier: "Nano",
@@ -81,36 +71,12 @@ export function renderOnboarding(el) {
   };
   const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : "[•]");
   const fmtDateTime = (v) => (v ? new Date(v).toLocaleString("vi-VN") : "[•]");
-  const followerInputKey = () => {
-    const social = d.socials[0] || {};
-    return [
-      String(social.platform || "").trim().toLowerCase(),
-      String(social.handle || "").trim().toLowerCase(),
-      Number(d.followers) || 0,
-    ].join("|");
-  };
   const socialLabel = (social) => {
     if (!social) return "";
     const platform = String(social.platform || "").trim();
     const handle = String(social.handle || "").trim();
     if (platform && handle) return `${platform}: ${handle}`;
     return platform || handle;
-  };
-  const resetFollowerVerification = () => {
-    if (d.socials[0]) {
-      delete d.socials[0].verified;
-      delete d.socials[0].verificationSource;
-      delete d.socials[0].verifiedAt;
-    }
-    d.followerVerification = {
-      inputKey: "",
-      challengeToken: "",
-      code: "",
-      proofToken: "",
-      verified: false,
-      confidence: 0,
-      verifiedAt: 0,
-    };
   };
   async function onCancel() {
     if (
@@ -480,7 +446,6 @@ export function renderOnboarding(el) {
   // ---------- Step 1: Hồ sơ (tỉnh/thành, ngành hàng + "Khác", follower...) ----------
   function renderStep1() {
     const catList = cfg.categories.concat(["Khác"]);
-    const verification = d.followerVerification;
     el.innerHTML = wrap(`
       <div class="field"><label>Tỉnh/Thành phố</label><select id="o-prov">${provinceOptions(cfg.provinces, d.province)}</select></div>
       <div class="field"><label>Ngành hàng (chọn nhiều)</label>
@@ -491,44 +456,10 @@ export function renderOnboarding(el) {
         socials: d.socials,
         prefix: "o",
         escapeHtml: esc,
-        primaryVerified: verification.verified,
-        primaryLabel: "Kênh chính để xác minh follower",
+        primaryLabel: "Kênh chính",
       })}
-      <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="0" step="1" value="${d.followers}" ${verification.verified ? "readonly" : ""}></div>
-      <div class="tint-box" style="margin:4px 0 14px">
-        <div class="between" style="gap:10px">
-          <div>
-            <b>Xác minh số người theo dõi từ ảnh chụp</b>
-            <div class="muted" style="font-size:12px;margin-top:3px">Ảnh chỉ được dùng để kiểm tra thông tin ngay trên thiết bị và không lưu vào hồ sơ.</div>
-          </div>
-          ${verification.verified ? '<span class="chip g">✓ Đã xác minh</span>' : '<span class="chip w">Bắt buộc</span>'}
-        </div>
-        ${
-          verification.verified
-            ? `<div style="margin-top:10px"><b>${Number(d.followers).toLocaleString("vi-VN")} người theo dõi</b> · Mức độ khớp ${Math.round(Number(verification.confidence || 0) * 100)}%</div>
-               <button type="button" class="btn ghost sm" id="o-follower-reset" style="margin-top:10px">Xác minh lại</button>`
-            : verification.challengeToken
-               ? `<ol style="font-size:13px;line-height:1.6;margin:10px 0 10px 20px">
-                    <li>
-                      <span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap">
-                        Sao chép mã
-                        <b class="copybox" style="padding:3px 7px">${esc(verification.code)}</b>
-                        <button type="button" class="btn ghost sm" id="o-follower-copy-code" aria-label="Sao chép mã xác minh" title="Sao chép mã xác minh" style="padding:5px 8px;min-width:34px;line-height:1">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        </button>
-                      </span>
-                    </li>
-                   <li>Đặt mã vào phần giới thiệu của đúng hồ sơ.</li>
-                   <li>Chụp một ảnh thấy rõ tên tài khoản, số người theo dõi và mã trong phần giới thiệu.</li>
-                 </ol>
-                 <div class="field" style="margin-bottom:8px"><input id="o-follower-shot" type="file" accept="image/jpeg,image/png,image/webp"></div>
-                 <button type="button" class="btn primary" id="o-follower-verify">Đọc ảnh và xác minh</button>
-                 <div class="muted" style="font-size:11px;margin-top:6px">Lần đầu có thể mất thêm thời gian để tải bộ nhận dạng chữ miễn phí.</div>
-                 <button type="button" class="btn ghost sm" id="o-follower-new-code" style="margin-top:8px">Tạo mã khác</button>`
-              : `<p class="muted" style="font-size:13px;margin:10px 0">Nhập nền tảng, tên tài khoản và số người theo dõi trước khi tạo mã.</p>
-                 <button type="button" class="btn primary" id="o-follower-challenge">Tạo mã xác minh</button>`
-        }
-      </div>
+      <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="0" max="2000000000" step="1" value="${d.followers}"></div>
+      <p class="muted" style="font-size:12px;margin:-6px 0 14px">Nhập tổng số người theo dõi hiện tại. Đội ngũ quản trị sẽ kiểm duyệt thông tin hồ sơ.</p>
       <div class="field"><label>Giới thiệu</label><textarea id="o-bio" rows="2">${esc(d.bio)}</textarea></div>`);
     bindChrome();
     el.querySelectorAll("#o-cats [data-c]").forEach((b) =>
@@ -549,10 +480,6 @@ export function renderOnboarding(el) {
           (social) => social.platform === platform,
         );
         if (index >= 0) {
-          if (index === 0 && d.followerVerification.verified) {
-            toast("Kênh chính đã xác minh không thể gỡ", "err");
-            return;
-          }
           d.socials.splice(index, 1);
         } else {
           if (d.socials.length >= MAX_SOCIAL_CHANNELS) {
@@ -561,55 +488,11 @@ export function renderOnboarding(el) {
           }
           d.socials.push({ platform, handle: "", followers: d.followers });
         }
-        if (
-          d.followerVerification.inputKey &&
-          d.followerVerification.inputKey !== followerInputKey()
-        ) {
-          resetFollowerVerification();
-        }
         render();
       }),
     );
-    el.querySelector("#o-follower-challenge")?.addEventListener(
-      "click",
-      createFollowerChallenge,
-    );
-    el.querySelector("#o-follower-new-code")?.addEventListener(
-      "click",
-      createFollowerChallenge,
-    );
-    el.querySelector("#o-follower-copy-code")?.addEventListener(
-      "click",
-      async (event) => {
-        const button = event.currentTarget;
-        const copied = await copyToClipboard(verification.code);
-        if (!copied) {
-          toast("Không thể sao chép mã. Vui lòng sao chép thủ công.", "err");
-          return;
-        }
-        button.innerHTML = '<span aria-hidden="true" style="font-size:16px">✓</span>';
-        button.setAttribute("aria-label", "Đã sao chép mã xác minh");
-        button.title = "Đã sao chép";
-        toast("Đã sao chép mã xác minh", "ok");
-        window.setTimeout(() => {
-          if (!button.isConnected) return;
-          button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-          button.setAttribute("aria-label", "Sao chép mã xác minh");
-          button.title = "Sao chép mã xác minh";
-        }, 1800);
-      },
-    );
-    el.querySelector("#o-follower-verify")?.addEventListener(
-      "click",
-      verifyFollowerEvidence,
-    );
-    el.querySelector("#o-follower-reset")?.addEventListener("click", () => {
-      resetFollowerVerification();
-      render();
-    });
   }
   function collect1() {
-    const oldVerificationKey = d.followerVerification.inputKey;
     const prov = el.querySelector("#o-prov");
     if (prov) d.province = prov.value;
     const fol = el.querySelector("#o-fol");
@@ -629,132 +512,6 @@ export function renderOnboarding(el) {
         handle: input.value.trim(),
         followers: index === 0 ? d.followers : Number(currentByPlatform.get(input.dataset.platform)?.followers || d.followers),
       }));
-    }
-    if (
-      oldVerificationKey &&
-      oldVerificationKey !== followerInputKey()
-    ) {
-      resetFollowerVerification();
-    }
-  }
-  async function createFollowerChallenge() {
-    collect1();
-    const social = d.socials[0];
-    if (!social) {
-      toast("Nhập tên tài khoản hoặc đường dẫn hồ sơ mạng xã hội", "err");
-      return;
-    }
-    if (!Number.isSafeInteger(d.followers) || d.followers < 0) {
-      toast("Nhập số người theo dõi hợp lệ", "err");
-      return;
-    }
-    const button =
-      el.querySelector("#o-follower-challenge") ||
-      el.querySelector("#o-follower-new-code");
-    const oldText = button?.textContent || "";
-    if (button) {
-      button.disabled = true;
-      button.textContent = "Đang tạo mã…";
-    }
-    try {
-      const result = await post("/api/onboard/follower-challenge", {
-        email: d.email,
-        platform: social.platform,
-        handle: social.handle,
-        claimedFollowers: d.followers,
-      });
-      d.followerVerification = {
-        inputKey: followerInputKey(),
-        challengeToken: result.token,
-        code: result.code,
-        proofToken: "",
-        verified: false,
-        confidence: 0,
-        verifiedAt: 0,
-      };
-      render();
-    } catch (error) {
-      toast(error.message, "err");
-      if (button) {
-        button.disabled = false;
-        button.textContent = oldText;
-      }
-    }
-  }
-  async function verifyFollowerEvidence() {
-    collect1();
-    const verification = d.followerVerification;
-    if (
-      !verification.challengeToken ||
-      verification.inputKey !== followerInputKey()
-    ) {
-      toast("Thông tin hồ sơ đã thay đổi. Hãy tạo mã xác minh mới.", "err");
-      resetFollowerVerification();
-      render();
-      return;
-    }
-    const file = el.querySelector("#o-follower-shot")?.files?.[0];
-    if (!file) {
-      toast("Chọn ảnh chụp hồ sơ để xác minh", "err");
-      return;
-    }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast("Ảnh phải là JPEG, PNG hoặc WebP", "err");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      toast("Ảnh xác minh không được vượt quá 4 MB", "err");
-      return;
-    }
-    const button = el.querySelector("#o-follower-verify");
-    const oldText = button.textContent;
-    button.disabled = true;
-    button.textContent = "Đang đọc ảnh…";
-    let worker;
-    try {
-      worker = await Tesseract.createWorker("eng", 1, {
-        logger: (message) => {
-          if (message.status !== "recognizing text") return;
-          const progress = Math.round(Number(message.progress || 0) * 100);
-          button.textContent = `Đang đọc ảnh… ${progress}%`;
-        },
-      });
-      const recognition = await worker.recognize(file);
-      const result = await post("/api/onboard/follower-verify", {
-        challengeToken: verification.challengeToken,
-        ocrText: recognition.data.text,
-        ocrConfidence: recognition.data.confidence,
-      });
-      d.followers = Number(result.followers);
-      d.socials = [
-        {
-          platform: result.platform,
-          handle: result.handle,
-          followers: d.followers,
-          verified: true,
-        },
-        ...d.socials.slice(1),
-      ];
-      d.followerVerification = {
-        inputKey: followerInputKey(),
-        challengeToken: "",
-        code: "",
-        proofToken: result.proofToken,
-        verified: true,
-        confidence: Number(result.confidence) || 0,
-        verifiedAt: Number(result.verifiedAt) || 0,
-      };
-      toast(
-        `Đã xác minh ${d.followers.toLocaleString("vi-VN")} người theo dõi`,
-        "ok",
-      );
-      render();
-    } catch (error) {
-      toast(error.message, "err");
-      button.disabled = false;
-      button.textContent = oldText;
-    } finally {
-      await worker?.terminate().catch(() => {});
     }
   }
   function validate1() {
@@ -789,12 +546,11 @@ export function renderOnboarding(el) {
       return false;
     }
     if (
-      !d.followerVerification.verified ||
-      !d.followerVerification.proofToken ||
-      d.followerVerification.inputKey !== followerInputKey()
+      !Number.isSafeInteger(d.followers) ||
+      d.followers < 0 ||
+      d.followers > 2_000_000_000
     ) {
-      toast("Xác minh số người theo dõi từ ảnh chụp trước khi tiếp tục", "err");
-      render();
+      toast("Nhập số người theo dõi hợp lệ", "err");
       return false;
     }
     return true;
@@ -1535,7 +1291,6 @@ export function renderOnboarding(el) {
         province: d.province,
         categories: d.categories,
         followers: d.followers,
-        followerVerificationToken: d.followerVerification.proofToken,
         bio: d.bio,
         socials: d.socials,
         prices: d.prices,
