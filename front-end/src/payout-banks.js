@@ -187,6 +187,11 @@ export function bindBankPicker(picker, banks) {
     }
   };
 
+  // Safari/Firefox on macOS do not move focus to a <button> on click, so a
+  // mousedown here would pull focus out of the picker and the focusout handler
+  // below would close the panel before the click lands. Keeping the default
+  // focus behaviour suppressed makes the click-to-select work on every browser.
+  trigger?.addEventListener("mousedown", event => event.preventDefault());
   trigger?.addEventListener("click", () => setOpen(panel?.hidden !== false));
   trigger?.addEventListener("keydown", event => {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -209,6 +214,9 @@ export function bindBankPicker(picker, banks) {
     }
   });
   options.forEach(option => {
+    // See the trigger note above: prevent the mousedown from stealing focus so
+    // the panel is still open (not hidden) when the click fires in Safari.
+    option.addEventListener("mousedown", event => event.preventDefault());
     option.addEventListener("click", () => {
       select.value = option.dataset.bankBin;
       select.dispatchEvent(new Event("change", { bubbles: true }));
