@@ -100,6 +100,9 @@ jobs:
           ssh \
             -i ~/.ssh/koc_viet_ec2 \
             -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=6 \
+            -o TCPKeepAlive=yes \
             "$EC2_USER@$EC2_HOST" 'bash -se' <<'DEPLOY'
             set -Eeuo pipefail
 
