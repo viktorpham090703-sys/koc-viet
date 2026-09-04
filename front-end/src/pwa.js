@@ -2,7 +2,8 @@ import { api } from "./api.js";
 
 const NOTIFICATION_STATE_CACHE = "koc-viet-notifications-v1";
 const NOTIFICATION_STATE_URL = "/__koc-viet-notification-state__";
-const PWA_ACTIONS_DISMISSED = "koc-viet-pwa-actions-dismissed-v2";
+const PWA_INSTALL_ACTION_DISMISSED = "koc-viet-pwa-install-dismissed-v1";
+const PWA_NOTIFICATION_ACTION_DISMISSED = "koc-viet-pwa-notifications-dismissed-v1";
 const POLL_INTERVAL = 60_000;
 
 let deferredInstallPrompt = null;
@@ -26,7 +27,9 @@ window.addEventListener("beforeinstallprompt", (event) => {
 
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
-  sessionStorage.setItem(PWA_ACTIONS_DISMISSED, "1");
+  sessionStorage.setItem(PWA_INSTALL_ACTION_DISMISSED, "1");
+  // Installing the app must not also dismiss the notification onboarding.
+  sessionStorage.removeItem(PWA_NOTIFICATION_ACTION_DISMISSED);
   renderPwaActions();
 });
 
@@ -96,16 +99,34 @@ function renderPwaActions() {
 
   const notificationPermission =
     "Notification" in window ? Notification.permission : "unsupported";
-  const canInstall = !isStandalone() && (Boolean(deferredInstallPrompt) || isIos());
+  const installWasDismissed =
+    sessionStorage.getItem(PWA_INSTALL_ACTION_DISMISSED) === "1";
+  const notificationsWereDismissed =
+    sessionStorage.getItem(PWA_NOTIFICATION_ACTION_DISMISSED) === "1";
+  const canInstall =
+    !installWasDismissed &&
+    !isStandalone() &&
+    (Boolean(deferredInstallPrompt) || isIos());
   const canEnableNotifications =
-    authenticated && notificationPermission === "default";
+    !notificationsWereDismissed &&
+    authenticated &&
+    notificationPermission === "default";
   const canTestNotifications =
-    authenticated && notificationPermission === "granted";
-  const wasDismissed =
-    sessionStorage.getItem(PWA_ACTIONS_DISMISSED) === "1";
+    !notificationsWereDismissed &&
+    authenticated &&
+    notificationPermission === "granted";
+  const notificationsAreBlocked =
+    !notificationsWereDismissed &&
+    authenticated &&
+    notificationPermission === "denied";
 
   let host = document.getElementById("pwa-actions");
-  if ((!canInstall && !canEnableNotifications && !canTestNotifications) || wasDismissed) {
+  if (
+    !canInstall &&
+    !canEnableNotifications &&
+    !canTestNotifications &&
+    !notificationsAreBlocked
+  ) {
     host?.remove();
     return;
   }
@@ -126,12 +147,15 @@ function renderPwaActions() {
         ? "Không bỏ lỡ booking và cập nhật mới"
         : canTestNotifications
           ? "Kiểm tra kết nối trước khi chờ booking mới"
-          : "Mở nhanh như một ứng dụng"}</span>
+          : notificationsAreBlocked
+            ? "Thông báo đang bị chặn trên thiết bị này"
+            : "Mở nhanh như một ứng dụng"}</span>
     </div>
     <div class="pwa-actions__buttons">
       ${canInstall ? '<button type="button" class="pwa-action-button" data-pwa-install>Cài ứng dụng</button>' : ""}
       ${canEnableNotifications ? '<button type="button" class="pwa-action-button pwa-action-button--accent" data-pwa-notifications>Bật thông báo</button>' : ""}
       ${canTestNotifications ? '<button type="button" class="pwa-action-button pwa-action-button--accent" data-pwa-test>Kiểm tra thông báo</button>' : ""}
+      ${notificationsAreBlocked ? '<button type="button" class="pwa-action-button pwa-action-button--accent" data-pwa-settings>Hướng dẫn bật lại</button>' : ""}
     </div>
     <button type="button" class="pwa-actions__close" data-pwa-dismiss aria-label="Đóng">×</button>`;
 
@@ -142,8 +166,14 @@ function renderPwaActions() {
   host
     .querySelector("[data-pwa-test]")
     ?.addEventListener("click", testPushNotification);
+  host
+    .querySelector("[data-pwa-settings]")
+    ?.addEventListener("click", showNotificationSettingsHint);
   host.querySelector("[data-pwa-dismiss]")?.addEventListener("click", () => {
-    sessionStorage.setItem(PWA_ACTIONS_DISMISSED, "1");
+    if (canInstall) sessionStorage.setItem(PWA_INSTALL_ACTION_DISMISSED, "1");
+    if (canEnableNotifications || canTestNotifications || notificationsAreBlocked) {
+      sessionStorage.setItem(PWA_NOTIFICATION_ACTION_DISMISSED, "1");
+    }
     host.remove();
   });
 }
@@ -172,14 +202,14 @@ async function requestNotificationPermission() {
   if (permission === "granted") {
     await primeNotificationState();
     const pushReady = await ensurePushSubscription({ showErrors: true });
-    if (pushReady) {
-      await showSystemNotification({
-        id: "notifications-enabled",
-        title: "Đã bật thông báo KOC Việt",
-        message: "Bạn sẽ nhận được booking và cập nhật mới ngay cả khi app đang đóng.",
-        href: "/#/notifications",
-      });
-    }
+    await showSystemNotification({
+      id: "notifications-enabled",
+      title: "Đã bật thông báo KOC Việt",
+      message: pushReady
+        ? "Bạn sẽ nhận được booking và cập nhật mới ngay cả khi app đang đóng."
+        : "Bạn đã cho phép KOC Việt hiển thị thông báo trên thiết bị này.",
+      href: "/#/notifications",
+    });
     await registerPeriodicNotificationSync();
     updateNotificationPolling();
     return;
@@ -188,6 +218,13 @@ async function requestNotificationPermission() {
   if (permission === "denied") {
     showPwaHint("Thông báo đang bị chặn. Bạn có thể bật lại trong cài đặt của trình duyệt.");
   }
+}
+
+function showNotificationSettingsHint() {
+  const message = isIos()
+    ? "Mở Cài đặt > Thông báo > KOC Việt, sau đó bật Cho phép thông báo."
+    : "Mở cài đặt của KOC Việt hoặc cài đặt trang web, chọn Thông báo rồi chuyển sang Cho phép.";
+  showPwaHint(message);
 }
 
 function updateNotificationPolling() {
