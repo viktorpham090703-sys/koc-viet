@@ -4793,6 +4793,35 @@ export async function route(request, env, url) {
       totals: { baseFee: Number(totals.baseFee || 0), amount: Number(totals.amount || 0) },
     });
   }
+  if (p === "/api/partner/profile" && m === "GET") {
+    if (me.role !== "partner") return err("403", 403);
+    const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
+      .bind(me.partner_id).first();
+    if (!partner) return err("Không tìm thấy đối tác", 404);
+    return J({ partner });
+  }
+  if (p === "/api/partner/profile" && m === "POST") {
+    if (me.role !== "partner") return err("403", 403);
+    const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
+      .bind(me.partner_id).first();
+    if (!partner) return err("Không tìm thấy đối tác", 404);
+    const name = String(body.name || "").trim().slice(0, 160);
+    if (!name) return err("Nhập tên đối tác");
+    const avatar = String(body.avatar || "");
+    if (avatar.length > 700000) return err("Ảnh vượt quá dung lượng cho phép sau khi tối ưu");
+    if (!isImageSource(avatar)) return err("Định dạng ảnh không hợp lệ");
+    const bank = normalizePartnerBank(body);
+    if (bank.error) return err(bank.error);
+    await env.DB.prepare(
+      `UPDATE partners SET name=?,avatar=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=?,updated_at=?
+       WHERE id=?`,
+    ).bind(
+      name, avatar, bank.bankName, bank.bankBin, bank.bankAccount, bank.bankOwner,
+      now(), me.partner_id,
+    ).run();
+    await audit(env, me.id, "partner.self_profile_update", me.partner_id, "");
+    return J({ ok: true });
+  }
 
   // ================= ADMIN =================
   if (isAdmin) {
