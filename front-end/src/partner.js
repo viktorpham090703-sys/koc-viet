@@ -1,4 +1,4 @@
-import { api } from "./api.js";
+import { api, post } from "./api.js";
 import {
   money,
   num,
@@ -7,28 +7,35 @@ import {
   tierBadge,
   spinner,
   empty,
+  toast,
   avatarUrl,
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
 import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
+import {
+  bankIdentityHtml,
+  bankPickerHtml,
+  bindBankPicker,
+  selectedPayoutBank,
+} from "./payout-banks.js";
 
 const NAV = [
   ["#/dashboard", icon("home", "sidebar-icon"), "Trang chủ"],
   ["#/kocs", icon("kocApp", "sidebar-icon"), "KOC"],
   ["#/report", icon("report", "sidebar-icon"), "Báo cáo doanh thu"],
 ];
+const PAGES = ["dashboard", "kocs", "report", "profile"];
 
 export async function renderPartner(el, hash) {
   const page = hash.replace("#/", "") || "dashboard";
-  const active =
-    "#/" + (["dashboard", "kocs", "report"].includes(page) ? page : "dashboard");
+  const active = "#/" + (PAGES.includes(page) ? page : "dashboard");
   el.innerHTML = `<div class="portal business-portal">
     <div class="sidebar"><div class="brand"><a class="portal-brand-link" href="#/dashboard" aria-label="KOC Việt — Cổng đối tác">${brandLogo()}</a></div>
       <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav><button class="btn ghost sm portal-sidebar-logout" id="pn-logout">Đăng xuất</button></div>
     <div class="main"><div class="topbar portal-topbar">
       <div class="portal-context"><span class="portal-context-label">KOC VIET</span><h2>Cổng đối tác</h2></div>
-      <div class="portal-account"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "P").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Đối tác</span></div></div></div>
+      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ đối tác"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "P").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Đối tác</span></div></a></div></div>
       <div class="content" id="pn-view"></div></div></div>`;
   document.getElementById("pn-logout").addEventListener("click", logout);
   enhancePortal();
@@ -37,6 +44,7 @@ export async function renderPartner(el, hash) {
     if (active === "#/dashboard") await dashboard(view);
     else if (active === "#/kocs") await kocsPage(view);
     else if (active === "#/report") await report(view);
+    else if (active === "#/profile") await profile(view);
     autoAnimate(view);
   } catch (e) {
     view.innerHTML = empty("⚠️", e.message);
@@ -138,4 +146,120 @@ function pagerHtml(page, pages) {
   btns += `<span class="muted" style="margin:0 10px">Trang ${page}/${pages}</span>`;
   btns += `<button class="btn ghost sm" ${page >= pages ? "disabled" : ""} data-pg="${page + 1}">Sau ›</button>`;
   return `<div style="margin-top:12px;text-align:center">${btns}</div>`;
+}
+
+async function optimizePartnerProfileImage(file, size = 240, quality = 0.85) {
+  if (!file || !file.type.startsWith("image/"))
+    throw new Error("Vui lòng chọn file ảnh");
+  if (file.size > 10 * 1024 * 1024) throw new Error("Ảnh gốc tối đa 10MB");
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("Không đọc được file ảnh"));
+      image.src = objectUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const side = Math.min(image.naturalWidth, image.naturalHeight);
+    const sx = (image.naturalWidth - side) / 2;
+    const sy = (image.naturalHeight - side) / 2;
+    canvas.getContext("2d").drawImage(image, sx, sy, side, side, 0, 0, size, size);
+    return canvas.toDataURL("image/jpeg", quality);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function profile(el, editing = false) {
+  el.innerHTML = spinner();
+  const r = await api("/api/partner/profile");
+  const p = r.partner;
+  const pct = Math.round(Number(p.fee_rate || 0) * 100);
+
+  if (!editing) {
+    el.innerHTML = `<div class="between"><h1>Hồ sơ đối tác</h1>
+        <button class="btn primary sm" id="pf-edit">✏️ Chỉnh sửa</button></div>
+      <div class="card" style="margin:16px 0">
+        <div class="row" style="gap:14px;align-items:center">
+          <div style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:28px;flex:none">${p.avatar ? `<img src="${esc(p.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">` : "🤝"}</div>
+          <div><h2 style="margin:0">${esc(p.name)}</h2>
+            <p class="muted" style="margin-top:2px">${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'} · Chia sẻ ${pct}% của phí dịch vụ 5%</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>💳 Thông tin nhận chi trả</h3>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:14px">
+          <div><span class="muted">Ngân hàng</span><p>${bankIdentityHtml(state.config?.payoutBanks, p.bank_name, p.bank_bin)}</p></div>
+          <div><span class="muted">Số tài khoản</span><p><b>${esc(p.bank_account || "Chưa cập nhật")}</b></p></div>
+          <div><span class="muted">Chủ tài khoản</span><p><b>${esc(p.bank_owner || "Chưa cập nhật")}</b></p></div>
+        </div>
+      </div>`;
+    el.querySelector("#pf-edit").addEventListener("click", () => profile(el, true));
+    return;
+  }
+
+  let avatar = p.avatar || "";
+  const banks = state.config?.payoutBanks || [];
+  el.innerHTML = `<div class="between"><h1>Chỉnh sửa hồ sơ đối tác</h1>
+      <button class="btn ghost sm" id="pf-cancel">Huỷ</button></div>
+    <div class="card" style="margin-top:16px">
+      <div class="row" style="gap:14px;align-items:center;margin-bottom:14px">
+        <div id="pf-avatar-preview" style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:28px;flex:none">${avatar ? `<img src="${esc(avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">` : "🤝"}</div>
+        <div><label class="btn ghost sm upload-label">Chọn ảnh<input id="pf-avatar-file" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+          <p class="hint" style="margin-top:6px">PNG, JPG hoặc WebP · tối đa 10MB.</p></div>
+      </div>
+      <div class="field"><label>Tên đối tác *</label><input id="pf-name" value="${esc(p.name || "")}"></div>
+      <h3 style="margin-top:10px;font-size:14px">💳 Thông tin nhận chi trả</h3>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+        <div class="field"><label for="pf-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("pf-bank-select", banks, p.bank_name, p.bank_bin)}</div>
+        <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" inputmode="numeric" value="${esc(p.bank_account || "")}"></div>
+        <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(p.bank_owner || "")}"></div>
+      </div>
+      <button class="btn primary" id="pf-save" style="margin-top:10px;width:auto">💾 Lưu hồ sơ</button>
+    </div>`;
+  bindBankPicker(el.querySelector('[data-bank-picker="pf-bank-select"]'), banks);
+  el.querySelector("#pf-avatar-file").addEventListener("change", async (e) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    input.disabled = true;
+    try {
+      avatar = await optimizePartnerProfileImage(file);
+      el.querySelector("#pf-avatar-preview").innerHTML = `<img src="${avatar}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+      toast("Đã tối ưu và xem trước ảnh", "ok");
+    } catch (err) {
+      toast(err.message, "err");
+    } finally {
+      input.disabled = false;
+    }
+  });
+  el.querySelector("#pf-cancel").addEventListener("click", () => profile(el));
+  el.querySelector("#pf-save").addEventListener("click", async () => {
+    const name = el.querySelector("#pf-name").value.trim();
+    if (!name) return toast("Nhập tên đối tác", "err");
+    const bank = selectedPayoutBank(el.querySelector("#pf-bank-select"));
+    const btn = el.querySelector("#pf-save");
+    btn.disabled = true;
+    btn.textContent = "Đang lưu…";
+    try {
+      await post("/api/partner/profile", {
+        name,
+        avatar,
+        bank_name: bank.name,
+        bank_bin: bank.bin,
+        bank_account: el.querySelector("#pf-bank-account").value.trim(),
+        bank_owner: el.querySelector("#pf-bank-owner").value.trim(),
+      });
+      toast("Đã lưu hồ sơ", "ok");
+      profile(el);
+    } catch (err) {
+      toast(err.message, "err");
+      btn.disabled = false;
+      btn.textContent = "💾 Lưu hồ sơ";
+    }
+  });
 }
