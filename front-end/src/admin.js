@@ -22,12 +22,7 @@ import {
 import { state, logout, enhancePortal } from "./app.js";
 import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
-import {
-  bankIdentityHtml,
-  bankPickerHtml,
-  bindBankPicker,
-  selectedPayoutBank,
-} from "./payout-banks.js";
+import { bankIdentityHtml } from "./payout-banks.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
@@ -343,26 +338,6 @@ function partnerKocPickerHtml(kocs, { checked = [] } = {}) {
     .join("");
 }
 
-function partnerBankFieldsHtml(id, banks, partner = {}) {
-  return `<div class="field"><label for="${id}-trigger">Ngân hàng nhận tiền (tuỳ chọn)</label>
-      ${bankPickerHtml(id, banks, partner.bank_name || "", partner.bank_bin || "")}</div>
-    <div class="row" style="gap:8px">
-      <div class="field" style="flex:1;margin:0"><label>Số tài khoản</label>
-        <input id="${id}-account" inputmode="numeric" value="${esc(partner.bank_account || "")}" placeholder="Chỉ chữ số"></div>
-      <div class="field" style="flex:1;margin:0"><label>Chủ tài khoản</label>
-        <input id="${id}-owner" value="${esc(partner.bank_owner || "")}" placeholder="Tên in trên thẻ"></div>
-    </div>`;
-}
-
-function readPartnerBank(id) {
-  const bank = selectedPayoutBank(document.getElementById(id));
-  return {
-    bank_name: bank.name || "",
-    bank_bin: bank.bin || "",
-    bank_account: document.getElementById(id + "-account").value.trim(),
-    bank_owner: document.getElementById(id + "-owner").value.trim(),
-  };
-}
 
 function partnerAvatarFieldHtml(prefix, avatar = "") {
   const img = `<img src="${esc(avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">`;
@@ -441,7 +416,6 @@ function bindPartnerAvatar(prefix, onChange) {
 }
 
 async function partnerCreate(listEl) {
-  const banks = state.config?.payoutBanks || [];
   const kocResp = await api("/api/admin/partners/assignable-kocs");
   let kocs = kocResp.kocs || [];
   let avatar = "";
@@ -452,8 +426,8 @@ async function partnerCreate(listEl) {
     <div class="field"><label>Tỷ lệ chia sẻ trên phí 5%</label>
       <input id="pt-rate" type="number" step="1" min="1" max="100" value="30"> <span class="muted">% (đối tác hưởng 30% của 5%)</span>
     </div>
-    ${partnerBankFieldsHtml("pt-bank", banks)}
     <div class="field"><label>Ghi chú (tuỳ chọn)</label><input id="pt-note"></div>
+    <p class="muted" style="font-size:12px;margin:0 0 4px">Thông tin ngân hàng nhận chi trả do đối tác tự cập nhật trong cổng đối tác sau khi đăng nhập.</p>
     <div class="field"><label>Gán KOC vào đối tác</label>
       <input id="pt-koc-search" placeholder="Tìm KOC theo tên…" style="margin-bottom:6px">
       <div id="pt-koc-list" style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:4px">
@@ -464,7 +438,6 @@ async function partnerCreate(listEl) {
       <button class="btn primary" id="pt-save">Tạo đối tác</button>
       <button class="btn ghost" id="pt-cancel">Huỷ</button>
     </div>`);
-  bindBankPicker(document.querySelector('[data-bank-picker="pt-bank"]'), banks);
   bindPartnerAvatar("pt-avatar", (v) => (avatar = v));
   const listBox = document.getElementById("pt-koc-list");
   let searchTimer;
@@ -492,7 +465,6 @@ async function partnerCreate(listEl) {
         name,
         avatar,
         fee_rate: ratePct / 100,
-        ...readPartnerBank("pt-bank"),
         note: document.getElementById("pt-note").value.trim(),
         koc_ids: kocIds,
       });
@@ -547,7 +519,7 @@ async function partnerDetail(id, listEl) {
           <option value="paused" ${p.status === "paused" ? "selected" : ""}>Tạm dừng</option>
         </select></div>
     </div>
-    ${partnerBankFieldsHtml("pt-d-bank", banks, p)}
+    <p class="muted" style="font-size:12px;margin:0 0 12px">Thông tin ngân hàng nhận chi trả ở trên do đối tác tự cập nhật trong cổng đối tác — admin chỉ xem.</p>
     <button class="btn primary sm" id="pt-d-save" style="margin:4px 0 16px">Lưu thay đổi</button>
     <div class="between"><h3>KOC thuộc đối tác (${members.length})</h3>
       <button class="btn ghost sm" id="pt-d-add">+ Thêm KOC</button></div>
@@ -577,7 +549,6 @@ async function partnerDetail(id, listEl) {
     </tbody></table></div>
     <button class="btn ghost" id="pt-d-close">Đóng</button>`);
   document.getElementById("pt-d-close").addEventListener("click", closeModal);
-  bindBankPicker(document.querySelector('[data-bank-picker="pt-d-bank"]'), banks);
   bindPartnerAvatar("pt-d-avatar", (v) => (avatar = v));
   document.getElementById("pt-d-account-create")?.addEventListener("click", async () => {
     const email = document.getElementById("pt-d-account-email").value.trim();
@@ -628,7 +599,6 @@ async function partnerDetail(id, listEl) {
         avatar,
         fee_rate: ratePct / 100,
         status: document.getElementById("pt-d-status").value,
-        ...readPartnerBank("pt-d-bank"),
       });
       toast("Đã lưu", "ok");
       closeModal();
@@ -837,7 +807,7 @@ async function loadKocDirectory(el) {
 async function queue(el) {
   const r = await api("/api/admin/queue");
   el.innerHTML = `<div class="between"><h1>Hàng đợi duyệt hồ sơ KOC</h1>${r.kocs.length ? `<button class="btn ok sm" id="q-bulk">Duyệt hàng loạt (${r.kocs.length})</button>` : ""}</div>
-    <div style="margin-top:16px">${r.kocs.length ? r.kocs.map(kocQueueCard).join("") : empty("✅", "Không có hồ sơ chờ duyệt")}</div>`;
+    <div style="margin-top:16px">${r.kocs.length ? r.kocs.map(kocQueueCard).join("") : empty("<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em>", "Không có hồ sơ chờ duyệt")}</div>`;
   el.querySelectorAll("[data-approve]").forEach((b) =>
     b.addEventListener("click", () => act(b.dataset.approve, true, el)),
   );
@@ -1146,7 +1116,7 @@ async function loadComplaints(el) {
   const r = await api("/api/complaints" + (st ? "?status=" + st : ""));
   const list = document.getElementById("cp-list");
   if (!r.complaints.length) {
-    list.innerHTML = empty("✅", "Không có khiếu nại nào");
+    list.innerHTML = empty("<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em>", "Không có khiếu nại nào");
     return;
   }
   list.innerHTML = r.complaints

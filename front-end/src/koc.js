@@ -584,7 +584,7 @@ async function openBooking(id, el) {
       if (reason) doAction(b.id, "reject", { reason }, el);
     });
   } else if (b.status === "pending") {
-    act.innerHTML = `<button class="btn ok" id="a-confirm">✅ Xác nhận booking</button>
+    act.innerHTML = `<button class="btn ok" id="a-confirm"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Xác nhận booking</button>
       <button class="btn danger" id="a-reject" style="margin-top:8px">Từ chối</button>`;
     act
       .querySelector("#a-confirm")
@@ -614,7 +614,7 @@ async function openBooking(id, el) {
       return;
     }
     act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa</label><textarea id="a-ai-note" rows="3" placeholder="Nêu rõ vấn đề về hình ảnh, giọng nói hoặc nội dung…"></textarea></div>
-      <div class="row" style="gap:8px"><button class="btn ok" id="a-ai-approve" style="flex:1">✅ Phê duyệt video</button>
+      <div class="row" style="gap:8px"><button class="btn ok" id="a-ai-approve" style="flex:1"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Phê duyệt video</button>
       <button class="btn danger" id="a-ai-revise" style="flex:1">↩ Yêu cầu sửa</button></div>
       <p class="hint">Sau khi duyệt, đường dẫn sản phẩm riêng sẽ được tạo để bạn đăng video và quảng bá sản phẩm.</p>`;
     const review = async (action) => {
@@ -1276,7 +1276,7 @@ async function aiclone(el) {
         <div style="margin-top:16px">
         ${
           registered
-            ? `<div class="chip g" style="padding:10px 16px">✅ Bạn đã đăng ký dịch vụ AI Clone Avatar</div><p class="muted" style="margin-top:8px;font-size:12px">Chờ NetViet tạo booking & giao video. Booking sẽ hiện ở tab Booking.</p>`
+            ? `<div class="chip g" style="padding:10px 16px"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Bạn đã đăng ký dịch vụ AI Clone Avatar</div><p class="muted" style="margin-top:8px;font-size:12px">Chờ NetViet tạo booking & giao video. Booking sẽ hiện ở tab Booking.</p>`
             : `<button class="btn primary" id="ai-reg">Đăng ký tham gia AI Clone Avatar</button>`
         }
         </div>
@@ -1333,7 +1333,7 @@ async function notifications(el) {
   const icon = {
     booking: "📋",
     commission: "💰",
-    payment: "✅",
+    payment: "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em>",
     refund: "↩️",
     cancel: "✕",
   };
