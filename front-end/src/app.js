@@ -109,9 +109,6 @@ async function route() {
   if (!state.user) {
     return renderLogin();
   }
-  if (state.user.must_change_password) {
-    return renderForcedPasswordChange();
-  }
 
   if (state.user.role === "koc") {
     await renderKoc(appEl, hash);
@@ -133,48 +130,6 @@ async function route() {
     return;
   }
   renderLogin();
-}
-
-// A partner (or any future role) whose account was just issued a temporary
-// password must set their own before reaching any portal. Enforced again
-// server-side (every API but /api/me, /api/logout, /api/change-password
-// rejects requests while must_change_password is set) — this screen is the
-// UX side of that gate, not the only one.
-function renderForcedPasswordChange() {
-  appEl.innerHTML = `<div class="auth"><div class="auth-card">
-    <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
-    <h2 style="text-align:center;margin-bottom:6px">Đổi mật khẩu</h2>
-    <p class="muted" style="text-align:center;margin-bottom:14px">Vì lý do bảo mật, vui lòng đặt mật khẩu mới trước khi tiếp tục.</p>
-    <div class="field"><label>Mật khẩu tạm thời</label>${passwordInputHtml("fc-current", 'autocomplete="current-password"')}</div>
-    <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("fc-new", 'minlength="8" maxlength="128" autocomplete="new-password"')}</div>
-    <div class="field"><label>Xác nhận mật khẩu mới</label>${passwordInputHtml("fc-confirm", 'autocomplete="new-password"')}</div>
-    <button class="btn primary" id="fc-save" style="margin-top:6px">Đổi mật khẩu</button>
-  </div></div>`;
-  bindPasswordToggles(appEl);
-  document.getElementById("fc-save").addEventListener("click", async () => {
-    const current = document.getElementById("fc-current").value;
-    const next = document.getElementById("fc-new").value;
-    const confirmation = document.getElementById("fc-confirm").value;
-    if (!current) return toast("Nhập mật khẩu tạm thời", "err");
-    if (next.length < 8) return toast("Mật khẩu mới phải có ít nhất 8 ký tự", "err");
-    if (next !== confirmation) return toast("Mật khẩu xác nhận không khớp", "err");
-    if (current === next) return toast("Mật khẩu mới phải khác mật khẩu hiện tại", "err");
-    const btn = document.getElementById("fc-save");
-    btn.disabled = true;
-    btn.textContent = "Đang cập nhật…";
-    try {
-      await post("/api/change-password", {
-        current_password: current,
-        new_password: next,
-      });
-      toast("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.", "ok");
-      setTimeout(() => logout(), 1200);
-    } catch (e) {
-      toast(e.message, "err");
-      btn.disabled = false;
-      btn.textContent = "Đổi mật khẩu";
-    }
-  });
 }
 
 // Additive mobile/tablet enhancement for the Admin & Business portals: inject a hamburger
@@ -289,7 +244,13 @@ async function doLogin() {
     state.user = r.user;
     setPwaAuthenticated(true);
     toast("Xin chào " + r.user.name, "ok");
-    goHash(r.user.role === "koc" ? "#/home" : "#/dashboard");
+    goHash(
+      r.user.role === "koc"
+        ? "#/home"
+        : r.user.role === "partner" && r.user.must_change_password
+          ? "#/profile"
+          : "#/dashboard",
+    );
   } catch (e) {
     toast(e.message, "err");
     btn.disabled = false;
@@ -329,9 +290,10 @@ function renderForgotPassword(el) {
       btn.disabled = true;
       btn.textContent = "Đang gửi…";
       try {
-        await post("/api/forgot-password", { email: v });
+        const result = await post("/api/forgot-password", { email: v });
+        if (!result.sent) throw new Error("Chưa gửi được email đặt lại mật khẩu. Vui lòng thử lại sau.");
         email = v;
-        toast("Nếu email tồn tại trong hệ thống, mã đặt lại đã được gửi", "ok");
+        toast("Mã đặt lại đã được gửi", "ok");
         stage = "reset";
         render();
       } catch (e) {
@@ -367,8 +329,9 @@ function renderForgotPassword(el) {
       const btn = document.getElementById("fp-resend");
       btn.disabled = true;
       try {
-        await post("/api/forgot-password", { email });
-        toast("Đã gửi lại mã (nếu email tồn tại)", "ok");
+        const result = await post("/api/forgot-password", { email });
+        if (!result.sent) throw new Error("Chưa gửi được email đặt lại mật khẩu. Vui lòng thử lại sau.");
+        toast("Mã đặt lại đã được gửi", "ok");
       } catch (e) {
         toast(e.message, "err");
       } finally {
@@ -412,7 +375,7 @@ function renderForgotPassword(el) {
   }
   function renderDoneStage() {
     el.innerHTML = `<div class="auth"><div class="auth-card">
-      <div class="empty"><div class="ico">✅</div><h2>Đặt lại mật khẩu thành công</h2>
+      <div class="empty"><div class="ico"><svg width="52" height="52" viewBox="0 0 52 52" fill="none" aria-hidden="true" style="display:block;margin:0 auto"><circle cx="26" cy="26" r="23" stroke="#22c55e" stroke-width="3"/><path d="m15 26 7 7 15-15" stroke="#22c55e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h2 style="margin-top:12px">Đặt lại mật khẩu thành công</h2>
       <p class="muted" style="margin-top:8px">Bạn có thể đăng nhập bằng mật khẩu mới.</p></div>
       <a href="#/login" class="btn primary" style="margin-top:14px">Về trang đăng nhập</a>
     </div></div>`;

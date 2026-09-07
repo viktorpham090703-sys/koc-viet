@@ -3,6 +3,7 @@ import { now, uid } from './db.js';
 import { TIERS, CATEGORIES, KOC_AVATARS, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
+import { registrationAgeError } from './lib/registration-age.js';
 import { sendAccountReviewEmail, sendBookingCreatedEmail, sendPaymentSuccessEmail, sendPartnerAccountCreatedEmail } from './lib/smtp.js';
 import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword, generateTempPassword } from './lib/password.js';
 import { signJwt, verifyJwt } from './lib/jwt.js';
@@ -1307,16 +1308,23 @@ export async function route(request, env, url) {
     const allowed =
       await consumeRateLimit(env, 'forgot-ip', requestIp(request), 10, 15 * 60) &&
       await consumeRateLimit(env, 'forgot-email', email, 5, 15 * 60);
-    if (!allowed) return err('Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.', 429, { 'Retry-After': '900' });
+    if (!allowed) return err('Bạn đã bấm gửi mã nhiều lần. Vui lòng chờ 15 phút rồi thử lại.', 429, { 'Retry-After': '900' });
     const u = await env.DB.prepare("SELECT id FROM users WHERE email=?")
       .bind(email)
       .first();
-    // Always send a generic response regardless of whether the account exists — never leak
-    // which emails are registered. Only actually send the OTP when the account is real.
-    if (u) {
-      await createAndSendEmailOtp(env, request, email, "reset");
-    }
-    return J({ ok: true });
+    if (!u) return err("Email chưa tồn tại trong hệ thống", 404);
+    const result = await createAndSendEmailOtp(env, request, email, "reset");
+    if (!result.sent)
+      return err(
+        result.cooldown
+          ? `Mã vừa được gửi. Bạn hãy kiểm tra hộp thư đến hoặc thư rác. Nếu chưa nhận được, hãy chờ ${result.retryAfter} giây rồi bấm “Gửi lại mã”.`
+          : result.rateLimited
+            ? "Bạn đã bấm gửi mã nhiều lần. Vui lòng chờ 10 phút rồi thử lại."
+            : "Hiện chưa gửi được email chứa mã đặt lại mật khẩu. Bạn vui lòng thử lại sau ít phút.",
+        result.rateLimited || result.cooldown ? 429 : 502,
+        result.retryAfter ? { 'Retry-After': String(result.retryAfter) } : undefined,
+      );
+    return J({ ok: true, sent: true });
   }
   if (p === "/api/reset-password" && m === "POST") {
     const email = String(body.email || "")
@@ -1691,6 +1699,8 @@ export async function route(request, env, url) {
       return err("Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
     const emailOk = await isEmailVerified(env, email, "onboard");
     if (!emailOk) return err("Email chưa được xác thực OTP");
+    const dobError = registrationAgeError(String(body.identity?.dob || ""));
+    if (dobError) return err(dobError);
     const kyc = await eKYC.verify(body.kyc || {});
     if (!kyc.ok) return err("Xác minh danh tính chưa thành công");
     const kycFiles = body.kyc?.files || {};
@@ -2051,8 +2061,6 @@ export async function route(request, env, url) {
 
   // ---------- everything below needs auth ----------
   if (!me) return err("Chưa đăng nhập", 401);
-  if (Number(me.must_change_password || 0) > 0)
-    return err("Vui lòng đổi mật khẩu trước khi tiếp tục", 403);
   const isAdmin = me.role === "admin";
 
   // ---------- In-app notifications ----------
@@ -4718,6 +4726,39 @@ export async function route(request, env, url) {
   }
 
   // ================= PARTNER =================
+  if (p === "/api/partner/wallet" && m === "GET") {
+    if (me.role !== "partner") return err("403", 403);
+    const partner = await env.DB.prepare("SELECT id FROM partners WHERE id=?")
+      .bind(me.partner_id).first();
+    if (!partner) return err("Không tìm thấy đối tác", 404);
+    const requestedPage = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+    const per = 10;
+    const balance = await walletBalance(env, "partner", partner.id, "revenue");
+    // Only applied payout debits belong here; earnings and internal holds do not.
+    const historyFrom = `FROM ledger_postings lp
+      JOIN wallet_accounts a ON a.id=lp.account_id
+      JOIN journal_entries j ON j.id=lp.journal_entry_id
+      WHERE a.owner_type='partner' AND a.owner_id=?
+        AND a.bucket IN ('revenue','payout_pending') AND lp.amount<0 AND lp.applied=1
+        AND EXISTS (
+          SELECT 1 FROM ledger_postings credit
+          JOIN wallet_accounts destination ON destination.id=credit.account_id
+          WHERE credit.journal_entry_id=j.id AND credit.amount>0 AND credit.applied=1
+            AND destination.owner_type='system' AND destination.bucket='cash_clearing'
+        )`;
+    const total = Number(await env.DB.prepare(
+      `SELECT COUNT(DISTINCT j.id) c ${historyFrom}`,
+    ).bind(String(partner.id)).first("c")) || 0;
+    const pages = Math.max(1, Math.ceil(total / per));
+    const page = Math.min(requestedPage, pages);
+    const { results } = await env.DB.prepare(
+      `SELECT j.id,j.reference_id,j.note,j.created_at,-SUM(lp.amount) amount
+       ${historyFrom}
+       GROUP BY j.id,j.reference_id,j.note,j.created_at
+       ORDER BY j.created_at DESC,j.id DESC LIMIT ? OFFSET ?`,
+    ).bind(String(partner.id), per, (page - 1) * per).all();
+    return J({ balance: Math.max(0, balance), rows: results, page, pages, total });
+  }
   if (p === "/api/partner/overview" && m === "GET") {
     if (me.role !== "partner") return err("403", 403);
     const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
@@ -5136,8 +5177,6 @@ export async function route(request, env, url) {
       if (!Number.isFinite(feeRate) || feeRate <= 0 || feeRate > 1)
         return err("Tỷ lệ chia sẻ phải trong khoảng (0, 1] — ví dụ 0.3 cho 30%");
       feeRate = Math.round(feeRate * 10000) / 10000;
-      const bank = normalizePartnerBank(body);
-      if (bank.error) return err(bank.error);
       const avatar = String(body.avatar || "").slice(0, 700000);
       const note = String(body.note || "").trim().slice(0, 500);
       const kocIds = Array.isArray(body.koc_ids)
@@ -5155,16 +5194,14 @@ export async function route(request, env, url) {
           );
       }
       const partnerId = uid();
+      // Bank details are entered by the partner from their own portal, never by
+      // the admin — created empty here.
       const stmts = [
         env.DB.prepare(
           `INSERT INTO partners
-           (id,name,avatar,bank_name,bank_bin,bank_account,bank_owner,fee_rate,status,note,created_at,updated_at)
-           VALUES (?,?,?,?,?,?,?,?,'active',?,?,?)`,
-        ).bind(
-          partnerId, name, avatar,
-          bank.bankName, bank.bankBin, bank.bankAccount, bank.bankOwner,
-          feeRate, note, now(), now(),
-        ),
+           (id,name,avatar,fee_rate,status,note,created_at,updated_at)
+           VALUES (?,?,?,?,'active',?,?,?)`,
+        ).bind(partnerId, name, avatar, feeRate, note, now(), now()),
       ];
       for (const kocId of kocIds) {
         stmts.push(
@@ -5203,22 +5240,11 @@ export async function route(request, env, url) {
       const avatar = body.avatar == null
         ? partner.avatar
         : String(body.avatar).slice(0, 700000);
-      const bankProvided = ["bank_name", "bank_bin", "bank_account", "bank_owner"]
-        .some((k) => body[k] != null);
-      let bankName = partner.bank_name, bankBin = partner.bank_bin,
-        bankAccount = partner.bank_account, bankOwner = partner.bank_owner;
-      if (bankProvided) {
-        const bank = normalizePartnerBank(body);
-        if (bank.error) return err(bank.error);
-        ({ bankName, bankBin, bankAccount, bankOwner } = bank);
-      }
+      // Admin manages the partner's terms (name, rate, status, note) but not the
+      // partner's own bank details — those stay whatever the partner set.
       await env.DB.prepare(
-        `UPDATE partners SET name=?,avatar=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=?,
-                fee_rate=?,status=?,note=?,updated_at=? WHERE id=?`,
-      ).bind(
-        name, avatar, bankName, bankBin, bankAccount, bankOwner,
-        feeRate, status, note, now(), id,
-      ).run();
+        `UPDATE partners SET name=?,avatar=?,fee_rate=?,status=?,note=?,updated_at=? WHERE id=?`,
+      ).bind(name, avatar, feeRate, status, note, now(), id).run();
       await audit(env, me.id, "partner.update", id,
         `rate=${feeRate} status=${status}`);
       return J({ ok: true });

@@ -1,4 +1,5 @@
 import { post } from "./api.js";
+import { registrationAgeError } from "./registration-age.js";
 import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions } from "./ui.js";
 import { state } from "./app.js";
 import {
@@ -58,6 +59,7 @@ export function renderOnboarding(el) {
   };
   let step = 0;
   let stepTransitioning = false;
+  let submitting = false;
   let otpTimer = null;
   const steps = [
     "Email & OTP",
@@ -81,8 +83,12 @@ export function renderOnboarding(el) {
     return platform || handle;
   };
   async function onCancel() {
+    if (submitting) {
+      toast("Đang gửi hồ sơ. Bạn vui lòng chờ một chút.", "err");
+      return;
+    }
     if (
-      !(await confirmDialog(
+      step < 5 && !(await confirmDialog(
         "Bạn có chắc chắn muốn hủy đăng ký?\nToàn bộ thông tin đã nhập sẽ bị xoá và không thể khôi phục.",
       ))
     )
@@ -100,7 +106,7 @@ export function renderOnboarding(el) {
 
   function wrap(inner, opts) {
     opts = opts || {};
-    const showCancel = step < 5;
+    const showCancel = true;
     const showNav = step < 4 && !opts.hideNav;
     return `<div class="onboard-page">
       <aside class="onboard-aside">
@@ -114,7 +120,7 @@ export function renderOnboarding(el) {
       <button type="button" class="onboard-return onboard-return-mobile" aria-label="Trở về trang giới thiệu KOC">← Trở về</button>
       ${
         showCancel
-          ? `<button type="button" id="o-cancel" class="onboard-close" title="Hủy đăng ký" aria-label="Hủy đăng ký">✕</button>`
+          ? `<button type="button" id="o-cancel" class="onboard-close" title="${step < 5 ? "Hủy đăng ký" : "Đóng"}" aria-label="${step < 5 ? "Hủy đăng ký" : "Đóng"}">✕</button>`
           : ""
       }
       <div class="between onboard-header" style="padding-right:${showCancel ? "44px" : "0"}">
@@ -609,7 +615,7 @@ export function renderOnboarding(el) {
   function fileRow(label, key, inputId) {
     return `<div class="field"><label>${label}</label>
       <input type="file" accept="image/*" id="${inputId}">
-      <div class="muted" id="${inputId}-name" style="font-size:11px;margin-top:4px">${d.files[key] ? "✅ " + esc(d.files[key]) : "Chưa chọn ảnh"}</div>
+      <div class="muted" id="${inputId}-name" style="font-size:11px;margin-top:4px">${d.files[key] ? "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(d.files[key]) : "Chưa chọn ảnh"}</div>
       <img id="${inputId}-preview" alt="${label}" style="display:${d.files[key + "Preview"] ? "block" : "none"};margin-top:6px;width:140px;height:96px;object-fit:cover;border-radius:8px" ${d.files[key + "Preview"] ? `src="${d.files[key + "Preview"]}"` : ""}>
     </div>`;
   }
@@ -634,7 +640,7 @@ export function renderOnboarding(el) {
           <label class="btn ghost sm" style="flex:1;text-align:center;cursor:pointer">🖼 Chọn từ thư viện<input type="file" accept="image/*" id="o-file-selfie-lib" style="display:none"></label>
         </div>
         <input type="file" accept="image/*" capture="user" id="o-file-selfie-cam-fallback" style="display:none">
-        <div class="muted" id="o-file-selfie-name" style="font-size:11px;margin-top:4px">${d.files.selfie ? "✅ " + esc(d.files.selfie) : "Chưa chọn ảnh"}</div>
+        <div class="muted" id="o-file-selfie-name" style="font-size:11px;margin-top:4px">${d.files.selfie ? "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(d.files.selfie) : "Chưa chọn ảnh"}</div>
         <img id="o-file-selfie-preview" style="display:${d.files.selfiePreview ? "block" : "none"};margin-top:6px;max-width:140px;border-radius:8px" ${d.files.selfiePreview ? `src="${d.files.selfiePreview}"` : ""}>
       </div>
       <h3 style="margin-top:18px;font-size:14px">💳 Thông tin nhận thanh toán</h3>
@@ -646,6 +652,17 @@ export function renderOnboarding(el) {
       <div class="field"><label>Chủ tài khoản</label><input id="o-bank-owner" value="${esc(d.bankOwner)}" placeholder="Tên chủ tài khoản (không dấu)">
         <div class="err" id="o-bank-owner-err" style="display:none"></div></div>`);
     bindChrome();
+    const dobInput = el.querySelector("#o-dob");
+    const checkDob = () => {
+      d.dob = dobInput.value;
+      const error = registrationAgeError(d.dob);
+      fieldErr("o-dob-err", error);
+      dobInput.setAttribute("aria-invalid", String(Boolean(error)));
+    };
+    dobInput.setAttribute("aria-describedby", "o-dob-err");
+    dobInput.addEventListener("input", checkDob);
+    dobInput.addEventListener("change", checkDob);
+    if (d.dob) checkDob();
     const bankSelect = bindBankPicker(
       el.querySelector('[data-bank-picker="o-bank-select"]'),
       cfg.payoutBanks,
@@ -678,7 +695,7 @@ export function renderOnboarding(el) {
         const nameEl = el.querySelector(
           key === "selfie" ? "#o-file-selfie-name" : inputId + "-name",
         );
-        if (nameEl) nameEl.textContent = "✅ " + f.name;
+        if (nameEl) nameEl.innerHTML = "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(f.name);
         const reader = new FileReader();
         reader.onload = () => {
           d.files[key + "Preview"] = reader.result;
@@ -754,7 +771,7 @@ export function renderOnboarding(el) {
           d.files.selfie = name;
           d.files.selfiePreview = dataUrl;
           const nameEl = el.querySelector("#o-file-selfie-name");
-          if (nameEl) nameEl.textContent = "✅ " + name;
+          if (nameEl) nameEl.innerHTML = "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(name);
           showSelfiePreview(dataUrl);
           stopStream();
           closeModal();
@@ -792,8 +809,9 @@ export function renderOnboarding(el) {
     fieldErr("o-bank-account-err", "");
     fieldErr("o-bank-owner-err", "");
     let ok = true;
-    if (!d.dob) {
-      fieldErr("o-dob-err", "Chọn ngày sinh");
+    const dobError = registrationAgeError(d.dob);
+    if (dobError) {
+      fieldErr("o-dob-err", dobError);
       ok = false;
     }
     if (!/^\d{9,12}$/.test(d.cccd)) {
@@ -1058,9 +1076,10 @@ export function renderOnboarding(el) {
   }
 
   function renderStep4() {
-    if (d.signStage === "sign") return renderStep4Sign();
-    if (d.signStage === "review") return renderStep4Review();
-    return renderStep4Read();
+    if (d.signStage === "sign") renderStep4Sign();
+    else if (d.signStage === "review") renderStep4Review();
+    else renderStep4Read();
+    bindChrome();
   }
 
   // 4a. Đọc toàn văn + tick đồng ý
@@ -1123,8 +1142,6 @@ export function renderOnboarding(el) {
         if (signBtn) signBtn.disabled = !d.agreed;
       });
     }
-    const prevBtn = el.querySelector("#o-prev");
-    if (prevBtn) prevBtn.addEventListener("click", () => goPrev());
     const signBtn = el.querySelector("#o-sign");
     if (signBtn)
       signBtn.addEventListener("click", () => {
@@ -1278,9 +1295,12 @@ export function renderOnboarding(el) {
       <a href="#/login" class="btn primary">Về trang đăng nhập</a>`,
       { hideNav: true },
     );
+    bindChrome();
   }
 
   async function submit() {
+    if (submitting) return;
+    submitting = true;
     const btn = el.querySelector("#o-sign");
     btn.disabled = true;
     btn.textContent = "Đang xử lý…";
@@ -1325,6 +1345,8 @@ export function renderOnboarding(el) {
       toast(e.message, "err");
       btn.disabled = false;
       btn.textContent = "✔ Xác nhận & Hoàn tất đăng ký";
+    } finally {
+      submitting = false;
     }
   }
 
