@@ -9,6 +9,8 @@ import {
   empty,
   toast,
   avatarUrl,
+  passwordInputHtml,
+  bindPasswordToggles,
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
 import { brandLogo, icon } from "./icons.js";
@@ -22,10 +24,51 @@ import {
 
 const NAV = [
   ["#/dashboard", icon("home", "sidebar-icon"), "Trang chủ"],
+  ["#/wallet", icon("wallet", "sidebar-icon"), "Ví"],
   ["#/kocs", icon("kocApp", "sidebar-icon"), "KOC"],
   ["#/report", icon("report", "sidebar-icon"), "Báo cáo doanh thu"],
 ];
-const PAGES = ["dashboard", "kocs", "report", "profile"];
+const PAGES = ["dashboard", "kocs", "report", "wallet", "profile"];
+
+const bankIncomplete = (p) =>
+  !(p && p.bank_name && p.bank_bin && p.bank_account && p.bank_owner);
+
+async function refreshPartnerBanners() {
+  const box = document.getElementById("pn-banners");
+  if (!box) return;
+  try {
+    const r = await api("/api/partner/profile");
+    box.innerHTML = partnerBannersHtml(r.partner);
+  } catch (_) {}
+}
+
+function partnerBannersHtml(p) {
+  const items = [];
+  if (state.user.must_change_password) {
+    items.push(
+      `Bạn đang dùng mật khẩu tạm thời. Vui lòng đổi mật khẩu để bảo mật tài khoản.`,
+    );
+  }
+  if (bankIncomplete(p)) {
+    items.push(
+      `Hồ sơ chưa có thông tin ngân hàng nhận chi trả. Vui lòng cập nhật để KOC Việt thanh toán hoa hồng cho bạn.`,
+    );
+  }
+  if (!items.length) return "";
+  return `<div style="margin-bottom:16px;display:flex;flex-direction:column;gap:10px">
+    ${items
+      .map(
+        (
+          msg,
+        ) => `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412">
+        <span style="font-size:16px">⚠️</span>
+        <span style="flex:1;min-width:200px;font-size:13px">${msg}</span>
+        <a href="#/profile" class="btn ghost sm" style="border-color:#fdba74;color:#9a3412">Cập nhật hồ sơ</a>
+      </div>`,
+      )
+      .join("")}
+  </div>`;
+}
 
 export async function renderPartner(el, hash) {
   const page = hash.replace("#/", "") || "dashboard";
@@ -36,14 +79,17 @@ export async function renderPartner(el, hash) {
     <div class="main"><div class="topbar portal-topbar">
       <div class="portal-context"><span class="portal-context-label">KOC VIET</span><h2>Cổng đối tác</h2></div>
       <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ đối tác"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "P").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Đối tác</span></div></a></div></div>
-      <div class="content" id="pn-view"></div></div></div>`;
+      <div class="content"><div id="pn-banners"></div><div id="pn-view"></div></div></div></div>`;
   document.getElementById("pn-logout").addEventListener("click", logout);
   enhancePortal();
   const view = document.getElementById("pn-view");
   try {
+    // One shell-level fetch to drive the reminder banners on every page.
+    void refreshPartnerBanners();
     if (active === "#/dashboard") await dashboard(view);
     else if (active === "#/kocs") await kocsPage(view);
     else if (active === "#/report") await report(view);
+    else if (active === "#/wallet") await wallet(view);
     else if (active === "#/profile") await profile(view);
     autoAnimate(view);
   } catch (e) {
@@ -72,11 +118,15 @@ async function dashboard(el) {
       <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Booking</th><th>KOC</th><th>Bạn nhận</th><th>Thời gian</th></tr></thead><tbody>
         ${
           r.recentEarnings.length
-            ? r.recentEarnings.map((e) => `<tr>
+            ? r.recentEarnings
+                .map(
+                  (e) => `<tr>
           <td>${esc(e.booking_code || e.booking_id)}</td><td>${esc(e.koc_name || "—")}</td>
           <td class="money">${money(e.amount)}</td>
           <td class="muted" style="font-size:11px;white-space:nowrap">${fmtDate(e.created_at)}</td>
-        </tr>`).join("")
+        </tr>`,
+                )
+                .join("")
             : `<tr><td colspan="4">${empty("💸", "Chưa phát sinh hoa hồng")}</td></tr>`
         }
       </tbody></table></div>
@@ -95,14 +145,18 @@ async function kocsPage(el) {
     </tr></thead><tbody>
       ${
         kocs.length
-          ? kocs.map((k) => `<tr>
+          ? kocs
+              .map(
+                (k) => `<tr>
         <td><div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}" alt=""><b>${esc(k.name)}</b></div></td>
         <td>${tierBadge(k.tier)}</td>
         <td>${esc(k.province || "—")}</td>
         <td>${num(k.completed_bookings)}</td>
         <td class="money">${money(k.earned)}</td>
         <td class="muted" style="font-size:11px;white-space:nowrap">${fmtDate(k.assigned_at)}</td>
-      </tr>`).join("")
+      </tr>`,
+              )
+              .join("")
           : `<tr><td colspan="6">${empty("🙋", "Chưa có KOC nào được gán")}</td></tr>`
       }
     </tbody></table></div>`;
@@ -124,13 +178,17 @@ async function report(el, page = partnerReportPage) {
     </tr></thead><tbody>
       ${
         r.rows.length
-          ? r.rows.map((row) => `<tr>
+          ? r.rows
+              .map(
+                (row) => `<tr>
         <td>${esc(row.booking_code || row.booking_id)}</td><td>${esc(row.koc_name || "—")}</td>
         <td class="money">${money(row.base_service_fee)}</td>
         <td>${Math.round(Number(row.rate) * 1000) / 10}%</td>
         <td class="money">${money(row.amount)}</td>
         <td class="muted" style="font-size:11px;white-space:nowrap">${fmtDate(row.created_at)}</td>
-      </tr>`).join("")
+      </tr>`,
+              )
+              .join("")
           : `<tr><td colspan="6">${empty("💸", "Chưa có dữ liệu")}</td></tr>`
       }
     </tbody></table></div>
@@ -138,6 +196,40 @@ async function report(el, page = partnerReportPage) {
   el.querySelectorAll("[data-pg]").forEach((b) =>
     b.addEventListener("click", () => report(el, Number(b.dataset.pg))),
   );
+}
+
+async function wallet(el, page = 1) {
+  el.innerHTML = spinner();
+  try {
+    const r = await api(`/api/partner/wallet?page=${page}`);
+    el.innerHTML = `<div style="margin-bottom:16px">
+      <h1 class="icon-heading">${icon("wallet", "teaser-icon")} Ví đối tác</h1>
+      <p class="muted">Theo dõi số tiền có thể rút và lịch sử rút tiền.</p>
+    </div>
+    <div class="card" style="padding:16px;border-left:4px solid var(--primary);margin-bottom:20px">
+      <div class="muted" style="font-size:12px">Số tiền có thể rút</div>
+      <div class="money" style="font-size:30px;font-weight:800;margin-top:6px;color:var(--primary)">${money(r.balance)}</div>
+      <p class="muted" style="font-size:12px;margin-top:6px">KOC Việt đối soát và chuyển khoản thủ công về tài khoản ngân hàng trong hồ sơ của bạn.</p>
+    </div>
+    <div class="card">
+      <h2>Lịch sử rút tiền</h2>
+      ${r.rows.length ? `<div class="table-wrap" style="margin-top:12px"><table><thead><tr>
+        <th>Mã giao dịch</th><th>Số tiền</th><th>Trạng thái</th><th>Thời gian</th><th>Ghi chú</th>
+      </tr></thead><tbody>${r.rows.map((row) => `<tr>
+        <td>${esc(row.reference_id || row.id)}</td>
+        <td class="money">${money(row.amount)}</td>
+        <td><span class="chip g">Đã chi trả</span></td>
+        <td style="white-space:nowrap">${fmtDate(row.created_at)}</td>
+        <td>${esc(row.note || "—")}</td>
+      </tr>`).join("")}</tbody></table></div>` : empty("💸", "Chưa có lịch sử rút tiền")}
+      ${pagerHtml(r.page, r.pages)}
+    </div>`;
+    el.querySelectorAll("[data-pg]").forEach((button) =>
+      button.addEventListener("click", () => wallet(el, Number(button.dataset.pg))),
+    );
+  } catch (e) {
+    el.innerHTML = empty("⚠️", e.message);
+  }
 }
 
 function pagerHtml(page, pages) {
@@ -166,7 +258,9 @@ async function optimizePartnerProfileImage(file, size = 240, quality = 0.85) {
     const side = Math.min(image.naturalWidth, image.naturalHeight);
     const sx = (image.naturalWidth - side) / 2;
     const sy = (image.naturalHeight - side) / 2;
-    canvas.getContext("2d").drawImage(image, sx, sy, side, side, 0, 0, size, size);
+    canvas
+      .getContext("2d")
+      .drawImage(image, sx, sy, side, side, 0, 0, size, size);
     return canvas.toDataURL("image/jpeg", quality);
   } finally {
     URL.revokeObjectURL(objectUrl);
@@ -181,7 +275,7 @@ async function profile(el, editing = false) {
 
   if (!editing) {
     el.innerHTML = `<div class="between"><h1>Hồ sơ đối tác</h1>
-        <button class="btn primary sm" id="pf-edit">✏️ Chỉnh sửa</button></div>
+        <button class="btn primary sm" id="pf-edit">Chỉnh sửa</button></div>
       <div class="card" style="margin:16px 0">
         <div class="row" style="gap:14px;align-items:center">
           <div style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:28px;flex:none">${p.avatar ? `<img src="${esc(p.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">` : "🤝"}</div>
@@ -191,14 +285,52 @@ async function profile(el, editing = false) {
         </div>
       </div>
       <div class="card">
-        <h3>💳 Thông tin nhận chi trả</h3>
+        <h3>Thông tin nhận chi trả</h3>
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:14px">
           <div><span class="muted">Ngân hàng</span><p>${bankIdentityHtml(state.config?.payoutBanks, p.bank_name, p.bank_bin)}</p></div>
           <div><span class="muted">Số tài khoản</span><p><b>${esc(p.bank_account || "Chưa cập nhật")}</b></p></div>
           <div><span class="muted">Chủ tài khoản</span><p><b>${esc(p.bank_owner || "Chưa cập nhật")}</b></p></div>
         </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Đổi mật khẩu</h3>
+        <p class="muted" style="margin:4px 0 12px">Sau khi đổi thành công, bạn cần đăng nhập lại.</p>
+        <div class="field"><label>Mật khẩu hiện tại</label>${passwordInputHtml("pf-cur-pass", 'autocomplete="current-password" maxlength="128"')}</div>
+        <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("pf-new-pass", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
+        <div class="field"><label>Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-new-pass2", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
+        <button class="btn ghost" id="pf-pass-save" type="button">Cập nhật mật khẩu</button>
       </div>`;
-    el.querySelector("#pf-edit").addEventListener("click", () => profile(el, true));
+    bindPasswordToggles(el);
+    el.querySelector("#pf-edit").addEventListener("click", () =>
+      profile(el, true),
+    );
+    el.querySelector("#pf-pass-save").addEventListener("click", async () => {
+      const cur = el.querySelector("#pf-cur-pass").value;
+      const next = el.querySelector("#pf-new-pass").value;
+      const confirmation = el.querySelector("#pf-new-pass2").value;
+      if (!cur) return toast("Nhập mật khẩu hiện tại", "err");
+      if (next.length < 8)
+        return toast("Mật khẩu mới phải có ít nhất 8 ký tự", "err");
+      if (next !== confirmation)
+        return toast("Mật khẩu xác nhận không khớp", "err");
+      if (cur === next)
+        return toast("Mật khẩu mới phải khác mật khẩu hiện tại", "err");
+      const btn = el.querySelector("#pf-pass-save");
+      btn.disabled = true;
+      btn.textContent = "Đang cập nhật…";
+      try {
+        await post("/api/change-password", {
+          current_password: cur,
+          new_password: next,
+        });
+        toast("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.", "ok");
+        setTimeout(() => logout(), 1200);
+      } catch (err) {
+        toast(err.message, "err");
+        btn.disabled = false;
+        btn.textContent = "Cập nhật mật khẩu";
+      }
+    });
     return;
   }
 
@@ -219,9 +351,12 @@ async function profile(el, editing = false) {
         <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" inputmode="numeric" value="${esc(p.bank_account || "")}"></div>
         <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(p.bank_owner || "")}"></div>
       </div>
-      <button class="btn primary" id="pf-save" style="margin-top:10px;width:auto">💾 Lưu hồ sơ</button>
+      <button class="btn primary" id="pf-save" style="margin-top:10px;width:auto">Lưu hồ sơ</button>
     </div>`;
-  bindBankPicker(el.querySelector('[data-bank-picker="pf-bank-select"]'), banks);
+  bindBankPicker(
+    el.querySelector('[data-bank-picker="pf-bank-select"]'),
+    banks,
+  );
   el.querySelector("#pf-avatar-file").addEventListener("change", async (e) => {
     const input = e.target;
     const file = input.files?.[0];
@@ -229,7 +364,8 @@ async function profile(el, editing = false) {
     input.disabled = true;
     try {
       avatar = await optimizePartnerProfileImage(file);
-      el.querySelector("#pf-avatar-preview").innerHTML = `<img src="${avatar}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+      el.querySelector("#pf-avatar-preview").innerHTML =
+        `<img src="${avatar}" alt="" style="width:100%;height:100%;object-fit:cover">`;
       toast("Đã tối ưu và xem trước ảnh", "ok");
     } catch (err) {
       toast(err.message, "err");
@@ -255,11 +391,12 @@ async function profile(el, editing = false) {
         bank_owner: el.querySelector("#pf-bank-owner").value.trim(),
       });
       toast("Đã lưu hồ sơ", "ok");
+      void refreshPartnerBanners();
       profile(el);
     } catch (err) {
       toast(err.message, "err");
       btn.disabled = false;
-      btn.textContent = "💾 Lưu hồ sơ";
+      btn.textContent = "Lưu hồ sơ";
     }
   });
 }

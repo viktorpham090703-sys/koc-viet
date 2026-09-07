@@ -355,7 +355,7 @@ export function lpContactForm(idSuffix, title) {
         ${isSupport ? `<div class="lp-contact-submit-row"><button type="submit" class="btn primary">Gửi yêu cầu</button><p><span aria-hidden="true">✓</span> Chúng tôi phản hồi trong 2 giờ làm việc</p></div>` : `<button type="submit" class="btn primary" style="width:100%">Gửi yêu cầu</button><p class="lp-muted" style="text-align:center">Yêu cầu được ghi nhận và gửi mô phỏng tới đội ngũ NetViet.</p>`}
       </form>
       <div class="lp-contact-success">
-        <div class="ico">✅</div>
+        <div class="ico"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em></div>
         <h3>Đã ghi nhận yêu cầu của bạn!</h3>
         <p class="muted">Đội ngũ NetViet sẽ liên hệ tư vấn trong thời gian sớm nhất (demo — mô phỏng gửi email).</p>
       </div>

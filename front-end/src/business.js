@@ -846,7 +846,7 @@ async function openOrder(id, el) {
       });
   } else if (b.status === "pending_business_review" && b.type === "aiclone") {
     act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa</label><textarea id="o-ai-note" rows="3" placeholder="Nêu rõ đoạn cần chỉnh sửa…"></textarea></div>
-      <div class="row" style="gap:8px"><button class="btn ok" id="o-ai-approve" style="flex:1">✅ Duyệt bản dựng</button>
+      <div class="row" style="gap:8px"><button class="btn ok" id="o-ai-approve" style="flex:1"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Duyệt bản dựng</button>
       <button class="btn danger" id="o-ai-revise" style="flex:1">↩ Yêu cầu sửa</button></div>
       <p class="hint">Sau khi doanh nghiệp duyệt, video sẽ tự động chuyển đến KOC phê duyệt và đăng bài.</p>`;
     const review = async (action) => {
@@ -878,7 +878,7 @@ async function openOrder(id, el) {
     b.type === "aiclone"
   ) {
     act.innerHTML =
-      '<div class="chip b">✅ Doanh nghiệp đã duyệt bản dựng · Đang chờ KOC phê duyệt & đăng bài.</div>';
+      '<div class="chip b"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Doanh nghiệp đã duyệt bản dựng · Đang chờ KOC phê duyệt & đăng bài.</div>';
   } else if (
     ["brief_review", "producing"].includes(b.status) &&
     b.type === "aiclone"
@@ -952,7 +952,7 @@ async function openOrder(id, el) {
   } else if (b.status === "pending_review") {
     act.innerHTML = `<div class="field"><label>Nhận xét cho KOC (bắt buộc khi yêu cầu sửa)</label><textarea id="o-video-note" rows="3" placeholder="Ví dụ: chỉnh lại 5 giây đầu, tăng âm lượng…"></textarea></div>
       <div class="row" style="gap:8px;flex-wrap:wrap">
-        <button class="btn ok" id="o-video-approve" style="flex:1">✅ Duyệt video</button>
+        <button class="btn ok" id="o-video-approve" style="flex:1"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Duyệt video</button>
         <button class="btn danger" id="o-video-revise" style="flex:1">↩ Yêu cầu sửa</button>
       </div>`;
     const review = async (action) => {
@@ -990,7 +990,7 @@ async function openOrder(id, el) {
   } else if (b.status === "video_processing") {
     act.innerHTML = `<div class="tint-box"><b>Đang hoàn tất video</b><p class="muted" style="margin-top:4px">Mở lại chi tiết sau ít phút để xem và duyệt.</p></div>`;
   } else if (b.status === "video_approved") {
-    act.innerHTML = `<div class="chip g">✅ Video đã duyệt · đang chờ KOC đăng lên mạng xã hội và nộp link.</div>`;
+    act.innerHTML = `<div class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Video đã duyệt · đang chờ KOC đăng lên mạng xã hội và nộp link.</div>`;
   } else if (b.status === "revision_requested") {
     act.innerHTML = `<div class="chip r">Đang chờ KOC tải phiên bản chỉnh sửa.</div>`;
   } else if (
@@ -1915,7 +1915,7 @@ async function profile(el, editing = false) {
         <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" value="${esc(b.bank_account || "")}"></div>
         <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(b.bank_owner || "")}"></div>
       </div>
-      <button class="btn primary" id="pf-save" style="margin-top:10px;width:auto">💾 Lưu hồ sơ</button>
+      <button class="btn primary" id="pf-save" style="margin-top:10px;width:auto">Lưu hồ sơ</button>
     </div>`;
 
   bindBankPicker(
@@ -1989,7 +1989,7 @@ async function profile(el, editing = false) {
     } catch (e) {
       toast(e.message, "err");
       btn.disabled = false;
-      btn.textContent = "💾 Lưu hồ sơ";
+      btn.textContent = "Lưu hồ sơ";
     }
   });
 }
@@ -2071,7 +2071,7 @@ async function wallet(el) {
                   <td style="padding:8px"><span class="chip ${p.purpose === "deposit" ? "g" : p.purpose === "escrow" ? "b" : "w"}">${p.purpose === "deposit" ? "Nạp tiền" : p.purpose === "escrow" ? "Khoản đảm bảo" : "Thanh toán"}</span></td>
                   <td style="padding:8px"><span class="chip ghost">${p.provider === "demo" ? "⚡ Thử nghiệm" : "🏦 Trực tuyến"}</span></td>
                   <td style="padding:8px"><b class="money">${money(p.amount)}</b></td>
-                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g">✅ Thành công</span>' : p.status === "pending" || p.status === "creating" ? '<span class="chip w">⏳ Chờ thanh toán</span>' : '<span class="chip r">Thất bại</span>'}</td>
+                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? '<span class="chip w">⏳ Chờ thanh toán</span>' : '<span class="chip r">Thất bại</span>'}</td>
                   <td style="padding:8px;font-size:12px" class="muted">${new Date(p.created_at).toLocaleString("vi-VN")}</td>
                 </tr>
               `,
