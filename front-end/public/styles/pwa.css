@@ -4,6 +4,7 @@
   right: max(18px, env(safe-area-inset-right));
   bottom: max(18px, env(safe-area-inset-bottom));
   display: grid;
+  grid-template-areas: "logo content buttons close";
   grid-template-columns: 42px minmax(150px, 1fr) auto 28px;
   align-items: center;
   gap: 12px;
@@ -20,12 +21,14 @@
 }
 
 .pwa-actions__logo {
+  grid-area: logo;
   width: 42px;
   height: 42px;
   object-fit: contain;
 }
 
 .pwa-actions__content {
+  grid-area: content;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -48,6 +51,7 @@
 }
 
 .pwa-actions__buttons {
+  grid-area: buttons;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -92,6 +96,10 @@
 }
 
 .pwa-actions__close {
+  grid-area: close;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: start;
   width: 28px;
   height: 28px;
@@ -100,8 +108,16 @@
   background: transparent;
   border: 0;
   border-radius: 50%;
-  font: 400 22px/26px system-ui, sans-serif;
+  font: 400 22px/1 system-ui, sans-serif;
   cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-actions__close:hover,
+.pwa-actions__close:active {
+  color: #344054;
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .pwa-hint {
@@ -135,8 +151,11 @@
   .pwa-actions {
     right: 12px;
     bottom: calc(78px + env(safe-area-inset-bottom));
+    grid-template-areas:
+      "logo content close"
+      "buttons buttons buttons";
     grid-template-columns: 36px minmax(0, 1fr) 28px;
-    gap: 9px;
+    gap: 10px 9px;
     width: calc(100vw - 24px);
     padding: 10px;
     border-radius: 16px;
@@ -147,8 +166,17 @@
     height: 36px;
   }
 
+  .pwa-actions__close {
+    align-self: start;
+    justify-self: end;
+  }
+
   .pwa-actions__buttons {
-    grid-column: 1 / -1;
+    grid-area: buttons;
+  }
+
+  .pwa-actions__buttons:empty {
+    display: none;
   }
 
   .pwa-action-button {
