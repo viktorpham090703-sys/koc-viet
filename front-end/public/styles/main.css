@@ -10,12 +10,21 @@
    manually validated fields, and enabled campaign allocation amounts. */
 .required-label::after,
 .field:has(input[required], select[required], textarea[required]) > label::after,
-.field:has(input[required]) > .auth-label-row > label::after,
 .campaign-allocation-input:has(input:not(:disabled)) > .allocation-required-label::after {
   content: " *";
   color: #d93025;
   font-weight: 700;
   white-space: nowrap;
+}
+
+/* Login and forgot-password forms do NOT show required markers because all their fields are inherently mandatory */
+.auth-login .field > label::after,
+.auth-login .field > .auth-label-row > label::after,
+.auth-forgot-password .field > label::after,
+#li-form .field > label::after,
+#li-form .field > .auth-label-row > label::after,
+.auth:has(#fp-email, #fp-code, #fp-pass) .field > label::after {
+  content: none !important;
 }
 
 /* ===== Responsive brand logo (Desktop/Tablet/Mobile) — only for text-based .logo in portals ===== */
