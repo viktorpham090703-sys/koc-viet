@@ -277,8 +277,8 @@ function decisionDialog(options) {
         <button class="decision-close" type="button" aria-label="Đóng">×</button>
         <div class="decision-icon" aria-hidden="true">?</div>
         <h2 id="decision-title">${esc(options.title)}</h2>
-        <p>${esc(options.message).replace(/\n/g, '<br>')}</p>
-        ${options.input ? `<textarea class="decision-input" rows="4" placeholder="${esc(options.placeholder)}">${esc(options.inputValue)}</textarea><small class="decision-error" hidden>Vui lòng nhập nội dung trước khi tiếp tục.</small>` : ''}
+        <p id="decision-message" class="${options.input && options.required ? 'required-label' : ''}">${esc(options.message).replace(/\n/g, '<br>')}</p>
+        ${options.input ? `<textarea class="decision-input" aria-labelledby="decision-message" aria-required="${Boolean(options.required)}" rows="4" placeholder="${esc(options.placeholder)}">${esc(options.inputValue)}</textarea><small class="decision-error" hidden>Vui lòng nhập nội dung trước khi tiếp tục.</small>` : ''}
         <div class="decision-actions">
           <button class="btn ghost decision-cancel" type="button">${esc(options.cancelText)}</button>
           <button class="btn ${options.tone === 'danger' ? 'danger' : 'primary'} decision-confirm" type="button">${esc(options.confirmText)}</button>

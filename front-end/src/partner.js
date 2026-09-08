@@ -295,9 +295,9 @@ async function profile(el, editing = false) {
       <div class="card" style="margin-top:16px">
         <h3>Đổi mật khẩu</h3>
         <p class="muted" style="margin:4px 0 12px">Sau khi đổi thành công, bạn cần đăng nhập lại.</p>
-        <div class="field"><label>Mật khẩu hiện tại</label>${passwordInputHtml("pf-cur-pass", 'autocomplete="current-password" maxlength="128"')}</div>
-        <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("pf-new-pass", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
-        <div class="field"><label>Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-new-pass2", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
+        <div class="field"><label class="required-label">Mật khẩu hiện tại</label>${passwordInputHtml("pf-cur-pass", 'autocomplete="current-password" maxlength="128"')}</div>
+        <div class="field"><label class="required-label">Mật khẩu mới</label>${passwordInputHtml("pf-new-pass", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
+        <div class="field"><label class="required-label">Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-new-pass2", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
         <button class="btn ghost" id="pf-pass-save" type="button">Cập nhật mật khẩu</button>
       </div>`;
     bindPasswordToggles(el);
@@ -344,9 +344,9 @@ async function profile(el, editing = false) {
         <div><label class="btn ghost sm upload-label">Chọn ảnh<input id="pf-avatar-file" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
           <p class="hint" style="margin-top:6px">PNG, JPG hoặc WebP · tối đa 10MB.</p></div>
       </div>
-      <div class="field"><label>Tên đối tác *</label><input id="pf-name" value="${esc(p.name || "")}"></div>
+      <div class="field"><label class="required-label">Tên đối tác</label><input id="pf-name" value="${esc(p.name || "")}"></div>
       <h3 style="margin-top:10px;font-size:14px">💳 Thông tin nhận chi trả</h3>
-      <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+      <div id="pf-bank-fields" class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
         <div class="field"><label for="pf-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("pf-bank-select", banks, p.bank_name, p.bank_bin)}</div>
         <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" inputmode="numeric" value="${esc(p.bank_account || "")}"></div>
         <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(p.bank_owner || "")}"></div>
@@ -357,6 +357,19 @@ async function profile(el, editing = false) {
     el.querySelector('[data-bank-picker="pf-bank-select"]'),
     banks,
   );
+  // Once a payout field is filled, the existing API requires the entire bank block.
+  const bankFields = el.querySelector("#pf-bank-fields");
+  const updateBankRequiredLabels = () => {
+    const controls = ["#pf-bank-select", "#pf-bank-account", "#pf-bank-owner"]
+      .map(selector => bankFields.querySelector(selector));
+    const required = controls.some(control => control.value.trim());
+    bankFields.querySelectorAll(".field > label").forEach(label => {
+      label.classList.toggle("required-label", required);
+    });
+  };
+  bankFields.addEventListener("input", updateBankRequiredLabels);
+  bankFields.addEventListener("change", updateBankRequiredLabels);
+  updateBankRequiredLabels();
   el.querySelector("#pf-avatar-file").addEventListener("change", async (e) => {
     const input = e.target;
     const file = input.files?.[0];

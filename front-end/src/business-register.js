@@ -33,7 +33,7 @@ export function renderBusinessRegister(el) {
     <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
 
   const passwordField = (id, label, value, placeholder = "") => `
-    <div class="field"><label>${label}</label><div style="position:relative">
+    <div class="field"><label class="required-label">${label}</label><div style="position:relative">
       <input id="${id}" type="password" autocomplete="new-password" minlength="8"
         maxlength="128" value="${esc(value)}" placeholder="${placeholder}" style="padding-right:48px">
       <button type="button" class="biz-password-toggle" data-target="${id}"
@@ -48,15 +48,15 @@ export function renderBusinessRegister(el) {
         <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
         <h2 style="text-align:center;margin-bottom:6px">Đăng ký doanh nghiệp</h2>
         <p class="muted" style="text-align:center;margin-bottom:18px">Tạo tài khoản doanh nghiệp và chờ đội ngũ quản trị xác minh.</p>
-        <div class="field"><label>Tên doanh nghiệp</label><input id="br-company" value="${esc(data.companyName)}" placeholder="Công ty TNHH ABC"></div>
-        <div class="field"><label>Người liên hệ</label><input id="br-contact" value="${esc(data.contactName)}" placeholder="Nguyễn Văn A"></div>
-        <div class="field"><label>Số điện thoại</label><input id="br-phone" inputmode="tel" value="${esc(data.phone)}" placeholder="09xxxxxxxx"></div>
-        <div class="field"><label>Email đăng nhập</label><input id="br-email" type="email" autocomplete="email" value="${esc(data.email)}" placeholder="business@company.vn"></div>
+        <div class="field"><label class="required-label">Tên doanh nghiệp</label><input id="br-company" value="${esc(data.companyName)}" placeholder="Công ty TNHH ABC"></div>
+        <div class="field"><label class="required-label">Người liên hệ</label><input id="br-contact" value="${esc(data.contactName)}" placeholder="Nguyễn Văn A"></div>
+        <div class="field"><label class="required-label">Số điện thoại</label><input id="br-phone" inputmode="tel" value="${esc(data.phone)}" placeholder="09xxxxxxxx"></div>
+        <div class="field"><label class="required-label">Email đăng nhập</label><input id="br-email" type="email" autocomplete="email" value="${esc(data.email)}" placeholder="business@company.vn"></div>
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
           <div class="field"><label>Ngành nghề</label><input id="br-industry" value="${esc(data.industry)}" placeholder="Mỹ phẩm, thời trang…"></div>
-          <div class="field"><label>Mã số thuế</label><input id="br-tax" inputmode="numeric" value="${esc(data.taxCode)}" placeholder="10 hoặc 13 chữ số"></div>
+          <div class="field"><label class="required-label">Mã số thuế</label><input id="br-tax" inputmode="numeric" value="${esc(data.taxCode)}" placeholder="10 hoặc 13 chữ số"></div>
         </div>
-        <div class="field"><label>Giấy phép kinh doanh</label>
+        <div class="field"><label class="required-label">Giấy phép kinh doanh</label>
           <input id="br-license" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp">
           <div class="muted" id="br-license-status" style="font-size:12px;margin-top:6px">
             ${data.licenseName ? `Đã chọn: ${esc(data.licenseName)}` : "Bắt buộc · PDF/JPG/PNG/WebP · tối đa 3 MB"}
@@ -64,7 +64,7 @@ export function renderBusinessRegister(el) {
         </div>
         ${passwordField("br-password", "Mật khẩu", data.password, "Tối thiểu 8 ký tự")}
         ${passwordField("br-password-confirmation", "Xác nhận mật khẩu", data.passwordConfirmation)}
-        <div class="field"><label>Mã OTP nhận được qua email</label><input id="br-code" class="otp-in"
+        <div class="field"><label class="required-label">Mã OTP nhận được qua email</label><input id="br-code" class="otp-in"
           maxlength="6" inputmode="numeric" autocomplete="one-time-code" value="${esc(data.code)}" placeholder="••••••"></div>
         <div id="br-otp-status" class="muted" style="font-size:12px;margin-bottom:8px">Email thường được gửi trong vòng 30 giây.</div>
         <button type="button" class="btn ghost" id="br-send">Gửi mã OTP qua email</button>
