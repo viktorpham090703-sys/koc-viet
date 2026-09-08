@@ -6684,9 +6684,8 @@ export async function route(request, env, url) {
       return err("Ảnh vượt quá dung lượng cho phép sau khi tối ưu");
     if (!isImageSource(avatar) || !isImageSource(cover))
       return err("Định dạng ảnh không hợp lệ");
-    const bank = body.bank || {};
     await env.DB.prepare(
-      `UPDATE businesses SET name=?,contact=?,email=?,industry=?,tax_code=?,avatar=?,cover=?,bank_name=?,bank_account=?,bank_owner=? WHERE id=?`,
+      `UPDATE businesses SET name=?,contact=?,email=?,industry=?,tax_code=?,avatar=?,cover=? WHERE id=?`,
     )
       .bind(
         name,
@@ -6696,15 +6695,6 @@ export async function route(request, env, url) {
         taxCode,
         avatar,
         cover,
-        String(bank.name || "")
-          .trim()
-          .slice(0, 80),
-        String(bank.account || "")
-          .trim()
-          .slice(0, 40),
-        String(bank.owner || "")
-          .trim()
-          .slice(0, 120),
         me.business_id,
       )
       .run();
