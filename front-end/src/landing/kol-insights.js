@@ -61,7 +61,7 @@ export function renderHomeKolInsights() {
         <div class="lp-bsi-layout">
           <div class="lp-bsi-chart-card">
             <div class="lp-bsi-chart-title"><span>TOP10 NGƯỜI ẢNH HƯỞNG</span><h3>10 NGƯỜI ẢNH HƯỞNG NỔI BẬT TRÊN SOCIAL MEDIA</h3><p>Tháng 05/2026</p></div>
-            <div class="lp-bsi-scroll"><div class="lp-bsi-chart-frame"><strong class="lp-bsi-axis">CHỈ SỐ ẢNH HƯỞNG XÃ HỘI (BSI)</strong><ol class="lp-bsi-chart" data-bsi-chart>${chartBars()}</ol></div></div>
+            <div class="lp-bsi-scroll" tabindex="0" role="region" aria-label="Biểu đồ Top 10 chỉ số ảnh hưởng, cuộn ngang để xem đầy đủ"><div class="lp-bsi-chart-frame"><strong class="lp-bsi-axis">CHỈ SỐ ẢNH HƯỞNG XÃ HỘI (BSI)</strong><ol class="lp-bsi-chart" data-bsi-chart>${chartBars()}</ol></div></div>
           </div>
         </div>
         <p class="lp-bsi-source">Được cung cấp dữ liệu từ <strong>Buzzmetrics BSI</strong></p>

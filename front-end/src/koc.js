@@ -187,7 +187,7 @@ async function campaigns(el, page = kocCampaignPage) {
       ${c.business_note?`<div class="campaign-koc-feedback"><b>Phản hồi doanh nghiệp</b><p>${esc(c.business_note)}</p></div>`:''}
       ${c.submission_url?`<a class="campaign-submission-link" href="${esc(c.submission_url)}" target="_blank" rel="noopener">↗ Mở nội dung đã nộp</a>`:''}
       <div class="campaign-koc-card-footer">${c.status==='invited'?`<div class="campaign-koc-actions"><button class="btn primary sm" data-campaign-accept="${c.id}">Nhận chiến dịch</button><button class="btn ghost sm" data-campaign-decline="${c.id}">Từ chối</button></div>`:''}
-      ${['accepted','revision_requested'].includes(c.status)?`<div class="campaign-submit-form"><div class="field"><label>Link bài đăng / video</label><input data-campaign-url="${c.id}" value="${esc(c.submission_url||'')}" placeholder="https://..."></div><div class="field"><label>Ghi chú bàn giao</label><textarea data-campaign-note="${c.id}" rows="2">${esc(c.submission_note||'')}</textarea></div><button class="btn primary sm" data-campaign-submit="${c.id}">Gửi doanh nghiệp duyệt</button></div>`:''}
+      ${['accepted','revision_requested'].includes(c.status)?`<div class="campaign-submit-form"><div class="field"><label class="required-label">Link bài đăng / video</label><input data-campaign-url="${c.id}" value="${esc(c.submission_url||'')}" placeholder="https://..."></div><div class="field"><label>Ghi chú bàn giao</label><textarea data-campaign-note="${c.id}" rows="2">${esc(c.submission_note||'')}</textarea></div><button class="btn primary sm" data-campaign-submit="${c.id}">Gửi doanh nghiệp duyệt</button></div>`:''}
       ${!['invited','accepted','revision_requested'].includes(c.status)?`<div class="campaign-koc-waiting">${c.status==='submitted'?'Đang chờ doanh nghiệp duyệt':c.status==='approved'?'Đã duyệt · Chờ Admin giải ngân':c.status==='settled'?'Khoản tiền đã vào Ví KOC':c.status==='declined'?'Bạn đã từ chối lời mời này':'Đang xử lý'}</div>`:''}</div>
     </article>`).join(''):`<section class="campaign-koc-empty" aria-labelledby="campaign-empty-title">
       <div class="campaign-koc-empty-copy">
@@ -318,7 +318,7 @@ function videoPreviewBlock(b) {
 
 function videoUploadForm() {
   return `<div class="video-upload-box">
-    <div class="field"><label>Video gửi doanh nghiệp duyệt</label>
+    <div class="field"><label class="required-label">Video gửi doanh nghiệp duyệt</label>
       <input id="a-video" type="file" accept="video/mp4,video/webm,.mp4,.m4v,.webm">
       <p class="hint">Chấp nhận MP4/WebM, tối đa 5 phút và 5 GB. Video được lưu riêng tư và chỉ người có quyền mới xem được.</p>
     </div>
@@ -613,7 +613,7 @@ async function openBooking(id, el) {
         <a class="btn primary" href="#/aiclone">Đăng ký AI Clone Avatar</a>`;
       return;
     }
-    act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa</label><textarea id="a-ai-note" rows="3" placeholder="Nêu rõ vấn đề về hình ảnh, giọng nói hoặc nội dung…"></textarea></div>
+    act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa <span class="required-label">khi yêu cầu sửa</span></label><textarea id="a-ai-note" rows="3" placeholder="Nêu rõ vấn đề về hình ảnh, giọng nói hoặc nội dung…"></textarea></div>
       <div class="row" style="gap:8px"><button class="btn ok" id="a-ai-approve" style="flex:1"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Phê duyệt video</button>
       <button class="btn danger" id="a-ai-revise" style="flex:1">↩ Yêu cầu sửa</button></div>
       <p class="hint">Sau khi duyệt, đường dẫn sản phẩm riêng sẽ được tạo để bạn đăng video và quảng bá sản phẩm.</p>`;
@@ -681,8 +681,8 @@ async function openBooking(id, el) {
   } else if (b.status === "pending_review" && b.type === "aiclone") {
     act.innerHTML = `<div class="tint-box"><b>⏳ Đang chờ doanh nghiệp duyệt</b><p class="muted" style="margin-top:4px">Bạn chỉ có thể đăng video sau khi được duyệt.</p></div>`;
   } else if (b.status === "video_approved" || (b.type !== "aiclone" && ["confirmed", "producing", "video_approved"].includes(b.status))) {
-    act.innerHTML = `<div class="field"><label>Nền tảng đăng bài</label><select id="a-plat"><option>TikTok</option><option>Facebook</option><option>Instagram</option><option>YouTube</option></select></div>
-      <div class="field"><label>Link bài đã đăng review</label><input id="a-link" placeholder="https://…"></div>
+    act.innerHTML = `<div class="field"><label class="required-label">Nền tảng đăng bài</label><select id="a-plat"><option>TikTok</option><option>Facebook</option><option>Instagram</option><option>YouTube</option></select></div>
+      <div class="field"><label class="required-label">Link bài đã đăng review</label><input id="a-link" placeholder="https://…"></div>
       <button class="btn primary" id="a-submit">📤 Nộp link bài đăng review</button>`;
     act.querySelector("#a-submit").addEventListener("click", () => {
       const post_link = act.querySelector("#a-link").value.trim();
@@ -1019,8 +1019,8 @@ function withdrawModal(balance, el, payout) {
               ⚠️ Chưa cập nhật thông tin ngân hàng. Vui lòng thiết lập tài khoản nhận tiền trước khi rút.
              </div>`
     }
-    <div class="field" style="margin-top:12px"><label>Số tiền</label><input id="wd-amt" type="number" placeholder="đ" value="${MIN_WITHDRAW_AMOUNT}" min="${MIN_WITHDRAW_AMOUNT}" step="10000"></div>
-    <div class="field"><label>Mã OTP gửi qua email</label><div class="row" style="gap:8px">
+    <div class="field" style="margin-top:12px"><label class="required-label">Số tiền</label><input id="wd-amt" type="number" placeholder="đ" value="${MIN_WITHDRAW_AMOUNT}" min="${MIN_WITHDRAW_AMOUNT}" step="10000"></div>
+    <div class="field"><label class="required-label">Mã OTP gửi qua email</label><div class="row" style="gap:8px">
       <input id="wd-otp" class="otp-in" inputmode="numeric" maxlength="6" placeholder="••••••" style="flex:1">
       <button class="btn ghost sm" id="wd-send-otp" type="button">Gửi OTP</button>
     </div></div>
@@ -1224,7 +1224,7 @@ function openAiCloneTermsModal(kocName, onConfirm) {
     <div class="aic-scroll" id="aic-scroll">${aiCloneTermsBody()}</div>
     <label class="aic-agree-wrap" id="aic-agree-wrap">
       <input type="checkbox" id="aic-agree" disabled>
-      <span>Tôi đã đọc và đồng ý toàn bộ Điều khoản tham gia Chương trình AI Clone Avatar.</span>
+      <span class="required-label">Tôi đã đọc và đồng ý toàn bộ Điều khoản tham gia Chương trình AI Clone Avatar.</span>
     </label>
     <div class="row" style="gap:10px;margin-top:14px">
       <button type="button" class="btn ghost" id="aic-cancel" style="flex:1">Hủy</button>
@@ -1515,24 +1515,24 @@ async function profile(el, editing = false) {
         <p class="hint">PNG, JPG hoặc WebP · tối đa 10MB. Hệ thống tự cắt đúng tỉ lệ và tối ưu dung lượng.</p>
       </div>
       <div class="field"><label>Giới thiệu</label><textarea id="pf-bio" rows="3">${esc(k.bio || "")}</textarea></div>
-      <div class="field"><label>Email liên hệ / đăng nhập</label><input id="pf-email" type="email" value="${esc(k.email || "")}" placeholder="email@domain.com"></div>
-      <div class="field"><label>Tỉnh/Thành phố</label><select id="pf-prov">${provinceOptions(cfg.provinces, k.province)}</select></div>
+      <div class="field"><label class="required-label">Email liên hệ / đăng nhập</label><input id="pf-email" type="email" value="${esc(k.email || "")}" placeholder="email@domain.com"></div>
+      <div class="field"><label class="required-label">Tỉnh/Thành phố</label><select id="pf-prov">${provinceOptions(cfg.provinces, k.province)}</select></div>
       <div id="pf-socials"></div>
       ${tierPanel(k, cfg)}
-      <div class="field"><label>Ngành hàng & bảng giá</label>
+      <div class="field"><label class="required-label">Ngành hàng & bảng giá</label>
         <div id="pf-cats" class="profile-category-picker">${catList.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "selected" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>
       </div>
       <div id="pf-prices"></div>
       <h3 style="margin-top:18px;font-size:14px">Tài khoản nhận thanh toán</h3>
-      <div class="field"><label for="pf-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("pf-bank-select", cfg.payoutBanks, k.bank_name, k.bank_bin)}</div>
-      <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" value="${esc(k.bank_account || "")}"></div>
-      <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(k.bank_owner || "")}"></div>
+      <div class="field"><label class="required-label" for="pf-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("pf-bank-select", cfg.payoutBanks, k.bank_name, k.bank_bin)}</div>
+      <div class="field"><label class="required-label">Số tài khoản</label><input id="pf-bank-account" value="${esc(k.bank_account || "")}"></div>
+      <div class="field"><label class="required-label">Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(k.bank_owner || "")}"></div>
       <section class="card password-change-section">
         <div class="password-change-heading"><div><h3>Đổi mật khẩu</h3><p class="muted">Sau khi đổi thành công, bạn cần đăng nhập lại trên thiết bị này.</p></div><span class="password-security-mark">Bảo mật</span></div>
         <div class="password-change-fields">
-          <div class="field"><label>Mật khẩu hiện tại</label>${passwordInputHtml("pf-current-password", 'autocomplete="current-password" maxlength="128"')}</div>
-          <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("pf-new-password", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
-          <div class="field"><label>Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-confirm-password", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
+          <div class="field"><label class="required-label">Mật khẩu hiện tại</label>${passwordInputHtml("pf-current-password", 'autocomplete="current-password" maxlength="128"')}</div>
+          <div class="field"><label class="required-label">Mật khẩu mới</label>${passwordInputHtml("pf-new-password", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
+          <div class="field"><label class="required-label">Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-confirm-password", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
         </div>
         <button class="btn ghost" id="pf-change-password" type="button">Cập nhật mật khẩu</button>
       </section>
@@ -1658,7 +1658,7 @@ async function profile(el, editing = false) {
       cats
         .map(
           (c) =>
-            `<div class="field"><label>${esc(c)}</label><input type="number" data-price="${esc(c)}" value="${prices[c] || ""}" placeholder="đ"></div>`,
+            `<div class="field"><label class="required-label">${esc(c)}</label><input type="number" data-price="${esc(c)}" value="${prices[c] || ""}" placeholder="đ"></div>`,
         )
         .join("") || '<p class="muted">Chọn ít nhất 1 ngành hàng.</p>';
   }

@@ -153,7 +153,7 @@ async function aiCloneBooking(el) {
       <!-- Left Panel: KOC Selection Workspace -->
       <div class="card" style="padding:16px">
         <div class="between" style="align-items:center;margin-bottom:12px">
-          <b>🎯 Chọn KOC có AI Clone Avatar</b>
+          <b class="required-label">🎯 Chọn KOC có AI Clone Avatar</b>
           <span class="hint" style="margin:0">Đã chọn: <b id="ac-count" style="color:var(--primary);font-size:14px">0</b>/10 KOC</span>
         </div>
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
@@ -170,27 +170,27 @@ async function aiCloneBooking(el) {
       <div class="card" style="padding:16px">
         <b>📝 Cấu hình Brief & Nội dung Video</b>
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 12px;margin-top:12px">
-          <div class="field"><label>Loại nội dung</label><select id="ac-format"><option value="review">Đánh giá sản phẩm</option><option value="affiliate">Tiếp thị liên kết</option><option value="combo">Đánh giá + tiếp thị liên kết</option></select></div>
-          <div class="field"><label>Ngành hàng</label><select id="ac-category">${categories.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div>
-          <div class="field"><label>Link thông tin sản phẩm</label><input id="ac-product-link" placeholder="https://…"></div>
-          <div class="field"><label>Deadline bàn giao</label><input id="ac-deadline" type="date"></div>
-          <div class="field"><label>Quy mô video AI</label><select id="ac-scope">
+          <div class="field"><label class="required-label">Loại nội dung</label><select id="ac-format"><option value="review">Đánh giá sản phẩm</option><option value="affiliate">Tiếp thị liên kết</option><option value="combo">Đánh giá + tiếp thị liên kết</option></select></div>
+          <div class="field"><label class="required-label">Ngành hàng</label><select id="ac-category">${categories.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div>
+          <div class="field"><label class="required-label">Link thông tin sản phẩm</label><input id="ac-product-link" placeholder="https://…"></div>
+          <div class="field"><label class="required-label">Deadline bàn giao</label><input id="ac-deadline" type="date"></div>
+          <div class="field"><label class="required-label">Quy mô video AI</label><select id="ac-scope">
             <option value="short">Review ngắn · 15–30 giây</option>
             <option value="standard" selected>Review tiêu chuẩn · 30–60 giây</option>
             <option value="detailed">Review chi tiết · 60–90 giây</option>
           </select></div>
-          <div class="field"><label>Số lượng video / KOC</label><input id="ac-video-quantity" type="number" min="1" max="100" value="1"></div>
+          <div class="field"><label class="required-label">Số lượng video / KOC</label><input id="ac-video-quantity" type="number" min="1" max="100" value="1"></div>
         </div>
         <p class="hint">Chiết khấu số lượng: từ 5 video -10% · từ 10 video -15% · từ 20 video -20%.</p>
         <div class="field"><label>Thông điệp chính</label><input id="ac-message" maxlength="500" placeholder="Thông điệp cốt lõi bắt buộc có trong video"></div>
-        <div class="field"><label>Brief / Yêu cầu kịch bản</label><textarea id="ac-brief" rows="3" placeholder="Mô tả sản phẩm, đối tượng người xem, giọng điệu, điểm cần nhấn mạnh…"></textarea></div>
+        <div class="field"><label class="required-label">Brief / Yêu cầu kịch bản</label><textarea id="ac-brief" rows="3" placeholder="Mô tả sản phẩm, đối tượng người xem, giọng điệu, điểm cần nhấn mạnh…"></textarea></div>
         
         <div id="ac-affiliate" style="display:none;margin-top:8px">
           <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 12px">
-            <div class="field"><label>Sàn áp dụng</label><select id="ac-platform">${PLATFORMS.map((x) => `<option>${x}</option>`).join("")}</select></div>
-            <div class="field"><label>Hoa hồng bán hàng (%)</label><input id="ac-rate" type="number" min="1" max="90"></div>
+            <div class="field"><label class="required-label">Sàn áp dụng</label><select id="ac-platform">${PLATFORMS.map((x) => `<option>${x}</option>`).join("")}</select></div>
+            <div class="field"><label class="required-label">Hoa hồng bán hàng (%)</label><input id="ac-rate" type="number" min="1" max="90"></div>
           </div>
-          <div class="field"><label>Link sản phẩm trên sàn</label><input id="ac-product-url" placeholder="https://…"></div>
+          <div class="field"><label class="required-label">Link sản phẩm trên sàn</label><input id="ac-product-url" placeholder="https://…"></div>
         </div>
 
         <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
@@ -421,26 +421,26 @@ async function openBookingForm(kocId, el) {
     return toast("KOC này đang tạm ngưng nhận booking", "err");
   const m = modal(`
     <div class="row"><img class="avatar" src="${esc(avatarUrl(koc.avatar))}"><div><h2>${esc(koc.name)}</h2><div>${tierBadge(koc.tier)} ${stars(koc.rating)}</div></div></div>
-    <div class="field" style="margin-top:14px"><label>Kiểu booking</label>
+    <div class="field" style="margin-top:14px"><label class="required-label">Kiểu booking</label>
       <select id="bf-type">
         <option value="review">Review sản phẩm — phí cố định</option>
         <option value="advertising">Quảng cáo thương hiệu — phí cố định</option>
         <option value="affiliate">Tiếp thị liên kết — phí ngành hàng + hoa hồng doanh số</option>
         <option value="combo">Gói kết hợp — đánh giá/quảng cáo + hoa hồng bán hàng</option>
       </select></div>
-    <div class="field"><label>Gói ngành hàng (giá niêm yết cố định)</label>
+    <div class="field"><label class="required-label">Gói ngành hàng (giá niêm yết cố định)</label>
       <select id="bf-cat">${prices.map((p) => `<option value="${esc(p.category)}" data-price="${p.price}">${esc(p.category)} — ${money(p.price)}</option>`).join("")}</select></div>
     <div class="tint-box between" id="bf-esc-box"><span>Giá booking · khoản tiền được giữ an toàn khi gửi yêu cầu</span><b class="money" id="bf-price">${money(prices[0].price)}</b></div>
     <div id="bf-aff" style="display:none">
-      <div class="field" style="margin-top:12px"><label>🛒 Sàn áp dụng</label>
+      <div class="field" style="margin-top:12px"><label class="required-label">🛒 Sàn áp dụng</label>
         <select id="bf-plat">${PLATFORMS.map((pl) => `<option>${pl}</option>`).join("")}</select></div>
-      <div class="field"><label>🔗 Link sản phẩm gốc trên sàn</label><input id="bf-purl" placeholder="https://shopee.vn/…"></div>
-      <div class="field"><label>Tỉ lệ % chiết khấu (hoa hồng) đề xuất cho KOC</label><input id="bf-rate" type="number" min="1" max="90" placeholder="ví dụ 12"></div>
+      <div class="field"><label class="required-label">🔗 Link sản phẩm gốc trên sàn</label><input id="bf-purl" placeholder="https://shopee.vn/…"></div>
+      <div class="field"><label class="required-label">Tỉ lệ % chiết khấu (hoa hồng) đề xuất cho KOC</label><input id="bf-rate" type="number" min="1" max="90" placeholder="ví dụ 12"></div>
       <p class="hint">Hoa hồng KOC = doanh số × % chiết khấu. Phí nền tảng 1% trên doanh số do DN chi trả (không trừ vào hoa hồng KOC).</p>
     </div>
-    <div class="field" style="margin-top:12px"><label>${icon("productData")} Link dữ liệu sản phẩm (bắt buộc)</label><input id="bf-link" placeholder="https://… (thông tin, hình ảnh, giá, chính sách)"></div>
-    <div class="field"><label>Mô tả yêu cầu</label><textarea id="bf-req" rows="3" placeholder="Yêu cầu nội dung, thông điệp…"></textarea></div>
-    <div class="field"><label>Thời hạn</label><input id="bf-deadline" type="date"></div>
+    <div class="field" style="margin-top:12px"><label class="required-label">${icon("productData")} Link dữ liệu sản phẩm (bắt buộc)</label><input id="bf-link" placeholder="https://… (thông tin, hình ảnh, giá, chính sách)"></div>
+    <div class="field"><label class="required-label">Mô tả yêu cầu</label><textarea id="bf-req" rows="3" placeholder="Yêu cầu nội dung, thông điệp…"></textarea></div>
+    <div class="field"><label class="required-label">Thời hạn</label><input id="bf-deadline" type="date"></div>
     <p class="hint" id="bf-hint">Phí được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.</p>
     <button class="btn primary" id="bf-go">Gửi yêu cầu booking</button>
     <button class="btn ghost" id="bf-cancel" style="margin-top:8px">Hủy</button>`);
@@ -840,7 +840,7 @@ async function openOrder(id, el) {
         }
       });
   } else if (b.status === "pending_business_review" && b.type === "aiclone") {
-    act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa</label><textarea id="o-ai-note" rows="3" placeholder="Nêu rõ đoạn cần chỉnh sửa…"></textarea></div>
+    act.innerHTML = `<div class="field"><label>Nhận xét khi yêu cầu chỉnh sửa <span class="required-label">khi yêu cầu sửa</span></label><textarea id="o-ai-note" rows="3" placeholder="Nêu rõ đoạn cần chỉnh sửa…"></textarea></div>
       <div class="row" style="gap:8px"><button class="btn ok" id="o-ai-approve" style="flex:1"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Duyệt bản dựng</button>
       <button class="btn danger" id="o-ai-revise" style="flex:1">↩ Yêu cầu sửa</button></div>
       <p class="hint">Sau khi doanh nghiệp duyệt, video sẽ tự động chuyển đến KOC phê duyệt và đăng bài.</p>`;
@@ -945,7 +945,7 @@ async function openOrder(id, el) {
         }
       });
   } else if (b.status === "pending_review") {
-    act.innerHTML = `<div class="field"><label>Nhận xét cho KOC (bắt buộc khi yêu cầu sửa)</label><textarea id="o-video-note" rows="3" placeholder="Ví dụ: chỉnh lại 5 giây đầu, tăng âm lượng…"></textarea></div>
+    act.innerHTML = `<div class="field"><label>Nhận xét cho KOC <span class="required-label">khi yêu cầu sửa</span></label><textarea id="o-video-note" rows="3" placeholder="Ví dụ: chỉnh lại 5 giây đầu, tăng âm lượng…"></textarea></div>
       <div class="row" style="gap:8px;flex-wrap:wrap">
         <button class="btn ok" id="o-video-approve" style="flex:1"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Duyệt video</button>
         <button class="btn danger" id="o-video-revise" style="flex:1">↩ Yêu cầu sửa</button>
@@ -1060,7 +1060,7 @@ async function openOrder(id, el) {
       }
     });
   } else if (b.status === "completed" && !b.rating) {
-    act.innerHTML = `<div class="field"><label id="o-rating-label">Đánh giá sao</label><div class="rating-picker" role="radiogroup" aria-labelledby="o-rating-label">${[1, 2, 3, 4, 5].map((value) => `<button type="button" class="rating-star" data-rating="${value}" role="radio" aria-checked="false" aria-label="${value} sao">★</button>`).join("")}</div><input id="o-rating" type="hidden" value=""></div>
+    act.innerHTML = `<div class="field"><label class="required-label" id="o-rating-label">Đánh giá sao</label><div class="rating-picker" role="radiogroup" aria-labelledby="o-rating-label">${[1, 2, 3, 4, 5].map((value) => `<button type="button" class="rating-star" data-rating="${value}" role="radio" aria-checked="false" aria-label="${value} sao">★</button>`).join("")}</div><input id="o-rating" type="hidden" value=""></div>
       <div class="field"><label>Nhận xét</label><textarea id="o-review" rows="2" placeholder="Chia sẻ trải nghiệm của bạn về KOC..."></textarea></div>
       <button class="btn primary" id="o-rate" disabled>Gửi đánh giá</button>`;
     const ratingInput = act.querySelector("#o-rating"),
@@ -1334,8 +1334,8 @@ function businessProductModal(product, reload) {
   const platforms = [...PLATFORMS, "Website"];
   const m = modal(`<h2>${editing ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm"}</h2>
     <p class="muted" style="margin-bottom:14px">Đường dẫn này sẽ được lưu trong danh mục sản phẩm và có thể dùng lại cho booking hoặc chương trình hoa hồng bán hàng.</p>
-    <div class="field"><label>Tên sản phẩm *</label><input id="prf-name" maxlength="160" value="${value("name")}" placeholder="Ví dụ: Serum Vitamin C 30ml"></div>
-    <div class="field"><label>Link sản phẩm *</label><input id="prf-url" type="url" maxlength="2000" value="${value("product_url")}" placeholder="https://..."></div>
+    <div class="field"><label class="required-label">Tên sản phẩm</label><input id="prf-name" maxlength="160" value="${value("name")}" placeholder="Ví dụ: Serum Vitamin C 30ml"></div>
+    <div class="field"><label class="required-label">Link sản phẩm</label><input id="prf-url" type="url" maxlength="2000" value="${value("product_url")}" placeholder="https://..."></div>
     <div class="grid product-form-grid">
       <div class="field"><label>Nền tảng</label><input id="prf-platform" list="prf-platforms" maxlength="80" value="${value("platform")}" placeholder="Shopee, Website…"><datalist id="prf-platforms">${platforms.map((platform) => `<option value="${platform}">`).join("")}</datalist></div>
       <div class="field"><label>SKU / Mã sản phẩm</label><input id="prf-sku" maxlength="80" value="${value("sku")}"></div>
@@ -1523,10 +1523,10 @@ async function campaigns(el) {
   document.getElementById("c-new").addEventListener("click", () => {
     const m = modal(`<h2>Yêu cầu chiến dịch lớn</h2>
       <p class="muted" style="margin:6px 0 16px">NetViet tuyển chọn KOC, điều phối tiến độ và hỗ trợ nghiệm thu chiến dịch.</p>
-      <div class="field"><label>Ngân sách trả KOC (đ)</label><input id="cf-budget" type="number" min="1" placeholder="Ví dụ: 50.000.000"></div>
-      <div class="field"><label>Số lượng KOC</label><input id="cf-qty" type="number" value="5"></div>
-      <div class="field"><label>Hạng KOC</label><select id="cf-tier">${cfg.tiers.map((t) => `<option>${t.name}</option>`).join("")}</select></div>
-      <div class="field"><label>Ngành hàng</label><select id="cf-cat"><option value="Tất cả">Tất cả</option>${cfg.categories.map((c) => `<option>${esc(c)}</option>`).join("")}</select></div>
+      <div class="field"><label class="required-label">Ngân sách trả KOC (đ)</label><input id="cf-budget" type="number" min="1" placeholder="Ví dụ: 50.000.000"></div>
+      <div class="field"><label class="required-label">Số lượng KOC</label><input id="cf-qty" type="number" value="5"></div>
+      <div class="field"><label class="required-label">Hạng KOC</label><select id="cf-tier">${cfg.tiers.map((t) => `<option>${t.name}</option>`).join("")}</select></div>
+      <div class="field"><label class="required-label">Ngành hàng</label><select id="cf-cat"><option value="Tất cả">Tất cả</option>${cfg.categories.map((c) => `<option>${esc(c)}</option>`).join("")}</select></div>
       <div class="field"><label>Hạn hoàn thành</label><input id="cf-deadline" type="date"></div>
       <div class="field"><label>Ghi chú</label><textarea id="cf-note" rows="2"></textarea></div>
       <div class="campaign-pricing"><div><span>Ngân sách dành cho KOC</span><b id="cf-creator-budget">0đ</b></div><div><span>Phí điều phối <small>15% · tối thiểu 2.000.000đ</small></span><b id="cf-management-fee">2.000.000đ</b></div><div class="campaign-pricing-total"><span>Tổng dự kiến</span><strong id="cf-total">2.000.000đ</strong></div><p>Chưa bao gồm phí thanh toán, thuế và chi phí phát sinh được xác nhận riêng.</p></div>
@@ -1745,8 +1745,8 @@ function kolStatus(s) {
 
 function kolRequestModal(kolId, el) {
   const m = modal(`<h2>Gửi yêu cầu báo giá KOL</h2>
-    <div class="field" style="margin-top:12px"><label>Ngân sách dự kiến (đ)</label><input id="kr-budget" type="number" placeholder="đ"></div>
-    <div class="field"><label>Brief / yêu cầu</label><textarea id="kr-brief" rows="3" placeholder="Mô tả chiến dịch, thông điệp, thời gian…"></textarea></div>
+    <div class="field" style="margin-top:12px"><label class="required-label">Ngân sách dự kiến (đ)</label><input id="kr-budget" type="number" placeholder="đ"></div>
+    <div class="field"><label class="required-label">Brief / yêu cầu</label><textarea id="kr-brief" rows="3" placeholder="Mô tả chiến dịch, thông điệp, thời gian…"></textarea></div>
     <button class="btn primary" id="kr-go">Gửi yêu cầu</button>
     <button class="btn ghost" id="kr-cancel" style="margin-top:8px">Hủy</button>`);
   m.querySelector("#kr-cancel").addEventListener("click", closeModal);
@@ -1769,9 +1769,9 @@ function kolRequestModal(kolId, el) {
 export function quoteLeadModal(source) {
   const m = modal(`<h2>Liên hệ nhận báo giá trực tiếp</h2>
     <p class="muted" style="margin-bottom:12px">Để lại thông tin — đội ngũ sales NetViet sẽ liên hệ (Zalo / hotline / email).</p>
-    <div class="field"><label>Họ tên *</label><input id="ql-name"></div>
+    <div class="field"><label class="required-label">Họ tên</label><input id="ql-name"></div>
     <div class="field"><label>Doanh nghiệp</label><input id="ql-company"></div>
-    <div class="field"><label>Số điện thoại *</label><input id="ql-phone"></div>
+    <div class="field"><label class="required-label">Số điện thoại</label><input id="ql-phone"></div>
     <div class="field"><label>Email</label><input id="ql-email"></div>
     <div class="field"><label>Nhu cầu</label><textarea id="ql-need" rows="2"></textarea></div>
     <button class="btn" id="ql-go" style="background:#B91C1C;color:#fff">Gửi yêu cầu</button>
@@ -1890,7 +1890,7 @@ async function profile(el, editing = false) {
     </div>
     <div class="card">
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
-        <div class="field"><label>Tên doanh nghiệp *</label><input id="pf-name" value="${esc(b.name || "")}"></div>
+        <div class="field"><label class="required-label">Tên doanh nghiệp</label><input id="pf-name" value="${esc(b.name || "")}"></div>
         <div class="field"><label>Người liên hệ</label><input id="pf-contact" value="${esc(b.contact || "")}"></div>
         <div class="field"><label>Email liên hệ</label><input id="pf-email" type="email" value="${esc(b.email || "")}"></div>
         <div class="field"><label>Ngành nghề</label><input id="pf-industry" value="${esc(b.industry || "")}" placeholder="VD: Mỹ phẩm, Bán lẻ…"></div>
@@ -2066,7 +2066,7 @@ function depositModal() {
     <h2>Nạp tiền trực tuyến</h2>
     <p class="muted" style="margin-bottom:12px">Thanh toán nhanh bằng mã QR ngân hàng.</p>
     <div class="field">
-      <label>Chọn mốc số tiền hoặc nhập số tiền khác</label>
+      <label class="required-label">Chọn mốc số tiền hoặc nhập số tiền khác</label>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">
         <button class="btn ghost sm preset-btn" data-val="500000">500.000đ</button>
         <button class="btn ghost sm preset-btn" data-val="1000000">1.000.000đ</button>

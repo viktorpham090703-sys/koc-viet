@@ -267,13 +267,13 @@ export function renderOnboarding(el) {
       <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
     </svg>`;
     el.innerHTML = wrap(`
-      <div class="field"><label>Họ tên</label><input id="o-name" value="${esc(d.name)}" placeholder="Nguyễn Văn A">
+      <div class="field"><label class="required-label">Họ tên</label><input id="o-name" value="${esc(d.name)}" placeholder="Nguyễn Văn A">
         <div class="err" id="o-name-err" style="display:none"></div></div>
-      <div class="field"><label>Số điện thoại</label><input id="o-phone" value="${esc(d.phone)}" placeholder="09xxxxxxxx">
+      <div class="field"><label class="required-label">Số điện thoại</label><input id="o-phone" value="${esc(d.phone)}" placeholder="09xxxxxxxx">
         <div class="err" id="o-phone-err" style="display:none"></div></div>
-      <div class="field"><label>Email</label><input id="o-email" type="email" value="${esc(d.email)}" placeholder="ban@email.com">
+      <div class="field"><label class="required-label">Email</label><input id="o-email" type="email" value="${esc(d.email)}" placeholder="ban@email.com">
         <div class="err" id="o-email-err" style="display:none"></div></div>
-      <div class="field"><label>Mật khẩu</label>
+      <div class="field"><label class="required-label">Mật khẩu</label>
         <div style="position:relative">
           <input id="o-password" type="password" autocomplete="new-password" minlength="8"
             maxlength="128" value="${esc(d.password)}" placeholder="Tối thiểu 8 ký tự"
@@ -285,7 +285,7 @@ export function renderOnboarding(el) {
           </button>
         </div>
         <div class="err" id="o-password-err" style="display:none"></div></div>
-      <div class="field"><label>Xác nhận mật khẩu</label>
+      <div class="field"><label class="required-label">Xác nhận mật khẩu</label>
         <div style="position:relative">
           <input id="o-password-confirmation" type="password" autocomplete="new-password"
             minlength="8" maxlength="128" value="${esc(d.passwordConfirmation)}"
@@ -297,7 +297,7 @@ export function renderOnboarding(el) {
           </button>
         </div>
         <div class="err" id="o-password-confirmation-err" style="display:none"></div></div>
-      <div class="field"><label>Mã OTP nhận được qua email</label><input id="o-otp" class="otp-in"
+      <div class="field"><label class="required-label">Mã OTP nhận được qua email</label><input id="o-otp" class="otp-in"
         maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" value="${esc(d.otpValue)}"
         ${d.otpVerified && d.verifiedEmail === d.email ? "disabled" : ""}>
         <div class="err" id="o-otp-err" style="display:none"></div></div>
@@ -455,10 +455,10 @@ export function renderOnboarding(el) {
   function renderStep1() {
     const catList = cfg.categories.concat(["Khác"]);
     el.innerHTML = wrap(`
-      <div class="field"><label>Tỉnh/Thành phố</label><select id="o-prov">${provinceOptions(cfg.provinces, d.province)}</select></div>
-      <div class="field"><label>Ngành hàng (chọn nhiều)</label>
+      <div class="field"><label class="required-label">Tỉnh/Thành phố</label><select id="o-prov">${provinceOptions(cfg.provinces, d.province)}</select></div>
+      <div class="field"><label class="required-label">Ngành hàng (chọn nhiều)</label>
         <div id="o-cats" style="display:flex;flex-wrap:wrap;gap:8px">${catList.map((c) => `<button type="button" class="chip" data-c="${esc(c)}" style="cursor:pointer;padding:8px 14px;${d.categories.includes(c) ? "background:var(--primary);color:#fff" : ""}">${esc(c)}</button>`).join("")}</div>
-        ${d.categories.includes("Khác") ? `<div class="field" style="margin-top:8px"><input id="o-cat-other" value="${esc(d.customCategory)}" placeholder="Nhập tên ngành hàng khác"></div>` : ""}
+        ${d.categories.includes("Khác") ? `<div class="field" style="margin-top:8px"><label class="required-label" for="o-cat-other">Ngành hàng khác</label><input id="o-cat-other" value="${esc(d.customCategory)}" placeholder="Nhập tên ngành hàng khác"></div>` : ""}
       </div>
       ${socialChannelPickerHtml({
         socials: d.socials,
@@ -466,7 +466,7 @@ export function renderOnboarding(el) {
         escapeHtml: esc,
         primaryLabel: "Kênh chính",
       })}
-      <div class="field"><label>Tổng số người theo dõi</label><input id="o-fol" type="number" min="${MIN_KOC_REGISTRATION_FOLLOWERS}" max="2000000000" step="1" value="${d.followers}" aria-describedby="o-fol-help"></div>
+      <div class="field"><label class="required-label">Tổng số người theo dõi</label><input id="o-fol" type="number" min="${MIN_KOC_REGISTRATION_FOLLOWERS}" max="2000000000" step="1" value="${d.followers}" aria-describedby="o-fol-help"></div>
       <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">Bạn cần có tối thiểu 1.000 người theo dõi để đăng ký tài khoản KOC. Đội ngũ quản trị sẽ kiểm duyệt thông tin hồ sơ.</p>
       <div class="field"><label>Giới thiệu</label><textarea id="o-bio" rows="2">${esc(d.bio)}</textarea></div>`);
     bindChrome();
@@ -584,7 +584,7 @@ export function renderOnboarding(el) {
         <p class="muted" style="font-size:12px;margin-top:8px">Hạng càng cao, khung giá niêm yết theo ngành hàng càng rộng. Hạng được xem xét định kỳ theo số người theo dõi, tỉ lệ hoàn thành booking và điểm đánh giá.</p>
       </div>
       <p class="muted" style="margin:12px 0 6px">Đặt phí cố định cho từng ngành hàng (trong khung):</p>
-      ${d.categories.map((c) => `<div class="field"><label>${esc(c)}</label><input type="number" data-price="${esc(c)}" value="${d.prices[c] || tr.min}" placeholder="${money(tr.min)}"></div>`).join("")}
+      ${d.categories.map((c) => `<div class="field"><label class="required-label">${esc(c)}</label><input type="number" data-price="${esc(c)}" value="${d.prices[c] || tr.min}" placeholder="${money(tr.min)}"></div>`).join("")}
       ${d.categories.length ? "" : '<p class="err">Bạn chưa chọn ngành hàng ở bước trước.</p>'}`);
     bindChrome();
   }
@@ -613,7 +613,7 @@ export function renderOnboarding(el) {
 
   // ---------- Step 3: eKYC (thông tin định danh + file thật, selfie có camera) + Thông tin nhận thanh toán ----------
   function fileRow(label, key, inputId) {
-    return `<div class="field"><label>${label}</label>
+    return `<div class="field"><label class="required-label">${label}</label>
       <input type="file" accept="image/*" id="${inputId}">
       <div class="muted" id="${inputId}-name" style="font-size:11px;margin-top:4px">${d.files[key] ? "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(d.files[key]) : "Chưa chọn ảnh"}</div>
       <img id="${inputId}-preview" alt="${label}" style="display:${d.files[key + "Preview"] ? "block" : "none"};margin-top:6px;width:140px;height:96px;object-fit:cover;border-radius:8px" ${d.files[key + "Preview"] ? `src="${d.files[key + "Preview"]}"` : ""}>
@@ -622,19 +622,19 @@ export function renderOnboarding(el) {
   function renderStep3() {
     el.innerHTML = wrap(`
       <p class="muted" style="margin-bottom:12px">Xác minh danh tính — nhập thông tin cá nhân, tải ảnh hai mặt CCCD và ảnh chân dung.</p>
-      <div class="field"><label>Ngày sinh</label><input type="date" id="o-dob" value="${esc(d.dob)}">
+      <div class="field"><label class="required-label">Ngày sinh</label><input type="date" id="o-dob" value="${esc(d.dob)}">
         <div class="err" id="o-dob-err" style="display:none"></div></div>
-      <div class="field"><label>Số CCCD</label><input id="o-cccd" value="${esc(d.cccd)}" placeholder="9-12 số">
+      <div class="field"><label class="required-label">Số CCCD</label><input id="o-cccd" value="${esc(d.cccd)}" placeholder="9-12 số">
         <div class="err" id="o-cccd-err" style="display:none"></div></div>
-      <div class="field"><label>Ngày cấp</label><input type="date" id="o-cccd-date" value="${esc(d.cccdDate)}">
+      <div class="field"><label class="required-label">Ngày cấp</label><input type="date" id="o-cccd-date" value="${esc(d.cccdDate)}">
         <div class="err" id="o-cccd-date-err" style="display:none"></div></div>
-      <div class="field"><label>Nơi cấp</label><input id="o-cccd-place" value="${esc(d.cccdPlace)}" placeholder="VD: Cục Cảnh sát QLHC về TTXH">
+      <div class="field"><label class="required-label">Nơi cấp</label><input id="o-cccd-place" value="${esc(d.cccdPlace)}" placeholder="VD: Cục Cảnh sát QLHC về TTXH">
         <div class="err" id="o-cccd-place-err" style="display:none"></div></div>
-      <div class="field"><label>Địa chỉ thường trú</label><input id="o-address" value="${esc(d.address)}" placeholder="Số nhà, đường, phường/xã, tỉnh/thành">
+      <div class="field"><label class="required-label">Địa chỉ thường trú</label><input id="o-address" value="${esc(d.address)}" placeholder="Số nhà, đường, phường/xã, tỉnh/thành">
         <div class="err" id="o-address-err" style="display:none"></div></div>
       ${fileRow("CCCD mặt trước", "front", "o-file-front")}
       ${fileRow("CCCD mặt sau", "back", "o-file-back")}
-      <div class="field"><label>Ảnh chân dung (cầm CCCD)</label>
+      <div class="field"><label class="required-label">Ảnh chân dung (cầm CCCD)</label>
         <div class="row" style="gap:8px">
           <button type="button" class="btn ghost sm" id="o-file-selfie-cam-btn" style="flex:1;text-align:center;cursor:pointer">📷 Chụp trực tiếp</button>
           <label class="btn ghost sm" style="flex:1;text-align:center;cursor:pointer">🖼 Chọn từ thư viện<input type="file" accept="image/*" id="o-file-selfie-lib" style="display:none"></label>
@@ -645,11 +645,11 @@ export function renderOnboarding(el) {
       </div>
       <h3 style="margin-top:18px;font-size:14px">💳 Thông tin nhận thanh toán</h3>
       <p class="muted" style="font-size:12px;margin-bottom:10px">Dùng để nhận 95% phí booking cùng hoa hồng bán hàng sau khi đối soát.</p>
-      <div class="field"><label for="o-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("o-bank-select", cfg.payoutBanks, d.bankName, d.bankBin, "o-bank-name-err")}
+      <div class="field"><label class="required-label" for="o-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("o-bank-select", cfg.payoutBanks, d.bankName, d.bankBin, "o-bank-name-err")}
         <div class="err" id="o-bank-name-err" style="display:none"></div></div>
-      <div class="field"><label>Số tài khoản</label><input id="o-bank-account" value="${esc(d.bankAccount)}" placeholder="Số tài khoản (chỉ số)">
+      <div class="field"><label class="required-label">Số tài khoản</label><input id="o-bank-account" value="${esc(d.bankAccount)}" placeholder="Số tài khoản (chỉ số)">
         <div class="err" id="o-bank-account-err" style="display:none"></div></div>
-      <div class="field"><label>Chủ tài khoản</label><input id="o-bank-owner" value="${esc(d.bankOwner)}" placeholder="Tên chủ tài khoản (không dấu)">
+      <div class="field"><label class="required-label">Chủ tài khoản</label><input id="o-bank-owner" value="${esc(d.bankOwner)}" placeholder="Tên chủ tài khoản (không dấu)">
         <div class="err" id="o-bank-owner-err" style="display:none"></div></div>`);
     bindChrome();
     const dobInput = el.querySelector("#o-dob");
@@ -1110,7 +1110,7 @@ export function renderOnboarding(el) {
         </div>
       </div>
 
-      <label style="display:flex;gap:8px;align-items:center;margin-top:14px;opacity:${d.termsRead ? 1 : 0.5}" id="o-agree-wrap">
+      <label class="required-label" style="display:flex;gap:8px;align-items:center;margin-top:14px;opacity:${d.termsRead ? 1 : 0.5}" id="o-agree-wrap">
         <input type="checkbox" id="o-agree" style="width:auto" ${d.termsRead ? "" : "disabled"} ${d.agreed ? "checked" : ""}> Tôi đã đọc và đồng ý toàn bộ nội dung Hợp đồng hợp tác KOC/KOL
       </label>
       <div class="row" style="gap:10px;margin-top:16px">
@@ -1156,7 +1156,7 @@ export function renderOnboarding(el) {
     el.innerHTML = wrap(
       `${CONTRACT_STYLE}
       <div class="signpad-box">
-        <h3 style="margin-bottom:6px">Ký tên xác nhận hợp đồng</h3>
+        <h3 class="required-label" style="margin-bottom:6px">Ký tên xác nhận hợp đồng</h3>
         <p class="muted" style="font-size:12.5px;margin-bottom:12px">Dùng chuột hoặc ngón tay để ký tên vào khung bên dưới.</p>
         <div class="signpad-canvas-wrap">
           <canvas id="o-sign-pad" width="480" height="200" style="width:100%;height:200px;touch-action:none;cursor:crosshair;display:block"></canvas>
