@@ -420,10 +420,10 @@ async function partnerCreate(listEl) {
   let kocs = kocResp.kocs || [];
   let avatar = "";
   modal(`<h2>Tạo đối tác</h2>
-    <div class="field" style="margin-top:12px"><label>Tên đối tác</label>
+    <div class="field" style="margin-top:12px"><label class="required-label">Tên đối tác</label>
       <input id="pt-name" placeholder="Tên đối tác / công ty" autofocus></div>
     ${partnerAvatarFieldHtml("pt-avatar")}
-    <div class="field"><label>Tỷ lệ chia sẻ trên phí 5%</label>
+    <div class="field"><label class="required-label">Tỷ lệ chia sẻ trên phí 5%</label>
       <input id="pt-rate" type="number" step="1" min="1" max="100" value="30"> <span class="muted">% (đối tác hưởng 30% của 5%)</span>
     </div>
     <div class="field"><label>Ghi chú (tuỳ chọn)</label><input id="pt-note"></div>
@@ -502,18 +502,18 @@ async function partnerDetail(id, listEl) {
              <div class="between"><span>Trạng thái</span>${p.account.status === "active" ? '<span class="chip g">Hoạt động</span>' : `<span class="chip n">${esc(p.account.status)}</span>`}</div>
              <div style="margin-top:10px"><button class="btn ghost sm" id="pt-d-account-reset">Đặt lại mật khẩu & gửi lại email</button></div>`
           : `<p class="muted" style="margin:0 0 10px">Đối tác chưa có tài khoản đăng nhập.</p>
-             <div class="field" style="margin:0 0 8px"><label>Email đăng nhập</label><input id="pt-d-account-email" type="email" placeholder="email@doanhnghiep.vn"></div>
+             <div class="field" style="margin:0 0 8px"><label class="required-label">Email đăng nhập</label><input id="pt-d-account-email" type="email" placeholder="email@doanhnghiep.vn"></div>
              <button class="btn primary sm" id="pt-d-account-create">Cấp tài khoản đăng nhập</button>`
       }
     </div>
     <h3>Cấu hình</h3>
-    <div class="field" style="margin:8px 0 0"><label>Tên đối tác</label>
+    <div class="field" style="margin:8px 0 0"><label class="required-label">Tên đối tác</label>
       <input id="pt-d-name" value="${esc(p.name)}"></div>
     ${partnerAvatarFieldHtml("pt-d-avatar", avatar)}
     <div class="row" style="gap:8px;align-items:flex-end;margin:0 0 12px">
-      <div class="field" style="margin:0"><label>Tỷ lệ chia (% của 5%)</label>
+      <div class="field" style="margin:0"><label class="required-label">Tỷ lệ chia (% của 5%)</label>
         <input id="pt-d-rate" type="number" step="1" min="1" max="100" value="${Math.round(Number(p.fee_rate) * 100)}"></div>
-      <div class="field" style="margin:0"><label>Trạng thái</label>
+      <div class="field" style="margin:0"><label class="required-label">Trạng thái</label>
         <select id="pt-d-status">
           <option value="active" ${p.status === "active" ? "selected" : ""}>Hoạt động</option>
           <option value="paused" ${p.status === "paused" ? "selected" : ""}>Tạm dừng</option>
@@ -1393,7 +1393,7 @@ async function adminCampaigns(el) {
           ? candidates
               .map(
                 (k) =>
-                  `<div class="between list-item campaign-candidate"><label class="row" style="cursor:pointer;flex:1"><input type="checkbox" data-kid="${k.id}" ${assignedIds.has(k.id) ? "checked" : ""} style="width:auto;margin-right:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div><b>${esc(k.name)}</b><div class="muted" style="font-size:12px">${num(k.followers)} · ${stars(k.rating)}</div></div></label><div class="campaign-allocation-input"><span>Chi phí KOC</span><input type="number" min="1" step="1000" data-allocation-for="${k.id}" value="${existingAmounts.get(k.id) || ""}" ${assignedIds.has(k.id) ? "" : "disabled"}></div></div>`,
+                  `<div class="between list-item campaign-candidate"><label class="row" style="cursor:pointer;flex:1"><input type="checkbox" data-kid="${k.id}" ${assignedIds.has(k.id) ? "checked" : ""} style="width:auto;margin-right:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div><b>${esc(k.name)}</b><div class="muted" style="font-size:12px">${num(k.followers)} · ${stars(k.rating)}</div></div></label><div class="campaign-allocation-input"><span class="allocation-required-label">Chi phí KOC</span><input type="number" min="1" step="1000" data-allocation-for="${k.id}" value="${existingAmounts.get(k.id) || ""}" ${assignedIds.has(k.id) ? "" : "disabled"}></div></div>`,
               )
               .join("")
           : empty("🔍", "Không có KOC phù hợp")
@@ -1863,7 +1863,7 @@ async function kolAdmin(el,page=adminKolPage) {
     b.addEventListener("click", () => {
       const request=r.requests.find(item=>item.id===b.dataset.quote);
       const m =
-        modal(`<h2>Báo giá KOL</h2><div class="field" style="margin-top:12px"><label>Thù lao KOL (đ)</label><input id="kq-kol" type="number" min="1" step="1000" value="${Number(request?.quote_kol||0)||''}"></div><div class="field"><label>Phí dịch vụ NetViet (đ)</label><input id="kq-platform" type="number" min="0" step="1000" value="${Number(request?.quote_platform||0)}"></div><div class="field"><label>Chi phí bổ sung (đ)</label><input id="kq-additional" type="number" min="0" step="1000" value="${Number(request?.quote_additional||0)}"></div>
+        modal(`<h2>Báo giá KOL</h2><div class="field" style="margin-top:12px"><label class="required-label">Thù lao KOL (đ)</label><input id="kq-kol" type="number" min="1" step="1000" value="${Number(request?.quote_kol||0)||''}"></div><div class="field"><label>Phí dịch vụ NetViet (đ)</label><input id="kq-platform" type="number" min="0" step="1000" value="${Number(request?.quote_platform||0)}"></div><div class="field"><label>Chi phí bổ sung (đ)</label><input id="kq-additional" type="number" min="0" step="1000" value="${Number(request?.quote_additional||0)}"></div>
       <div class="field"><label>Ghi chú</label><textarea id="kq-note" rows="2">${esc(request?.admin_note||'')}</textarea></div>
       <button class="btn primary" id="kq-go">Gửi báo giá</button><button class="btn ghost" id="kq-x" style="margin-top:8px">Hủy</button>`);
       m.querySelector("#kq-x").addEventListener("click", closeModal);
@@ -1887,14 +1887,14 @@ async function kolAdmin(el,page=adminKolPage) {
     }),
   );
   el.querySelectorAll('[data-confirm-kol]').forEach(b=>b.addEventListener('click',async()=>{const contractReference=await promptDialog('Nhập mã hợp đồng hoặc nội dung xác nhận lịch:');if(!contractReference)return;try{await post('/api/admin/kol-action',{id:b.dataset.confirmKol,action:'confirm',contractReference});toast('Đã xác nhận lịch và hợp đồng KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
-  el.querySelectorAll('[data-deliver-kol]').forEach(b=>b.addEventListener('click',()=>{const m=modal(`<h2>Bàn giao sản phẩm KOL</h2><div class="field"><label>Link sản phẩm / biên bản bàn giao</label><input id="kd-url" placeholder="https://..."></div><div class="field"><label>Ghi chú</label><textarea id="kd-note" rows="3"></textarea></div><button class="btn primary" id="kd-go">Gửi doanh nghiệp nghiệm thu</button><button class="btn ghost" id="kd-close" style="margin-top:8px">Đóng</button>`);m.querySelector('#kd-close').addEventListener('click',closeModal);m.querySelector('#kd-go').addEventListener('click',async()=>{try{await post('/api/admin/kol-action',{id:b.dataset.deliverKol,action:'deliver',deliveryUrl:m.querySelector('#kd-url').value.trim(),note:m.querySelector('#kd-note').value.trim()});toast('Đã bàn giao sản phẩm KOL','ok');closeModal();kolAdmin(el)}catch(e){toast(e.message,'err')}})}));
+  el.querySelectorAll('[data-deliver-kol]').forEach(b=>b.addEventListener('click',()=>{const m=modal(`<h2>Bàn giao sản phẩm KOL</h2><div class="field"><label class="required-label">Link sản phẩm / biên bản bàn giao</label><input id="kd-url" placeholder="https://..."></div><div class="field"><label>Ghi chú</label><textarea id="kd-note" rows="3"></textarea></div><button class="btn primary" id="kd-go">Gửi doanh nghiệp nghiệm thu</button><button class="btn ghost" id="kd-close" style="margin-top:8px">Đóng</button>`);m.querySelector('#kd-close').addEventListener('click',closeModal);m.querySelector('#kd-go').addEventListener('click',async()=>{try{await post('/api/admin/kol-action',{id:b.dataset.deliverKol,action:'deliver',deliveryUrl:m.querySelector('#kd-url').value.trim(),note:m.querySelector('#kd-note').value.trim()});toast('Đã bàn giao sản phẩm KOL','ok');closeModal();kolAdmin(el)}catch(e){toast(e.message,'err')}})}));
   el.querySelectorAll('[data-settle-kol]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Giải ngân thù lao vào Ví KOL và ghi nhận phí NetViet?')))return;try{await post('/api/admin/kol-action',{id:b.dataset.settleKol,action:'settle'});toast('Đã giải ngân yêu cầu KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll('[data-cancel-kol]').forEach(b=>b.addEventListener('click',async()=>{const note=await promptDialog('Lý do hủy và hoàn tiền:');if(!note)return;try{await post('/api/admin/kol-action',{id:b.dataset.cancelKol,action:'cancel',note});toast('Đã hủy và hoàn tiền doanh nghiệp','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll("[data-reject]").forEach((b) =>
     b.addEventListener("click", async () => {
       const m = modal(`<h2>Từ chối yêu cầu KOL</h2>
       <p class="muted" style="margin:8px 0 12px">Lý do sẽ được hiển thị cho doanh nghiệp đã gửi yêu cầu.</p>
-      <div class="field"><label>Lý do từ chối *</label><textarea id="kr-reason" rows="4" maxlength="500" placeholder="Nhập lý do cụ thể…"></textarea></div>
+      <div class="field"><label class="required-label">Lý do từ chối</label><textarea id="kr-reason" rows="4" maxlength="500" placeholder="Nhập lý do cụ thể…"></textarea></div>
       <button class="btn danger" id="kr-reject-go">Xác nhận từ chối</button>
       <button class="btn ghost" id="kr-reject-cancel" style="margin-top:8px">Hủy</button>`);
       m.querySelector("#kr-reject-cancel").addEventListener(
@@ -2046,10 +2046,10 @@ async function leadProgressModal(id, lead, el) {
     "/api/admin/lead-activities?lead_id=" + encodeURIComponent(id),
   );
   const m = modal(`<h2>Theo dõi khách hàng · ${esc(lead.name)}</h2>
-    <div class="field" style="margin-top:12px"><label>Trạng thái *</label><select id="lp-status">${LEAD_STATUSES.map(([v, l]) => `<option value="${v}" ${lead.status === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-    <div class="field"><label>Nhu cầu tư vấn *</label><select id="lp-need">${LEAD_NEEDS.map((n) => `<option value="${esc(n)}" ${lead.need === n ? "selected" : ""}>${esc(leadNeedLabel(n))}</option>`).join("")}</select></div>
+    <div class="field" style="margin-top:12px"><label class="required-label">Trạng thái</label><select id="lp-status">${LEAD_STATUSES.map(([v, l]) => `<option value="${v}" ${lead.status === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+    <div class="field"><label class="required-label">Nhu cầu tư vấn</label><select id="lp-need">${LEAD_NEEDS.map((n) => `<option value="${esc(n)}" ${lead.need === n ? "selected" : ""}>${esc(leadNeedLabel(n))}</option>`).join("")}</select></div>
     <div id="lp-branch-box"></div>
-    <div class="field" style="margin-top:10px"><label>Ghi chú tiến độ *</label><textarea id="lp-note" rows="3" maxlength="1000" placeholder="VD: Đã gọi điện tư vấn nhu cầu, giải đáp thắc mắc cho khách hàng…"></textarea></div>
+    <div class="field" style="margin-top:10px"><label class="required-label">Ghi chú tiến độ</label><textarea id="lp-note" rows="3" maxlength="1000" placeholder="VD: Đã gọi điện tư vấn nhu cầu, giải đáp thắc mắc cho khách hàng…"></textarea></div>
     <button class="btn primary" id="lp-save">Lưu cập nhật</button><button class="btn ghost" id="lp-close" style="margin-top:8px">Đóng</button>
     <h3 style="margin-top:18px">Lịch sử chăm sóc</h3>
     <div style="max-height:240px;overflow:auto;margin-top:8px">${
@@ -2394,7 +2394,7 @@ async function aiclone(el) {
     button.addEventListener("click", () => {
       modal(`<h2>Soạn & duyệt kịch bản AI Clone</h2>
       <p class="muted">Kịch bản là căn cứ sản xuất và được hiển thị cho doanh nghiệp/KOC.</p>
-      <div class="field" style="margin-top:12px"><label>Nội dung kịch bản</label><textarea id="ai-script" rows="12">${esc(button.dataset.current || "")}</textarea></div>
+      <div class="field" style="margin-top:12px"><label class="required-label">Nội dung kịch bản</label><textarea id="ai-script" rows="12">${esc(button.dataset.current || "")}</textarea></div>
       <button class="btn primary" id="ai-script-save">Duyệt kịch bản & chuyển sản xuất</button>
       <button class="btn ghost" id="ai-script-cancel" style="margin-top:8px">Hủy</button>`);
       document
@@ -2424,7 +2424,7 @@ async function aiclone(el) {
       modal(`<h2>Gửi video chung cho doanh nghiệp duyệt</h2>
       <div class="tint-box"><b>${esc(b.dataset.code)}</b> · ${esc(b.dataset.recipient)}</div>
       <p class="muted" style="margin-top:10px">Chỉ cần gửi một bản dựng cho doanh nghiệp. Sau khi doanh nghiệp duyệt, hệ thống tự động chuyển cùng link video đến toàn bộ KOC trong booking.</p>
-      <div class="field" style="margin-top:12px"><label>Link video bản dựng</label><input id="dv-link" type="url" placeholder="https://…/video.mp4"></div>
+      <div class="field" style="margin-top:12px"><label class="required-label">Link video bản dựng</label><input id="dv-link" type="url" placeholder="https://…/video.mp4"></div>
       <div id="dv-preview" style="display:none;margin-bottom:12px"><video controls playsinline style="width:100%;max-height:360px;border-radius:12px;background:#111"></video></div>
       <button class="btn navy" id="dv-go">Gửi video cho ${targetLabel} xem và duyệt</button>
       <button class="btn ghost" id="dv-cancel" style="margin-top:8px">Hủy</button>`);
@@ -2469,7 +2469,7 @@ async function tiers(el) {
   const cfg = state.config;
   el.innerHTML = `<div class="between"><h1>Khung giá 5 hạng</h1><button class="btn primary sm" id="tr-save">💾 Lưu khung giá</button></div>
     <p class="muted" style="margin-bottom:16px">KOC niêm yết giá phải nằm trong khung của hạng. Sau khi lưu, bảng giá KOC hiện có sẽ được kiểm tra lại theo khung mới.</p>
-    <div class="table-wrap"><table><thead><tr><th>Hạng</th><th>Follower tối thiểu</th><th>Follower tối đa</th><th>Giá tối thiểu (đ)</th><th>Giá tối đa (đ)</th><th>Phí dịch vụ (%)</th></tr></thead><tbody>
+    <div class="table-wrap"><table><thead><tr><th>Hạng</th><th>Follower tối thiểu</th><th class="required-label">Follower tối đa</th><th>Giá tối thiểu (đ)</th><th class="required-label">Giá tối đa (đ)</th><th>Phí dịch vụ (%)</th></tr></thead><tbody>
     ${cfg.tiers
       .map(
         (t) => `<tr><td>${tierBadge(t.name)}</td>

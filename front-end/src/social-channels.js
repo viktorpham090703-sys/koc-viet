@@ -101,7 +101,7 @@ export function socialChannelPickerHtml({
   return `<section class="social-channel-picker" aria-labelledby="${labelId}">
     <div class="social-channel-heading">
       <div>
-        <label id="${labelId}">Kênh mạng xã hội</label>
+        <label class="required-label" id="${labelId}">Kênh mạng xã hội</label>
         <p>Chọn tối đa ${MAX_SOCIAL_CHANNELS} kênh. Mỗi kênh được chọn sẽ có một ô gắn link riêng.</p>
       </div>
       <span aria-label="Đã chọn ${drafts.length} trên ${MAX_SOCIAL_CHANNELS} kênh">${drafts.length}/${MAX_SOCIAL_CHANNELS}</span>
@@ -123,7 +123,7 @@ export function socialChannelPickerHtml({
         const isLockedPrimary = primaryVerified && index === 0;
         const inputId = `${prefix}-social-link-${index}`;
         return `<div class="social-channel-field">
-          <label for="${inputId}"><span>${safe(social.platform)}</span>${index === 0 ? `<small>${isLockedPrimary ? "Kênh chính · Đã xác minh" : safe(primaryLabel)}</small>` : ""}</label>
+          <label for="${inputId}"><span class="${isLockedPrimary ? "" : "required-label"}">${safe(social.platform)}</span>${index === 0 ? `<small>${isLockedPrimary ? "Kênh chính · Đã xác minh" : safe(primaryLabel)}</small>` : ""}</label>
           <input id="${inputId}" type="url" inputmode="url" autocomplete="url" data-social-link data-platform="${safe(social.platform)}" value="${safe(social.handle || "")}" placeholder="${safe(socialChannelPlaceholder(social.platform))}" maxlength="300" ${isLockedPrimary ? "readonly" : ""}>
         </div>`;
       }).join("") || '<p class="social-channel-empty">Chọn ít nhất một kênh để gắn link hồ sơ.</p>'}

@@ -142,10 +142,14 @@ export function lpFooter() {
           </div>
           <div class="lp-footer-col">
             <h4>Liên hệ</h4>
-            <a class="lp-footer-contact-link" href="tel:+84812986898">Hotline: 0812 98 68 98</a>
-            <a class="lp-footer-contact-link" href="tel:+84813487686">Hotline: 0813 487 686</a>
+            <div class="lp-footer-hotline-group">
+              <p class="lp-footer-contact-label">Hotline</p>
+              <div class="lp-footer-hotline-numbers">
+                <a class="lp-footer-contact-link" href="tel:+84812986898">0812 98 68 98</a>
+                <a class="lp-footer-contact-link" href="tel:+84813487686">0813 487 686</a>
+              </div>
+            </div>
             <a class="lp-footer-contact-link" href="mailto:kocviet@netviettv.com.vn">Email: kocviet@netviettv.com.vn</a>
-            <p class="lp-footer-hours">Giờ làm việc: 9:00–18:00 · Thứ 2–Thứ 7</p>
           </div>
         </div>
       </div>

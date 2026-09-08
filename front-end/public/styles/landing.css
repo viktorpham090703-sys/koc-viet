@@ -871,8 +871,23 @@
 .lp-footer-contact-link {
   overflow-wrap: anywhere;
 }
-.lp-footer-hours {
+.lp-footer-contact-label {
   color: rgba(255, 255, 255, 0.66);
+}
+.lp-footer-hotline-group {
+  margin: 0 0 8px;
+}
+.lp-footer-hotline-group .lp-footer-contact-label {
+  margin-bottom: 8px;
+}
+.lp-footer-hotline-numbers {
+  display: grid;
+  gap: 8px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.24);
+}
+.lp-footer-hotline-numbers .lp-footer-contact-link {
+  margin: 0;
 }
 .lp-footer-bottom-wrap {
   width: 100% !important;

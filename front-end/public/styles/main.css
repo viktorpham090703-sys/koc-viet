@@ -6,6 +6,18 @@
   --r-btn:10px; --r-card:16px;
 }
 
+/* Shared required markers: native required fields (including React forms),
+   manually validated fields, and enabled campaign allocation amounts. */
+.required-label::after,
+.field:has(input[required], select[required], textarea[required]) > label::after,
+.field:has(input[required]) > .auth-label-row > label::after,
+.campaign-allocation-input:has(input:not(:disabled)) > .allocation-required-label::after {
+  content: " *";
+  color: #d93025;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 /* ===== Responsive brand logo (Desktop/Tablet/Mobile) — only for text-based .logo in portals ===== */
 .logo:not(.lp-logo){
   display:inline-block!important;
