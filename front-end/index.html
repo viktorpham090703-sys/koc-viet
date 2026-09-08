@@ -1,76 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#ff4b2b">
-<meta name="application-name" content="KOC Việt">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="KOC Việt">
-<title>KOC Việt – Nền tảng kết nối KOC và thương hiệu</title>
-<meta name="description" content="Tìm kiếm KOC, đặt booking, quản lý chiến dịch và thanh toán minh bạch trên cùng một nền tảng.">
-<link rel="canonical" href="https://kocviet.com/">
-<meta property="og:locale" content="vi_VN">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="KOC Việt">
-<meta property="og:title" content="KOC Việt – Nền tảng kết nối KOC và thương hiệu">
-<meta property="og:description" content="Tìm kiếm KOC, đặt booking, quản lý chiến dịch và thanh toán minh bạch trên cùng một nền tảng.">
-<meta property="og:url" content="https://kocviet.com/">
-<meta property="og:image" content="https://res.cloudinary.com/drxum5uxt/image/upload/c_fill,w_1200,h_630,q_auto/v1787563853/1787563651492_2201287402319673401_1498435957045998974_16db1d34a94ea52d9dd36bc56a24689f_ka513n.jpg">
-<meta property="og:image:secure_url" content="https://res.cloudinary.com/drxum5uxt/image/upload/c_fill,w_1200,h_630,q_auto/v1787563853/1787563651492_2201287402319673401_1498435957045998974_16db1d34a94ea52d9dd36bc56a24689f_ka513n.jpg">
-<meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="KOC Việt – Nền tảng kết nối KOC và thương hiệu">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="KOC Việt – Nền tảng kết nối KOC và thương hiệu">
-<meta name="twitter:description" content="Tìm kiếm KOC, đặt booking, quản lý chiến dịch và thanh toán minh bạch trên cùng một nền tảng.">
-<meta name="twitter:image" content="https://res.cloudinary.com/drxum5uxt/image/upload/c_fill,w_1200,h_630,q_auto/v1787563853/1787563651492_2201287402319673401_1498435957045998974_16db1d34a94ea52d9dd36bc56a24689f_ka513n.jpg">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" type="image/png" href="/images/koc-viet-app-icon.png">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="preconnect" href="https://res.cloudinary.com">
-<link rel="stylesheet" href="/styles/main.css?v=20260830-social-channels-v1">
-<link rel="stylesheet" href="/styles/pwa.css">
-<link rel="stylesheet" href="/tokens.css">
-<link rel="stylesheet" href="/styles/landing.css?v=20260824-v13">
-<link rel="stylesheet" href="/styles/home-landing.css?v=20260903-v35">
-<link rel="stylesheet" href="/styles/animations.css">
-<link rel="stylesheet" href="/styles/portal-responsive.css?v=20260828-v1">
-</head>
-<body>
-<div id="app">
-  <div class="sk-portal-layout">
-    <div class="sk-sidebar">
-      <div class="nv-skeleton sk-line w-75" style="height:28px; margin-bottom:20px"></div>
-      <div class="nv-skeleton sk-line w-100" style="height:32px; border-radius:6px; margin-bottom:10px"></div>
-      <div class="nv-skeleton sk-line w-100" style="height:32px; border-radius:6px; margin-bottom:10px"></div>
-      <div class="nv-skeleton sk-line w-100" style="height:32px; border-radius:6px; margin-bottom:10px"></div>
-      <div class="nv-skeleton sk-line w-100" style="height:32px; border-radius:6px; margin-bottom:10px"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#ff4b2b" />
+    <meta name="application-name" content="KOC Việt" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="KOC Việt" />
+    <title>KOC Việt – Nền tảng kết nối KOC và thương hiệu</title>
+    <meta
+      name="description"
+      content="Tìm kiếm KOC, đặt booking, quản lý chiến dịch và thanh toán minh bạch trên cùng một nền tảng."
+    />
+    <meta
+      name="tiktok-developers-site-verification"
+      content="rzNMzPKQ8y48KnbKIv9YWakPTVJWLh3g"
+    />
+    <link rel="canonical" href="https://kocviet.com/" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="KOC Việt" />
+    <meta
+      property="og:title"
+      content="KOC Việt – Nền tảng kết nối KOC và thương hiệu"
+    />
+    <meta
+      property="og:description"
+      content="Tìm kiếm KOC, đặt booking, quản lý chiến dịch và thanh toán minh bạch trên cùng một nền tảng."
+    />
+    <meta property="og:url" content="https://kocviet.com/" />
+    <meta
+      property="og:image"
+      content="https://res.cloudinary.com/drxum5uxt/image/upload/c_fill,w_1200,h_630,q_auto/v1787563853/1787563651492_2201287402319673401_1498435957045998974_16db1d34a94ea52d9dd36bc56a24689f_ka513n.jpg"
+    />
+    <meta
+      property="og:image:secure_url"
+      content="https://res.cloudinary.com/drxum5uxt/image/upload/c_fill,w_1200,h_630,q_auto/v1787563853/1787563651492_2201287402319673401_1498435957045998974_16db1d34a94ea52d9dd36bc56a24689f_ka513n.jpg"
+    />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="KOC Việt – Nền tảng kết nối KOC và thương hiệu"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="KOC Việt – Nền tảng kết nối KOC và thương hiệu"
+    />
+    <meta
+      name="twitter:description"
+      content="Tìm kiếm KOC, đặt booking, quản lý chiến dịch và thanh toán minh bạch trên cùng một nền tảng."
+    />
+    <meta
+      name="twitter:image"
+      content="https://res.cloudinary.com/drxum5uxt/image/upload/c_fill,w_1200,h_630,q_auto/v1787563853/1787563651492_2201287402319673401_1498435957045998974_16db1d34a94ea52d9dd36bc56a24689f_ka513n.jpg"
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/images/koc-viet-app-icon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <link
+      rel="stylesheet"
+      href="/styles/main.css?v=20260830-social-channels-v1"
+    />
+    <link rel="stylesheet" href="/styles/pwa.css" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/styles/landing.css?v=20260824-v13" />
+    <link rel="stylesheet" href="/styles/home-landing.css?v=20260903-v35" />
+    <link rel="stylesheet" href="/styles/animations.css" />
+    <link rel="stylesheet" href="/styles/portal-responsive.css?v=20260828-v1" />
+  </head>
+  <body>
+    <div id="app">
+      <div class="sk-portal-layout">
+        <div class="sk-sidebar">
+          <div
+            class="nv-skeleton sk-line w-75"
+            style="height: 28px; margin-bottom: 20px"
+          ></div>
+          <div
+            class="nv-skeleton sk-line w-100"
+            style="height: 32px; border-radius: 6px; margin-bottom: 10px"
+          ></div>
+          <div
+            class="nv-skeleton sk-line w-100"
+            style="height: 32px; border-radius: 6px; margin-bottom: 10px"
+          ></div>
+          <div
+            class="nv-skeleton sk-line w-100"
+            style="height: 32px; border-radius: 6px; margin-bottom: 10px"
+          ></div>
+          <div
+            class="nv-skeleton sk-line w-100"
+            style="height: 32px; border-radius: 6px; margin-bottom: 10px"
+          ></div>
+        </div>
+        <div class="sk-main">
+          <div class="sk-topbar">
+            <div
+              class="nv-skeleton sk-line w-25"
+              style="height: 20px; margin: 0"
+            ></div>
+            <div class="nv-skeleton sk-circle sm"></div>
+          </div>
+          <div class="stat-cards">
+            <div class="sk-card">
+              <div class="nv-skeleton sk-line w-50"></div>
+              <div class="nv-skeleton sk-line w-75" style="height: 24px"></div>
+            </div>
+            <div class="sk-card">
+              <div class="nv-skeleton sk-line w-50"></div>
+              <div class="nv-skeleton sk-line w-75" style="height: 24px"></div>
+            </div>
+            <div class="sk-card">
+              <div class="nv-skeleton sk-line w-50"></div>
+              <div class="nv-skeleton sk-line w-75" style="height: 24px"></div>
+            </div>
+            <div class="sk-card">
+              <div class="nv-skeleton sk-line w-50"></div>
+              <div class="nv-skeleton sk-line w-75" style="height: 24px"></div>
+            </div>
+          </div>
+          <div class="sk-card" style="margin-top: 16px">
+            <div class="nv-skeleton sk-title"></div>
+            <div class="sk-card" style="padding: 14px; margin-bottom: 8px">
+              <div class="row" style="gap: 16px; align-items: center">
+                <div class="nv-skeleton sk-circle sm"></div>
+                <div class="nv-skeleton sk-line w-50" style="margin: 0"></div>
+              </div>
+            </div>
+            <div class="sk-card" style="padding: 14px; margin-bottom: 8px">
+              <div class="row" style="gap: 16px; align-items: center">
+                <div class="nv-skeleton sk-circle sm"></div>
+                <div class="nv-skeleton sk-line w-50" style="margin: 0"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="sk-main">
-      <div class="sk-topbar">
-        <div class="nv-skeleton sk-line w-25" style="height:20px; margin:0"></div>
-        <div class="nv-skeleton sk-circle sm"></div>
-      </div>
-      <div class="stat-cards">
-        <div class="sk-card"><div class="nv-skeleton sk-line w-50"></div><div class="nv-skeleton sk-line w-75" style="height:24px"></div></div>
-        <div class="sk-card"><div class="nv-skeleton sk-line w-50"></div><div class="nv-skeleton sk-line w-75" style="height:24px"></div></div>
-        <div class="sk-card"><div class="nv-skeleton sk-line w-50"></div><div class="nv-skeleton sk-line w-75" style="height:24px"></div></div>
-        <div class="sk-card"><div class="nv-skeleton sk-line w-50"></div><div class="nv-skeleton sk-line w-75" style="height:24px"></div></div>
-      </div>
-      <div class="sk-card" style="margin-top:16px">
-        <div class="nv-skeleton sk-title"></div>
-        <div class="sk-card" style="padding:14px; margin-bottom:8px"><div class="row" style="gap:16px; align-items:center"><div class="nv-skeleton sk-circle sm"></div><div class="nv-skeleton sk-line w-50" style="margin:0"></div></div></div>
-        <div class="sk-card" style="padding:14px; margin-bottom:8px"><div class="row" style="gap:16px; align-items:center"><div class="nv-skeleton sk-circle sm"></div><div class="nv-skeleton sk-line w-50" style="margin:0"></div></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-<div id="toast-wrap"></div>
-<div id="modal-root"></div>
-<script type="module" src="/src/app.js"></script>
-</body>
+    <div id="toast-wrap"></div>
+    <div id="modal-root"></div>
+    <script type="module" src="/src/app.js"></script>
+  </body>
 </html>

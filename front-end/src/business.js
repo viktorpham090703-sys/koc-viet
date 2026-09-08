@@ -24,12 +24,7 @@ import { state, logout, enhancePortal } from "./app.js";
 import { renderMarketplaceEmbed } from "./public.js";
 import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
-import {
-  bankIdentityHtml,
-  bankPickerHtml,
-  bindBankPicker,
-  selectedPayoutBank,
-} from "./payout-banks.js";
+import { formatPaymentTime } from "./payment-time.js";
 import { socialProfileUrl } from "./social-channels.js";
 
 const NAV = [
@@ -1869,14 +1864,6 @@ async function profile(el, editing = false) {
           <div><span class="muted">Mã số thuế</span><p><b>${esc(b.tax_code || "Chưa cập nhật")}</b></p></div>
           <div><span class="muted">Ngành nghề</span><p><b>${esc(b.industry || "Chưa cập nhật")}</b></p></div>
         </div>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <h3>💳 Thông tin thanh toán (chi trả booking)</h3>
-        <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:14px">
-          <div><span class="muted">Ngân hàng</span><p>${bankIdentityHtml(state.config?.payoutBanks, b.bank_name)}</p></div>
-          <div><span class="muted">Số tài khoản</span><p><b>${esc(b.bank_account || "Chưa cập nhật")}</b></p></div>
-          <div><span class="muted">Chủ tài khoản</span><p><b>${esc(b.bank_owner || "Chưa cập nhật")}</b></p></div>
-        </div>
       </div>`;
     el.querySelector("#pf-edit").addEventListener("click", () =>
       profile(el, true),
@@ -1909,19 +1896,8 @@ async function profile(el, editing = false) {
         <div class="field"><label>Ngành nghề</label><input id="pf-industry" value="${esc(b.industry || "")}" placeholder="VD: Mỹ phẩm, Bán lẻ…"></div>
         <div class="field"><label>Mã số thuế</label><input id="pf-tax" value="${esc(b.tax_code || "")}"></div>
       </div>
-      <h3 style="margin-top:10px;font-size:14px">💳 Thông tin thanh toán (chi trả booking)</h3>
-      <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
-        <div class="field"><label for="pf-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("pf-bank-select", state.config?.payoutBanks, b.bank_name)}</div>
-        <div class="field"><label>Số tài khoản</label><input id="pf-bank-account" value="${esc(b.bank_account || "")}"></div>
-        <div class="field"><label>Chủ tài khoản</label><input id="pf-bank-owner" value="${esc(b.bank_owner || "")}"></div>
-      </div>
       <button class="btn primary" id="pf-save" style="margin-top:10px;width:auto">Lưu hồ sơ</button>
     </div>`;
-
-  bindBankPicker(
-    el.querySelector('[data-bank-picker="pf-bank-select"]'),
-    state.config?.payoutBanks,
-  );
 
   const processFile = async (input, target, width, height, assign) => {
     const file = input.files?.[0];
@@ -1965,7 +1941,6 @@ async function profile(el, editing = false) {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return toast("Email không hợp lệ", "err");
     const btn = el.querySelector("#pf-save");
-    const bank = selectedPayoutBank(el.querySelector("#pf-bank-select"));
     btn.disabled = true;
     btn.textContent = "Đang lưu…";
     try {
@@ -1977,11 +1952,6 @@ async function profile(el, editing = false) {
         tax_code: el.querySelector("#pf-tax").value.trim(),
         avatar: avatarSource,
         cover: coverSource,
-        bank: {
-          name: bank.name,
-          account: el.querySelector("#pf-bank-account").value.trim(),
-          owner: el.querySelector("#pf-bank-owner").value.trim(),
-        },
       });
       toast("Đã lưu hồ sơ", "ok");
       void hydrateBusinessAccount(document.getElementById("app"));
@@ -2072,7 +2042,7 @@ async function wallet(el) {
                   <td style="padding:8px"><span class="chip ghost">${p.provider === "demo" ? "⚡ Thử nghiệm" : "🏦 Trực tuyến"}</span></td>
                   <td style="padding:8px"><b class="money">${money(p.amount)}</b></td>
                   <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? '<span class="chip w">⏳ Chờ thanh toán</span>' : '<span class="chip r">Thất bại</span>'}</td>
-                  <td style="padding:8px;font-size:12px" class="muted">${new Date(p.created_at).toLocaleString("vi-VN")}</td>
+                  <td style="padding:8px;font-size:12px" class="muted">${formatPaymentTime(p.created_at)}</td>
                 </tr>
               `,
                 )
