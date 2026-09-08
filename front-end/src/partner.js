@@ -295,9 +295,9 @@ async function profile(el, editing = false) {
       <div class="card" style="margin-top:16px">
         <h3>Đổi mật khẩu</h3>
         <p class="muted" style="margin:4px 0 12px">Sau khi đổi thành công, bạn cần đăng nhập lại.</p>
-        <div class="field"><label class="required-label">Mật khẩu hiện tại</label>${passwordInputHtml("pf-cur-pass", 'autocomplete="current-password" maxlength="128"')}</div>
-        <div class="field"><label class="required-label">Mật khẩu mới</label>${passwordInputHtml("pf-new-pass", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
-        <div class="field"><label class="required-label">Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-new-pass2", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
+        <div class="field"><label>Mật khẩu hiện tại</label>${passwordInputHtml("pf-cur-pass", 'autocomplete="current-password" maxlength="128"')}</div>
+        <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("pf-new-pass", 'autocomplete="new-password" minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
+        <div class="field"><label>Xác nhận mật khẩu mới</label>${passwordInputHtml("pf-new-pass2", 'autocomplete="new-password" minlength="8" maxlength="128"')}</div>
         <button class="btn ghost" id="pf-pass-save" type="button">Cập nhật mật khẩu</button>
       </div>`;
     bindPasswordToggles(el);

@@ -270,11 +270,11 @@ function renderForgotPassword(el) {
   };
 
   function renderEmailStage() {
-    el.innerHTML = `<div class="auth"><div class="auth-card">
+    el.innerHTML = `<div class="auth auth-forgot-password"><div class="auth-card">
       <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
       <h2 style="text-align:center;margin-bottom:14px">Quên mật khẩu</h2>
       <p class="muted" style="text-align:center;margin-bottom:14px">Nhập email đã đăng ký để nhận mã đặt lại mật khẩu.</p>
-      <div class="field"><label class="required-label">Email</label><input id="fp-email" type="email" value="${esc(email)}" placeholder="email@domain.com"></div>
+      <div class="field"><label>Email</label><input id="fp-email" type="email" value="${esc(email)}" placeholder="email@domain.com"></div>
       <div class="err" id="fp-email-err" style="display:none"></div>
       <button class="btn primary" id="fp-send" style="margin-top:10px">Gửi mã đặt lại</button>
       <div class="row" style="margin-top:14px"><a href="#/login" class="muted" style="font-size:12px;text-align:center;width:100%">← Quay lại đăng nhập</a></div>
@@ -304,15 +304,15 @@ function renderForgotPassword(el) {
     });
   }
   function renderResetStage() {
-    el.innerHTML = `<div class="auth"><div class="auth-card">
+    el.innerHTML = `<div class="auth auth-forgot-password"><div class="auth-card">
       <div class="logo" style="text-align:center;margin-bottom:4px">KOC<span> Viet</span></div>
       <h2 style="text-align:center;margin-bottom:14px">Đặt lại mật khẩu</h2>
       <p class="muted" style="text-align:center;margin-bottom:14px">Nhập mã đã gửi tới <b>${esc(email)}</b> và mật khẩu mới.</p>
-      <div class="field"><label class="required-label">Mã xác thực</label><input id="fp-code" class="otp-in" maxlength="6" placeholder="••••••"></div>
+      <div class="field"><label>Mã xác thực</label><input id="fp-code" class="otp-in" maxlength="6" placeholder="••••••"></div>
       <div class="err" id="fp-code-err" style="display:none"></div>
-      <div class="field"><label class="required-label">Mật khẩu mới</label>${passwordInputHtml("fp-pass", 'minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
+      <div class="field"><label>Mật khẩu mới</label>${passwordInputHtml("fp-pass", 'minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự"')}</div>
       <div class="err" id="fp-pass-err" style="display:none"></div>
-      <div class="field"><label class="required-label">Xác nhận mật khẩu</label>${passwordInputHtml("fp-pass2")}</div>
+      <div class="field"><label>Xác nhận mật khẩu</label>${passwordInputHtml("fp-pass2")}</div>
       <div class="err" id="fp-pass2-err" style="display:none"></div>
       <button class="btn primary" id="fp-reset" style="margin-top:6px">Đặt lại mật khẩu</button>
       <div class="row" style="gap:8px;margin-top:10px">

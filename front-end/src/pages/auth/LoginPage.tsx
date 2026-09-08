@@ -16,7 +16,7 @@ export function LoginPage() {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Đăng nhập thất bại') }
     finally { setBusy(false) }
   }
-  return <div className="auth"><div className="auth-card">
+  return <div className="auth auth-login"><div className="auth-card">
     <div className="logo" style={{textAlign:'center'}}>KOC<span> Viet</span></div>
     <p className="muted" style={{textAlign:'center'}}>Sàn booking KOC/KOLs · NetViet</p>
     <form onSubmit={submit}>
