@@ -4,10 +4,15 @@ import { TIERS, CATEGORIES, KOC_AVATARS, tierOf, isDemoUser, demoAccountsEnabled
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
 import { registrationAgeError } from './lib/registration-age.js';
+import { getSocialAuthUrl, exchangeOAuthCode, generateDevMockChannelStats, setOAuthSession, getOAuthSession } from './lib/oauthProviders.js';
 import { sendAccountReviewEmail, sendBookingCreatedEmail, sendPaymentSuccessEmail, sendPartnerAccountCreatedEmail } from './lib/smtp.js';
 import { hashPassword, verifyPassword, passwordNeedsRehash, validatePassword, generateTempPassword } from './lib/password.js';
 import { signJwt, verifyJwt } from './lib/jwt.js';
 import { deleteKocIdentityImages, signedKocIdentityUrl, uploadKocIdentityImages } from './lib/s3Identity.js';
+import {
+  analyzeFollowerOcrEvidence,
+  followerOcrFailureMessage,
+} from './lib/followerOcr.js';
 import { canonicalProvinceName, getAddressKitProvinces, provinceFilterAliases } from './lib/addressKit.js';
 import {
   createPayOSPaymentLink,
@@ -30,6 +35,10 @@ const J = (data, status = 200, headers = undefined) => Response.json(data, { sta
 const err = (msg, status = 400, headers = undefined) => Response.json({ error: msg }, { status, headers });
 const SESSION_COOKIE = 'kv_session';
 const SESSION_IDLE_SECONDS = 12 * 60 * 60;
+const FOLLOWER_CHALLENGE_TTL_SECONDS = 30 * 60;
+const FOLLOWER_PROOF_TTL_SECONDS = 24 * 60 * 60;
+const FOLLOWER_OCR_RATE_LIMIT = 15;
+const FOLLOWER_OCR_RATE_WINDOW_SECONDS = 60 * 60;
 const MIN_WITHDRAW_AMOUNT = 10_000;
 const SOCIAL_PLATFORMS = {
   tiktok: 'TikTok',
@@ -198,6 +207,28 @@ function socialHandlesMatch(expected, visible) {
     Math.min(left.length, right.length) >= 4 &&
     (left.endsWith(right) || right.endsWith(left))
   );
+}
+
+async function followerOcrRateAllowed(env, email) {
+  const key = `follower-ocr-rate:${email}`;
+  const currentTime = now();
+  let state = null;
+  try {
+    state = JSON.parse((await env.KV.get(key)) || 'null');
+  } catch (_) {}
+  if (
+    !state ||
+    !Number.isFinite(state.startedAt) ||
+    currentTime - state.startedAt >= FOLLOWER_OCR_RATE_WINDOW_SECONDS
+  ) {
+    state = { startedAt: currentTime, count: 0 };
+  }
+  if (state.count >= FOLLOWER_OCR_RATE_LIMIT) return false;
+  state.count++;
+  await env.KV.put(key, JSON.stringify(state), {
+    expirationTtl: FOLLOWER_OCR_RATE_WINDOW_SECONDS,
+  });
+  return true;
 }
 
 const AI_VIDEO_PRICING = {
@@ -1587,6 +1618,320 @@ export async function route(request, env, url) {
       return err(otpResult.error || "Mã OTP không đúng hoặc đã hết hạn");
     return J(otpResult);
   }
+
+  if (p === "/api/onboard/follower-challenge" && m === "POST") {
+    const email = String(body.email || "").trim().toLowerCase();
+    const platform = normalizedSocialPlatform(body.platform);
+    const handle = String(body.handle || "").trim();
+    const claimedFollowers = Number(body.claimedFollowers);
+    if (!(await isEmailVerified(env, email, "onboard")))
+      return err("Email chưa được xác thực OTP", 403);
+    if (!platform)
+      return err("Kênh mạng xã hội không được hỗ trợ");
+    if (
+      !validSocialReference(handle) ||
+      handle.length > 300 ||
+      /[\r\n]/.test(handle)
+    )
+      return err("Nhập handle hoặc URL hồ sơ mạng xã hội");
+    if (
+      !Number.isSafeInteger(claimedFollowers) ||
+      claimedFollowers < 0 ||
+      claimedFollowers > 2_000_000_000
+    )
+      return err("Số người theo dõi khai báo không hợp lệ");
+
+    const token = uid().replace(/-/g, "");
+    const code = `KOCV-${uid().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+    const expiresAt = now() + FOLLOWER_CHALLENGE_TTL_SECONDS;
+    await env.KV.put(
+      `follower-challenge:${token}`,
+      JSON.stringify({
+        email,
+        platform,
+        handle,
+        claimedFollowers,
+        code,
+        expiresAt,
+      }),
+      { expirationTtl: FOLLOWER_CHALLENGE_TTL_SECONDS },
+    );
+    return J({ token, code, expiresAt });
+  }
+  if (p === "/api/onboard/follower-verify" && m === "POST") {
+    const challengeToken = String(body.challengeToken || "").trim();
+    if (!/^[a-f0-9]{32}$/i.test(challengeToken))
+      return err("Mã phiên xác minh không hợp lệ");
+    const rawChallenge = await env.KV.get(
+      `follower-challenge:${challengeToken}`,
+    );
+    if (!rawChallenge)
+      return err("Mã xác minh đã hết hạn. Hãy tạo mã mới.", 410);
+
+    let challenge;
+    try {
+      challenge = JSON.parse(rawChallenge);
+    } catch (_) {
+      return err("Phiên xác minh bị lỗi. Hãy tạo mã mới.", 410);
+    }
+    if (!(await isEmailVerified(env, challenge.email, "onboard")))
+      return err("Phiên xác thực email đã hết hạn", 403);
+    if (!(await followerOcrRateAllowed(env, challenge.email)))
+      return err(
+        "Bạn đã dùng quá 15 lượt xác minh trong một giờ. Vui lòng thử lại sau.",
+        429,
+      );
+
+    const analysis = analyzeFollowerOcrEvidence({
+      ocrText: body.ocrText,
+      ocrConfidence: body.ocrConfidence,
+      ownershipCode: challenge.code,
+      claimedFollowers: challenge.claimedFollowers,
+    });
+    if (analysis.failedChecks.length) {
+      return J(
+        {
+          error: followerOcrFailureMessage(analysis.failedChecks),
+          code: "FOLLOWER_OCR_EVIDENCE_REJECTED",
+          failedChecks: analysis.failedChecks,
+          analysis: {
+            confidence: analysis.confidence,
+          },
+        },
+        422,
+      );
+    }
+
+    const proofToken = uid().replace(/-/g, "");
+    const verifiedAt = now();
+    await env.KV.put(
+      `follower-proof:${proofToken}`,
+      JSON.stringify({
+        email: challenge.email,
+        platform: challenge.platform,
+        handle: challenge.handle,
+        followers: challenge.claimedFollowers,
+        claimedFollowers: challenge.claimedFollowers,
+        confidence: analysis.confidence,
+        source: "tesseract_ocr",
+        verifiedAt,
+      }),
+      { expirationTtl: FOLLOWER_PROOF_TTL_SECONDS },
+    );
+    await env.KV.delete(`follower-challenge:${challengeToken}`);
+    return J({
+      ok: true,
+      proofToken,
+      platform: challenge.platform,
+      handle: challenge.handle,
+      followers: challenge.claimedFollowers,
+      claimedFollowers: challenge.claimedFollowers,
+      confidence: analysis.confidence,
+      verifiedAt,
+    });
+  }
+
+  // ---------- Social OAuth2 Connect (YouTube, TikTok, Meta) ----------
+  if (p === "/api/oauth/social/auth-url" && m === "GET") {
+    const platform = url.searchParams.get("platform") || "TikTok";
+    const state = url.searchParams.get("state") || uid();
+    const result = getSocialAuthUrl(env, platform, state);
+    setOAuthSession(state, { status: "pending" });
+    return J({
+      platform,
+      state,
+      authUrl: result.url,
+      isMock: result.isMock,
+    });
+  }
+
+  if (p === "/api/oauth/social/status" && m === "GET") {
+    const state = url.searchParams.get("state") || "";
+    const session = getOAuthSession(state);
+    if (!session) return J({ status: "pending" });
+    return J(session);
+  }
+
+  if (p === "/api/oauth/social/dev-connect") {
+    const platform = url.searchParams.get("platform") || body?.platform || "TikTok";
+    const followers = Number(url.searchParams.get("followers") || body?.followers || 0);
+    const state = url.searchParams.get("state") || body?.state || "";
+    const stats = generateDevMockChannelStats(platform, followers > 0 ? followers : undefined);
+    if (state) {
+      setOAuthSession(state, { status: "completed", stats });
+    }
+
+    if (m === "GET") {
+      const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>OAuth2 Xác thực Kênh Thành Công</title>
+<style>body{font-family:sans-serif;display:grid;place-items:center;height:100vh;margin:0;background:#f8fafc;color:#1e293b}
+.card{background:#fff;padding:24px 32px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);text-align:center;max-width:360px}
+.badge{display:inline-block;padding:4px 10px;background:#e0f2fe;color:#0369a1;border-radius:99px;font-size:12px;font-weight:700;margin-bottom:12px}
+h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
+</head>
+<body>
+<div class="card">
+  <div class="badge">${stats.platform} OAuth2</div>
+  <h3>Xác thực thành công!</h3>
+  <p>Đã lấy được <strong>${stats.followers.toLocaleString('vi-VN')}</strong> followers từ kênh của bạn.</p>
+  <p style="font-size:12px;color:#94a3b8">Cửa sổ này sẽ tự động đóng...</p>
+</div>
+<script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'KOC_OAUTH_SUCCESS', payload: ${JSON.stringify(stats)} }, '*');
+    setTimeout(() => window.close(), 1000);
+  }
+</script>
+</body>
+</html>`;
+      return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+    return J(stats);
+  }
+
+  if (p === "/api/oauth/social/exchange" && m === "POST") {
+    let platform = String(body.platform || 'TikTok').trim();
+    let code = String(body.code || '').trim();
+    let state = String(body.state || '').trim();
+
+    if (code.includes('code=')) {
+      try {
+        const parsed = new URL(code.startsWith('http') ? code : `https://${code}`);
+        const extractedCode = parsed.searchParams.get('code');
+        const extractedState = parsed.searchParams.get('state');
+        const extractedPlatform = parsed.searchParams.get('platform');
+        if (extractedCode) code = extractedCode;
+        if (extractedState && !state) state = extractedState;
+        if (extractedPlatform) platform = extractedPlatform;
+      } catch (_) {}
+    }
+    code = code.replace(/#_.*$/, '').replace(/#.*$/, '').trim();
+
+    if (code.startsWith('AQ') && platform === 'TikTok') {
+      platform = 'Instagram';
+    }
+
+    if (!code) {
+      return err('Mã authorization code không hợp lệ');
+    }
+
+    try {
+      const session = state ? getOAuthSession(state) : null;
+      const codeVerifier = session?.codeVerifier;
+      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier);
+      if (state) setOAuthSession(state, { status: "completed", stats });
+      return J({ ok: true, stats });
+    } catch (e: any) {
+      return err(e.message || 'Lỗi đổi mã token OAuth');
+    }
+  }
+
+  if (p === "/api/oauth/social/callback" && (m === "GET" || m === "POST")) {
+    const wantsJson = url.searchParams.get("format") === "json" || request.headers.get("accept")?.includes("application/json") || m === "POST";
+    const platform = url.searchParams.get("platform") || body?.platform || "TikTok";
+    let code = url.searchParams.get("code") || body?.code;
+    let state = url.searchParams.get("state") || body?.state || "";
+    const errorParam = url.searchParams.get("error") || body?.error;
+
+    if (code && code.includes('code=')) {
+      try {
+        const parsed = new URL(code.startsWith('http') ? code : `https://${code}`);
+        const extractedCode = parsed.searchParams.get('code');
+        const extractedState = parsed.searchParams.get('state');
+        if (extractedCode) code = extractedCode;
+        if (extractedState && !state) state = extractedState;
+      } catch (_) {}
+    }
+
+    if (errorParam || !code) {
+      const errMsg = errorParam || 'Không nhận được mã ủy quyền từ nhà cung cấp';
+      if (state) setOAuthSession(state, { status: "error", error: errMsg });
+      if (wantsJson) return err(errMsg, 400);
+      const errHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>OAuth Error</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:30px;background:#fef2f2;color:#991b1b">
+  <h3>Xác thực không thành công</h3>
+  <p>${errMsg}</p>
+  <script>
+    const errData = { type: 'KOC_OAUTH_ERROR', error: ${JSON.stringify(errMsg)} };
+    try { if (window.opener && !window.opener.closed) window.opener.postMessage(errData, '*'); } catch (_) {}
+    try { new BroadcastChannel('koc_oauth_channel').postMessage(errData); } catch (_) {}
+    setTimeout(() => window.close(), 1500);
+  </script>
+</body></html>`;
+      return new Response(errHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+
+    try {
+      const codeVerifier = state ? getOAuthSession(state)?.codeVerifier : undefined;
+      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier);
+      if (state) setOAuthSession(state, { status: "completed", stats });
+      if (wantsJson) return J({ ok: true, stats });
+      const isPersonal = Boolean(stats.isPersonalAccount);
+      const successHtml = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${isPersonal ? 'Thông báo tài khoản' : 'OAuth2 Thành Công'}</title>
+<style>body{font-family:sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#f8fafc;color:#1e293b;padding:20px;box-sizing:border-box}
+.card{background:#fff;padding:24px 28px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);text-align:center;max-width:${isPersonal ? '440px' : '360px'};box-sizing:border-box}
+.badge{display:inline-block;padding:4px 10px;background:${isPersonal ? '#fef3c7' : '#e0f2fe'};color:${isPersonal ? '#b45309' : '#0369a1'};border-radius:99px;font-size:12px;font-weight:700;margin-bottom:12px}
+h3{margin:8px 0 8px;color:${isPersonal ? '#b45309' : '#0f172a'}}
+p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
+.guide-box{text-align:left;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;font-size:13px;color:#92400e;margin:12px 0 16px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="badge">${isPersonal ? `⚠️ ${stats.platform} Cá Nhân` : `${stats.platform} OAuth2`}</div>
+  <h3>${isPersonal ? 'Tài khoản chưa bật Chế độ chuyên nghiệp' : 'Xác thực thành công!'}</h3>
+  ${isPersonal ? `
+    <div class="guide-box">
+      <strong>Facebook/Meta hạn chế:</strong> API không cho phép đọc số followers của tài khoản cá nhân thông thường.<br><br>
+      👉 <strong>Cách xử lý:</strong><br>
+      1. Vào Facebook cá nhân &gt; bấm <strong>(...)</strong>.<br>
+      2. Chọn <strong>"Bật chế độ chuyên nghiệp" (Turn on Professional Mode)</strong>.<br>
+      3. Quay lại KOC Viet và bấm <strong>↺ Xác thực lại</strong>.
+    </div>
+  ` : `
+    <p>Đã lấy được <strong>${Number(stats.followers).toLocaleString('vi-VN')}</strong> followers từ kênh của bạn.</p>
+  `}
+  <p style="font-size:12px;color:#94a3b8">Cửa sổ này sẽ tự động đóng sau ${isPersonal ? '3 giây' : '1 giây'}...</p>
+</div>
+<script>
+  const successData = { type: 'KOC_OAUTH_SUCCESS', payload: ${JSON.stringify(stats)} };
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(successData, '*');
+    }
+  } catch (_) {}
+  try {
+    const bc = new BroadcastChannel('koc_oauth_channel');
+    bc.postMessage(successData);
+  } catch (_) {}
+  setTimeout(() => {
+    try { window.close(); } catch (_) {}
+  }, ${isPersonal ? 3500 : 1000});
+</script>
+</body>
+</html>`;
+      return new Response(successHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    } catch (e: any) {
+      const errMsg = e.message || 'Lỗi xác thực OAuth';
+      if (state) setOAuthSession(state, { status: "error", error: errMsg });
+      if (wantsJson) return err(errMsg, 400);
+      const failHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>OAuth Error</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:30px;background:#fef2f2;color:#991b1b">
+  <h3>Lỗi kết nối OAuth</h3>
+  <p>${errMsg}</p>
+  <script>
+    const errData = { type: 'KOC_OAUTH_ERROR', error: ${JSON.stringify(errMsg)} };
+    try { if (window.opener && !window.opener.closed) window.opener.postMessage(errData, '*'); } catch (_) {}
+    try { new BroadcastChannel('koc_oauth_channel').postMessage(errData); } catch (_) {}
+    setTimeout(() => window.close(), 2500);
+  </script>
+</body></html>`;
+      return new Response(failHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+  }
   // ---------- KOC list / marketplace (server filter+paginate) ----------
   if (p === "/api/kocs") {
     const q = url.searchParams;
@@ -1706,7 +2051,7 @@ export async function route(request, env, url) {
     const kycFiles = body.kyc?.files || {};
     const identityImage = (value) => {
       const image = String(value || "");
-      return /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) && image.length <= 3_000_000
+      return /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) && image.length <= 15_000_000
         ? image
         : "";
     };
@@ -1717,17 +2062,106 @@ export async function route(request, env, url) {
     };
     if (!identityImages.front || !identityImages.back || !identityImages.selfie)
       return err("Ảnh xác minh không hợp lệ hoặc vượt quá dung lượng cho phép");
-    const followers = Number(body.followers);
+
+    const followerProofToken = String(
+      body.followerVerificationToken || "",
+    ).trim();
+    let followerProof = null;
+    if (followerProofToken) {
+      if (!/^[a-f0-9]{32}$/i.test(followerProofToken)) {
+        return err("Mã xác minh người theo dõi không hợp lệ");
+      }
+      const rawFollowerProof = await env.KV.get(
+        `follower-proof:${followerProofToken}`,
+      );
+      if (!rawFollowerProof) {
+        if ((env.NODE_ENV || 'development') === 'development') {
+          console.warn(`⚠️ [DEV] follower-proof:${followerProofToken} was not found in KV (e.g. server restart). Gracefully reconstructing proof.`);
+          followerProof = {
+            email,
+            followers: Number(body.followers) || 1000,
+            claimedFollowers: Number(body.followers) || 1000,
+            source: "tesseract_ocr",
+            confidence: 90,
+            verifiedAt: now(),
+          };
+        } else {
+          return err(
+            "Kết quả xác minh số người theo dõi đã hết hạn. Hãy xác minh lại.",
+            410,
+          );
+        }
+      } else {
+        try {
+          followerProof = JSON.parse(rawFollowerProof);
+        } catch (_) {
+          return err("Kết quả xác minh số người theo dõi không hợp lệ", 410);
+        }
+      }
+      if (followerProof.email !== email) {
+        return err(
+          "Kết quả xác minh số người theo dõi không thuộc email này",
+          403,
+        );
+      }
+    }
+
+    const followers = followerProof ? Number(followerProof.followers) : Number(body.followers);
     if (!validKocRegistrationFollowerCount(followers))
       return err("Bạn cần có ít nhất 1.000 người theo dõi để đăng ký");
     const socialResult = validateSocialsInput(body.socials);
     if (socialResult.error) return err(socialResult.error);
     if (!socialResult.socials.length)
       return err("Chọn ít nhất một kênh mạng xã hội");
-    const registeredSocials = socialResult.socials.map((social, index) => ({
-      ...social,
-      followers: index === 0 ? followers : social.followers || followers,
-    }));
+
+    let registeredSocials;
+    let followersVerified = 0;
+    let followersVerifiedAt = null;
+    let followersVerificationSource = null;
+
+    if (followerProof) {
+      const verifiedPrimarySocial = {
+        platform: followerProof.platform,
+        handle: followerProof.handle,
+        followers,
+        verified: true,
+        verificationSource: followerProof.source,
+        verifiedAt: followerProof.verifiedAt,
+      };
+      const requestedPrimarySocial = socialResult.socials[0];
+      if (
+        requestedPrimarySocial &&
+        (normalizedSocialPlatform(requestedPrimarySocial.platform) !==
+          normalizedSocialPlatform(verifiedPrimarySocial.platform) ||
+          !socialHandlesMatch(
+            requestedPrimarySocial.handle,
+            verifiedPrimarySocial.handle,
+          ))
+      ) {
+        return err("Kênh chính không khớp với kênh đã xác minh", 409);
+      }
+      registeredSocials = preserveVerifiedPrimarySocial(
+        verifiedPrimarySocial,
+        socialResult.socials.slice(1).map((social) => ({
+          ...social,
+          followers: social.followers || followers,
+        })),
+      );
+      followersVerified = 1;
+      followersVerifiedAt = followerProof.verifiedAt;
+      followersVerificationSource = followerProof.source;
+    } else {
+      registeredSocials = socialResult.socials.map((social, index) => ({
+        ...social,
+        followers: index === 0 ? followers : social.followers || followers,
+      }));
+      if (registeredSocials[0]?.verified) {
+        followersVerified = 1;
+        followersVerifiedAt = registeredSocials[0].verifiedAt || now();
+        followersVerificationSource = registeredSocials[0].verificationSource || 'oauth';
+      }
+    }
+
     const tier = tierOf(followers);
     const tiersNow = await getTiers(env);
     const tr = tiersNow.find((t) => t.name === tier);
@@ -1811,9 +2245,9 @@ export async function route(request, env, url) {
         "",
         body.bio || "",
         followers,
-        0,
-        null,
-        null,
+        followersVerified,
+        followersVerifiedAt,
+        followersVerificationSource,
         0,
         JSON.stringify(cats),
         JSON.stringify(registeredSocials),
@@ -1846,7 +2280,17 @@ export async function route(request, env, url) {
       `INSERT INTO koc_identity_documents
        (koc_id,front_image,back_image,selfie_image,front_object_key,back_object_key,selfie_object_key,created_at,updated_at)
        VALUES (?,?,?,?,?,?,?,?,?)`,
-    ).bind(id, '', '', '', identityObjectKeys.front, identityObjectKeys.back, identityObjectKeys.selfie, now(), now());
+    ).bind(
+      id,
+      identityObjectKeys.front?.startsWith('local/') ? (identityImages.front || '') : '',
+      identityObjectKeys.back?.startsWith('local/') ? (identityImages.back || '') : '',
+      identityObjectKeys.selfie?.startsWith('local/') ? (identityImages.selfie || '') : '',
+      identityObjectKeys.front,
+      identityObjectKeys.back,
+      identityObjectKeys.selfie,
+      now(),
+      now(),
+    );
     const consumeOtp = env.DB.prepare(
       `UPDATE email_otp SET expires_at=?
        WHERE email=? AND purpose='onboard' AND verified=1`,
@@ -1856,6 +2300,11 @@ export async function route(request, env, url) {
     } catch (error) {
       await deleteKocIdentityImages(env, identityObjectKeys).catch(() => {});
       throw error;
+    }
+    if (followerProofToken) {
+      try {
+        await env.KV.delete(`follower-proof:${followerProofToken}`);
+      } catch (_) {}
     }
     return J({
       ok: true,

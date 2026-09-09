@@ -39,6 +39,7 @@ import {
   isValidSocialUrl,
   socialChannelPickerHtml,
   socialProfileUrl,
+  socialPlatformIcon,
 } from "./social-channels.js";
 
 const MIN_WITHDRAW_AMOUNT = 10_000;
@@ -1476,7 +1477,7 @@ async function profile(el, editing = false) {
         <div class="card profile-section"><h3>Kênh mạng xã hội</h3>
           ${(k.socials || []).map((item) => {
             const url = socialProfileUrl(item);
-            const content = `<span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span><strong>${num(item.followers || k.followers)} followers</strong>`;
+            const content = `<span style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0">${socialPlatformIcon(item.platform, 20)}</span><span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span></span><strong>${num(item.followers || k.followers)} followers</strong>`;
             return url
               ? `<a class="profile-social-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${content}</a>`
               : `<div class="profile-social-link">${content}</div>`;
@@ -1556,6 +1557,8 @@ async function profile(el, editing = false) {
     }));
   }
 
+  let socialPickerMode = "auto";
+
   function renderSocialDrafts() {
     const container = el.querySelector("#pf-socials");
     container.innerHTML = socialChannelPickerHtml({
@@ -1563,7 +1566,15 @@ async function profile(el, editing = false) {
       prefix: "pf",
       escapeHtml: esc,
       primaryVerified: k.followers_verified,
+      mode: socialPickerMode,
     });
+    container.querySelectorAll("[data-social-mode]").forEach((button) =>
+      button.addEventListener("click", () => {
+        collectSocialDrafts();
+        socialPickerMode = button.dataset.socialMode;
+        renderSocialDrafts();
+      }),
+    );
     container.querySelectorAll("[data-social-toggle]").forEach((button) =>
       button.addEventListener("click", () => {
         collectSocialDrafts();
@@ -1572,10 +1583,6 @@ async function profile(el, editing = false) {
           (social) => social.platform === platform,
         );
         if (index >= 0) {
-          if (index === 0 && k.followers_verified) {
-            toast("Kênh chính đã xác minh không thể gỡ", "err");
-            return;
-          }
           socialDrafts.splice(index, 1);
         } else {
           if (socialDrafts.length >= MAX_SOCIAL_CHANNELS) {

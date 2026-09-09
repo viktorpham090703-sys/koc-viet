@@ -1,5 +1,5 @@
 const SHELL_CACHE = "koc-viet-shell-v3";
-const RUNTIME_CACHE = "koc-viet-runtime-v1";
+const RUNTIME_CACHE = "koc-viet-runtime-v2";
 const NOTIFICATION_STATE_CACHE = "koc-viet-notifications-v1";
 const NOTIFICATION_STATE_URL = "/__koc-viet-notification-state__";
 const APP_SHELL = [
@@ -48,7 +48,14 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith("/api/") ||
+    self.location.hostname === "localhost" ||
+    self.location.hostname === "127.0.0.1"
+  ) {
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirstNavigation(request));
