@@ -1,6 +1,6 @@
-import { post } from "./api.js";
+import { get, post } from "./api.js";
 import { registrationAgeError } from "./registration-age.js";
-import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions } from "./ui.js";
+import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions, copyToClipboard } from "./ui.js";
 import { state } from "./app.js";
 import {
   bankPickerHtml,
@@ -36,6 +36,7 @@ export function renderOnboarding(el) {
     province: cfg.provinces[0],
     categories: [],
     customCategory: "",
+    socialMode: "auto",
     socials: normalizeSocialDrafts([], { withFallback: true }),
     followers: 0,
     bio: "",
@@ -302,8 +303,20 @@ export function renderOnboarding(el) {
         ${d.otpVerified && d.verifiedEmail === d.email ? "disabled" : ""}>
         <div class="err" id="o-otp-err" style="display:none"></div></div>
       <div id="o-otp-status" class="muted" style="font-size:12px;margin-bottom:8px" aria-live="polite"></div>
-      <button type="button" class="btn ghost" id="o-send">Gửi mã OTP qua email</button>`);
+      <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+        <button type="button" class="btn ghost" id="o-send">Gửi mã OTP qua email</button>
+        ${d.otpVerified && d.verifiedEmail === d.email ? `<button type="button" class="btn ghost" id="o-reverify" style="font-size:12px;color:#475569;border-color:#cbd5e1">🔄 Đổi email / Gửi lại OTP</button>` : ""}
+      </div>`);
     bindChrome();
+    const reverifyBtn = el.querySelector("#o-reverify");
+    if (reverifyBtn) {
+      reverifyBtn.addEventListener("click", () => {
+        resetOtpState();
+        d.otpVerified = false;
+        d.verifiedEmail = "";
+        render();
+      });
+    }
     el.querySelectorAll(".o-password-toggle").forEach((button) => {
       button.addEventListener("click", () => {
         const input = el.querySelector("#" + button.dataset.target);
@@ -361,19 +374,23 @@ export function renderOnboarding(el) {
       const r = await post("/api/onboard/email-otp", { email: d.email });
       d.otpSent = true;
       d.otpEmail = d.email;
-      d.otpValue = "";
+      d.otpValue = r.devCode || "";
       d.otpVerified = false;
       d.verifiedEmail = "";
       d.otpExpiresAt = Date.now() + Number(r.expiresIn || 300) * 1000;
       d.otpResendAt = Date.now() + Number(r.resendIn || 30) * 1000;
       const otpInput = el.querySelector("#o-otp");
       if (otpInput) {
-        otpInput.value = "";
+        otpInput.value = r.devCode || "";
         otpInput.disabled = false;
         otpInput.focus();
       }
       fieldErr("o-otp-err", "");
-      toast("Đã gửi mã OTP tới email của bạn", "ok");
+      if (r.demo && r.devCode) {
+        toast(`[Môi trường Dev] Mã OTP của bạn là: ${r.devCode}`, "ok");
+      } else {
+        toast("Đã gửi mã OTP tới email của bạn", "ok");
+      }
       startOtpCountdown();
     } catch (e) {
       toast(e.message, "err");
@@ -453,6 +470,66 @@ export function renderOnboarding(el) {
 
   // ---------- Step 1: Hồ sơ (tỉnh/thành, ngành hàng + "Khác", follower...) ----------
   function renderStep1() {
+    function applySocialStats(stats) {
+      const platform = stats.platform || "TikTok";
+      const isPersonal = Boolean(stats.isPersonalAccount || (stats.followers <= 0 && (platform === "Facebook" || platform === "Instagram")));
+      let idx = d.socials.findIndex((s) => s.platform === platform);
+      if (idx === -1) {
+        if (d.socials.length < MAX_SOCIAL_CHANNELS) {
+          d.socials.push({ platform, handle: "", followers: 0 });
+          idx = d.socials.length - 1;
+        } else {
+          idx = 0;
+        }
+      }
+      d.socials[idx] = {
+        ...d.socials[idx],
+        platform,
+        handle: stats.handle || stats.url || `https://${platform.toLowerCase()}.com/@kocviet_${platform.toLowerCase()}`,
+        followers: Number(stats.followers) || 0,
+        verified: true,
+        verificationSource: stats.verificationSource || `oauth2_${platform.toLowerCase()}`,
+        verifiedAt: stats.verifiedAt || new Date().toISOString(),
+        isPersonalAccount: isPersonal,
+        notice: stats.notice,
+        avatarUrl: stats.avatarUrl || stats.avatar || d.socials[idx]?.avatarUrl || "",
+        displayName: stats.displayName || d.socials[idx]?.displayName || "",
+      };
+
+      // Recalculate total followers
+      const verifiedChannels = d.socials.filter((s) => s.verified);
+      d.followers = verifiedChannels.reduce(
+        (sum, s) => sum + (Number(s.followers) || 0),
+        0,
+      );
+      d.followers_verified = 1;
+      d.followers_verification_source = stats.verificationSource || `oauth2_${platform.toLowerCase()}`;
+
+      if (isPersonal) {
+        toast(`⚠️ Tài khoản ${platform} cá nhân chưa bật Chế độ chuyên nghiệp (0 fl). Vui lòng xem hướng dẫn bên dưới để hiển thị followers!`, "err", 8000);
+      } else {
+        toast(`✓ Đã xác thực kênh ${platform} (${Number(stats.followers).toLocaleString('vi-VN')} followers)!`, "ok");
+      }
+      render();
+    }
+
+    const isManual = (d.socialMode || "auto") === "manual";
+    const verifiedSocials = d.socials.filter((s) => s.verified);
+    const hasVerified = verifiedSocials.length > 0;
+    if (!isManual) {
+      if (hasVerified) {
+        const sumVerifiedFollowers = verifiedSocials.reduce(
+          (sum, s) => sum + (Number(s.followers) || 0),
+          0,
+        );
+        d.followers = sumVerifiedFollowers;
+        d.followers_verified = 1;
+      } else {
+        d.followers = 0;
+        d.followers_verified = 0;
+      }
+    }
+
     const catList = cfg.categories.concat(["Khác"]);
     el.innerHTML = wrap(`
       <div class="field"><label class="required-label">Tỉnh/Thành phố</label><select id="o-prov">${provinceOptions(cfg.provinces, d.province)}</select></div>
@@ -464,19 +541,89 @@ export function renderOnboarding(el) {
         socials: d.socials,
         prefix: "o",
         escapeHtml: esc,
+        primaryVerified: !isManual && hasVerified,
         primaryLabel: "Kênh chính",
+        mode: d.socialMode || "auto",
       })}
-      <div class="field"><label class="required-label">Tổng số người theo dõi</label><input id="o-fol" type="number" min="${MIN_KOC_REGISTRATION_FOLLOWERS}" max="2000000000" step="1" value="${d.followers}" aria-describedby="o-fol-help"></div>
-      <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">Bạn cần có tối thiểu 1.000 người theo dõi để đăng ký tài khoản KOC. Đội ngũ quản trị sẽ kiểm duyệt thông tin hồ sơ.</p>
+      ${isManual ? "" : `
+        <div class="social-manual-sync-box" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;margin-bottom:16px">
+          <div style="font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:6px">
+            <span>💡 Hỗ trợ kết nối khi trình duyệt không tự đóng cửa sổ</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5">
+            Nếu bạn đã hoàn tất đăng nhập mạng xã hội mà cửa sổ chưa tự đóng hoặc hiển thị đường link chứa mã xác nhận, hãy dán toàn bộ đường link vào đây:
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+            <input id="o-manual-oauth-code" type="text" placeholder="Dán liên kết xác nhận https://... vào đây" style="flex:1 1 auto;min-width:0;width:100%;height:42px;padding:0 14px;border:1.5px solid #cbd5e1;border-radius:9px;font-size:13px;background:#fff;outline:none;box-sizing:border-box">
+            <button type="button" id="o-sync-manual-oauth" style="flex:0 0 auto;width:auto;height:42px;padding:0 18px;border:1.5px solid var(--primary);border-radius:9px;background:#fff;color:var(--primary);font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">
+              Hoàn tất kết nối
+            </button>
+          </div>
+        </div>
+      `}
+      <div class="field">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
+          <label class="required-label" for="o-fol" style="margin:0">Tổng số người theo dõi</label>
+          ${(!isManual && hasVerified) ? `<span class="social-verified-tag" style="font-size:11px">🔒 Đã đồng bộ từ mạng xã hội (${Number(d.followers).toLocaleString('vi-VN')} người theo dõi)</span>` : ""}
+        </div>
+        <input id="o-fol" type="number" min="${MIN_KOC_REGISTRATION_FOLLOWERS}" max="2000000000" step="1" value="${d.followers || ""}" placeholder="Ví dụ: 5000" aria-describedby="o-fol-help" ${(!isManual && hasVerified) ? "readonly style='background:#f1f5f9;cursor:not-allowed;font-weight:700;color:var(--navy)'" : ""}>
+      </div>
+      <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">${(!isManual && hasVerified) ? "✓ Số lượng người theo dõi đã được đồng bộ tự động từ tài khoản mạng xã hội và được khóa để bảo vệ độ chính xác hồ sơ." : "Bạn cần có tối thiểu 1.000 người theo dõi để đăng ký tài khoản KOC."}</p>
       <div class="field"><label>Giới thiệu</label><textarea id="o-bio" rows="2">${esc(d.bio)}</textarea></div>`);
     bindChrome();
+
+    const syncBtn = el.querySelector("#o-sync-manual-oauth");
+    if (syncBtn) {
+      syncBtn.addEventListener("click", async () => {
+        const inp = el.querySelector("#o-manual-oauth-code");
+        let val = inp?.value?.trim() || "";
+        if (!val) {
+          toast("Vui lòng dán link callback hoặc mã code", "err");
+          return;
+        }
+
+        let detectedPlatform = window.__lastOAuthPlatform || "Instagram";
+        const valLower = val.toLowerCase();
+        if (valLower.includes("instagram") || valLower.includes("platform=instagram")) detectedPlatform = "Instagram";
+        else if (valLower.includes("facebook") || valLower.includes("platform=facebook")) detectedPlatform = "Facebook";
+        else if (valLower.includes("youtube") || valLower.includes("google") || valLower.includes("platform=youtube")) detectedPlatform = "YouTube";
+        else if (valLower.includes("tiktok") || valLower.includes("platform=tiktok")) detectedPlatform = "TikTok";
+        else if (val.startsWith("AQ") || val.includes("code=AQ")) detectedPlatform = window.__lastOAuthPlatform || "Instagram";
+
+        syncBtn.disabled = true;
+        syncBtn.textContent = "Đang đồng bộ…";
+        try {
+          const res = await post("/api/oauth/social/exchange", {
+            platform: detectedPlatform,
+            code: val,
+          });
+          if (res?.stats) {
+            applySocialStats(res.stats);
+          } else {
+            toast("Không nhận được dữ liệu kênh từ mã code đã dán", "err");
+          }
+        } catch (e) {
+          toast(e.message || "Lỗi đồng bộ mã token", "err");
+        } finally {
+          syncBtn.disabled = false;
+          syncBtn.textContent = "Hoàn tất kết nối";
+        }
+      });
+    }
     el.querySelectorAll("#o-cats [data-c]").forEach((b) =>
       b.addEventListener("click", () => {
-        collect1(); // capture the live select/inputs BEFORE re-render so nothing resets (fixes tỉnh/thành reset bug)
+        collect1();
         const c = b.dataset.c;
         if (d.categories.includes(c))
           d.categories = d.categories.filter((x) => x !== c);
         else d.categories.push(c);
+        render();
+      }),
+    );
+    el.querySelectorAll("[data-social-mode]").forEach((button) =>
+      button.addEventListener("click", () => {
+        collect1();
+        d.socialMode = button.dataset.socialMode;
         render();
       }),
     );
@@ -494,9 +641,113 @@ export function renderOnboarding(el) {
             toast(`Chỉ được chọn tối đa ${MAX_SOCIAL_CHANNELS} kênh`, "err");
             return;
           }
-          d.socials.push({ platform, handle: "", followers: d.followers });
+          d.socials.push({ platform, handle: "", followers: 0 });
         }
         render();
+      }),
+    );
+    el.querySelectorAll("[data-social-oauth]").forEach((button) =>
+      button.addEventListener("click", async () => {
+        collect1();
+        const platform = button.dataset.socialOauth;
+        window.__lastOAuthPlatform = platform;
+        const oldText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Đang kết nối…";
+
+        let popup = null;
+        let pollTimer = null;
+        let bc = null;
+
+        const cleanup = () => {
+          if (pollTimer) clearInterval(pollTimer);
+          window.removeEventListener("message", handleMessage);
+          if (bc) bc.close();
+          button.disabled = false;
+          button.textContent = oldText;
+        };
+
+        const handleSuccess = (stats) => {
+          cleanup();
+          applySocialStats(stats);
+        };
+
+        const handleMessage = (event) => {
+          if (event.data?.type === "KOC_OAUTH_SUCCESS") {
+            handleSuccess(event.data.payload);
+          } else if (event.data?.type === "KOC_OAUTH_ERROR") {
+            cleanup();
+            toast(event.data.error || "Xác thực không thành công", "err");
+            render();
+          }
+        };
+
+        try {
+          const res = await get(`/api/oauth/social/auth-url?platform=${encodeURIComponent(platform)}`);
+          const width = 580;
+          const height = 660;
+          const left = window.screenX + (window.outerWidth - width) / 2;
+          const top = window.screenY + (window.outerHeight - height) / 2;
+          popup = window.open(
+            res.authUrl,
+            `oauth_${platform}`,
+            `width=${width},height=${height},left=${left},top=${top},status=no,toolbar=no,menubar=no`,
+          );
+
+          const state = res.state;
+          window.addEventListener("message", handleMessage);
+          try {
+            bc = new BroadcastChannel("koc_oauth_channel");
+            bc.onmessage = handleMessage;
+          } catch (_) {}
+
+          let isHandled = false;
+          pollTimer = setInterval(async () => {
+            if (isHandled) return;
+
+            // Poll local server for OAuth completion state
+            if (state) {
+              try {
+                const check = await get(`/api/oauth/social/status?state=${encodeURIComponent(state)}`);
+                if (check?.status === "completed" && check.stats) {
+                  isHandled = true;
+                  if (popup && !popup.closed) popup.close();
+                  handleSuccess(check.stats);
+                  return;
+                } else if (check?.status === "error") {
+                  isHandled = true;
+                  if (popup && !popup.closed) popup.close();
+                  cleanup();
+                  toast(check.error || "Xác thực không thành công", "err");
+                  render();
+                  return;
+                }
+              } catch (_) {}
+            }
+
+            // Check if popup was closed by user
+            if (popup && popup.closed) {
+              clearInterval(pollTimer);
+              if (state && !isHandled) {
+                try {
+                  const check = await get(`/api/oauth/social/status?state=${encodeURIComponent(state)}`);
+                  if (check?.status === "completed" && check.stats) {
+                    isHandled = true;
+                    handleSuccess(check.stats);
+                    return;
+                  }
+                } catch (_) {}
+              }
+              cleanup();
+              if (!isHandled) {
+                toast("Nếu popup chuyển về URL chứa mã 'code=', bạn có thể dán vào ô 'Đồng bộ OAuth' bên dưới.", "ok");
+              }
+            }
+          }, 800);
+        } catch (err) {
+          cleanup();
+          toast(err.message || "Lỗi khởi tạo OAuth", "err");
+        }
       }),
     );
   }
@@ -504,7 +755,7 @@ export function renderOnboarding(el) {
     const prov = el.querySelector("#o-prov");
     if (prov) d.province = prov.value;
     const fol = el.querySelector("#o-fol");
-    if (fol) d.followers = Number(fol.value) || 0;
+    if (fol && !fol.hasAttribute("readonly")) d.followers = Number(fol.value) || 0;
     const bio = el.querySelector("#o-bio");
     if (bio) d.bio = bio.value;
     const other = el.querySelector("#o-cat-other");
@@ -514,12 +765,17 @@ export function renderOnboarding(el) {
     );
     const socialInputs = [...el.querySelectorAll("[data-social-link]")];
     if (socialInputs.length) {
-      d.socials = socialInputs.map((input, index) => ({
-        ...currentByPlatform.get(input.dataset.platform),
-        platform: input.dataset.platform,
-        handle: input.value.trim(),
-        followers: index === 0 ? d.followers : Number(currentByPlatform.get(input.dataset.platform)?.followers || d.followers),
-      }));
+      d.socials = socialInputs.map((input) => {
+        const platform = input.dataset.platform;
+        const existing = currentByPlatform.get(platform) || {};
+        const val = input.value.trim();
+        return {
+          ...existing,
+          platform,
+          handle: val || (existing.verified ? existing.handle : ""),
+          followers: Number(existing.followers) || 0,
+        };
+      });
     }
   }
   function validate1() {
@@ -543,7 +799,12 @@ export function renderOnboarding(el) {
     }
     const missingLink = d.socials.find((social) => !social.handle);
     if (missingLink) {
-      toast(`Nhập link kênh ${missingLink.platform}`, "err");
+      toast(
+        (d.socialMode || "auto") === "manual"
+          ? `Vui lòng nhập link kênh ${missingLink.platform}`
+          : `Vui lòng kết nối xác thực kênh ${missingLink.platform}`,
+        "err",
+      );
       return false;
     }
     const invalidLink = d.socials.find(
@@ -616,6 +877,7 @@ export function renderOnboarding(el) {
     return `<div class="field"><label class="required-label">${label}</label>
       <input type="file" accept="image/*" id="${inputId}">
       <div class="muted" id="${inputId}-name" style="font-size:11px;margin-top:4px">${d.files[key] ? "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(d.files[key]) : "Chưa chọn ảnh"}</div>
+      <div class="err" id="${inputId}-err" style="display:none"></div>
       <img id="${inputId}-preview" alt="${label}" style="display:${d.files[key + "Preview"] ? "block" : "none"};margin-top:6px;width:140px;height:96px;object-fit:cover;border-radius:8px" ${d.files[key + "Preview"] ? `src="${d.files[key + "Preview"]}"` : ""}>
     </div>`;
   }
@@ -641,6 +903,7 @@ export function renderOnboarding(el) {
         </div>
         <input type="file" accept="image/*" capture="user" id="o-file-selfie-cam-fallback" style="display:none">
         <div class="muted" id="o-file-selfie-name" style="font-size:11px;margin-top:4px">${d.files.selfie ? "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(d.files.selfie) : "Chưa chọn ảnh"}</div>
+        <div class="err" id="o-file-selfie-err" style="display:none"></div>
         <img id="o-file-selfie-preview" style="display:${d.files.selfiePreview ? "block" : "none"};margin-top:6px;max-width:140px;border-radius:8px" ${d.files.selfiePreview ? `src="${d.files.selfiePreview}"` : ""}>
       </div>
       <h3 style="margin-top:18px;font-size:14px">💳 Thông tin nhận thanh toán</h3>
@@ -686,9 +949,9 @@ export function renderOnboarding(el) {
       inp.addEventListener("change", () => {
         const f = inp.files && inp.files[0];
         if (!f) return;
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type) || f.size > 2_000_000) {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type) || f.size > 10_000_000) {
           inp.value = '';
-          toast('Ảnh phải là JPEG, PNG hoặc WebP và không vượt quá 2 MB', 'err');
+          toast('Ảnh phải là JPEG, PNG hoặc WebP và không vượt quá 10 MB', 'err');
           return;
         }
         d.files[key] = f.name;
@@ -696,6 +959,7 @@ export function renderOnboarding(el) {
           key === "selfie" ? "#o-file-selfie-name" : inputId + "-name",
         );
         if (nameEl) nameEl.innerHTML = "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(f.name);
+        fieldErr(key === "selfie" ? "o-file-selfie-err" : inputId.replace("#", "") + "-err", "");
         const reader = new FileReader();
         reader.onload = () => {
           d.files[key + "Preview"] = reader.result;
@@ -772,6 +1036,7 @@ export function renderOnboarding(el) {
           d.files.selfiePreview = dataUrl;
           const nameEl = el.querySelector("#o-file-selfie-name");
           if (nameEl) nameEl.innerHTML = "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(name);
+          fieldErr("o-file-selfie-err", "");
           showSelfiePreview(dataUrl);
           stopStream();
           closeModal();
@@ -805,6 +1070,9 @@ export function renderOnboarding(el) {
     fieldErr("o-cccd-date-err", "");
     fieldErr("o-cccd-place-err", "");
     fieldErr("o-address-err", "");
+    fieldErr("o-file-front-err", "");
+    fieldErr("o-file-back-err", "");
+    fieldErr("o-file-selfie-err", "");
     fieldErr("o-bank-name-err", "");
     fieldErr("o-bank-account-err", "");
     fieldErr("o-bank-owner-err", "");
@@ -830,9 +1098,20 @@ export function renderOnboarding(el) {
       fieldErr("o-address-err", "Nhập địa chỉ thường trú");
       ok = false;
     }
+    if (!d.files.front) {
+      fieldErr("o-file-front-err", "Vui lòng tải ảnh CCCD mặt trước");
+      ok = false;
+    }
+    if (!d.files.back) {
+      fieldErr("o-file-back-err", "Vui lòng tải ảnh CCCD mặt sau");
+      ok = false;
+    }
+    if (!d.files.selfie) {
+      fieldErr("o-file-selfie-err", "Vui lòng chụp hoặc tải ảnh chân dung (cầm CCCD)");
+      ok = false;
+    }
     if (!d.files.front || !d.files.back || !d.files.selfie) {
       toast("Vui lòng tải đủ ảnh hai mặt CCCD và ảnh chân dung", "err");
-      ok = false;
     }
     if (!d.bankName.trim()) {
       fieldErr("o-bank-name-err", "Chọn ngân hàng nhận thanh toán");
@@ -1313,6 +1592,7 @@ export function renderOnboarding(el) {
         province: d.province,
         categories: d.categories,
         followers: d.followers,
+        followerVerificationToken: "",
         bio: d.bio,
         socials: d.socials,
         prices: d.prices,

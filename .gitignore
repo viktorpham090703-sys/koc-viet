@@ -10,3 +10,4 @@ __pycache__/
 .freebuff/
 migration-backups/
 database/local-backups/
+.kv-storage.json
