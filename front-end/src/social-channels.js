@@ -184,7 +184,7 @@ export function socialChannelPickerHtml({
               const isVerified = isSelected && Boolean(drafts[index].verified);
               return `<button type="button" class="social-platform-pill${isSelected ? " selected" : ""}${isVerified ? " verified" : ""}" data-social-toggle="${safe(channel.platform)}" aria-pressed="${isSelected}">
                 <span class="platform-pill-icon">${socialPlatformIcon(channel.platform, 18)}</span>
-                <span class="platform-pill-name">${safe(channel.platform)}${channel.platform === "Threads" ? ' <span class="platform-pill-demo-tag" style="font-size:10px;background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:4px;font-weight:600;margin-left:2px">Demo</span>' : ''}</span>
+                <span class="platform-pill-name">${safe(channel.platform)}</span>
                 ${isSelected ? '<span class="platform-pill-status check">✓</span>' : '<span class="platform-pill-status add">+</span>'}
               </button>`;
             }).join("")}
@@ -204,7 +204,7 @@ export function socialChannelPickerHtml({
             <div class="social-manual-field-header">
               <div class="social-card-brand">
                 <span class="social-brand-logo">${socialPlatformIcon(social.platform, 20)}</span>
-                <span class="social-brand-name">${safe(social.platform)}${social.platform === "Threads" ? ' <span class="social-card-demo-badge" style="font-size:11px;font-weight:600;color:#d97706;background:#fffbeb;padding:1px 6px;border-radius:4px;border:1px solid #fde68a;margin-left:4px">Demo</span>' : ''}</span>
+                <span class="social-brand-name">${safe(social.platform)}</span>
                 <span class="social-role-badge ${index === 0 ? "primary" : "secondary"}">
                   ${index === 0 ? (isVerified ? "Kênh chính · Đã xác minh" : safe(primaryLabel)) : "Kênh phụ"}
                 </span>

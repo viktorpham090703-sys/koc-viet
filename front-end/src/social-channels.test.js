@@ -251,5 +251,26 @@ test("renders Demo badge and note for Threads platform", () => {
   assert.ok(html.includes("chế độ thử nghiệm (Demo)"), "Explains demo status in subtext");
 });
 
+test("does not render Demo badge for Threads in manual mode", () => {
+  const html = socialChannelPickerHtml({
+    socials: [
+      {
+        platform: "Threads",
+        handle: "https://www.threads.net/@creator",
+        followers: 0,
+        verified: false,
+      },
+    ],
+    prefix: "test",
+    escapeHtml: (s) => s,
+    mode: "manual",
+  });
+
+  assert.ok(!html.includes('class="platform-pill-demo-tag"'), "No Demo badge in manual platform pill");
+  assert.ok(!html.includes('class="social-card-demo-badge"'), "No Demo badge in manual social card header");
+  assert.ok(!html.includes("Demo"), "No Demo text appears in manual mode for Threads");
+});
+
+
 
 

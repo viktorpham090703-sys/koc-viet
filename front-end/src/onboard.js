@@ -181,14 +181,43 @@ export function renderOnboarding(el) {
     render();
   }
 
+  let lastRenderedStep = -1;
+
   function render() {
     stopOtpTimer();
-    if (step === 0) return renderStep0();
-    if (step === 1) return renderStep1();
-    if (step === 2) return renderStep2();
-    if (step === 3) return renderStep3();
-    if (step === 4) return renderStep4();
-    if (step === 5) return renderStep5();
+    const panel = el.querySelector(".onboard-panel");
+    const prevPanelScrollTop = panel ? panel.scrollTop : 0;
+    const prevWindowScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    const isSameStep = step === lastRenderedStep;
+
+    if (step === 0) renderStep0();
+    else if (step === 1) renderStep1();
+    else if (step === 2) renderStep2();
+    else if (step === 3) renderStep3();
+    else if (step === 4) renderStep4();
+    else if (step === 5) renderStep5();
+
+    lastRenderedStep = step;
+
+    if (isSameStep) {
+      const newPanel = el.querySelector(".onboard-panel");
+      if (newPanel && prevPanelScrollTop > 0) {
+        newPanel.scrollTop = prevPanelScrollTop;
+      }
+      if (prevWindowScrollY > 0) {
+        window.scrollTo({ top: prevWindowScrollY, behavior: "instant" });
+      }
+      requestAnimationFrame(() => {
+        const p = el.querySelector(".onboard-panel");
+        if (p && prevPanelScrollTop > 0 && Math.abs(p.scrollTop - prevPanelScrollTop) > 2) {
+          p.scrollTop = prevPanelScrollTop;
+        }
+        const winY = window.scrollY || document.documentElement.scrollTop || 0;
+        if (prevWindowScrollY > 0 && Math.abs(winY - prevWindowScrollY) > 2) {
+          window.scrollTo({ top: prevWindowScrollY, behavior: "instant" });
+        }
+      });
+    }
   }
 
   // ---------- Step 0: Họ tên, SĐT, Email + OTP qua email ----------
@@ -545,22 +574,6 @@ export function renderOnboarding(el) {
         primaryLabel: "Kênh chính",
         mode: d.socialMode || "auto",
       })}
-      ${isManual ? "" : `
-        <div class="social-manual-sync-box" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;margin-bottom:16px">
-          <div style="font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:6px">
-            <span>💡 Hỗ trợ kết nối khi trình duyệt không tự đóng cửa sổ</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5">
-            Nếu bạn đã hoàn tất đăng nhập mạng xã hội mà cửa sổ chưa tự đóng hoặc hiển thị đường link chứa mã xác nhận, hãy dán toàn bộ đường link vào đây:
-          </div>
-          <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
-            <input id="o-manual-oauth-code" type="text" placeholder="Dán liên kết xác nhận https://... vào đây" style="flex:1 1 auto;min-width:0;width:100%;height:42px;padding:0 14px;border:1.5px solid #cbd5e1;border-radius:9px;font-size:13px;background:#fff;outline:none;box-sizing:border-box">
-            <button type="button" id="o-sync-manual-oauth" style="flex:0 0 auto;width:auto;height:42px;padding:0 18px;border:1.5px solid var(--primary);border-radius:9px;background:#fff;color:var(--primary);font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">
-              Hoàn tất kết nối
-            </button>
-          </div>
-        </div>
-      `}
       <div class="field">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
           <label class="required-label" for="o-fol" style="margin:0">Tổng số người theo dõi</label>
@@ -571,47 +584,10 @@ export function renderOnboarding(el) {
       <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">${(!isManual && hasVerified) ? "✓ Số lượng người theo dõi đã được đồng bộ tự động từ tài khoản mạng xã hội và được khóa để bảo vệ độ chính xác hồ sơ." : "Bạn cần có tối thiểu 1.000 người theo dõi để đăng ký tài khoản KOC."}</p>
       <div class="field"><label>Giới thiệu</label><textarea id="o-bio" rows="2">${esc(d.bio)}</textarea></div>`);
     bindChrome();
-
-    const syncBtn = el.querySelector("#o-sync-manual-oauth");
-    if (syncBtn) {
-      syncBtn.addEventListener("click", async () => {
-        const inp = el.querySelector("#o-manual-oauth-code");
-        let val = inp?.value?.trim() || "";
-        if (!val) {
-          toast("Vui lòng dán link callback hoặc mã code", "err");
-          return;
-        }
-
-        let detectedPlatform = window.__lastOAuthPlatform || "Instagram";
-        const valLower = val.toLowerCase();
-        if (valLower.includes("instagram") || valLower.includes("platform=instagram")) detectedPlatform = "Instagram";
-        else if (valLower.includes("facebook") || valLower.includes("platform=facebook")) detectedPlatform = "Facebook";
-        else if (valLower.includes("youtube") || valLower.includes("google") || valLower.includes("platform=youtube")) detectedPlatform = "YouTube";
-        else if (valLower.includes("tiktok") || valLower.includes("platform=tiktok")) detectedPlatform = "TikTok";
-        else if (val.startsWith("AQ") || val.includes("code=AQ")) detectedPlatform = window.__lastOAuthPlatform || "Instagram";
-
-        syncBtn.disabled = true;
-        syncBtn.textContent = "Đang đồng bộ…";
-        try {
-          const res = await post("/api/oauth/social/exchange", {
-            platform: detectedPlatform,
-            code: val,
-          });
-          if (res?.stats) {
-            applySocialStats(res.stats);
-          } else {
-            toast("Không nhận được dữ liệu kênh từ mã code đã dán", "err");
-          }
-        } catch (e) {
-          toast(e.message || "Lỗi đồng bộ mã token", "err");
-        } finally {
-          syncBtn.disabled = false;
-          syncBtn.textContent = "Hoàn tất kết nối";
-        }
-      });
-    }
     el.querySelectorAll("#o-cats [data-c]").forEach((b) =>
-      b.addEventListener("click", () => {
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         collect1();
         const c = b.dataset.c;
         if (d.categories.includes(c))
@@ -621,14 +597,18 @@ export function renderOnboarding(el) {
       }),
     );
     el.querySelectorAll("[data-social-mode]").forEach((button) =>
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         collect1();
         d.socialMode = button.dataset.socialMode;
         render();
       }),
     );
     el.querySelectorAll("[data-social-toggle]").forEach((button) =>
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         collect1();
         const platform = button.dataset.socialToggle;
         const index = d.socials.findIndex(
@@ -739,9 +719,6 @@ export function renderOnboarding(el) {
                 } catch (_) {}
               }
               cleanup();
-              if (!isHandled) {
-                toast("Nếu popup chuyển về URL chứa mã 'code=', bạn có thể dán vào ô 'Đồng bộ OAuth' bên dưới.", "ok");
-              }
             }
           }, 800);
         } catch (err) {
