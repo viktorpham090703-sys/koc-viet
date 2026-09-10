@@ -753,6 +753,29 @@ async function kocManagement(el, section = "queue") {
   else await queue(content);
 }
 
+const kocFollowerFormatter = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+function compactKocFollowers(value) {
+  const count = Number(value);
+  return kocFollowerFormatter.format(Number.isFinite(count) ? Math.max(0, count) : 0).toLowerCase();
+}
+function kocDirectoryCategories(categories) {
+  const values = [...new Set((Array.isArray(categories) ? categories : [])
+    .filter((value) => typeof value === "string")
+    .map((value) => value.trim()).filter(Boolean))];
+  if (!values.length) return '<span class="muted">—</span>';
+  const labels = (items) => items.map((value) => `<span class="koc-category-chip">${esc(value)}</span>`).join("");
+  if (values.length <= 2) return `<div class="koc-category-list">${labels(values)}</div>`;
+  return `<details class="koc-categories">
+    <summary class="koc-category-list">${labels(values.slice(0, 2))}
+      <span class="koc-category-toggle"><span class="koc-category-expand">+${values.length - 2} ngành</span><span class="koc-category-collapse">Thu gọn</span></span>
+    </summary>
+    <div class="koc-category-list">${labels(values.slice(2))}</div>
+  </details>`;
+}
+
 let kocDirectoryFilters = { page: 1, search: "", searchBy: "name", status: "" };
 const kocDirectorySearchFields = {
   name: { label: "Tên KOC", placeholder: "Nhập tên KOC, có dấu hoặc không dấu" },
@@ -804,12 +827,13 @@ async function loadKocDirectory(el) {
     box.innerHTML = empty("👤", "Không tìm thấy KOC phù hợp");
     return;
   }
-  box.innerHTML = `<div class="table-wrap"><table class="koc-directory-table"><thead><tr><th>KOC</th><th>Thời gian tạo hồ sơ</th><th>Liên hệ</th><th>Hạng</th><th>Ngành hàng</th><th>Người theo dõi</th><th>Đánh giá</th><th>Trạng thái</th><th></th></tr></thead><tbody>
-    ${r.kocs.map((k) => `<tr><td><div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><b>${esc(k.name)}</b></div></td>
-      <td class="muted">${dateTimeStack(k.created_at)}</td>
-      <td><div>${esc(k.phone || "—")}</div><div class="muted" style="font-size:11px">${esc(k.email || "—")}</div></td>
-      <td>${tierBadge(k.tier)}</td><td>${esc((k.categories || []).join(", ") || "—")}</td><td>${num(k.followers)}</td><td>${stars(k.rating)}</td><td>${statusChip(k.status)}</td>
-      <td><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button></td></tr>`).join("")}
+  box.innerHTML = `<div class="table-wrap"><table class="koc-directory-table"><thead><tr><th>KOC</th><th>Thời gian tạo hồ sơ</th><th>Liên hệ</th><th>Hạng</th><th>Ngành hàng</th><th>Người theo dõi</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    ${r.kocs.map((k) => `<tr><td data-label="KOC"><div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><b>${esc(k.name)}</b></div></td>
+      <td data-label="Thời gian tạo hồ sơ" class="muted">${dateTimeStack(k.created_at)}</td>
+      <td data-label="Liên hệ"><div>${esc(k.phone || "—")}</div><div class="muted" style="font-size:11px">${esc(k.email || "—")}</div></td>
+      <td data-label="Hạng">${tierBadge(k.tier)}</td><td data-label="Ngành hàng">${kocDirectoryCategories(k.categories)}</td>
+      <td data-label="Người theo dõi"><span title="${esc(num(k.followers))} người theo dõi" aria-label="${esc(num(k.followers))} người theo dõi">${compactKocFollowers(k.followers)}</span></td><td data-label="Trạng thái">${statusChip(k.status)}</td>
+      <td data-label="Thao tác"><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml(r.page, r.pages)}`;
   box.querySelectorAll("[data-koc-directory-detail]").forEach((button) =>
     button.addEventListener("click", () => kocDetail(r.kocs.find((k) => k.id === button.dataset.kocDirectoryDetail))),
