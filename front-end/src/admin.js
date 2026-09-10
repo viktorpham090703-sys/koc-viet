@@ -751,12 +751,18 @@ async function kocManagement(el, section = "queue") {
   else await queue(content);
 }
 
-let kocDirectoryFilters = { page: 1, search: "", status: "" };
+let kocDirectoryFilters = { page: 1, search: "", searchBy: "name", status: "" };
+const kocDirectorySearchFields = {
+  name: { label: "Tên KOC", placeholder: "Nhập tên KOC, có dấu hoặc không dấu" },
+  email: { label: "Email", placeholder: "Nhập email KOC" },
+  phone: { label: "Số điện thoại", placeholder: "Nhập số điện thoại KOC" },
+};
 async function kocDirectory(el) {
   el.innerHTML = `<div class="between"><div><h1>Thông tin KOC</h1><p class="muted">Tra cứu hồ sơ, chỉ số hoạt động và thông tin thanh toán của KOC.</p></div></div>
     <div class="filters" style="margin:14px 0">
-      <div class="field" style="flex:1"><label>Tìm kiếm</label><input id="koc-directory-search" value="${esc(kocDirectoryFilters.search)}" placeholder="Tên, email hoặc số điện thoại"></div>
-      <div class="field"><label>Trạng thái</label><select id="koc-directory-status">
+      <div class="field"><label for="koc-directory-search-by">Tìm theo</label><select id="koc-directory-search-by">${Object.entries(kocDirectorySearchFields).map(([value, field]) => `<option value="${value}" ${kocDirectoryFilters.searchBy === value ? "selected" : ""}>${field.label}</option>`).join("")}</select></div>
+      <div class="field" style="flex:1"><label for="koc-directory-search">Tìm kiếm</label><input type="search" maxlength="120" id="koc-directory-search" value="${esc(kocDirectoryFilters.search)}" placeholder="${kocDirectorySearchFields[kocDirectoryFilters.searchBy].placeholder}"></div>
+      <div class="field"><label for="koc-directory-status">Trạng thái</label><select id="koc-directory-status">
         <option value="">Tất cả</option>
         <option value="pending" ${kocDirectoryFilters.status === "pending" ? "selected" : ""}>Chờ duyệt</option>
         <option value="leader_ok" ${kocDirectoryFilters.status === "leader_ok" ? "selected" : ""}>Trưởng nhóm đã duyệt</option>
@@ -770,6 +776,7 @@ async function kocDirectory(el) {
     kocDirectoryFilters = {
       page: 1,
       search: el.querySelector("#koc-directory-search").value.trim(),
+      searchBy: el.querySelector("#koc-directory-search-by").value,
       status: el.querySelector("#koc-directory-status").value,
     };
     loadKocDirectory(el);
@@ -777,13 +784,17 @@ async function kocDirectory(el) {
   el.querySelector("#koc-directory-search").addEventListener("keydown", (event) => {
     if (event.key === "Enter") el.querySelector("#koc-directory-filter").click();
   });
+  el.querySelector("#koc-directory-search-by").addEventListener("change", (event) => {
+    el.querySelector("#koc-directory-search").placeholder = kocDirectorySearchFields[event.target.value].placeholder;
+    el.querySelector("#koc-directory-filter").click();
+  });
   await loadKocDirectory(el);
 }
 
 async function loadKocDirectory(el) {
   const box = el.querySelector("#koc-directory-list");
   box.innerHTML = skeletonPage("table");
-  const qs = new URLSearchParams({ page: String(kocDirectoryFilters.page) });
+  const qs = new URLSearchParams({ page: String(kocDirectoryFilters.page), searchBy: kocDirectoryFilters.searchBy });
   if (kocDirectoryFilters.search) qs.set("search", kocDirectoryFilters.search);
   if (kocDirectoryFilters.status) qs.set("status", kocDirectoryFilters.status);
   const r = await api("/api/admin/kocs?" + qs.toString());

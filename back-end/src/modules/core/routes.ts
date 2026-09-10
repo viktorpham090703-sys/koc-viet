@@ -5825,9 +5825,11 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         bind.push(q.get("status"));
       }
       if (q.get("search")) {
-        where.push(`(name LIKE ? OR email LIKE ? OR phone LIKE ?)`);
-        const term = `%${q.get("search")}%`;
-        bind.push(term, term, term);
+        // Plain text searches names; contact details require an explicit field.
+        const field = ['email', 'phone'].includes(q.get('searchBy')) ? q.get('searchBy') : 'name';
+        const search = sqlSearch([field], q.get('search'));
+        where.push(search.sql);
+        bind.push(...search.bindings);
       }
       const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
       const total = Number(
