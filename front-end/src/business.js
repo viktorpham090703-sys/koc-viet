@@ -74,23 +74,31 @@ const NAV = [
 ];
 
 export async function renderBusiness(el, hash) {
-  const page = hash.replace("#/", "") || "dashboard";
-  const active =
-    "#/" +
-    ([
-      "dashboard",
-      "find",
-      "orders",
-      "products",
-      "aiclone-booking",
-      "wallet",
-      "kol",
-      "campaigns",
-      "report",
-      "profile",
-    ].includes(page)
-      ? page
-      : "dashboard");
+  const params = new URLSearchParams(location.search);
+  const routeParam = params.get("app_route") || params.get("vnp_route");
+  let defaultPage = "dashboard";
+  if (routeParam && ["wallet", "orders"].includes(routeParam)) {
+    defaultPage = routeParam;
+  } else if (params.get("vnp_ResponseCode") || params.get("payos")) {
+    defaultPage = "wallet";
+  }
+  const cleanHash = (hash || "").split("?")[0];
+  const rawPage = cleanHash.replace("#/", "") || defaultPage;
+  const page = [
+    "dashboard",
+    "find",
+    "orders",
+    "products",
+    "aiclone-booking",
+    "wallet",
+    "kol",
+    "campaigns",
+    "report",
+    "profile",
+  ].includes(rawPage)
+    ? rawPage
+    : defaultPage;
+  const active = "#/" + page;
   el.innerHTML = `<div class="portal business-portal">
     ${sidebar(active)}
     <div class="main"><div class="topbar portal-topbar">
@@ -596,28 +604,53 @@ let businessOrdersSearch = "";
 async function orders(el, page = businessOrdersPage) {
   businessOrdersPage = Math.max(1, Number(page) || 1);
   const params = new URLSearchParams(location.search);
-  const payOSResult = params.get("payos");
-  const orderCode = Number(params.get("orderCode"));
-  if (payOSResult && Number.isSafeInteger(orderCode)) {
-    try {
-      const payment = await post("/api/booking/payment/status", {
-        order_code: orderCode,
-      });
-      if (payment.status === "paid") {
-        toast(
-          "Thanh toán thành công · booking đã hoàn tất và KOC nhận 95%",
-          "ok",
-        );
-      } else if (payment.status === "cancelled") {
-        toast("Bạn đã hủy thanh toán", "err");
-      } else {
-        toast("Thanh toán đang được xác nhận", "ok");
+  const hashQuery = location.hash.includes("?") ? location.hash.split("?").slice(1).join("?") : "";
+  const hashParams = new URLSearchParams(hashQuery);
+  const payOSResult = params.get("payos") || hashParams.get("payos");
+  const vnpResponseCode = params.get("vnp_ResponseCode") || hashParams.get("vnp_ResponseCode");
+  const orderCode = Number(params.get("orderCode") || hashParams.get("orderCode") || params.get("vnp_TxnRef") || hashParams.get("vnp_TxnRef"));
+  if (vnpResponseCode || (payOSResult && Number.isSafeInteger(orderCode))) {
+    if (vnpResponseCode) {
+      try {
+        const vnpPayload = {};
+        for (const [k, v] of params.entries()) vnpPayload[k] = v;
+        for (const [k, v] of hashParams.entries()) if (!vnpPayload[k]) vnpPayload[k] = v;
+        const res = await post("/api/vnpay/verify-return", vnpPayload);
+        if (res.ok && res.status === "paid") {
+          toast("Thanh toán qua VNPAY thành công · booking đã hoàn tất và KOC nhận 95%", "ok");
+        } else if (vnpResponseCode === "00") {
+          toast("Thanh toán qua VNPAY thành công!", "ok");
+        } else {
+          toast("Giao dịch VNPAY không thành công hoặc bạn đã hủy", "err");
+        }
+      } catch (e) {
+        console.warn("VNPAY return verify error:", e);
+        if (vnpResponseCode === "00") {
+          toast("Thanh toán qua VNPAY thành công!", "ok");
+        } else {
+          toast(e.message || "Giao dịch VNPAY không thành công", "err");
+        }
       }
-    } catch (e) {
-      toast(e.message, "err");
-    } finally {
-      history.replaceState({}, "", `${location.pathname}${location.hash}`);
+    } else if (payOSResult && Number.isSafeInteger(orderCode)) {
+      try {
+        const payment = await post("/api/booking/payment/status", {
+          order_code: orderCode,
+        });
+        if (payment.status === "paid") {
+          toast(
+            "Thanh toán thành công · booking đã hoàn tất và KOC nhận 95%",
+            "ok",
+          );
+        } else if (payment.status === "cancelled") {
+          toast("Bạn đã hủy thanh toán", "err");
+        } else {
+          toast("Thanh toán đang được xác nhận", "ok");
+        }
+      } catch (e) {
+        toast(e.message, "err");
+      }
     }
+    history.replaceState({}, "", `${location.pathname}#/orders`);
   }
   const r = await api(`/api/bookings?page=${businessOrdersPage}&per=50&search=${encodeURIComponent(businessOrdersSearch)}`);
   businessOrdersPage = r.page || businessOrdersPage;
@@ -2037,25 +2070,50 @@ async function profile(el, editing = false) {
 
 async function wallet(el) {
   const params = new URLSearchParams(location.search);
-  const payOSResult = params.get("payos");
-  const orderCode = Number(params.get("orderCode"));
-  if (payOSResult && Number.isSafeInteger(orderCode)) {
-    try {
-      const payment = await post("/api/booking/payment/status", {
-        order_code: orderCode,
-      });
-      if (payment.status === "paid") {
-        toast("Thanh toán hoặc nạp tiền thành công!", "ok");
-      } else if (payment.status === "cancelled") {
-        toast("Bạn đã hủy giao dịch", "err");
-      } else {
-        toast("Giao dịch đang được xác nhận", "ok");
+  const hashQuery = location.hash.includes("?") ? location.hash.split("?").slice(1).join("?") : "";
+  const hashParams = new URLSearchParams(hashQuery);
+  const payOSResult = params.get("payos") || hashParams.get("payos");
+  const vnpResponseCode = params.get("vnp_ResponseCode") || hashParams.get("vnp_ResponseCode");
+  const orderCode = Number(params.get("orderCode") || hashParams.get("orderCode") || params.get("vnp_TxnRef") || hashParams.get("vnp_TxnRef"));
+  if (vnpResponseCode || (payOSResult && Number.isSafeInteger(orderCode))) {
+    if (vnpResponseCode) {
+      try {
+        const vnpPayload = {};
+        for (const [k, v] of params.entries()) vnpPayload[k] = v;
+        for (const [k, v] of hashParams.entries()) if (!vnpPayload[k]) vnpPayload[k] = v;
+        const res = await post("/api/vnpay/verify-return", vnpPayload);
+        if (res.ok && res.status === "paid") {
+          toast("Nạp tiền ví qua VNPAY thành công!", "ok");
+        } else if (vnpResponseCode === "00") {
+          toast("Nạp tiền ví qua VNPAY thành công!", "ok");
+        } else {
+          toast("Giao dịch VNPAY không thành công hoặc bạn đã hủy", "err");
+        }
+      } catch (e) {
+        console.warn("VNPAY return verify error:", e);
+        if (vnpResponseCode === "00") {
+          toast("Nạp tiền ví qua VNPAY thành công!", "ok");
+        } else {
+          toast(e.message || "Giao dịch VNPAY không thành công", "err");
+        }
       }
-    } catch (e) {
-      toast(e.message, "err");
-    } finally {
-      history.replaceState({}, "", `${location.pathname}${location.hash}`);
+    } else if (payOSResult && Number.isSafeInteger(orderCode)) {
+      try {
+        const payment = await post("/api/booking/payment/status", {
+          order_code: orderCode,
+        });
+        if (payment.status === "paid") {
+          toast("Thanh toán hoặc nạp tiền thành công!", "ok");
+        } else if (payment.status === "cancelled") {
+          toast("Bạn đã hủy giao dịch", "err");
+        } else {
+          toast("Giao dịch đang được xác nhận", "ok");
+        }
+      } catch (e) {
+        toast(e.message, "err");
+      }
     }
+    history.replaceState({}, "", `${location.pathname}#/wallet`);
   }
 
   const w = await api("/api/wallet");
@@ -2112,7 +2170,7 @@ async function wallet(el) {
                   <td style="padding:8px"><span class="chip ${p.purpose === "deposit" ? "g" : p.purpose === "escrow" ? "b" : "w"}">${p.purpose === "deposit" ? "Nạp tiền" : p.purpose === "escrow" ? "Khoản đảm bảo" : "Thanh toán"}</span></td>
                   <td style="padding:8px"><span class="chip ghost">${p.provider === "demo" ? "⚡ Thử nghiệm" : "🏦 Trực tuyến"}</span></td>
                   <td style="padding:8px"><b class="money">${money(p.amount)}</b></td>
-                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? '<span class="chip w">⏳ Chờ thanh toán</span>' : '<span class="chip r">Thất bại</span>'}</td>
+                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? `<div style="display:flex;align-items:center;gap:6px"><span class="chip w">⏳ Chờ thanh toán</span><button class="btn ghost sm sync-payment-btn" data-order="${esc(p.order_code)}" style="padding:2px 8px;font-size:11px" title="Kiểm tra trạng thái từ VNPAY">🔄 Kiểm tra</button></div>` : '<span class="chip r">Thất bại</span>'}</td>
                   <td style="padding:8px;font-size:12px" class="muted">${dateTimeStack(p.created_at)}</td>
                 </tr>
               `,
@@ -2134,6 +2192,27 @@ async function wallet(el) {
     itemSelector: ".business-wallet-payments tbody > tr",
     containerSelector: ".business-wallet-payments",
   });
+  el.querySelectorAll(".sync-payment-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const code = Number(btn.dataset.order);
+      btn.disabled = true;
+      btn.textContent = "Đang kiểm tra...";
+      try {
+        const res = await post("/api/booking/payment/status", { order_code: code });
+        if (res.status === "paid") {
+          toast("Giao dịch đã được xác nhận thành công!", "ok");
+        } else {
+          toast(`Trạng thái giao dịch: ${res.status}`, "ok");
+        }
+        await wallet(el);
+      } catch (err) {
+        toast(err.message || "Không thể kiểm tra giao dịch", "err");
+        btn.disabled = false;
+        btn.textContent = "🔄 Kiểm tra";
+      }
+    });
+  });
   el.querySelector("#w-deposit-payos").addEventListener("click", () =>
     depositModal(),
   );
@@ -2142,7 +2221,7 @@ async function wallet(el) {
 function depositModal() {
   const m = modal(`
     <h2>Nạp tiền trực tuyến</h2>
-    <p class="muted" style="margin-bottom:12px">Thanh toán nhanh bằng mã QR ngân hàng.</p>
+    <p class="muted" style="margin-bottom:12px">Thanh toán an toàn qua cổng <strong>VNPAY-QR</strong> (quét mã ngân hàng, thẻ ATM, thẻ quốc tế).</p>
     <div class="field">
       <label class="required-label">Chọn mốc số tiền hoặc nhập số tiền khác</label>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">
@@ -2153,7 +2232,7 @@ function depositModal() {
       </div>
       <input id="dep-amt" type="number" placeholder="Nhập số tiền (tối thiểu 10.000đ)" value="500000" min="10000" step="10000">
     </div>
-    <button class="btn primary" id="dep-go" style="width:100%;margin-top:8px">💳 Mở trang thanh toán</button>
+    <button class="btn primary" id="dep-go" style="width:100%;margin-top:8px">💳 Thanh toán qua VNPAY</button>
     <button class="btn ghost" id="dep-cancel" style="width:100%;margin-top:6px">Hủy</button>
   `);
 

@@ -30,6 +30,10 @@ export function createApp(config: AppConfig) {
   app.use(express.raw({ type: '*/*', limit: '25mb' }))
   app.use('/health', createHealthRouter(pool))
   app.use('/api', createApiRouter(environment))
+  app.get(['/business.html', '/index.html', '/'], (req, res) => {
+    const target = new URL(req.originalUrl, config.frontendOrigin)
+    return res.redirect(target.toString())
+  })
   app.use(notFound)
   app.use(errorHandler)
   return { app, pool, environment }
