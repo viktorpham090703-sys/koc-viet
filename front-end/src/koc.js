@@ -134,7 +134,7 @@ async function home(el) {
     <div class="m-head koc-page-heading koc-dashboard-heading">
       <div class="between"><div><div style="font-size:13px;opacity:.85">Xin chào 👋</div>
         <div style="font-size:20px;font-weight:800">${esc(k.name)}</div></div>
-        <div class="row koc-home-actions" style="gap:8px"><a href="#/notifications" class="chip on-dark">🔔 <span class="notification-count" hidden></span></a>
+        <div class="row koc-home-actions" style="gap:8px"><a href="#/notifications" class="chip on-dark">${icon("notification", "nav-icon")}<span class="notification-count" hidden></span></a>
         <a href="#/profile" class="chip on-dark">👤 Hồ sơ</a>
         <button class="chip on-dark" id="k-logout">Đăng xuất</button></div></div>
       <div class="tint-box on-dark" style="margin-top:14px">

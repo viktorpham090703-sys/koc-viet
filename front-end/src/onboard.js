@@ -75,7 +75,14 @@ export function renderOnboarding(el) {
     return e ? e.value : "";
   };
   const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : "[•]");
-  const fmtDateTime = (v) => (v ? new Date(v).toLocaleString("vi-VN") : "[•]");
+  const fmtDateTime = (v) => (v ? new Date(v).toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }) : "[•]");
   const socialLabel = (social) => {
     if (!social) return "";
     const platform = String(social.platform || "").trim();
@@ -1545,7 +1552,7 @@ export function renderOnboarding(el) {
         <h2>Hồ sơ đã gửi — chờ duyệt</h2>
         <p class="muted" style="margin-top:8px">Hạng: <b>${d.tier}</b></p>
         <div class="copybox" style="margin:12px auto;max-width:420px">Mã hợp đồng: ${esc(d.hash || "").slice(0, 24)}…</div>
-        <p class="muted">Timestamp: ${new Date(d.ts || Date.now()).toLocaleString("vi-VN")}</p>
+        <p class="muted">Timestamp: ${fmtDateTime(d.ts || Date.now())}</p>
         <p class="muted" style="margin-top:14px">Tài khoản đã được tạo. Đội ngũ quản trị sẽ duyệt hồ sơ; sau khi được kích hoạt, bạn mới có thể đăng nhập và xuất hiện trên trang khám phá KOC.</p>
       </div>
       <a href="#/login" class="btn primary">Về trang đăng nhập</a>`,

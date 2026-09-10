@@ -4,6 +4,7 @@ import {
   num,
   esc,
   fmtDateTime,
+  dateTimeStack,
   stars,
   statusChip,
   spinner,
@@ -24,7 +25,6 @@ import { state, logout, enhancePortal } from "./app.js";
 import { renderMarketplaceEmbed } from "./public.js";
 import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
-import { formatPaymentTime } from "./payment-time.js";
 import { socialProfileUrl } from "./social-channels.js";
 import { mountListSearch } from "./list-search.js";
 
@@ -222,7 +222,7 @@ async function aiCloneBooking(el) {
           </select></div>
           <div class="field"><label class="required-label">Số lượng video / KOC</label><input id="ac-video-quantity" type="number" min="1" max="100" value="1"></div>
         </div>
-        <p class="hint">Chiết khấu số lượng: từ 5 video -10% · từ 10 video -15% · từ 20 video -20%.</p>
+        <p class="hint">Admin sẽ đánh giá ngành hàng, số lượng video và yêu cầu nội dung để gửi báo giá chính thức.</p>
         <div class="field"><label>Thông điệp chính</label><input id="ac-message" maxlength="500" placeholder="Thông điệp cốt lõi bắt buộc có trong video"></div>
         <div class="field"><label class="required-label">Brief / Yêu cầu kịch bản</label><textarea id="ac-brief" rows="3" placeholder="Mô tả sản phẩm, đối tượng người xem, giọng điệu, điểm cần nhấn mạnh…"></textarea></div>
         
@@ -235,11 +235,10 @@ async function aiCloneBooking(el) {
         </div>
 
         <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-          <b style="font-size:14px">💰 Báo giá dự kiến & Gửi yêu cầu</b>
-          <div class="tint-box" id="ac-quote" style="margin-top:8px">Vui lòng chọn KOC ở danh sách bên trái để tính báo giá dự kiến.</div>
+          <b style="font-size:14px">📩 Gửi yêu cầu báo giá</b>
+          <div class="tint-box" id="ac-quote" style="margin-top:8px" aria-live="polite">Vui lòng chọn KOC ở danh sách bên trái để gửi yêu cầu báo giá.</div>
           <div class="row" style="gap:8px;margin-top:12px">
             <button class="btn primary" id="ac-submit" style="flex:1;padding:12px;font-weight:600">📩 Gửi yêu cầu báo giá cho Admin</button>
-            <button class="btn ghost" id="ac-contact-quote" style="flex:1;padding:12px;font-weight:600">💬 Liên hệ nhận báo giá trực tiếp</button>
           </div>
           <p class="hint" style="margin-top:8px">Đội ngũ hỗ trợ sẽ tiếp nhận yêu cầu, lập báo giá chính thức và gửi lại để doanh nghiệp thanh toán.</p>
         </div>
@@ -257,7 +256,7 @@ async function aiCloneBooking(el) {
       <div class="row" style="gap:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}" style="width:40px;height:40px"><div><b style="font-size:13px">${esc(k.name)}</b><div>${tierBadge(k.tier)}</div></div></div>
       <div class="muted" style="font-size:11px;margin-top:6px">${esc(k.province || "")} · ${num(k.followers)} người theo dõi</div>
       <div class="muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.categories.map(esc).join(", ")}</div>
-      <div style="margin-top:6px"><span class="chip g" style="font-size:10px">AI Clone Ready</span></div></button>`,
+      <div style="margin-top:6px"><span class="chip g" style="font-size:10px" title="Đã đăng ký AI Clone. Admin sẽ kiểm tra mức độ phù hợp với ngành hàng trong brief.">Đã đăng ký AI Clone</span></div></button>`,
         )
         .join("") || empty("", "Không tìm thấy KOC đã đăng ký AI Clone");
     list.querySelectorAll("[data-koc]").forEach((button) =>
@@ -277,7 +276,9 @@ async function aiCloneBooking(el) {
     el.querySelector("#ac-count").textContent = selected.size;
   };
   const updateQuote = () => {
-    // Báo giá chỉ được hiển thị sau khi Admin kiểm tra và gửi chính thức.
+    el.querySelector("#ac-quote").textContent = selected.size
+      ? `Đã chọn ${selected.size} KOC. Admin sẽ kiểm tra brief và gửi báo giá chính thức. Bạn chưa cần thanh toán ở bước này.`
+      : "Vui lòng chọn KOC ở danh sách bên trái để gửi yêu cầu báo giá.";
   };
   const renderPagination = () => {
     const box = el.querySelector("#ac-pagination");
@@ -712,7 +713,7 @@ function tableBookings(list) {
       .map(
         (
           b,
-        ) => `<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDateTime(b.created_at)}</td><td>${b.batch_size > 1 ? `<b>${b.batch_size} KOC</b><div class="muted" style="font-size:11px">${esc(b.batch_kocs.slice(0, 2).join(", "))}${b.batch_size > 2 ? "…" : ""}</div>` : esc(b.kocname)}</td><td>${esc(b.category)}</td>
+        ) => `<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(b.created_at)}</td><td>${b.batch_size > 1 ? `<b>${b.batch_size} KOC</b><div class="muted" style="font-size:11px">${esc(b.batch_kocs.slice(0, 2).join(", "))}${b.batch_size > 2 ? "…" : ""}</div>` : esc(b.kocname)}</td><td>${esc(b.category)}</td>
       <td class="money">${b.status === "quote_pending" ? "Chờ báo giá" : ["quote_grouped", "payment_grouped"].includes(b.status) ? "Báo giá chung" : money(b.price)}</td><td style="white-space:nowrap">${statusChip(b.status)}</td>
       <td style="width:1%;white-space:nowrap;text-align:right"><button class="btn ghost sm" data-order="${b.id}">Chi tiết</button></td></tr>`,
       )
@@ -1485,7 +1486,7 @@ async function campaigns(el) {
               Number(c.management_fee) ||
               Math.max(2000000, Math.round(Number(c.budget || 0) * 0.15)),
             total = Number(c.total_amount) || Number(c.budget || 0) + fee;
-          return `<tr><td class="campaign-date">${fmtDateTime(c.created_at)}</td><td><div class="campaign-budget"><strong>${money(c.budget)}</strong><span>Phí ${money(fee)}</span><span>Tổng ${money(total)}</span></div>${c.quote_note ? `<div class="campaign-quote-note">${esc(c.quote_note)}</div>` : ""}</td><td><span class="campaign-qty">${c.qty}</span></td><td>${tierBadge(c.tier)}</td><td>${esc(c.category)}</td><td class="campaign-status-cell">${statusChip(c.status)}</td><td>${c.allocations?.length ? c.allocations.map((a) => `<div class="campaign-business-allocation"><div class="campaign-allocation-head"><b>${esc(a.koc_name)}</b><strong>${money(a.amount)}</strong>${statusChip(a.status)}</div>${a.business_note ? `<small>${esc(a.business_note)}</small>` : ""}<div class="campaign-allocation-controls">${a.submission_url ? `<a href="${esc(a.submission_url)}" target="_blank" rel="noopener">Mở nội dung</a>` : ""}${a.status === "submitted" ? `<div class="campaign-allocation-review"><button class="btn ok sm" data-allocation-approve="${a.id}">Duyệt</button><button class="btn ghost sm" data-allocation-revision="${a.id}">Yêu cầu sửa</button></div>` : ""}</div></div>`).join("") : assigned.length ? assigned.map((k) => `<span class="chip b" style="margin:2px">${esc(k.name)}</span>`).join("") : '<span class="campaign-unassigned">Chưa phân bổ</span>'}</td><td><div class="campaign-actions">${c.status === "quoted" ? `<button class="btn primary sm campaign-action-primary" data-campaign-fund="${c.id}">Chấp nhận & ký quỹ</button>` : ""}<div class="campaign-action-secondary"><button class="btn ghost sm" data-campaign-detail="${c.id}">Chi tiết</button>${["pending", "quote_pending", "quoted", "funded"].includes(c.status) ? `<button class="btn ghost sm campaign-cancel-button" data-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div></td></tr>`;
+          return `<tr><td class="campaign-date">${dateTimeStack(c.created_at)}</td><td><div class="campaign-budget"><strong>${money(c.budget)}</strong><span>Phí ${money(fee)}</span><span>Tổng ${money(total)}</span></div>${c.quote_note ? `<div class="campaign-quote-note">${esc(c.quote_note)}</div>` : ""}</td><td><span class="campaign-qty">${c.qty}</span></td><td>${tierBadge(c.tier)}</td><td>${esc(c.category)}</td><td class="campaign-status-cell">${statusChip(c.status)}</td><td>${c.allocations?.length ? c.allocations.map((a) => `<div class="campaign-business-allocation"><div class="campaign-allocation-head"><b>${esc(a.koc_name)}</b><strong>${money(a.amount)}</strong>${statusChip(a.status)}</div>${a.business_note ? `<small>${esc(a.business_note)}</small>` : ""}<div class="campaign-allocation-controls">${a.submission_url ? `<a href="${esc(a.submission_url)}" target="_blank" rel="noopener">Mở nội dung</a>` : ""}${a.status === "submitted" ? `<div class="campaign-allocation-review"><button class="btn ok sm" data-allocation-approve="${a.id}">Duyệt</button><button class="btn ghost sm" data-allocation-revision="${a.id}">Yêu cầu sửa</button></div>` : ""}</div></div>`).join("") : assigned.length ? assigned.map((k) => `<span class="chip b" style="margin:2px">${esc(k.name)}</span>`).join("") : '<span class="campaign-unassigned">Chưa phân bổ</span>'}</td><td><div class="campaign-actions">${c.status === "quoted" ? `<button class="btn primary sm campaign-action-primary" data-campaign-fund="${c.id}">Chấp nhận & ký quỹ</button>` : ""}<div class="campaign-action-secondary"><button class="btn ghost sm" data-campaign-detail="${c.id}">Chi tiết</button>${["pending", "quote_pending", "quoted", "funded"].includes(c.status) ? `<button class="btn ghost sm campaign-cancel-button" data-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div></td></tr>`;
         })
         .join("")}
     </tbody></table>`
@@ -1675,7 +1676,7 @@ async function report(el, page = businessReportPage) {
         .map(
           (
             x,
-          ) => `<tr><td>${esc(x.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDateTime(x.created_at)}</td><td>${esc(x.kocname)}</td><td><span class="chip n">${btLabel(x.booking_type, x.content_type)}</span></td><td class="money">${money(x.price)}</td>
+          ) => `<tr><td>${esc(x.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(x.created_at)}</td><td>${esc(x.kocname)}</td><td><span class="chip n">${btLabel(x.booking_type, x.content_type)}</span></td><td class="money">${money(x.price)}</td>
         <td class="money">${money(x.gmv || 0)}</td><td>${num(x.orders || 0)}</td><td class="money">${money(x.commission || 0)}</td><td class="money">${money(x.platform_fee || 0)}</td><td>${statusChip(x.status)}</td></tr>`,
         )
         .join("")}
@@ -1795,7 +1796,7 @@ async function kolPage(
       <div class="table-wrap" style="margin-top:10px">${
         reqs.requests.length
           ? `<table><thead><tr><th>KOL</th><th>Thời gian</th><th>Ngân sách</th><th>Báo giá</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-        ${reqs.requests.map((q) => `<tr><td><b>${esc(q.kolname)}</b><div class="muted" style="font-size:11px">${esc(q.field)}</div></td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDateTime(q.created_at)}</td><td class="money">${money(q.budget)}</td><td>${q.quote ? `<b class="money">${money(q.total_amount||q.quote)}</b><div class="muted" style="font-size:10px">KOL ${money(q.quote_kol||q.quote)} · NetViet ${money(q.quote_platform||0)}${Number(q.quote_additional)>0?` · Khác ${money(q.quote_additional)}`:''}</div>` : "—"}</td><td>${kolStatus(q.status)}</td><td><div class="row" style="flex-wrap:wrap">${q.status==='quoted'?`<button class="btn primary sm" data-kol-fund="${q.id}">Chấp nhận & ký quỹ</button>`:''}${q.status==='delivered'?`<a class="btn ghost sm" href="${esc(q.delivery_url)}" target="_blank" rel="noopener">Xem bàn giao</a><button class="btn ok sm" data-kol-approve="${q.id}">Nghiệm thu</button><button class="btn ghost sm" data-kol-revision="${q.id}">Yêu cầu sửa</button>`:''}${['pending','quoted','funded'].includes(q.status)?`<button class="btn ghost sm" data-kol-cancel="${q.id}">Hủy</button>`:''}</div></td></tr>`).join("")}
+        ${reqs.requests.map((q) => `<tr><td><b>${esc(q.kolname)}</b><div class="muted" style="font-size:11px">${esc(q.field)}</div></td><td class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(q.created_at)}</td><td class="money">${money(q.budget)}</td><td>${q.quote ? `<b class="money">${money(q.total_amount||q.quote)}</b><div class="muted" style="font-size:10px">KOL ${money(q.quote_kol||q.quote)} · NetViet ${money(q.quote_platform||0)}${Number(q.quote_additional)>0?` · Khác ${money(q.quote_additional)}`:''}</div>` : "—"}</td><td>${kolStatus(q.status)}</td><td><div class="row" style="flex-wrap:wrap">${q.status==='quoted'?`<button class="btn primary sm" data-kol-fund="${q.id}">Chấp nhận & ký quỹ</button>`:''}${q.status==='delivered'?`<a class="btn ghost sm" href="${esc(q.delivery_url)}" target="_blank" rel="noopener">Xem bàn giao</a><button class="btn ok sm" data-kol-approve="${q.id}">Nghiệm thu</button><button class="btn ghost sm" data-kol-revision="${q.id}">Yêu cầu sửa</button>`:''}${['pending','quoted','funded'].includes(q.status)?`<button class="btn ghost sm" data-kol-cancel="${q.id}">Hủy</button>`:''}</div></td></tr>`).join("")}
       </tbody></table>`
           : empty(icon("kolRequest", "teaser-icon"), businessKolRequestSearch ? "Không tìm thấy yêu cầu KOL phù hợp" : "Chưa gửi yêu cầu KOL nào")
       }</div><div class="pager" id="business-kol-pager"></div></div></div>`;
@@ -2169,8 +2170,8 @@ async function wallet(el) {
                   <td style="padding:8px"><span class="chip ${p.purpose === "deposit" ? "g" : p.purpose === "escrow" ? "b" : "w"}">${p.purpose === "deposit" ? "Nạp tiền" : p.purpose === "escrow" ? "Khoản đảm bảo" : "Thanh toán"}</span></td>
                   <td style="padding:8px"><span class="chip ghost">${p.provider === "demo" ? "⚡ Thử nghiệm" : "🏦 Trực tuyến"}</span></td>
                   <td style="padding:8px"><b class="money">${money(p.amount)}</b></td>
-                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? `<button class="btn ghost sm sync-payment-btn" data-order="${esc(p.order_code)}" style="padding:2px 8px;font-size:11px">🔄 Kiểm tra</button>` : '<span class="chip r">Thất bại</span>'}</td>
-                  <td style="padding:8px;font-size:12px" class="muted">${formatPaymentTime(p.created_at)}</td>
+                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? `<div style="display:flex;align-items:center;gap:6px"><span class="chip w">⏳ Chờ thanh toán</span><button class="btn ghost sm sync-payment-btn" data-order="${esc(p.order_code)}" style="padding:2px 8px;font-size:11px" title="Kiểm tra trạng thái từ VNPAY">🔄 Kiểm tra</button></div>` : '<span class="chip r">Thất bại</span>'}</td>
+                  <td style="padding:8px;font-size:12px" class="muted">${dateTimeStack(p.created_at)}</td>
                 </tr>
               `,
                 )
