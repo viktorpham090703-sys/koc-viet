@@ -11,3 +11,4 @@ __pycache__/
 migration-backups/
 database/local-backups/
 .kv-storage.json
+~$*
