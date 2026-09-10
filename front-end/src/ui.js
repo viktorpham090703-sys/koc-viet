@@ -1,4 +1,8 @@
 import { notify } from './notifications.jsx';
+import { formatPaymentTime } from './payment-time.js';
+
+// Event timestamps use the same Vietnam timezone and input formats as payments.
+export const fmtDateTime = formatPaymentTime;
 
 // Shared UI helpers + components for all 3 portals.
 export const money = (n) => (Number(n)||0).toLocaleString('vi-VN') + 'đ';

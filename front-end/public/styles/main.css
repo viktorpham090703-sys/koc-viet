@@ -1080,3 +1080,65 @@ a.profile-social-link:hover b{color:var(--primary)}
 .koc-portal .profile-stats{
   grid-template-columns:repeat(2,minmax(0,1fr));
 }
+
+.koc-queue-card > .between{flex-wrap:wrap}
+.koc-queue-card > .between > .row:first-child{flex:1;min-width:0}
+.koc-queue-card > .between > .row:first-child > div{min-width:0;overflow-wrap:anywhere}
+.koc-queue-card .row{flex-wrap:wrap}
+.koc-directory-table td:first-child{min-width:200px}
+.koc-directory-table td:first-child .avatar{flex-shrink:0}
+.koc-directory-table td:first-child b{min-width:0;overflow-wrap:anywhere}
+.koc-directory-table td:nth-child(2){white-space:nowrap}
+@media(max-width:600px){
+  .koc-queue-card > .between > .row{flex-basis:100%}
+}
+/* Shared list search keeps controls separate from results on every portal. */
+.list-search{min-width:0;margin:16px 0;grid-column:1/-1}
+.list-search-toolbar{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;margin:16px 0}
+.list-search .list-search-toolbar{margin:0}
+.list-search-field{display:flex;flex:1 1 280px;min-width:0;flex-direction:column;gap:6px}
+.list-search-field label{font-size:12px;font-weight:700;color:var(--text,var(--navy))}
+.list-search-field input{width:100%;min-width:0;min-height:42px}
+.list-search-toolbar>.btn{min-height:42px;white-space:nowrap}
+.list-search-summary{margin:10px 0;color:var(--muted);font-size:12px}
+.list-search-empty{padding:24px 16px;color:var(--muted);text-align:center;grid-column:1/-1;line-height:1.6}
+.list-search-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin:20px 0;grid-column:1/-1;font-size:12px}
+.admin-portal [hidden],.business-portal [hidden],.koc-portal [hidden],.list-search [hidden],.list-search-empty[hidden]{display:none!important}
+.affiliate-admin-controls{padding:16px 20px;background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;margin-bottom:16px}
+.affiliate-admin-controls .list-search-toolbar{margin:0 0 16px}
+.affiliate-admin-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0}
+.affiliate-admin-filters .field{min-width:0;margin:0}
+.affiliate-admin-filters select{width:100%;min-height:40px}
+.affiliate-admin-table{width:100%;min-width:880px}
+.affiliate-admin-table th,.affiliate-admin-table td{vertical-align:top;padding:16px}
+.affiliate-admin-table td:nth-child(1),.affiliate-admin-table td:nth-child(2){min-width:155px;max-width:240px;overflow-wrap:anywhere}
+.affiliate-admin-table strong,.affiliate-admin-table small{display:block}
+.affiliate-admin-table small{margin-top:6px;line-height:1.5;font-size:11px}
+.affiliate-admin-table .chip{margin-top:6px}
+.affiliate-admin-table th:nth-child(4),.affiliate-admin-table th:nth-child(5),.affiliate-admin-table td:nth-child(4),.affiliate-admin-table td:nth-child(5){text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.affiliate-admin-date{white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums}
+.affiliate-admin-actions{display:flex;align-items:flex-start;flex-direction:column;gap:8px}
+.affiliate-admin-actions .chip{margin:0;white-space:nowrap}
+.koc-portal #koc-view>.list-search,.koc-portal #koc-view>.list-search-empty{margin:16px 20px}
+.koc-portal .m-body.koc-affiliate-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));align-items:start}
+.affiliate-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px;padding:16px 0;margin-top:4px;border-block:1px solid var(--border)}
+.affiliate-metrics>div{min-width:0;overflow-wrap:anywhere}
+.affiliate-metrics .v{font-variant-numeric:tabular-nums}
+.affiliate-order-details,.affiliate-tools{margin-top:16px}
+.affiliate-order-details>summary,.affiliate-tools>summary{padding:10px 0;cursor:pointer;font-size:13px;font-weight:700;line-height:1.5}
+.affiliate-order-details>summary span{font-size:11px;font-weight:400;color:var(--muted);margin-left:8px}
+.affiliate-order-details summary:focus-visible,.affiliate-tools summary:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.koc-affiliate-card>.between{flex-wrap:wrap;align-items:flex-start}
+.affiliate-order{overflow-wrap:anywhere}
+.koc-ai-booking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;grid-column:1/-1}
+.koc-ai-booking-list>.list-item{min-width:0;margin:0}
+.koc-ai-booking-list>.empty{grid-column:1/-1}
+@media(max-width:600px){
+  .list-search-toolbar{gap:10px}
+  .list-search-field{flex-basis:100%}
+  .list-search-toolbar>.btn{flex:1}
+  .affiliate-admin-controls{padding:16px}
+  .affiliate-admin-filters{grid-template-columns:1fr;gap:12px}
+  .affiliate-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .koc-ai-booking-list{grid-template-columns:1fr}
+}

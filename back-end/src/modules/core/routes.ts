@@ -1,5 +1,6 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
+import { sqlSearch, matchesSearch, listPage } from './lib/listSearch.js';
 import { TIERS, CATEGORIES, KOC_AVATARS, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
@@ -2555,14 +2556,13 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     return J({ ok: true, delivery });
   }
   if (p === "/api/notifications" && m === "GET") {
-    const { results } = await env.DB.prepare(
-      `SELECT * FROM notifications WHERE user_id=?
-       ORDER BY created_at DESC, rowid DESC LIMIT 100`,
-    )
-      .bind(me.id)
-      .all();
-    const unread = results.filter((n) => !n.is_read).length;
-    return J({ notifications: results, unread });
+    const search = sqlSearch(['title','message'], url.searchParams.get('search'));
+    const total = Number(await env.DB.prepare(`SELECT COUNT(*) count FROM notifications WHERE user_id=? AND ${search.sql}`).bind(me.id,...search.bindings).first('count')) || 0;
+    const meta = listPage(url.searchParams,total,20);
+    const {results} = await env.DB.prepare(`SELECT * FROM notifications WHERE user_id=? AND ${search.sql} ORDER BY created_at DESC,rowid DESC LIMIT ? OFFSET ?`)
+      .bind(me.id,...search.bindings,meta.per,(meta.page-1)*meta.per).all();
+    const unread = Number(await env.DB.prepare(`SELECT COUNT(*) count FROM notifications WHERE user_id=? AND is_read=0`).bind(me.id).first('count')) || 0;
+    return J({notifications:results,unread,...meta});
   }
   if (p === "/api/notifications/read" && m === "POST") {
     if (body.all) {
@@ -3105,10 +3105,14 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       cond.push("b.booking_type=?");
       bind.push(bt2);
     }
-    const q2 = url.searchParams.get("q");
+    const q2 = url.searchParams.get("search") || url.searchParams.get("q");
     if (q2) {
-      cond.push("(b.code LIKE ? OR bz.name LIKE ? OR k.name LIKE ?)");
-      bind.push("%" + q2 + "%", "%" + q2 + "%", "%" + q2 + "%");
+      const search = sqlSearch(['b.code', 'b.aiclone_batch_id', 'bz.name', 'k.name', 'b.category'], q2);
+      cond.push(search.sql);
+      bind.push(...search.bindings);
+    }
+    if (url.searchParams.get('work') === 'content') {
+      cond.push("b.status IN ('confirmed','producing','posted')");
     }
     const bizName = url.searchParams.get("business");
     if (bizName) {
@@ -3145,7 +3149,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     let page = 1;
     let per = 200;
     let total = 0;
-    const paginated = me.role === "business" || me.role === "admin";
+    const paginated = me.role === "business" || me.role === "admin" || url.searchParams.has("page");
     if (paginated) {
       const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
       per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
@@ -4483,7 +4487,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   if (p === "/api/affiliate") {
     if (me.role !== "koc") return err("403", 403);
     const { results } = await env.DB.prepare(
-      `SELECT a.*, b.code, b.category, b.post_platform FROM affiliate a JOIN bookings b ON b.id=a.booking_id
+      `SELECT a.*, b.code, b.category, b.post_platform, b.created_at booking_created_at FROM affiliate a JOIN bookings b ON b.id=a.booking_id
        WHERE a.koc_id=? ORDER BY a.orders DESC`,
     )
       .bind(me.koc_id)
@@ -4898,9 +4902,10 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     if (me.role !== "koc") return err("Chỉ KOC được truy cập", 403);
     const per = Math.min(12, Math.max(4, Number(url.searchParams.get('per') || 6)));
     const requestedPage = Math.max(1, Number(url.searchParams.get('page') || 1));
+    const search = sqlSearch(['bz.name', 'c.category', 'c.note', 'c.tier'], url.searchParams.get('search'));
     const total = Number(await env.DB.prepare(
-      `SELECT COUNT(*) count FROM campaign_allocations WHERE koc_id=?`,
-    ).bind(me.koc_id).first('count')) || 0;
+      `SELECT COUNT(*) count FROM campaign_allocations ca JOIN campaigns c ON c.id=ca.campaign_id JOIN businesses bz ON bz.id=c.business_id WHERE ca.koc_id=? AND ${search.sql}`,
+    ).bind(me.koc_id,...search.bindings).first('count')) || 0;
     const pages = Math.max(1, Math.ceil(total / per));
     const page = Math.min(requestedPage, pages);
     const { results } = await env.DB.prepare(
@@ -4909,8 +4914,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
        FROM campaign_allocations ca
        JOIN campaigns c ON c.id=ca.campaign_id
        JOIN businesses bz ON bz.id=c.business_id
-       WHERE ca.koc_id=? ORDER BY ca.created_at DESC,ca.id DESC LIMIT ? OFFSET ?`,
-    ).bind(me.koc_id,per,(page-1)*per).all();
+       WHERE ca.koc_id=? AND ${search.sql} ORDER BY ca.created_at DESC,ca.id DESC LIMIT ? OFFSET ?`,
+    ).bind(me.koc_id,...search.bindings,per,(page-1)*per).all();
     return J({ campaigns: results || [], page, per, total, pages });
   }
   if (p === "/api/campaign/allocation/action" && m === "POST") {
@@ -5049,12 +5054,14 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     }
     const serviceFee = Math.round(spend * 0.05);
     const per = Math.min(50, Math.max(5, Number(url.searchParams.get("per") || 10)));
-    const total = results.length;
+    const query = url.searchParams.get('search') || url.searchParams.get('q') || '';
+    const filtered = results.filter(row => matchesSearch([row.code, row.kocname, row.category].join(' '), query));
+    const total = filtered.length;
     const pages = Math.max(1, Math.ceil(total / per));
     const requestedPage = Math.max(1, Number(url.searchParams.get("page") || 1));
     const page = Math.min(requestedPage, pages);
     return J({
-      rows: results.slice((page - 1) * per, page * per),
+      rows: filtered.slice((page - 1) * per, page * per),
       page,
       per,
       total,
@@ -5076,18 +5083,19 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
 
   // ---------- KOL profiles (public list) ----------
   if (p === "/api/kols") {
+    const search = sqlSearch(['name', 'field'], url.searchParams.get('search') || url.searchParams.get('q'));
     const requestedPer = Math.floor(Number(url.searchParams.get("per") || 16));
     const per = Math.min(24, Math.max(2, Number.isFinite(requestedPer) ? requestedPer : 16));
     const requestedPage = Math.max(1, Math.floor(Number(url.searchParams.get("page") || 1)) || 1);
     const total = Number(
-      (await env.DB.prepare(`SELECT COUNT(*) count FROM kol_profiles WHERE status='active'`).first("count")) || 0,
+      (await env.DB.prepare(`SELECT COUNT(*) count FROM kol_profiles WHERE status='active' AND ${search.sql}`).bind(...search.bindings).first("count")) || 0,
     );
     const pages = Math.max(1, Math.ceil(total / per));
     const page = Math.min(requestedPage, pages);
     const { results } = await env.DB.prepare(
-      `SELECT * FROM kol_profiles WHERE status='active'
+      `SELECT * FROM kol_profiles WHERE status='active' AND ${search.sql}
        ORDER BY premium DESC, created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
-    ).bind(per, (page - 1) * per).all();
+    ).bind(...search.bindings, per, (page - 1) * per).all();
     const kols = results.map((k) => ({
       ...k,
       avatar: faceFocusedAvatarUrl(k.avatar),
@@ -5126,22 +5134,17 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     return J({ ok: true, requestId: id });
   }
   if (p === "/api/kol/requests") {
-    let sql = `SELECT kr.*, kp.name kolname, kp.field, bz.name bizname FROM kol_requests kr
-               JOIN kol_profiles kp ON kp.id=kr.kol_id JOIN businesses bz ON bz.id=kr.business_id`;
-    const bind = [];
-    if (me.role === "business") {
-      sql += " WHERE kr.business_id=?";
-      bind.push(me.business_id);
-    } else if (me.role !== "admin") return err("403", 403);
-    const per=Math.min(20,Math.max(5,Number(url.searchParams.get('per')||10))),requestedPage=Math.max(1,Number(url.searchParams.get('page')||1));
-    const countSql=`SELECT COUNT(*) count FROM kol_requests kr${me.role==='business'?' WHERE kr.business_id=?':''}`;
-    const total=Number(await env.DB.prepare(countSql).bind(...bind).first('count'))||0,pages=Math.max(1,Math.ceil(total/per)),page=Math.min(requestedPage,pages);
-    sql += " ORDER BY kr.created_at DESC, kr.rowid DESC LIMIT ? OFFSET ?";
-    bind.push(per,(page-1)*per);
-    const { results } = await env.DB.prepare(sql)
-      .bind(...bind)
-      .all();
-    return J({ requests: results,page,per,total,pages });
+    if (!["business", "admin"].includes(me.role)) return err("403", 403);
+    const search = sqlSearch(['kp.name', 'kp.field', 'bz.name', 'kr.brief'], url.searchParams.get('search') || url.searchParams.get('q'));
+    const where = [search.sql];
+    const bind = [...search.bindings];
+    if (me.role === 'business') { where.push('kr.business_id=?'); bind.push(me.business_id); }
+    const from = `FROM kol_requests kr JOIN kol_profiles kp ON kp.id=kr.kol_id JOIN businesses bz ON bz.id=kr.business_id WHERE ${where.join(' AND ')}`;
+    const total = Number(await env.DB.prepare(`SELECT COUNT(*) count ${from}`).bind(...bind).first('count')) || 0;
+    const meta = listPage(url.searchParams, total);
+    const {results} = await env.DB.prepare(`SELECT kr.*,kp.name kolname,kp.field,bz.name bizname ${from} ORDER BY kr.created_at DESC,kr.rowid DESC LIMIT ? OFFSET ?`)
+      .bind(...bind,meta.per,(meta.page-1)*meta.per).all();
+    return J({requests:results,...meta});
   }
   if (p === '/api/kol/action' && m === 'POST') {
     if(me.role!=='business')return err('Chỉ doanh nghiệp được xác nhận báo giá KOL',403);
@@ -6114,8 +6117,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     }
     if (p === "/api/admin/ledger") {
       const per = Math.min(20, Math.max(5, Number(url.searchParams.get("per") || 8)));
-      const distributionPage = Math.max(1, Number(url.searchParams.get("distributionPage") || 1));
-      const ledgerPage = Math.max(1, Number(url.searchParams.get("ledgerPage") || 1));
+      let distributionPage = Math.max(1, Number(url.searchParams.get("distributionPage") || 1));
+      let ledgerPage = Math.max(1, Number(url.searchParams.get("ledgerPage") || 1));
       const auditPage = Math.max(1, Number(url.searchParams.get("auditPage") || 1));
       const auditSearch = String(url.searchParams.get("auditSearch") || "").trim().toLowerCase();
       const auditCategory = String(url.searchParams.get("auditCategory") || "").trim();
@@ -6134,14 +6137,13 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         auditBinds.push(`%${auditSearch}%`);
       }
       const auditWhereSql = auditWhere.length ? `WHERE ${auditWhere.join(" AND ")}` : "";
-      const ledgerTotal = Number(await env.DB.prepare("SELECT COUNT(*) c FROM ledger").first("c")) || 0;
+      const ledgerSearch = sqlSearch(['kind','note','ref','amount'], url.searchParams.get('ledgerSearch'));
+      const distributionSearch = sqlSearch(['code','aiclone_batch_id','koc_name','business_name','type'], url.searchParams.get('distributionSearch'));
+      const ledgerTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM ledger WHERE ${ledgerSearch.sql}`).bind(...ledgerSearch.bindings).first('c')) || 0;
+      ledgerPage = Math.min(ledgerPage,Math.max(1,Math.ceil(ledgerTotal/per)));
       const auditTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM audit_log a LEFT JOIN users u ON u.id=a.actor ${auditWhereSql}`).bind(...auditBinds).first("c")) || 0;
       const settlementWhere = "WHERE b.status IN ('completed', 'settling', 'video_approved', 'posted', 'brief_review', 'producing')";
       const campaignSettlementWhere = "WHERE c.status IN ('funded','coordinating','assigned','in_progress','completed','cancelled')";
-      const bookingSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM bookings b ${settlementWhere}`).first("c")) || 0;
-      const campaignSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM campaigns c ${campaignSettlementWhere}`).first("c")) || 0;
-      const kolSettlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM kol_requests WHERE status IN ('funded','confirmed','revision_requested','delivered','approved','completed','cancelled')`).first('c'))||0;
-      const settlementTotal = bookingSettlementTotal + campaignSettlementTotal + kolSettlementTotal;
       const settlementTotals = await env.DB.prepare(
         `SELECT COALESCE(SUM(price),0) escrow,COALESCE(SUM(koc_fee),0) koc,COALESCE(SUM(price-koc_fee),0) netviet
          FROM (
@@ -6152,15 +6154,14 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
          ) summary`,
       ).first();
       const { results } = await env.DB.prepare(
-        "SELECT * FROM ledger ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?",
-      ).bind(per, (ledgerPage - 1) * per).all();
+        `SELECT * FROM ledger WHERE ${ledgerSearch.sql} ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
+      ).bind(...ledgerSearch.bindings,per, (ledgerPage - 1) * per).all();
       const audit = await env.DB.prepare(
         `SELECT a.*,u.name actor_name,u.role actor_role
          FROM audit_log a LEFT JOIN users u ON u.id=a.actor
          ${auditWhereSql} ORDER BY a.created_at DESC,a.id DESC LIMIT ? OFFSET ?`,
       ).bind(...auditBinds, per, (auditPage - 1) * per).all();
-      const settlements = await env.DB.prepare(
-        `SELECT * FROM (
+      const distributionSource = `SELECT * FROM (
          SELECT b.id, b.code, b.type, b.price, b.status, b.created_at, b.updated_at, b.aiclone_batch_id,
                 b.aiclone_quote_production, b.aiclone_quote_koc, b.aiclone_quote_platform, b.aiclone_quote_additional,
                 b.aiclone_production_fee, b.aiclone_platform_fee,
@@ -6189,9 +6190,11 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
                 CASE WHEN kr.status='cancelled' THEN 0 ELSE kr.escrow_amount END
          FROM kol_requests kr JOIN kol_profiles kp ON kp.id=kr.kol_id JOIN businesses bz ON bz.id=kr.business_id
          WHERE kr.status IN ('funded','confirmed','revision_requested','delivered','approved','completed','cancelled')
-         ) distribution_rows
-         ORDER BY updated_at DESC,id DESC LIMIT ? OFFSET ?`,
-      ).bind(per, (distributionPage - 1) * per).all();
+         ) distribution_rows WHERE ${distributionSearch.sql}`;
+      const settlementTotal = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM (${distributionSource}) matched`).bind(...distributionSearch.bindings).first('c')) || 0;
+      distributionPage = Math.min(distributionPage,Math.max(1,Math.ceil(settlementTotal/per)));
+      const settlements = await env.DB.prepare(`${distributionSource} ORDER BY updated_at DESC,id DESC LIMIT ? OFFSET ?`)
+        .bind(...distributionSearch.bindings,per,(distributionPage-1)*per).all();
       const pagination = (page, total) => ({ page, per, total, pages: Math.max(1, Math.ceil(total / per)) });
       const platformWalletRevenue = await walletBalance(env, 'platform', 'netviet', 'revenue');
       const campaignTotals = await env.DB.prepare(
@@ -6231,30 +6234,35 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     }
     // Admin: all affiliate orders (reconciliation with sàn)
     if (p === "/api/admin/affiliate") {
-      const { results } = await env.DB.prepare(
-        `SELECT o.*, k.name kocname, b.code bcode, b.platform FROM affiliate_orders o
-         JOIN kocs k ON k.id=o.koc_id JOIN bookings b ON b.id=o.booking_id ORDER BY o.ordered_at DESC, o.rowid DESC LIMIT 200`,
-      ).all();
-      const agg = await env.DB.prepare(
-        `SELECT COALESCE(SUM(gmv),0) g, COALESCE(SUM(commission_amount),0) c, COALESCE(SUM(platform_fee),0) f,
-        COUNT(*) n, COALESCE(SUM(CASE WHEN flagged=1 THEN 1 ELSE 0 END),0) flagged FROM affiliate_orders`,
-      ).first();
-      return J({ orders: results, totals: agg });
+      const search = sqlSearch(['o.platform_order_id','k.name','b.code','b.platform'], url.searchParams.get('search') || url.searchParams.get('q'));
+      const conditions = [search.sql], bindings = [...search.bindings];
+      const status = url.searchParams.get('status'), platform = url.searchParams.get('platform'), flagged = url.searchParams.get('flagged');
+      if (status) { conditions.push('o.status=?'); bindings.push(status); }
+      if (platform) { conditions.push('lower(b.platform)=lower(?)'); bindings.push(platform); }
+      if (flagged === '1' || flagged === '0') { conditions.push('o.flagged=?'); bindings.push(Number(flagged)); }
+      const from = `FROM affiliate_orders o JOIN kocs k ON k.id=o.koc_id JOIN bookings b ON b.id=o.booking_id WHERE ${conditions.join(' AND ')}`;
+      const total = Number(await env.DB.prepare(`SELECT COUNT(*) count ${from}`).bind(...bindings).first('count')) || 0;
+      const meta = listPage(url.searchParams,total,20);
+      const {results} = await env.DB.prepare(`SELECT o.*,k.name kocname,b.code bcode,b.platform ${from} ORDER BY o.ordered_at DESC,o.rowid DESC LIMIT ? OFFSET ?`)
+        .bind(...bindings,meta.per,(meta.page-1)*meta.per).all();
+      const agg = await env.DB.prepare(`SELECT COALESCE(SUM(gmv),0) g,COALESCE(SUM(commission_amount),0) c,COALESCE(SUM(platform_fee),0) f,COUNT(*) n,COALESCE(SUM(CASE WHEN flagged=1 THEN 1 ELSE 0 END),0) flagged FROM affiliate_orders`).first();
+      const {results: platforms} = await env.DB.prepare(`SELECT DISTINCT b.platform FROM affiliate_orders o JOIN bookings b ON b.id=o.booking_id WHERE COALESCE(b.platform,'')!='' ORDER BY b.platform`).all();
+      return J({orders:results,totals:agg,platforms:platforms.map(row=>row.platform),...meta});
     }
     // Admin: quote leads
     if (p === "/api/admin/leads") {
-      const status = String(url.searchParams.get("status") || "");
-      const where = status ? "WHERE q.status=?" : "";
-      const bind = status ? [status] : [];
-      const { results } = await env.DB.prepare(
-        `SELECT q.*, s.name sales_name, s.email sales_email,
-          (SELECT note FROM lead_activities la WHERE la.lead_id=q.id ORDER BY la.created_at DESC, la.rowid DESC LIMIT 1) latest_note
-         FROM quote_leads q LEFT JOIN sales_agents s ON s.id=q.assigned_to
-         ${where} ORDER BY COALESCE(q.updated_at,q.created_at) DESC, q.rowid DESC LIMIT 200`,
-      )
-        .bind(...bind)
-        .all();
-      return J({ leads: results });
+      const search = sqlSearch(['q.name','q.company','q.phone','q.email','q.need','s.name'], url.searchParams.get('search') || url.searchParams.get('q'));
+      const conditions = [search.sql], bindings = [...search.bindings];
+      const status = url.searchParams.get('status');
+      if (status) { conditions.push('q.status=?'); bindings.push(status); }
+      const from = `FROM quote_leads q LEFT JOIN sales_agents s ON s.id=q.assigned_to WHERE ${conditions.join(' AND ')}`;
+      const total = Number(await env.DB.prepare(`SELECT COUNT(*) count ${from}`).bind(...bindings).first('count')) || 0;
+      const meta = listPage(url.searchParams,total);
+      const {results} = await env.DB.prepare(`SELECT q.*,s.name sales_name,s.email sales_email,
+        (SELECT note FROM lead_activities la WHERE la.lead_id=q.id ORDER BY la.created_at DESC,la.rowid DESC LIMIT 1) latest_note
+        ${from} ORDER BY COALESCE(q.updated_at,q.created_at) DESC,q.rowid DESC LIMIT ? OFFSET ?`)
+        .bind(...bindings,meta.per,(meta.page-1)*meta.per).all();
+      return J({leads:results,...meta});
     }
     if (p === "/api/admin/sales-agents") {
       const { results } = await env.DB.prepare(
@@ -6596,17 +6604,16 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       });
     }
     if (p === "/api/complaints" && m === "GET") {
-      const st = url.searchParams.get("status");
-      const where = st ? "WHERE c.status=?" : "";
-      const cbind = st ? [st] : [];
-      const { results: comps } = await env.DB.prepare(
-        `SELECT c.*, b.code bcode, b.status bstatus, b.escrow, b.price, bz.name bizname, k.name kocname
-         FROM complaints c JOIN bookings b ON b.id=c.booking_id JOIN businesses bz ON bz.id=b.business_id JOIN kocs k ON k.id=b.koc_id
-         ${where} ORDER BY c.created_at DESC, c.rowid DESC LIMIT 200`,
-      )
-        .bind(...cbind)
-        .all();
-      return J({ complaints: comps });
+      const search = sqlSearch(['b.code','bz.name','k.name','c.reason'], url.searchParams.get('search') || url.searchParams.get('q'));
+      const conditions = [search.sql], bindings = [...search.bindings];
+      const status = url.searchParams.get('status');
+      if (status) { conditions.push('c.status=?'); bindings.push(status); }
+      const from = `FROM complaints c JOIN bookings b ON b.id=c.booking_id JOIN businesses bz ON bz.id=b.business_id JOIN kocs k ON k.id=b.koc_id WHERE ${conditions.join(' AND ')}`;
+      const total = Number(await env.DB.prepare(`SELECT COUNT(*) count ${from}`).bind(...bindings).first('count')) || 0;
+      const meta = listPage(url.searchParams,total);
+      const {results} = await env.DB.prepare(`SELECT c.*,b.code bcode,b.status bstatus,b.escrow,b.price,bz.name bizname,k.name kocname ${from} ORDER BY c.created_at DESC,c.rowid DESC LIMIT ? OFFSET ?`)
+        .bind(...bindings,meta.per,(meta.page-1)*meta.per).all();
+      return J({complaints:results,...meta});
     }
     if (p === "/api/complaints/action" && m === "POST") {
       const c = await env.DB.prepare("SELECT * FROM complaints WHERE id=?")
@@ -6663,7 +6670,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     }
     if (p === "/api/admin/aiclone") {
       const { results } = await env.DB.prepare(
-        `SELECT a.id,a.koc_id,a.status,k.name,k.tier,k.avatar,k.province,
+        `SELECT a.id,a.koc_id,a.status,a.created_at registered_at,k.name,k.tier,k.avatar,k.province,
                 b.id booking_id,b.code booking_code,b.status booking_status,
                 b.aiclone_format,b.requirements,b.aiclone_script,b.video_link,
                 b.business_video_link,b.koc_video_link,
@@ -6679,7 +6686,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
          JOIN businesses bz ON bz.id=b.business_id
          WHERE b.type='aiclone'
          UNION ALL
-         SELECT a.id,a.koc_id,a.status,k.name,k.tier,k.avatar,k.province,
+         SELECT a.id,a.koc_id,a.status,a.created_at registered_at,k.name,k.tier,k.avatar,k.province,
                 NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
                 NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
                 NULL,NULL,NULL,NULL
