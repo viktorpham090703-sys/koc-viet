@@ -25,7 +25,7 @@ function decodeImage(dataUrl: string) {
   const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl)
   if (!match) throw new Error('Invalid identity image')
   const bytes = Buffer.from(match[2], 'base64')
-  if (!bytes.length || bytes.length > 2_000_000) throw new Error('Identity image exceeds 2 MB')
+  if (!bytes.length || bytes.length > 10_000_000) throw new Error('Identity image exceeds 10 MB')
   const extension = match[1] === 'image/jpeg' ? 'jpg' : match[1].split('/')[1]
   return { bytes, contentType: match[1], extension }
 }
@@ -35,10 +35,11 @@ export async function uploadKocIdentityImages(
   kocId: string,
   images: IdentityImages,
 ) {
-  const { bucket } = config(env)
-  const s3 = client(env)
+  const isDev = (env.NODE_ENV || 'development') === 'development';
   const keys: Record<keyof IdentityImages, string> = { front: '', back: '', selfie: '' }
   try {
+    const { bucket } = config(env)
+    const s3 = client(env)
     for (const kind of Object.keys(keys) as Array<keyof IdentityImages>) {
       const image = decodeImage(images[kind])
       const key = `private/identity/${kocId}/${kind}-${crypto.randomUUID()}.${image.extension}`
@@ -52,14 +53,23 @@ export async function uploadKocIdentityImages(
       }))
       keys[kind] = key
     }
+    return keys
   } catch (error) {
+    if (isDev) {
+      console.warn('⚠️ [DEV] AWS S3 upload failed or dummy keys configured. Using local identity fallback:', (error as Error)?.message)
+      return {
+        front: `local/identity/${kocId}/front.jpg`,
+        back: `local/identity/${kocId}/back.jpg`,
+        selfie: `local/identity/${kocId}/selfie.jpg`,
+      }
+    }
+    const { bucket } = config(env)
     const objects = Object.values(keys).filter(Boolean).map(Key => ({ Key }))
     if (objects.length) {
-      await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: objects } })).catch(() => {})
+      await client(env).send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: objects } })).catch(() => {})
     }
     throw error
   }
-  return keys
 }
 
 export async function deleteKocIdentityImages(

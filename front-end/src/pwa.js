@@ -81,7 +81,19 @@ async function registerServiceWorker() {
   // exercise the production PWA build, or append ?pwa=1 when needed in dev.
   const enableInThisEnvironment =
     import.meta.env.PROD || new URLSearchParams(location.search).has("pwa");
-  if (!enableInThisEnvironment) return;
+  if (!enableInThisEnvironment) {
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        for (const reg of regs) reg.unregister();
+      }).catch(() => {});
+      if ("caches" in window) {
+        caches.keys().then((keys) => {
+          for (const key of keys) caches.delete(key);
+        }).catch(() => {});
+      }
+    }
+    return;
+  }
 
   try {
     serviceWorkerRegistration = await navigator.serviceWorker.register("/sw.js", {

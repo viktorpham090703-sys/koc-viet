@@ -3,7 +3,8 @@ import {
   money,
   num,
   esc,
-  fmtDate,
+  fmtDateTime,
+  dateTimeStack,
   stars,
   statusChip,
   spinner,
@@ -24,8 +25,40 @@ import { state, logout, enhancePortal } from "./app.js";
 import { renderMarketplaceEmbed } from "./public.js";
 import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
-import { formatPaymentTime } from "./payment-time.js";
 import { socialProfileUrl } from "./social-channels.js";
+import { mountListSearch } from "./list-search.js";
+
+function businessSearchForm(key, label, placeholder, value) {
+  return `<form class="list-search-toolbar" id="${key}-form" role="search">
+    <div class="list-search-field"><label for="${key}">${label}</label><input type="search" id="${key}" name="search" value="${esc(value)}" placeholder="${placeholder}" maxlength="120"></div>
+    <button class="btn primary sm" type="submit">Tìm kiếm</button>
+    <button class="btn ghost sm" type="button" data-clear-search ${value ? "" : "hidden"}>Xóa tìm kiếm</button>
+  </form>`;
+}
+
+function bindBusinessSearch(el, key, reload) {
+  const form = el.querySelector(`#${key}-form`);
+  const input = form.querySelector("input");
+  const run = async (query) => {
+    form.querySelectorAll("button").forEach((button) => { button.disabled = true; });
+    input.disabled = true;
+    try {
+      await reload(query);
+      el.querySelector(`#${key}`)?.focus({ preventScroll: true });
+    } catch (error) {
+      toast(error.message, "err");
+    } finally {
+      form.querySelectorAll("button").forEach((button) => { button.disabled = false; });
+      input.disabled = false;
+    }
+  };
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    run(input.value.trim());
+  });
+  form.querySelector("[data-clear-search]").addEventListener("click", () => run(""));
+  input.addEventListener("search", () => { if (!input.value) run(""); });
+}
 
 const NAV = [
   ["#/dashboard", icon("overview", "sidebar-icon"), "Tổng quan"],
@@ -559,6 +592,7 @@ async function openBookingForm(kocId, el) {
 }
 
 let businessOrdersPage = 1;
+let businessOrdersSearch = "";
 async function orders(el, page = businessOrdersPage) {
   businessOrdersPage = Math.max(1, Number(page) || 1);
   const params = new URLSearchParams(location.search);
@@ -585,10 +619,14 @@ async function orders(el, page = businessOrdersPage) {
       history.replaceState({}, "", `${location.pathname}${location.hash}`);
     }
   }
-  const r = await api(`/api/bookings?page=${businessOrdersPage}&per=50`);
+  const r = await api(`/api/bookings?page=${businessOrdersPage}&per=50&search=${encodeURIComponent(businessOrdersSearch)}`);
   businessOrdersPage = r.page || businessOrdersPage;
   const bookings = groupBusinessBookings(r.bookings || []);
-  el.innerHTML = `<div class="between"><div><h1>Booking đã đặt</h1><p class="muted">${num(bookings.length)} booking${r.total > r.per ? ` trên trang này` : ""}</p></div></div><div class="table-wrap" style="margin-top:16px">${bookings.length ? tableBookings(bookings) : empty("📋", "Chưa có booking")}</div><div class="pager" id="business-orders-pager"></div>`;
+  el.innerHTML = `<div class="between"><div><h1>Booking đã đặt</h1><p class="muted">${num(bookings.length)} booking${r.total > r.per ? ` trên trang này` : ""}</p></div></div>${businessSearchForm("business-orders-search", "Tìm booking", "Mã booking, tên KOC hoặc ngành hàng…", businessOrdersSearch)}<div class="table-wrap" style="margin-top:16px">${bookings.length ? tableBookings(bookings) : empty("📋", businessOrdersSearch ? "Không tìm thấy booking phù hợp" : "Chưa có booking")}</div><div class="pager" id="business-orders-pager"></div>`;
+  bindBusinessSearch(el, "business-orders-search", (query) => {
+    businessOrdersSearch = query;
+    return orders(el, 1);
+  });
   const pager = el.querySelector("#business-orders-pager");
   if (r.pages > 1) {
     pager.innerHTML = `<button data-orders-page="${r.page - 1}" ${r.page <= 1 ? "disabled" : ""}>‹</button><span class="muted" style="padding:7px 6px">${r.page} / ${r.pages}</span><button data-orders-page="${r.page + 1}" ${r.page >= r.pages ? "disabled" : ""}>›</button>`;
@@ -642,7 +680,7 @@ function tableBookings(list) {
       .map(
         (
           b,
-        ) => `<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(b.created_at)}</td><td>${b.batch_size > 1 ? `<b>${b.batch_size} KOC</b><div class="muted" style="font-size:11px">${esc(b.batch_kocs.slice(0, 2).join(", "))}${b.batch_size > 2 ? "…" : ""}</div>` : esc(b.kocname)}</td><td>${esc(b.category)}</td>
+        ) => `<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(b.created_at)}</td><td>${b.batch_size > 1 ? `<b>${b.batch_size} KOC</b><div class="muted" style="font-size:11px">${esc(b.batch_kocs.slice(0, 2).join(", "))}${b.batch_size > 2 ? "…" : ""}</div>` : esc(b.kocname)}</td><td>${esc(b.category)}</td>
       <td class="money">${b.status === "quote_pending" ? "Chờ báo giá" : ["quote_grouped", "payment_grouped"].includes(b.status) ? "Báo giá chung" : money(b.price)}</td><td style="white-space:nowrap">${statusChip(b.status)}</td>
       <td style="width:1%;white-space:nowrap;text-align:right"><button class="btn ghost sm" data-order="${b.id}">Chi tiết</button></td></tr>`,
       )
@@ -715,6 +753,7 @@ async function openOrder(id, el) {
   }
   const m = modal(`
     <div class="between"><h2>${esc(b.code)}</h2>${statusChip(b.status)}</div>
+    <p class="muted" style="font-size:12px;margin-top:6px">Thời gian tạo booking: ${fmtDateTime(b.created_at)}</p>
     <div class="tint-box" style="margin:12px 0">
       <div class="between"><span>KOC tham gia</span><b>${batchMembers.length} KOC</b></div>
       <div class="booking-batch-kocs" style="display:grid;gap:7px;margin-top:10px">${batchMembers.map((member, index) => `<div class="between" style="padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#fff"><span>${index + 1}. ${esc(member.kocname)}</span><span class="row" style="justify-content:flex-end"><b class="money">${money(member.aiclone_quote_koc || 0)}</b>${statusChip(["quote_grouped", "payment_grouped"].includes(member.status) ? b.status : member.status)}</span></div>`).join("")}</div>
@@ -1242,7 +1281,8 @@ function renderBusinessProducts(list, products, reload) {
         <div class="product-details">
           <span><b>SKU:</b> ${esc(product.sku || "—")}</span>
           <span><b>Hoa hồng dự kiến:</b> ${Number(product.commission_rate || 0).toLocaleString("vi-VN")}%</span>
-          <span><b>Cập nhật:</b> ${fmtDate(product.updated_at)}</span>
+          <span><b>Thời gian tạo:</b> ${fmtDateTime(product.created_at)}</span>
+          <span><b>Cập nhật:</b> ${fmtDateTime(product.updated_at)}</span>
         </div>
         ${product.notes ? `<p class="muted product-notes">${esc(product.notes)}</p>` : ""}
         <div class="row product-affiliate-ready">
@@ -1413,12 +1453,19 @@ async function campaigns(el) {
               Number(c.management_fee) ||
               Math.max(2000000, Math.round(Number(c.budget || 0) * 0.15)),
             total = Number(c.total_amount) || Number(c.budget || 0) + fee;
-          return `<tr><td class="campaign-date">${fmtDate(c.created_at)}</td><td><div class="campaign-budget"><strong>${money(c.budget)}</strong><span>Phí ${money(fee)}</span><span>Tổng ${money(total)}</span></div>${c.quote_note ? `<div class="campaign-quote-note">${esc(c.quote_note)}</div>` : ""}</td><td><span class="campaign-qty">${c.qty}</span></td><td>${tierBadge(c.tier)}</td><td>${esc(c.category)}</td><td class="campaign-status-cell">${statusChip(c.status)}</td><td>${c.allocations?.length ? c.allocations.map((a) => `<div class="campaign-business-allocation"><div class="campaign-allocation-head"><b>${esc(a.koc_name)}</b><strong>${money(a.amount)}</strong>${statusChip(a.status)}</div>${a.business_note ? `<small>${esc(a.business_note)}</small>` : ""}<div class="campaign-allocation-controls">${a.submission_url ? `<a href="${esc(a.submission_url)}" target="_blank" rel="noopener">Mở nội dung</a>` : ""}${a.status === "submitted" ? `<div class="campaign-allocation-review"><button class="btn ok sm" data-allocation-approve="${a.id}">Duyệt</button><button class="btn ghost sm" data-allocation-revision="${a.id}">Yêu cầu sửa</button></div>` : ""}</div></div>`).join("") : assigned.length ? assigned.map((k) => `<span class="chip b" style="margin:2px">${esc(k.name)}</span>`).join("") : '<span class="campaign-unassigned">Chưa phân bổ</span>'}</td><td><div class="campaign-actions">${c.status === "quoted" ? `<button class="btn primary sm campaign-action-primary" data-campaign-fund="${c.id}">Chấp nhận & ký quỹ</button>` : ""}<div class="campaign-action-secondary"><button class="btn ghost sm" data-campaign-detail="${c.id}">Chi tiết</button>${["pending", "quote_pending", "quoted", "funded"].includes(c.status) ? `<button class="btn ghost sm campaign-cancel-button" data-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div></td></tr>`;
+          return `<tr><td class="campaign-date">${dateTimeStack(c.created_at)}</td><td><div class="campaign-budget"><strong>${money(c.budget)}</strong><span>Phí ${money(fee)}</span><span>Tổng ${money(total)}</span></div>${c.quote_note ? `<div class="campaign-quote-note">${esc(c.quote_note)}</div>` : ""}</td><td><span class="campaign-qty">${c.qty}</span></td><td>${tierBadge(c.tier)}</td><td>${esc(c.category)}</td><td class="campaign-status-cell">${statusChip(c.status)}</td><td>${c.allocations?.length ? c.allocations.map((a) => `<div class="campaign-business-allocation"><div class="campaign-allocation-head"><b>${esc(a.koc_name)}</b><strong>${money(a.amount)}</strong>${statusChip(a.status)}</div>${a.business_note ? `<small>${esc(a.business_note)}</small>` : ""}<div class="campaign-allocation-controls">${a.submission_url ? `<a href="${esc(a.submission_url)}" target="_blank" rel="noopener">Mở nội dung</a>` : ""}${a.status === "submitted" ? `<div class="campaign-allocation-review"><button class="btn ok sm" data-allocation-approve="${a.id}">Duyệt</button><button class="btn ghost sm" data-allocation-revision="${a.id}">Yêu cầu sửa</button></div>` : ""}</div></div>`).join("") : assigned.length ? assigned.map((k) => `<span class="chip b" style="margin:2px">${esc(k.name)}</span>`).join("") : '<span class="campaign-unassigned">Chưa phân bổ</span>'}</td><td><div class="campaign-actions">${c.status === "quoted" ? `<button class="btn primary sm campaign-action-primary" data-campaign-fund="${c.id}">Chấp nhận & ký quỹ</button>` : ""}<div class="campaign-action-secondary"><button class="btn ghost sm" data-campaign-detail="${c.id}">Chi tiết</button>${["pending", "quote_pending", "quoted", "funded"].includes(c.status) ? `<button class="btn ghost sm campaign-cancel-button" data-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div></td></tr>`;
         })
         .join("")}
     </tbody></table>`
         : empty("📣", "Chưa có chiến dịch. NetViet sẽ phân bổ KOC cho bạn.")
     }</div>`;
+  mountListSearch(el, {
+    key: "business-campaigns",
+    label: "Tìm chiến dịch",
+    placeholder: "Ngành hàng, tên KOC hoặc trạng thái…",
+    itemSelector: ".campaign-table tbody > tr",
+    containerSelector: ".campaign-table-wrap",
+  });
   el.querySelectorAll("[data-campaign-fund]").forEach((button) =>
     button.addEventListener("click", async () => {
       const c = r.campaigns.find((x) => x.id === button.dataset.campaignFund),
@@ -1472,7 +1519,7 @@ async function campaigns(el) {
         total = Number(c.total_amount) || Number(c.budget) + fee,
         allocations = c.allocations || [];
       const m =
-        modal(`<div class="between"><div><h2>Chi tiết chiến dịch lớn</h2><p class="muted" style="margin-top:4px">Tạo lúc ${fmtDate(c.created_at)}</p></div>${statusChip(c.status)}</div>
+        modal(`<div class="between"><div><h2>Chi tiết chiến dịch lớn</h2><p class="muted" style="margin-top:4px">Tạo lúc ${fmtDateTime(c.created_at)}</p></div>${statusChip(c.status)}</div>
       <div class="campaign-detail-summary"><div><span>Ngân sách KOC</span><b>${money(c.budget)}</b></div><div><span>Phí điều phối</span><b>${money(fee)}</b></div><div class="total"><span>Tổng ký quỹ</span><strong>${money(total)}</strong></div></div>
       <div class="grid campaign-detail-meta"><div><span>SL KOC</span><b>${c.qty}</b></div><div><span>Hạng</span>${tierBadge(c.tier)}</div><div><span>Ngành</span><b>${esc(c.category)}</b></div><div><span>Hạn hoàn thành</span><b>${c.deadline ? esc(c.deadline) : "Chưa đặt"}</b></div></div>
       ${c.note ? `<div class="tint-box" style="margin-top:12px"><b>Yêu cầu chiến dịch</b><p>${esc(c.note)}</p></div>` : ""}${c.quote_note ? `<div class="tint-box" style="margin-top:10px"><b>Ghi chú báo giá từ NetViet</b><p>${esc(c.quote_note)}</p></div>` : ""}
@@ -1572,9 +1619,10 @@ async function campaigns(el) {
 }
 
 let businessReportPage = 1;
+let businessReportSearch = "";
 async function report(el, page = businessReportPage) {
   businessReportPage = Math.max(1, Number(page) || 1);
-  const r = await api(`/api/business/report?page=${businessReportPage}&per=10`);
+  const r = await api(`/api/business/report?page=${businessReportPage}&per=10&search=${encodeURIComponent(businessReportSearch)}`);
   businessReportPage = r.page || businessReportPage;
   const t = r.totals;
   el.innerHTML = `<h1>Báo cáo hiệu quả & đối soát</h1>
@@ -1588,18 +1636,25 @@ async function report(el, page = businessReportPage) {
         <div class="between"><span>③ Phí nền tảng 1% (DN trả thêm)</span><b class="money">${money(t.platformFee)}</b></div>
         <div class="between" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px"><span><b>DN thanh toán</b></span><b class="money" style="color:var(--primary)">${money(t.payable)}</b></div>
       </div></div>
+    ${businessSearchForm("business-report-search", "Tìm booking trong báo cáo", "Mã booking hoặc tên KOC…", businessReportSearch)}
+    <p class="list-search-summary" role="status">${num(r.total || 0)} booking${businessReportSearch ? " phù hợp" : ""}</p>
     <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Thời gian</th><th>KOC</th><th>Hình thức</th><th>Chi phí booking</th><th>Doanh số</th><th>Đơn</th><th>Hoa hồng</th><th>Phí 1%</th><th>Trạng thái</th></tr></thead><tbody>
       ${r.rows
         .map(
           (
             x,
-          ) => `<tr><td>${esc(x.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(x.created_at)}</td><td>${esc(x.kocname)}</td><td><span class="chip n">${btLabel(x.booking_type, x.content_type)}</span></td><td class="money">${money(x.price)}</td>
+          ) => `<tr><td>${esc(x.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(x.created_at)}</td><td>${esc(x.kocname)}</td><td><span class="chip n">${btLabel(x.booking_type, x.content_type)}</span></td><td class="money">${money(x.price)}</td>
         <td class="money">${money(x.gmv || 0)}</td><td>${num(x.orders || 0)}</td><td class="money">${money(x.commission || 0)}</td><td class="money">${money(x.platform_fee || 0)}</td><td>${statusChip(x.status)}</td></tr>`,
         )
         .join("")}
+    ${r.rows.length ? "" : `<tr><td colspan="10">${empty("", businessReportSearch ? "Không tìm thấy booking phù hợp" : "Chưa có dữ liệu báo cáo")}</td></tr>`}
     </tbody></table></div>
     <div class="pager" id="business-report-pager"></div>
     <button class="btn navy sm" id="r-invoice" style="margin-top:16px;width:auto">🧾 Xuất hoá đơn phí dịch vụ</button>`;
+  bindBusinessSearch(el, "business-report-search", (query) => {
+    businessReportSearch = query;
+    return report(el, 1);
+  });
   const pager = el.querySelector("#business-report-pager");
   if (r.pages > 1) {
     pager.innerHTML = `<button data-report-page="${r.page - 1}" ${r.page <= 1 ? "disabled" : ""}>‹</button><span class="muted" style="padding:7px 6px">${r.page} / ${r.pages} · ${num(r.total || 0)} booking</span><button data-report-page="${r.page + 1}" ${r.page >= r.pages ? "disabled" : ""}>›</button>`;
@@ -1632,6 +1687,8 @@ function btLabel(t, contentType) {
 
 let businessKolCatalogPage = 1;
 let businessKolRequestPage = 1;
+let businessKolCatalogSearch = "";
+let businessKolRequestSearch = "";
 function businessKolColumns() {
   if (window.innerWidth >= 1200) return 4;
   if (window.innerWidth >= 900) return 3;
@@ -1673,8 +1730,8 @@ async function kolPage(
   // Show five complete rows per catalogue page at the current column count.
   const catalogPer = businessKolColumns() * 5;
   const [catalog, reqs] = await Promise.all([
-    api(`/api/kols?page=${businessKolCatalogPage}&per=${catalogPer}`),
-    api(`/api/kol/requests?page=${businessKolRequestPage}&per=2`),
+    api(`/api/kols?page=${businessKolCatalogPage}&per=${catalogPer}&search=${encodeURIComponent(businessKolCatalogSearch)}`),
+    api(`/api/kol/requests?page=${businessKolRequestPage}&per=5&search=${encodeURIComponent(businessKolRequestSearch)}`),
   ]);
   const { kols } = catalog;
   businessKolCatalogPage = catalog.page || 1;
@@ -1682,7 +1739,10 @@ async function kolPage(
   el.innerHTML = `<div class="business-kol-page"><div class="between"><h1>KOL / Nghệ sĩ</h1>
     <button class="btn sm" id="k-quote" style="background:#B91C1C;color:#fff">${icon("quoteLead", "btn-icon")} Liên hệ nhận báo giá trực tiếp</button></div>
     <p class="muted" style="margin:8px 0 16px">Giá KOL thường thoả thuận — gửi yêu cầu báo giá, NetViet duyệt & phản hồi. Phân khúc cao cấp có duyệt riêng.</p>
+    ${businessSearchForm("business-kol-catalog-search", "Tìm KOL / nghệ sĩ", "Tên nghệ sĩ hoặc lĩnh vực…", businessKolCatalogSearch)}
+    <p class="list-search-summary" role="status">${num(catalog.total || 0)} KOL${businessKolCatalogSearch ? " phù hợp" : ""}</p>
     <div class="business-kol-catalog-scroll">
+    ${kols.length ? "" : empty("", businessKolCatalogSearch ? "Không tìm thấy KOL phù hợp" : "Chưa có KOL trong danh sách")}
     <div class="business-kol-grid">
       ${kols
         .map(
@@ -1698,13 +1758,23 @@ async function kolPage(
     <div class="pager business-kol-catalog-pager" id="business-kol-catalog-pager"></div>
     </div>
     <div class="card business-kol-requests"><h3>Yêu cầu KOL đã gửi</h3>
+      ${businessSearchForm("business-kol-request-search", "Tìm yêu cầu KOL", "Tên KOL, lĩnh vực hoặc nội dung yêu cầu…", businessKolRequestSearch)}
+      <p class="list-search-summary" role="status">${num(reqs.total || 0)} yêu cầu${businessKolRequestSearch ? " phù hợp" : ""}</p>
       <div class="table-wrap" style="margin-top:10px">${
         reqs.requests.length
           ? `<table><thead><tr><th>KOL</th><th>Thời gian</th><th>Ngân sách</th><th>Báo giá</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-        ${reqs.requests.map((q) => `<tr><td><b>${esc(q.kolname)}</b><div class="muted" style="font-size:11px">${esc(q.field)}</div></td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(q.created_at)}</td><td class="money">${money(q.budget)}</td><td>${q.quote ? `<b class="money">${money(q.total_amount||q.quote)}</b><div class="muted" style="font-size:10px">KOL ${money(q.quote_kol||q.quote)} · NetViet ${money(q.quote_platform||0)}${Number(q.quote_additional)>0?` · Khác ${money(q.quote_additional)}`:''}</div>` : "—"}</td><td>${kolStatus(q.status)}</td><td><div class="row" style="flex-wrap:wrap">${q.status==='quoted'?`<button class="btn primary sm" data-kol-fund="${q.id}">Chấp nhận & ký quỹ</button>`:''}${q.status==='delivered'?`<a class="btn ghost sm" href="${esc(q.delivery_url)}" target="_blank" rel="noopener">Xem bàn giao</a><button class="btn ok sm" data-kol-approve="${q.id}">Nghiệm thu</button><button class="btn ghost sm" data-kol-revision="${q.id}">Yêu cầu sửa</button>`:''}${['pending','quoted','funded'].includes(q.status)?`<button class="btn ghost sm" data-kol-cancel="${q.id}">Hủy</button>`:''}</div></td></tr>`).join("")}
+        ${reqs.requests.map((q) => `<tr><td><b>${esc(q.kolname)}</b><div class="muted" style="font-size:11px">${esc(q.field)}</div></td><td class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(q.created_at)}</td><td class="money">${money(q.budget)}</td><td>${q.quote ? `<b class="money">${money(q.total_amount||q.quote)}</b><div class="muted" style="font-size:10px">KOL ${money(q.quote_kol||q.quote)} · NetViet ${money(q.quote_platform||0)}${Number(q.quote_additional)>0?` · Khác ${money(q.quote_additional)}`:''}</div>` : "—"}</td><td>${kolStatus(q.status)}</td><td><div class="row" style="flex-wrap:wrap">${q.status==='quoted'?`<button class="btn primary sm" data-kol-fund="${q.id}">Chấp nhận & ký quỹ</button>`:''}${q.status==='delivered'?`<a class="btn ghost sm" href="${esc(q.delivery_url)}" target="_blank" rel="noopener">Xem bàn giao</a><button class="btn ok sm" data-kol-approve="${q.id}">Nghiệm thu</button><button class="btn ghost sm" data-kol-revision="${q.id}">Yêu cầu sửa</button>`:''}${['pending','quoted','funded'].includes(q.status)?`<button class="btn ghost sm" data-kol-cancel="${q.id}">Hủy</button>`:''}</div></td></tr>`).join("")}
       </tbody></table>`
-          : empty(icon("kolRequest", "teaser-icon"), "Chưa gửi yêu cầu KOL nào")
+          : empty(icon("kolRequest", "teaser-icon"), businessKolRequestSearch ? "Không tìm thấy yêu cầu KOL phù hợp" : "Chưa gửi yêu cầu KOL nào")
       }</div><div class="pager" id="business-kol-pager"></div></div></div>`;
+  bindBusinessSearch(el, "business-kol-catalog-search", (query) => {
+    businessKolCatalogSearch = query;
+    return kolPage(el, 1, businessKolRequestPage);
+  });
+  bindBusinessSearch(el, "business-kol-request-search", (query) => {
+    businessKolRequestSearch = query;
+    return kolPage(el, businessKolCatalogPage, 1);
+  });
   el.querySelectorAll("[data-kol]").forEach((b) =>
     b.addEventListener("click", () => kolRequestModal(b.dataset.kol, el)),
   );
@@ -2016,7 +2086,7 @@ async function wallet(el) {
 
     <div class="card" style="padding:16px">
       <b>📜 Lịch sử thanh toán và nạp tiền</b>
-      <div style="margin-top:12px;overflow-x:auto">
+      <div class="table-wrap business-wallet-payments" style="margin-top:12px;overflow-x:auto">
         ${
           (w.payments || []).length
             ? `
@@ -2043,7 +2113,7 @@ async function wallet(el) {
                   <td style="padding:8px"><span class="chip ghost">${p.provider === "demo" ? "⚡ Thử nghiệm" : "🏦 Trực tuyến"}</span></td>
                   <td style="padding:8px"><b class="money">${money(p.amount)}</b></td>
                   <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? '<span class="chip w">⏳ Chờ thanh toán</span>' : '<span class="chip r">Thất bại</span>'}</td>
-                  <td style="padding:8px;font-size:12px" class="muted">${formatPaymentTime(p.created_at)}</td>
+                  <td style="padding:8px;font-size:12px" class="muted">${dateTimeStack(p.created_at)}</td>
                 </tr>
               `,
                 )
@@ -2057,6 +2127,13 @@ async function wallet(el) {
     </div>
   `;
 
+  mountListSearch(el, {
+    key: "business-wallet-payments",
+    label: "Tìm giao dịch",
+    placeholder: "Mã đơn, mã booking, mục đích hoặc trạng thái…",
+    itemSelector: ".business-wallet-payments tbody > tr",
+    containerSelector: ".business-wallet-payments",
+  });
   el.querySelector("#w-deposit-payos").addEventListener("click", () =>
     depositModal(),
   );

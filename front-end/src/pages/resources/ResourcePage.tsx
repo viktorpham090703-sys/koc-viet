@@ -3,6 +3,7 @@ import { Empty, ErrorState, Loading } from '../../components/AsyncState'
 import { StatusChip } from '../../components/StatusChip'
 import { useApi } from '../../hooks/useApi'
 import type { UnknownRecord } from '../../types'
+import { formatPaymentTimeParts } from '../../payment-time.js'
 
 interface Props { title: string; endpoint: string; collection: string; columns?: string[] }
 const labels: Record<string, string> = {
@@ -22,7 +23,10 @@ const value = (key: string, input: unknown) => {
   if (key === 'status' && typeof input === 'string') return <StatusChip status={input}/>
   if (key === 'is_read') return Number(input) ? 'Đã đọc' : 'Chưa đọc'
   if (['price','amount','budget','gmv','balance'].includes(key)) return `${Number(input || 0).toLocaleString('vi-VN')}đ`
-  if (key.endsWith('_at') && input) return new Date(Number(input) * 1000).toLocaleString('vi-VN')
+  if (key.endsWith('_at') && input) {
+    const { time, date } = formatPaymentTimeParts(input)
+    return <span className="datetime-stack"><span>{time}</span>{date && <span>{date}</span>}</span>
+  }
   if (input && typeof input === 'object') {
     const summary = Object.values(input).filter(item => ['string','number'].includes(typeof item)).join(', ')
     return summary || 'Có thông tin'

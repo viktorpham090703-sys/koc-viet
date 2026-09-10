@@ -1,4 +1,5 @@
 import { api, post } from "./api.js";
+import { mountListSearch, mountRemoteSearch } from "./list-search.js";
 import {
   money,
   num,
@@ -17,7 +18,7 @@ import {
   closeModal,
   confirmDialog,
   promptDialog,
-  fmtDate,
+  fmtDateTime,
   copyToClipboard,
   avatarUrl,
   provinceOptions,
@@ -39,6 +40,7 @@ import {
   isValidSocialUrl,
   socialChannelPickerHtml,
   socialProfileUrl,
+  socialPlatformIcon,
 } from "./social-channels.js";
 
 const MIN_WITHDRAW_AMOUNT = 10_000;
@@ -132,7 +134,7 @@ async function home(el) {
     <div class="m-head koc-page-heading koc-dashboard-heading">
       <div class="between"><div><div style="font-size:13px;opacity:.85">Xin chào 👋</div>
         <div style="font-size:20px;font-weight:800">${esc(k.name)}</div></div>
-        <div class="row koc-home-actions" style="gap:8px"><a href="#/notifications" class="chip on-dark">🔔 <span class="notification-count" hidden></span></a>
+        <div class="row koc-home-actions" style="gap:8px"><a href="#/notifications" class="chip on-dark">${icon("notification", "nav-icon")}<span class="notification-count" hidden></span></a>
         <a href="#/profile" class="chip on-dark">👤 Hồ sơ</a>
         <button class="chip on-dark" id="k-logout">Đăng xuất</button></div></div>
       <div class="tint-box on-dark" style="margin-top:14px">
@@ -175,12 +177,14 @@ async function home(el) {
 }
 
 let kocCampaignPage = 1;
+let kocCampaignSearch = '';
 async function campaigns(el, page = kocCampaignPage) {
   kocCampaignPage = Math.max(1, Number(page) || 1);
-  const r = await api(`/api/koc/campaigns?page=${kocCampaignPage}&per=6`);
+  const r = await api(`/api/koc/campaigns?page=${kocCampaignPage}&per=6&search=${encodeURIComponent(kocCampaignSearch)}`);
   kocCampaignPage = r.page || 1;
   el.innerHTML = `<div class="m-body"><div class="campaign-koc-grid${r.campaigns.length ? '' : ' campaign-koc-grid--empty'}">${r.campaigns.length?r.campaigns.map(c=>`<article class="card campaign-koc-card campaign-koc-card--${esc(c.status)}">
       <div class="campaign-koc-card-head"><div class="campaign-koc-company"><span>Doanh nghiệp</span><h3>${esc(c.business_name)}</h3></div>${statusChip(c.status)}</div>
+      <div class="campaign-koc-brief"><span>Thời gian được mời</span><p>${fmtDateTime(c.created_at)}</p></div>
       <div class="campaign-koc-money"><span>Khoản nhận sau nghiệm thu</span><strong>${money(c.amount)}</strong></div>
       <div class="campaign-koc-meta"><div><span>Ngành hàng</span><b>${esc(c.category)}</b></div><div><span>Hạng KOC</span>${tierBadge(c.tier)}</div><div><span>Hạn hoàn thành</span><b>${c.deadline||c.campaign_deadline?esc(c.deadline||c.campaign_deadline):'Chưa đặt'}</b></div></div>
       ${c.campaign_note?`<div class="campaign-koc-brief"><span>Yêu cầu chiến dịch</span><p>${esc(c.campaign_note)}</p></div>`:''}
@@ -213,57 +217,31 @@ async function campaigns(el, page = kocCampaignPage) {
       </div>
     </section>`}</div>
     ${r.pages>1?`<nav class="campaign-koc-pager" aria-label="Phân trang chiến dịch"><button class="btn ghost sm" data-campaign-page="${r.page-1}" ${r.page<=1?'disabled':''}>← Trước</button><span>Trang <b>${r.page}</b> / ${r.pages}</span><button class="btn ghost sm" data-campaign-page="${r.page+1}" ${r.page>=r.pages?'disabled':''}>Sau →</button></nav>`:''}</div>`;
+  mountRemoteSearch(el,{key:'koc-campaigns',label:'Tìm chiến dịch',placeholder:'Doanh nghiệp, ngành hàng hoặc yêu cầu…',value:kocCampaignSearch,anchor:'.campaign-koc-grid',meta:r,
+    onSearch:query=>{kocCampaignSearch=query;return campaigns(el,1);}});
+  if (kocCampaignSearch && !r.campaigns.length) el.querySelector('.campaign-koc-grid').innerHTML = empty('📋','Không tìm thấy chiến dịch phù hợp. Thử từ khóa khác hoặc xóa tìm kiếm.');
   el.querySelectorAll('[data-campaign-page]').forEach(b=>b.addEventListener('click',()=>campaigns(el,Number(b.dataset.campaignPage))));
   el.querySelectorAll('[data-campaign-accept]').forEach(b=>b.addEventListener('click',async()=>{try{await post('/api/campaign/allocation/action',{id:b.dataset.campaignAccept,action:'accept'});toast('Đã nhận chiến dịch','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll('[data-campaign-decline]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Xác nhận từ chối chiến dịch này?')))return;const note=await promptDialog('Lý do từ chối (không bắt buộc):')||'';try{await post('/api/campaign/allocation/action',{id:b.dataset.campaignDecline,action:'decline',note});toast('Đã từ chối lời mời','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll('[data-campaign-submit]').forEach(b=>b.addEventListener('click',async()=>{const id=b.dataset.campaignSubmit,url=el.querySelector(`[data-campaign-url="${id}"]`).value.trim(),note=el.querySelector(`[data-campaign-note="${id}"]`).value.trim();try{await post('/api/campaign/allocation/action',{id,action:'submit',url,note});toast('Đã gửi nội dung cho doanh nghiệp duyệt','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
 }
 
-async function bookings(el) {
-  const r = await api("/api/bookings");
-  const kinds = [
-    ["all", "Tất cả"],
-    ["aiclone", `${icon("aiClone")} AI Clone Avatar`],
-    ["review", "📝 Review"],
-    ["advertising", "📣 Quảng cáo"],
-    ["affiliate", "🔗 Tiếp thị liên kết"],
-    ["combo", "🎯 Combo"],
-  ];
-  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Booking của tôi</h2>
-      <p style="opacity:.85;font-size:12px;margin-top:4px">Phân loại rõ theo hình thức hợp tác</p></div>
-    <div class="m-body">
-      <div class="booking-type-tabs" id="bk-tabs">${kinds.map(([key, label], i) => `<button class="${i === 0 ? "active" : ""}" data-kind="${key}">${label}<span>${key === "all" ? r.bookings.length : r.bookings.filter((b) => bookingKind(b) === key).length}</span></button>`).join("")}</div>
-      <div id="bk-list"></div>
-    </div>`;
-  const list = document.getElementById("bk-list");
-  const draw = (kind = "all") => {
-    const filtered =
-      kind === "all"
-        ? r.bookings
-        : r.bookings.filter((b) => bookingKind(b) === kind);
-    list.innerHTML = filtered.length
-      ? filtered.map(bookingCard).join("")
-      : empty("📋", "Không có booking thuộc loại này");
-    list
-      .querySelectorAll("[data-open]")
-      .forEach((c) =>
-        c.addEventListener("click", () => openBooking(c.dataset.open, el)),
-      );
-    list
-      .querySelectorAll("[data-video]")
-      .forEach((link) =>
-        link.addEventListener("click", (event) => event.stopPropagation()),
-      );
-  };
-  el.querySelectorAll("#bk-tabs [data-kind]").forEach((button) =>
-    button.addEventListener("click", () => {
-      el.querySelectorAll("#bk-tabs [data-kind]").forEach((item) =>
-        item.classList.toggle("active", item === button),
-      );
-      draw(button.dataset.kind);
-    }),
-  );
-  draw();
+const kocBookingFilters = {search: '', kind: 'all', page: 1};
+async function bookings(el, page = kocBookingFilters.page) {
+  kocBookingFilters.page = page;
+  const params = new URLSearchParams({page: String(page), per: '12', search: kocBookingFilters.search});
+  if (kocBookingFilters.kind !== 'all') params.set('type', kocBookingFilters.kind);
+  const r = await api('/api/bookings?' + params);
+  kocBookingFilters.page = r.page;
+  const kinds = [['all','Tất cả'],['aiclone','AI Clone Avatar'],['review','Review'],['advertising','Quảng cáo'],['affiliate','Tiếp thị liên kết'],['combo','Combo']];
+  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Booking của tôi</h2><p style="opacity:.85;font-size:12px;margin-top:4px">Theo dõi và tra cứu các booking của bạn</p></div>
+    <div class="m-body"><div class="booking-type-tabs" id="bk-tabs">${kinds.map(([key,label])=>`<button class="${key===kocBookingFilters.kind?'active':''}" data-kind="${key}">${label}</button>`).join('')}</div>
+    <div id="bk-list">${r.bookings.length?r.bookings.map(bookingCard).join(''):empty('📋','Không có booking phù hợp. Thử từ khóa hoặc hình thức hợp tác khác.')}</div></div>`;
+  mountRemoteSearch(el,{key:'koc-bookings',label:'Tìm booking',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocBookingFilters.search,anchor:'#bk-list',meta:r,
+    onSearch:query=>{kocBookingFilters.search=query;return bookings(el,1);},onPage:page=>bookings(el,page)});
+  el.querySelectorAll('#bk-tabs [data-kind]').forEach(button=>button.addEventListener('click',()=>{kocBookingFilters.kind=button.dataset.kind;bookings(el,1);}));
+  el.querySelectorAll('#bk-list [data-open]').forEach(card=>card.addEventListener('click',()=>openBooking(card.dataset.open,el)));
+  el.querySelectorAll('#bk-list [data-video]').forEach(link=>link.addEventListener('click',event=>event.stopPropagation()));
 }
 
 function bookingKind(b) {
@@ -299,6 +277,7 @@ function bookingCard(b) {
     <div class="between"><span class="booking-kind ${cls}">${icon} ${label}</span>${statusChip(b.status)}</div>
     <strong style="display:block;margin-top:8px">${esc(b.bizname)}</strong>
     <div class="muted" style="font-size:12px">${esc(b.code)} · ${esc(b.category)}${b.platform ? " · " + esc(b.platform) : ""}</div>
+    <div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo: ${fmtDateTime(b.created_at)}</div>
     <div class="between" style="margin-top:8px"><span class="money">${b.price > 0 ? money(b.price) : "Theo doanh số"}</span>
       <span class="muted" style="font-size:12px">${earn}</span></div>
     ${b.type === "aiclone" && (b.koc_video_link || b.video_link) && ["pending_koc_review", "video_approved", "posted", "completed"].includes(b.status) ? `<a class="btn ok sm" data-video href="${esc(b.koc_video_link || b.video_link)}" target="_blank" rel="noopener" style="margin-top:10px;width:100%">🎥 Mở / tải video admin giao</a>` : ""}
@@ -495,7 +474,7 @@ async function uploadBookingVideo(b, act, el) {
 }
 
 async function openBooking(id, el) {
-  const r = await api("/api/bookings");
+  const r = await api('/api/bookings?id=' + encodeURIComponent(id));
   const b = r.bookings.find((x) => x.id === id);
   if (!b) return;
   if (
@@ -530,6 +509,7 @@ async function openBooking(id, el) {
   }
   const m = modal(`
     <div class="between"><h2>${esc(b.code)}</h2>${statusChip(b.status)}</div>
+    <p class="muted" style="font-size:12px;margin-top:6px">Thời gian tạo booking: ${fmtDateTime(b.created_at)}</p>
     <div class="tint-box" style="margin:12px 0">
       <div class="between"><span>Doanh nghiệp</span><b>${esc(b.bizname)}</b></div>
       <div class="between"><span>Ngành hàng</span><b>${esc(b.category)}</b></div>
@@ -741,16 +721,21 @@ async function doAction(id, action, extra, el) {
   }
 }
 
-async function content(el) {
-  const r = await api("/api/bookings");
+let kocContentSearch = '';
+let kocContentPage = 1;
+async function content(el, page = kocContentPage) {
+  const r = await api(`/api/bookings?work=content&page=${page}&per=12&search=${encodeURIComponent(kocContentSearch)}`);
+  kocContentPage = r.page;
   const active = r.bookings.filter((b) =>
     ["confirmed", "producing", "posted"].includes(b.status),
   );
   el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Nội dung đang sản xuất</h2></div><div class="m-body"></div>`;
   const body = el.querySelector(".m-body");
   body.classList.add("koc-content-grid");
+  mountRemoteSearch(el,{key:'koc-content',label:'Tìm nội dung',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocContentSearch,anchor:'.koc-content-grid',meta:r,
+    onSearch:query=>{kocContentSearch=query;return content(el,1);},onPage:page=>content(el,page)});
   if (!active.length) {
-    body.innerHTML = empty("🎬", "Chưa có nội dung nào đang chạy");
+    body.innerHTML = empty("🎬", kocContentSearch ? "Không tìm thấy nội dung phù hợp" : "Chưa có nội dung nào đang chạy");
     return;
   }
   body.innerHTML = active
@@ -758,6 +743,7 @@ async function content(el) {
       (b) => `<div class="list-item koc-content-card">
     <div class="between"><strong>${esc(b.bizname)}</strong>${statusChip(b.status)}</div>
     <div class="muted" style="font-size:12px">${esc(b.category)} · Hạn ${esc(b.deadline || "—")}</div>
+    <div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo booking: ${fmtDateTime(b.created_at)}</div>
     <div class="copybox" style="margin-top:8px">${icon("productData")} <a href="${esc(b.product_link)}" target="_blank" style="color:var(--info)">Dữ liệu sản phẩm</a></div>
     ${b.post_link ? `<div class="chip g" style="margin-top:8px">Đã đăng: ${esc(b.post_platform)}</div>` : ""}
     <button class="btn ghost sm" data-open="${b.id}" style="margin-top:10px;width:100%">Quản lý</button>
@@ -794,19 +780,19 @@ async function affiliate(el) {
     .map((a) => {
       const s = a.stat || {};
       const orders = a.orders || [];
-      return `<div class="list-item koc-affiliate-card">
+      return `<div class="list-item koc-affiliate-card" data-search="${esc([a.code,a.bizname,a.platform,a.category,a.generated_url].join(' '))}">
       <div class="between"><strong>${esc(a.code)}</strong><span class="chip b">${esc(a.platform)} · ${esc(a.category)}</span></div>
       <div class="muted" style="font-size:12px">${esc(a.bizname)} · Hoa hồng ${a.commission_rate}%</div>
+      <div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo liên kết: ${fmtDateTime(a.created_at)}</div>
       <div class="copybox affiliate-link-copy" style="margin:8px 0"><span title="${esc(a.generated_url)}">${esc(a.generated_url)}</span><button class="btn primary sm" data-copy="${esc(a.generated_url)}">Sao chép</button></div>
-      <div class="row" style="gap:14px;flex-wrap:wrap">
+      <div class="affiliate-metrics">
         <div><div class="v" style="font-weight:800">${num(a.clicks)}</div><div class="muted" style="font-size:11px">Click</div></div>
         <div><div class="v" style="font-weight:800">${num(s.orders || 0)}</div><div class="muted" style="font-size:11px">Đơn</div></div>
         <div><div class="v" style="font-weight:800">${(a.conversion || 0).toFixed(1)}%</div><div class="muted" style="font-size:11px">Chuyển đổi</div></div>
         <div><div class="v money" style="font-weight:800">${money(s.gmv || 0)}</div><div class="muted" style="font-size:11px">Doanh số</div></div>
         <div><div class="v money" style="font-weight:800">${money(s.valid_comm || 0)}</div><div class="muted" style="font-size:11px">Hoa hồng</div></div>
       </div>
-      <div class="affiliate-orders">
-        <div class="between"><b>Trạng thái từng đơn</b><span class="muted">${orders.length} đơn gần nhất</span></div>
+      <details class="affiliate-order-details"><summary>Chi tiết đơn hàng <span>${orders.length} đơn gần nhất</span></summary><div class="affiliate-orders">
         ${
           orders.length
             ? orders
@@ -815,7 +801,7 @@ async function affiliate(el) {
                     order.status,
                   );
                   return `<div class="affiliate-order ${reversed ? "reversed" : ""}">
-            <div><b>${esc(order.platform_order_id)}</b><div class="muted">${money(order.gmv)} · ${fmtDate(order.ordered_at)}</div></div>
+            <div><b>${esc(order.platform_order_id)}</b><div class="muted">${money(order.gmv)} · ${fmtDateTime(order.ordered_at)}</div></div>
             <div style="text-align:right">${statusChip(order.status)}
               <div class="${reversed ? "amount-reversed" : "money"}">${reversed ? "-" : "+"}${money(order.commission_amount)}</div>
             </div>
@@ -833,8 +819,8 @@ async function affiliate(el) {
             : '<p class="muted" style="font-size:12px;margin-top:8px">Chưa phát sinh đơn.</p>'
         }
       </div>
-      <div class="tint-box" style="margin-top:8px;font-size:12px">💡 Caption: "Sản phẩm mình cực ưng 😍 Link ở bio nhé! #quangcao #review #${esc((a.category || "").replace(/\s/g, ""))}"</div>
-      <button class="btn ghost sm" data-sync="${a.id}" style="margin-top:8px;width:100%">🧪 Giả lập phát sinh đơn (đồng bộ từ sàn)</button>
+      </details><details class="affiliate-tools"><summary>Gợi ý nội dung và công cụ mô phỏng</summary><div class="tint-box" style="margin-top:8px;font-size:12px">💡 Caption: "Sản phẩm mình cực ưng 😍 Link ở bio nhé! #quangcao #review #${esc((a.category || "").replace(/\s/g, ""))}"</div>
+      <button class="btn ghost sm" data-sync="${a.id}" style="margin-top:8px;width:100%">🧪 Giả lập phát sinh đơn (đồng bộ từ sàn)</button></details>
     </div>`;
     })
     .join("");
@@ -842,8 +828,9 @@ async function affiliate(el) {
   html += (legacy.affiliates || [])
     .map((a) => {
       const url = location.origin + "/r/" + a.short_code;
-      return `<div class="list-item koc-affiliate-card">
+      return `<div class="list-item koc-affiliate-card" data-search="${esc([a.code,a.category,a.short_code].join(' '))}">
       <div class="between"><strong>${esc(a.code)}</strong><span class="chip b">${esc(a.category)}</span></div>
+      <div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo booking: ${fmtDateTime(a.booking_created_at)}</div>
       <div class="copybox affiliate-link-copy" style="margin:8px 0"><span title="${esc(url)}">${esc(url)}</span><button class="btn primary sm" data-copy="${esc(url)}">Sao chép</button></div>
       <div class="row" style="gap:16px">
         <div><div class="v" style="font-weight:800">${num(a.clicks)}</div><div class="muted" style="font-size:11px">Click</div></div>
@@ -855,6 +842,7 @@ async function affiliate(el) {
     })
     .join("");
   body.innerHTML = html;
+  mountListSearch(el,{key:'koc-affiliate',label:'Tìm liên kết bán hàng',placeholder:'Mã booking, doanh nghiệp, sàn hoặc ngành hàng…',itemSelector:'.koc-affiliate-card',containerSelector:'.koc-affiliate-grid',searchText:card=>card.dataset.search});
   body.querySelectorAll("[data-copy]").forEach((b) =>
     b.addEventListener("click", async () => {
       const textToCopy = b.dataset.copy || b.getAttribute("data-copy");
@@ -983,11 +971,12 @@ async function wallet(el) {
         ? `Không ghi nhận ${money(Math.abs(t.amount))}`
         : `${outgoing ? "-" : "+"}${money(Math.abs(t.amount))}`;
       return `<div class="wallet-transaction ${ignored ? "reversed" : ""}">
-      <div><div><b>${label[t.type] || t.type}</b> ${walletStatusChip(t.status)}</div><div class="muted" style="font-size:12px">${esc(t.note || "")} · ${fmtDate(t.created_at)}</div></div>
+      <div><div><b>${label[t.type] || t.type}</b> ${walletStatusChip(t.status)}</div><div class="muted" style="font-size:12px">${esc(t.note || "")} · ${fmtDateTime(t.created_at)}</div></div>
       <div class="${ignored ? "amount-reversed" : "money"}" style="color:${outgoing || ignored ? "var(--error)" : "var(--success)"}">${amountText}</div>
     </div>`;
     })
     .join("");
+  mountListSearch(el,{key:'koc-wallet',label:'Tìm giao dịch',placeholder:'Loại giao dịch, ghi chú, số tiền hoặc thời gian…',itemSelector:'.wallet-transaction',containerSelector:'#w-tx'});
 }
 
 function walletStatusChip(status) {
@@ -1255,11 +1244,14 @@ function openAiCloneTermsModal(kocName, onConfirm) {
   });
 }
 
-async function aiclone(el) {
+let kocAiSearch = '';
+let kocAiPage = 1;
+async function aiclone(el, page = kocAiPage) {
   const [d, bookingData] = await Promise.all([
     api("/api/koc/dashboard"),
-    api("/api/bookings"),
+    api(`/api/bookings?type=aiclone&page=${page}&per=12&search=${encodeURIComponent(kocAiSearch)}`),
   ]);
+  kocAiPage = bookingData.page;
   const registered = d.koc.ai_clone;
   const aiBookings = (bookingData.bookings || []).filter(
     (booking) => booking.type === "aiclone",
@@ -1283,13 +1275,14 @@ async function aiclone(el) {
       </div>
       ${
         registered
-          ? `<div class="between" style="margin:18px 0 10px"><h3>Video từ NetViet</h3><span class="chip b">${aiBookings.length} booking</span></div>
+          ? `<div class="between" id="koc-ai-results" style="margin:18px 0 10px"><h3>Video từ NetViet</h3><span class="chip b">${bookingData.total} booking</span></div><div class="koc-ai-booking-list">
             ${
               aiBookings.length
                 ? aiBookings
                     .map(
                       (booking) => `<div class="list-item">
                 <div class="between"><div><b>${esc(booking.code)}</b><div class="muted" style="font-size:12px">${esc(booking.bizname)} · ${esc(booking.category)}</div></div>${statusChip(booking.status)}</div>
+                <div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo booking: ${fmtDateTime(booking.created_at)}</div>
                 ${
                   (booking.koc_video_link || booking.video_link) &&
                   [
@@ -1309,11 +1302,13 @@ async function aiclone(el) {
               </div>`,
                     )
                     .join("")
-                : empty("🎬", "Chưa có booking AI Clone Avatar nào được tạo")
-            }`
+                : empty("🎬", kocAiSearch ? "Không tìm thấy booking AI Clone phù hợp" : "Chưa có booking AI Clone Avatar nào được tạo")
+            }</div>`
           : ""
       }
     </div>`;
+  if (registered) mountRemoteSearch(el,{key:'koc-aiclone',label:'Tìm booking AI Clone',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocAiSearch,anchor:'.koc-ai-booking-list',meta:bookingData,
+    onSearch:query=>{kocAiSearch=query;return aiclone(el,1);},onPage:page=>aiclone(el,page)});
   if (!registered)
     document.getElementById("ai-reg").addEventListener("click", () => {
       openAiCloneTermsModal(d.koc.name, async () => {
@@ -1328,8 +1323,11 @@ async function aiclone(el) {
     });
 }
 
-async function notifications(el) {
-  const data = await api("/api/notifications");
+let kocNotificationSearch = '';
+let kocNotificationPage = 1;
+async function notifications(el, page = kocNotificationPage) {
+  const data = await api(`/api/notifications?page=${page}&per=20&search=${encodeURIComponent(kocNotificationSearch)}`);
+  kocNotificationPage = data.page;
   const icon = {
     booking: "📋",
     commission: "💰",
@@ -1346,16 +1344,18 @@ async function notifications(el) {
               .map(
                 (
                   n,
-                ) => `<button class="notification-item ${n.is_read ? "" : "unread"}" data-notification="${n.id}" data-href="${esc(n.href || "#/notifications")}">
+                ) => `<button class="notification-item ${Number(n.is_read) ? "" : "unread"}" data-notification="${n.id}" data-href="${esc(n.href || "#/notifications")}">
         <span class="notification-icon">${icon[n.type] || "🔔"}</span>
-        <span><b>${esc(n.title)}</b><small>${esc(n.message)}</small><time>${new Date(n.created_at * 1000).toLocaleString("vi-VN")}</time></span>
-        ${n.is_read ? "" : "<i></i>"}
+        <span><b>${esc(n.title)}</b><small>${esc(n.message)}</small><time>${fmtDateTime(n.created_at)}</time></span>
+        ${Number(n.is_read) ? "" : "<i></i>"}
       </button>`,
               )
               .join("")
-          : empty("🔔", "Bạn chưa có thông báo")
+          : empty("🔔", kocNotificationSearch ? "Không tìm thấy thông báo phù hợp" : "Bạn chưa có thông báo")
       }
     </div>`;
+  mountRemoteSearch(el,{key:'koc-notifications',label:'Tìm thông báo',placeholder:'Tiêu đề hoặc nội dung thông báo…',value:kocNotificationSearch,anchor:'#notification-list',meta:data,
+    onSearch:query=>{kocNotificationSearch=query;return notifications(el,1);},onPage:page=>notifications(el,page)});
   el.querySelectorAll("[data-notification]").forEach((item) =>
     item.addEventListener("click", async () => {
       await post("/api/notifications/read", { id: item.dataset.notification });
@@ -1476,7 +1476,7 @@ async function profile(el, editing = false) {
         <div class="card profile-section"><h3>Kênh mạng xã hội</h3>
           ${(k.socials || []).map((item) => {
             const url = socialProfileUrl(item);
-            const content = `<span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span><strong>${num(item.followers || k.followers)} followers</strong>`;
+            const content = `<span style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0">${socialPlatformIcon(item.platform, 20)}</span><span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span></span><strong>${num(item.followers || k.followers)} followers</strong>`;
             return url
               ? `<a class="profile-social-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${content}</a>`
               : `<div class="profile-social-link">${content}</div>`;
@@ -1556,6 +1556,8 @@ async function profile(el, editing = false) {
     }));
   }
 
+  let socialPickerMode = "auto";
+
   function renderSocialDrafts() {
     const container = el.querySelector("#pf-socials");
     container.innerHTML = socialChannelPickerHtml({
@@ -1563,7 +1565,15 @@ async function profile(el, editing = false) {
       prefix: "pf",
       escapeHtml: esc,
       primaryVerified: k.followers_verified,
+      mode: socialPickerMode,
     });
+    container.querySelectorAll("[data-social-mode]").forEach((button) =>
+      button.addEventListener("click", () => {
+        collectSocialDrafts();
+        socialPickerMode = button.dataset.socialMode;
+        renderSocialDrafts();
+      }),
+    );
     container.querySelectorAll("[data-social-toggle]").forEach((button) =>
       button.addEventListener("click", () => {
         collectSocialDrafts();
@@ -1572,10 +1582,6 @@ async function profile(el, editing = false) {
           (social) => social.platform === platform,
         );
         if (index >= 0) {
-          if (index === 0 && k.followers_verified) {
-            toast("Kênh chính đã xác minh không thể gỡ", "err");
-            return;
-          }
           socialDrafts.splice(index, 1);
         } else {
           if (socialDrafts.length >= MAX_SOCIAL_CHANNELS) {

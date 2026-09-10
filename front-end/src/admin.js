@@ -16,7 +16,8 @@ import {
   promptDialog,
   tierBadge,
   stars,
-  fmtDate,
+  fmtDateTime,
+  dateTimeStack,
   avatarUrl,
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
@@ -24,6 +25,7 @@ import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
 import { bankIdentityHtml } from "./payout-banks.js";
 import { formatPaymentTime as formatBookingTime } from "./payment-time.js";
+import { mountListSearch, searchForm, bindSearchForm } from "./list-search.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
@@ -112,18 +114,18 @@ async function businessesAdmin(el) {
       </select></div>
       <button class="btn primary sm" id="biz-filter">Tìm kiếm</button>
     </div>
-    <div class="table-wrap"><table><thead><tr><th>Doanh nghiệp</th><th>Thời gian</th><th>Liên hệ</th><th>Tài khoản</th><th>Booking</th><th>Tổng chi</th><th></th></tr></thead><tbody>
+    <div class="table-wrap"><table class="admin-business-table"><thead><tr><th>Doanh nghiệp</th><th>Thời gian</th><th>Liên hệ</th><th>Tài khoản</th><th>Booking</th><th>Tổng chi</th><th></th></tr></thead><tbody>
       ${
         r.businesses.length
           ? r.businesses
               .map(
                 (b) => `<tr>
-        <td><div class="row">${b.avatar ? `<img class="avatar" src="${esc(b.avatar)}" alt="">` : ""}<div><b>${esc(b.name)}</b><div class="muted" style="font-size:11px">${esc(b.industry || "Chưa cập nhật ngành nghề")}</div></div></div></td>
-        <td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(b.created_at)}</td>
-        <td><div>${esc(b.contact || "—")}</div><div class="muted" style="font-size:11px">${esc(b.email || "—")}</div></td>
-        <td>${accountChip(b.account_status)}<div class="muted" style="font-size:11px;margin-top:3px">${esc(b.login_email || "—")}</div></td>
-        <td>${num(b.bookings_count)}</td><td class="money">${money(b.total_spend)}</td>
-        <td><div class="row"><button class="btn ghost sm" data-biz-view="${b.id}">Xem</button>
+        <td data-label="Doanh nghiệp"><div class="row">${b.avatar ? `<img class="avatar" src="${esc(b.avatar)}" alt="">` : ""}<div><b>${esc(b.name)}</b><div class="muted" style="font-size:11px">${esc(b.industry || "Chưa cập nhật ngành nghề")}</div></div></div></td>
+        <td data-label="Thời gian" class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(b.created_at)}</td>
+        <td data-label="Liên hệ"><div>${esc(b.contact || "—")}</div><div class="muted" style="font-size:11px">${esc(b.email || "—")}</div></td>
+        <td data-label="Tài khoản">${accountChip(b.account_status)}<div class="muted" style="font-size:11px;margin-top:3px">${esc(b.login_email || "—")}</div></td>
+        <td data-label="Booking">${num(b.bookings_count)}</td><td data-label="Tổng chi" class="money">${money(b.total_spend)}</td>
+        <td data-label="Thao tác"><div class="row"><button class="btn ghost sm" data-biz-view="${b.id}">Xem</button>
           ${
             b.account_status === "pending"
               ? `<button class="btn ok sm" data-biz-approve="${b.id}">Duyệt</button><button class="btn danger sm" data-biz-reject="${b.id}">Từ chối</button>`
@@ -199,6 +201,7 @@ async function businessDetail(id) {
   modal(`<div class="between"><h2>Chi tiết doanh nghiệp</h2><span class="chip ${b.account_status === "active" ? "g" : b.account_status === "pending" ? "b" : b.account_status === "locked" || b.account_status === "rejected" ? "r" : "n"}">${statusLabel}</span></div>
     <div class="tint-box" style="margin:14px 0">
       <div class="between"><span>Tên doanh nghiệp</span><b>${esc(b.name)}</b></div>
+      <div class="between"><span>Thời gian đăng ký</span><b>${fmtDateTime(b.created_at)}</b></div>
       <div class="between"><span>Email liên hệ</span><b>${esc(b.email || "—")}</b></div>
       <div class="between"><span>Người liên hệ</span><b>${esc(b.contact || "—")}</b></div>
       <div class="between"><span>Ngành nghề</span><b>${esc(b.industry || "—")}</b></div>
@@ -208,7 +211,7 @@ async function businessDetail(id) {
     <div class="stat-cards" style="margin-bottom:14px">
       ${scard("Booking", num(s.bookings_count))}${scard("Hoàn thành", num(s.completed_count))}${scard("Tổng chi", money(s.total_spend))}
     </div>
-    ${["locked", "rejected"].includes(b.account_status) ? `<div class="tint-box" style="margin-bottom:14px"><b>${b.account_status === "rejected" ? "Lý do từ chối" : "Lý do khóa"}:</b> ${esc(b.locked_reason || "—")}<div class="muted">${b.locked_at ? fmtDate(b.locked_at) : ""}</div></div>` : ""}
+    ${["locked", "rejected"].includes(b.account_status) ? `<div class="tint-box" style="margin-bottom:14px"><b>${b.account_status === "rejected" ? "Lý do từ chối" : "Lý do khóa"}:</b> ${esc(b.locked_reason || "—")}<div class="muted">${b.locked_at ? fmtDateTime(b.locked_at) : ""}</div></div>` : ""}
     <h3>Hồ sơ pháp lý</h3><div class="tint-box" style="margin:8px 0 14px">
       <div class="between"><span>Mã số thuế</span><b>${esc(b.tax_code || "—")}</b></div>
       <div class="between"><span>Giấy phép kinh doanh</span>
@@ -295,26 +298,28 @@ async function partnersAdmin(el) {
       ${scard("KOC được gán", num(rows.reduce((s, p) => s + Number(p.member_count || 0), 0)))}
       ${scard("Tổng hoa hồng đã chia", money(earnedTotal))}
     </div>
-    <div class="table-wrap"><table><thead><tr>
-      <th>Đối tác</th><th>Tỷ lệ chia</th><th>KOC</th><th>Hoa hồng tích luỹ</th><th>Số dư ví</th><th>Trạng thái</th><th>Tài khoản</th><th></th>
+    <div class="table-wrap"><table class="admin-partners-table"><thead><tr>
+      <th>Đối tác</th><th>Thời gian tạo</th><th>Tỷ lệ chia</th><th>KOC</th><th>Hoa hồng tích luỹ</th><th>Số dư ví</th><th>Trạng thái</th><th>Tài khoản</th><th></th>
     </tr></thead><tbody>
       ${
         rows.length
-          ? rows.map((p) => `<tr>
-        <td><div class="row" style="gap:8px">
+          ? rows.map((p) => `<tr data-search="${esc([p.name, p.email, p.account_email].join(" "))}">
+        <td data-label="Đối tác"><div class="row" style="gap:8px">
           <div style="width:30px;height:30px;border-radius:8px;overflow:hidden;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">${p.avatar ? `<img src="${esc(p.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">` : "🤝"}</div>
           <b>${esc(p.name)}</b></div></td>
-        <td>${partnerPct(p.fee_rate)} <span class="muted" style="font-size:11px">của 5%</span></td>
-        <td>${num(p.member_count)}</td>
-        <td class="money">${money(p.earned_total)}<div class="muted" style="font-size:11px">${num(p.earned_bookings)} booking</div></td>
-        <td class="money">${money(p.wallet_revenue)}</td>
-        <td>${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</td>
-        <td>${p.account_user_id ? '<span class="chip g">Đã cấp</span>' : '<span class="chip n">Chưa cấp</span>'}</td>
-        <td><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button></td>
+        <td data-label="Thời gian tạo" class="muted">${dateTimeStack(p.created_at)}</td>
+        <td data-label="Tỷ lệ chia">${partnerPct(p.fee_rate)} <span class="muted" style="font-size:11px">của 5%</span></td>
+        <td data-label="KOC">${num(p.member_count)}</td>
+        <td data-label="Hoa hồng tích luỹ" class="money">${money(p.earned_total)}<div class="muted" style="font-size:11px">${num(p.earned_bookings)} booking</div></td>
+        <td data-label="Số dư ví" class="money">${money(p.wallet_revenue)}</td>
+        <td data-label="Trạng thái">${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</td>
+        <td data-label="Tài khoản">${p.account_user_id ? '<span class="chip g">Đã cấp</span>' : '<span class="chip n">Chưa cấp</span>'}</td>
+        <td data-label="Thao tác"><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button></td>
       </tr>`).join("")
-          : `<tr><td colspan="8">${empty("🤝", "Chưa có đối tác nào")}</td></tr>`
+          : `<tr><td colspan="9">${empty("🤝", "Chưa có đối tác nào")}</td></tr>`
       }
     </tbody></table></div>`;
+  mountListSearch(el, { key: "admin-partners", label: "Tìm đối tác", placeholder: "Tên hoặc email đối tác…", itemSelector: "tbody tr[data-search]", containerSelector: ".table-wrap", searchText: (row) => row.dataset.search });
   document.getElementById("pt-new").addEventListener("click", () => partnerCreate(el));
   el.querySelectorAll("[data-pt-view]").forEach((b) =>
     b.addEventListener("click", () => partnerDetail(b.dataset.ptView, el)),
@@ -524,7 +529,7 @@ async function partnerDetail(id, listEl) {
     <button class="btn primary sm" id="pt-d-save" style="margin:4px 0 16px">Lưu thay đổi</button>
     <div class="between"><h3>KOC thuộc đối tác (${members.length})</h3>
       <button class="btn ghost sm" id="pt-d-add">+ Thêm KOC</button></div>
-    <div class="table-wrap" style="margin:8px 0 16px"><table><thead><tr><th>KOC</th><th>Hạng</th><th>Hoa hồng</th><th></th></tr></thead><tbody>
+    <div class="table-wrap" style="margin:8px 0 16px"><table class="admin-partner-members-table"><thead><tr><th>KOC</th><th>Hạng</th><th>Hoa hồng</th><th></th></tr></thead><tbody>
       ${
         members.length
           ? members.map((m) => `<tr>
@@ -536,14 +541,14 @@ async function partnerDetail(id, listEl) {
       }
     </tbody></table></div>
     <h3>Hoa hồng gần đây</h3>
-    <div class="table-wrap" style="margin:8px 0"><table><thead><tr><th>Booking</th><th>KOC</th><th>Phí 5%</th><th>Tỷ lệ</th><th>Đối tác nhận</th><th>Thời gian</th></tr></thead><tbody>
+    <div class="table-wrap" style="margin:8px 0"><table class="admin-partner-earnings-table"><thead><tr><th>Booking</th><th>KOC</th><th>Phí 5%</th><th>Tỷ lệ</th><th>Đối tác nhận</th><th>Thời gian</th></tr></thead><tbody>
       ${
         earnings.length
           ? earnings.map((e) => `<tr>
         <td>${esc(e.booking_code || e.booking_id)}</td><td>${esc(e.koc_name || "—")}</td>
         <td class="money">${money(e.base_service_fee)}</td><td>${partnerPct(e.rate)}</td>
         <td class="money">${money(e.amount)}</td>
-        <td class="muted" style="font-size:11px;white-space:nowrap">${fmtDate(e.created_at)}</td>
+        <td class="muted" style="font-size:11px;white-space:nowrap">${dateTimeStack(e.created_at)}</td>
       </tr>`).join("")
           : `<tr><td colspan="6">${empty("💸", "Chưa phát sinh hoa hồng")}</td></tr>`
       }
@@ -748,12 +753,18 @@ async function kocManagement(el, section = "queue") {
   else await queue(content);
 }
 
-let kocDirectoryFilters = { page: 1, search: "", status: "" };
+let kocDirectoryFilters = { page: 1, search: "", searchBy: "name", status: "" };
+const kocDirectorySearchFields = {
+  name: { label: "Tên KOC", placeholder: "Nhập tên KOC, có dấu hoặc không dấu" },
+  email: { label: "Email", placeholder: "Nhập email KOC" },
+  phone: { label: "Số điện thoại", placeholder: "Nhập số điện thoại KOC" },
+};
 async function kocDirectory(el) {
   el.innerHTML = `<div class="between"><div><h1>Thông tin KOC</h1><p class="muted">Tra cứu hồ sơ, chỉ số hoạt động và thông tin thanh toán của KOC.</p></div></div>
     <div class="filters" style="margin:14px 0">
-      <div class="field" style="flex:1"><label>Tìm kiếm</label><input id="koc-directory-search" value="${esc(kocDirectoryFilters.search)}" placeholder="Tên, email hoặc số điện thoại"></div>
-      <div class="field"><label>Trạng thái</label><select id="koc-directory-status">
+      <div class="field"><label for="koc-directory-search-by">Tìm theo</label><select id="koc-directory-search-by">${Object.entries(kocDirectorySearchFields).map(([value, field]) => `<option value="${value}" ${kocDirectoryFilters.searchBy === value ? "selected" : ""}>${field.label}</option>`).join("")}</select></div>
+      <div class="field" style="flex:1"><label for="koc-directory-search">Tìm kiếm</label><input type="search" maxlength="120" id="koc-directory-search" value="${esc(kocDirectoryFilters.search)}" placeholder="${kocDirectorySearchFields[kocDirectoryFilters.searchBy].placeholder}"></div>
+      <div class="field"><label for="koc-directory-status">Trạng thái</label><select id="koc-directory-status">
         <option value="">Tất cả</option>
         <option value="pending" ${kocDirectoryFilters.status === "pending" ? "selected" : ""}>Chờ duyệt</option>
         <option value="leader_ok" ${kocDirectoryFilters.status === "leader_ok" ? "selected" : ""}>Trưởng nhóm đã duyệt</option>
@@ -767,6 +778,7 @@ async function kocDirectory(el) {
     kocDirectoryFilters = {
       page: 1,
       search: el.querySelector("#koc-directory-search").value.trim(),
+      searchBy: el.querySelector("#koc-directory-search-by").value,
       status: el.querySelector("#koc-directory-status").value,
     };
     loadKocDirectory(el);
@@ -774,13 +786,17 @@ async function kocDirectory(el) {
   el.querySelector("#koc-directory-search").addEventListener("keydown", (event) => {
     if (event.key === "Enter") el.querySelector("#koc-directory-filter").click();
   });
+  el.querySelector("#koc-directory-search-by").addEventListener("change", (event) => {
+    el.querySelector("#koc-directory-search").placeholder = kocDirectorySearchFields[event.target.value].placeholder;
+    el.querySelector("#koc-directory-filter").click();
+  });
   await loadKocDirectory(el);
 }
 
 async function loadKocDirectory(el) {
   const box = el.querySelector("#koc-directory-list");
   box.innerHTML = skeletonPage("table");
-  const qs = new URLSearchParams({ page: String(kocDirectoryFilters.page) });
+  const qs = new URLSearchParams({ page: String(kocDirectoryFilters.page), searchBy: kocDirectoryFilters.searchBy });
   if (kocDirectoryFilters.search) qs.set("search", kocDirectoryFilters.search);
   if (kocDirectoryFilters.status) qs.set("status", kocDirectoryFilters.status);
   const r = await api("/api/admin/kocs?" + qs.toString());
@@ -788,8 +804,9 @@ async function loadKocDirectory(el) {
     box.innerHTML = empty("👤", "Không tìm thấy KOC phù hợp");
     return;
   }
-  box.innerHTML = `<div class="table-wrap"><table><thead><tr><th>KOC</th><th>Liên hệ</th><th>Hạng</th><th>Ngành hàng</th><th>Người theo dõi</th><th>Đánh giá</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+  box.innerHTML = `<div class="table-wrap"><table class="koc-directory-table"><thead><tr><th>KOC</th><th>Thời gian tạo hồ sơ</th><th>Liên hệ</th><th>Hạng</th><th>Ngành hàng</th><th>Người theo dõi</th><th>Đánh giá</th><th>Trạng thái</th><th></th></tr></thead><tbody>
     ${r.kocs.map((k) => `<tr><td><div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><b>${esc(k.name)}</b></div></td>
+      <td class="muted">${dateTimeStack(k.created_at)}</td>
       <td><div>${esc(k.phone || "—")}</div><div class="muted" style="font-size:11px">${esc(k.email || "—")}</div></td>
       <td>${tierBadge(k.tier)}</td><td>${esc((k.categories || []).join(", ") || "—")}</td><td>${num(k.followers)}</td><td>${stars(k.rating)}</td><td>${statusChip(k.status)}</td>
       <td><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button></td></tr>`).join("")}
@@ -808,7 +825,8 @@ async function loadKocDirectory(el) {
 async function queue(el) {
   const r = await api("/api/admin/queue");
   el.innerHTML = `<div class="between"><h1>Hàng đợi duyệt hồ sơ KOC</h1>${r.kocs.length ? `<button class="btn ok sm" id="q-bulk">Duyệt hàng loạt (${r.kocs.length})</button>` : ""}</div>
-    <div style="margin-top:16px">${r.kocs.length ? r.kocs.map(kocQueueCard).join("") : empty("<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em>", "Không có hồ sơ chờ duyệt")}</div>`;
+    <div id="queue-list" style="margin-top:16px">${r.kocs.length ? r.kocs.map(kocQueueCard).join("") : empty("<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em>", "Không có hồ sơ chờ duyệt")}</div>`;
+  mountListSearch(el, { key: "admin-queue", label: "Tìm hồ sơ KOC", placeholder: "Tên, email, điện thoại, tỉnh thành hoặc ngành hàng…", itemSelector: ".koc-queue-card", containerSelector: "#queue-list", searchText: (card) => card.dataset.search });
   el.querySelectorAll("[data-approve]").forEach((b) =>
     b.addEventListener("click", () => act(b.dataset.approve, true, el)),
   );
@@ -824,18 +842,23 @@ async function queue(el) {
     ),
   );
   const bulk = document.getElementById("q-bulk");
+  if (bulk) bulk.textContent = "Duyệt các hồ sơ đang hiển thị";
   if (bulk)
     bulk.addEventListener("click", async () => {
-      await post("/api/admin/approve-bulk", { ids: r.kocs.map((x) => x.id) });
+      const ids = [...el.querySelectorAll(".koc-queue-card:not([hidden]) [data-approve]")].map((button) => button.dataset.approve);
+      if (!ids.length) return toast("Không có hồ sơ phù hợp để duyệt", "err");
+      if (!(await confirmDialog(`Duyệt ${ids.length} hồ sơ KOC đang hiển thị?`))) return;
+      await post("/api/admin/approve-bulk", { ids });
       toast("Đã duyệt hàng loạt", "ok");
       queue(el);
     });
 }
 function kocQueueCard(k) {
-  return `<div class="card" style="margin-bottom:12px"><div class="between">
+  return `<div class="card koc-queue-card" data-search="${esc([k.name, k.email, k.phone, k.province, ...(k.categories || [])].join(" "))}" style="margin-bottom:12px"><div class="between">
     <div class="row"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><div>
        <div class="row"><strong>${esc(k.name)}</strong>${tierBadge(k.tier)}${k.followers_verified ? '<span class="chip g">✓ Người theo dõi đã xác minh</span>' : '<span class="chip w">Người theo dõi chưa xác minh</span>'}${k.status === "leader_ok" ? '<span class="chip b">Trưởng nhóm đã duyệt</span>' : ""}</div>
-       <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} người theo dõi · ${(k.categories || []).join(", ")}</div></div></div>
+       <div class="muted" style="font-size:12px">📍 ${esc(k.province)} · ${num(k.followers)} người theo dõi · ${(k.categories || []).join(", ")}</div>
+       <div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo hồ sơ: ${fmtDateTime(k.created_at)}</div></div></div>
     <div class="row"><button class="btn ghost sm" data-detail="${k.id}">Chi tiết</button>
       <button class="btn ok sm" data-approve="${k.id}">Duyệt</button>
       <button class="btn danger sm" data-reject="${k.id}">Từ chối</button></div></div></div>`;
@@ -863,6 +886,8 @@ async function kocDetail(k) {
   modal(`<div class="row"><img class="avatar lg" src="${esc(avatarUrl(k.avatar))}"><div><h2>${esc(k.name)}</h2>${tierBadge(k.tier)} <span class="muted">📍 ${esc(k.province)}</span></div></div>
     <div class="tint-box" style="margin:12px 0">
       <div class="between"><span>Trạng thái</span><b>${statusChip(k.status)}</b></div>
+      <div class="between"><span>Thời gian tạo hồ sơ</span><b>${fmtDateTime(k.created_at)}</b></div>
+      <div class="between"><span>Thời gian ký hợp đồng</span><b>${fmtDateTime(k.contract_signed_at)}</b></div>
       <div class="between"><span>Người theo dõi</span><b>${num(k.followers)} ${k.followers_verified ? '<span class="chip g">✓ Đã xác minh</span>' : '<span class="chip w">Chưa xác minh</span>'}</b></div>
       <div class="between"><span>Đánh giá</span><b>${stars(k.rating)} · ${num(k.completed_bookings || 0)} booking</b></div>
       <div class="between"><span>Ngành hàng</span><b>${(k.categories || []).join(", ")}</b></div>
@@ -998,7 +1023,7 @@ async function allBookings(el) {
   const cfg = state.config;
   el.innerHTML = `<h1>Booking toàn sàn</h1>
     <div class="filters" style="margin:14px 0">
-      <div class="field"><label>Từ khoá (mã/DN/KOC)</label><input id="ab-q" value="${esc(abFilters.q || "")}"></div>
+      <div class="field"><label for="ab-q">Tìm booking</label><input id="ab-q" type="search" placeholder="Mã booking, doanh nghiệp hoặc KOC…" value="${esc(abFilters.q || "")}"></div>
       <div class="field"><label>Trạng thái</label><select id="ab-status"><option value="">Tất cả</option>${["pending", "confirmed", "producing", "posted", "payment_pending", "payment_failed", "payment_cancelled", "settling", "completed", "rejected"].map((s) => `<option value="${s}" ${abFilters.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></div>
       <div class="field"><label>Loại booking</label><select id="ab-type"><option value="">Tất cả</option>${[
         ["aiclone", "AI Clone Avatar"],
@@ -1033,7 +1058,10 @@ async function allBookings(el) {
     };
     loadAllBookings(el);
   });
-  loadAllBookings(el);
+  el.querySelectorAll("#ab-q, #ab-biz, #ab-koc").forEach(input => input.addEventListener("keydown", event => {
+    if (event.key === "Enter") el.querySelector("#ab-go").click();
+  }));
+  await loadAllBookings(el);
 }
 async function loadAllBookings(el) {
   const tbl = document.getElementById("ab-table");
@@ -1063,14 +1091,14 @@ async function loadAllBookings(el) {
   const r = await api("/api/bookings?" + qs.toString());
   abFilters.page = r.page;
   tbl.innerHTML = r.bookings.length
-    ? `<table><thead><tr><th>Mã</th><th>Thời gian</th><th>DN</th><th>KOC</th><th>Giá</th><th>Loại</th><th>Trạng thái</th><th style="width:1%;white-space:nowrap"></th></tr></thead><tbody>
+    ? `<table class="admin-bookings-table"><thead><tr><th>Mã</th><th>Thời gian</th><th>DN</th><th>KOC</th><th>Giá</th><th>Loại</th><th>Trạng thái</th><th></th></tr></thead><tbody>
     ${r.bookings
       .map(
         (
           b,
-        ) => `<tr><td>${esc(b.code)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(b.created_at)}</td><td>${esc(b.bizname)}</td><td>${esc(b.kocname)}</td><td class="money">${money(b.price)}</td>
+          ) => `<tr><td>${esc(b.code)}</td><td class="muted admin-bookings-date">${dateTimeStack(b.created_at)}</td><td>${esc(b.bizname)}</td><td>${esc(b.kocname)}</td><td class="money">${money(b.price)}</td>
       <td>${b.type === "aiclone" ? `${icon("aiClone")} Video đại diện` : b.booking_type === "affiliate" ? "Tiếp thị liên kết" : b.booking_type === "combo" ? "Gói kết hợp" : b.content_type === "advertising" ? "Quảng cáo" : "Đánh giá sản phẩm"}</td><td>${statusChip(b.status)}</td>
-      <td style="width:1%;white-space:nowrap;text-align:right">${b.status === "pending" ? `<button class="btn danger sm" data-refund="${b.id}">Yêu cầu hoàn</button>` : ""}</td></tr>`,
+      <td class="admin-bookings-actions">${b.status === "pending" ? `<button class="btn danger sm" data-refund="${b.id}">Yêu cầu hoàn</button>` : ""}</td></tr>`,
       )
       .join("")}
     </tbody></table>`
@@ -1103,18 +1131,31 @@ async function loadAllBookings(el) {
 }
 
 // ---------- Complaints (tiếp nhận → xem chi tiết → xử lý → cập nhật trạng thái, gắn với hoàn tiền) ----------
+let complaintFilters = { search: "", status: "", page: 1 };
 async function complaintsAdmin(el) {
   el.innerHTML = `<div class="between"><h1 class="icon-heading">${icon("complaint", "teaser-icon")} Khiếu nại booking</h1>
-    <select id="cp-status"><option value="">Tất cả</option><option value="open">Mới tiếp nhận</option><option value="in_review">Đang xử lý</option><option value="resolved">Đã xử lý</option><option value="rejected">Từ chối</option></select></div>
+    <div class="field"><label for="cp-status">Trạng thái khiếu nại</label><select id="cp-status"><option value="">Tất cả</option><option value="open">Mới tiếp nhận</option><option value="in_review">Đang xử lý</option><option value="resolved">Đã xử lý</option><option value="rejected">Từ chối</option></select></div></div>
+    ${searchForm("admin-complaints", "Tìm khiếu nại", "Mã booking, doanh nghiệp, KOC hoặc nội dung…", complaintFilters.search)}
     <div style="margin-top:16px" id="cp-list">${skeletonPage("complaints")}</div>`;
+  el.querySelector("#cp-status").value = complaintFilters.status;
+  bindSearchForm(el, "admin-complaints", search => {
+    complaintFilters.search = search;
+    complaintFilters.page = 1;
+    loadComplaints(el).catch(error => toast(error.message, "err"));
+  });
   document
     .getElementById("cp-status")
-    .addEventListener("change", () => loadComplaints(el));
-  loadComplaints(el);
+    .addEventListener("change", event => {
+      complaintFilters.status = event.target.value;
+      complaintFilters.search = el.querySelector("#search-admin-complaints").value.trim();
+      complaintFilters.page = 1;
+      loadComplaints(el).catch(error => toast(error.message, "err"));
+    });
+  await loadComplaints(el);
 }
 async function loadComplaints(el) {
-  const st = document.getElementById("cp-status").value;
-  const r = await api("/api/complaints" + (st ? "?status=" + st : ""));
+  const r = await api("/api/complaints?" + new URLSearchParams({ ...complaintFilters, per: "10" }));
+  complaintFilters.page = r.page || 1;
   const list = document.getElementById("cp-list");
   if (!r.complaints.length) {
     list.innerHTML = empty("<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em>", "Không có khiếu nại nào");
@@ -1126,10 +1167,16 @@ async function loadComplaints(el) {
     <div class="between"><div><strong>${esc(c.bcode)}</strong> · ${esc(c.bizname)} ↔ ${esc(c.kocname)} ${statusChip(c.status)}</div>
       <button class="btn ghost sm" data-detail="${c.id}">Xem chi tiết</button></div>
     <div class="muted" style="margin-top:6px;font-size:13px">${esc((c.reason || "").slice(0, 140))}${(c.reason || "").length > 140 ? "…" : ""}</div>
-    <div class="muted" style="font-size:11px;margin-top:4px">Gửi bởi ${c.raised_by_role === "business" ? "Doanh nghiệp" : "KOC"} · ${fmtDate(c.created_at)}</div>
+    <div class="muted" style="font-size:11px;margin-top:4px">Gửi bởi ${c.raised_by_role === "business" ? "Doanh nghiệp" : "KOC"} · ${fmtDateTime(c.created_at)}</div>
   </div>`,
     )
     .join("");
+  list.insertAdjacentHTML("afterbegin", `<p class="list-search-summary" role="status">${num(r.total ?? r.complaints.length)} khiếu nại phù hợp</p>`);
+  list.insertAdjacentHTML("beforeend", pagerHtml(r.page, r.pages));
+  list.querySelectorAll("[data-pg]").forEach(button => button.addEventListener("click", () => {
+    complaintFilters.page = Number(button.dataset.pg);
+    loadComplaints(el).catch(error => toast(error.message, "err"));
+  }));
   list.querySelectorAll("[data-detail]").forEach((b) =>
     b.addEventListener("click", () => {
       const c = r.complaints.find((x) => x.id === b.dataset.detail);
@@ -1144,6 +1191,7 @@ function complaintDetail(c, el) {
       <div class="between"><span>Doanh nghiệp</span><b>${esc(c.bizname)}</b></div>
       <div class="between"><span>KOC</span><b>${esc(c.kocname)}</b></div>
       <div class="between"><span>Gửi bởi</span><b>${c.raised_by_role === "business" ? "Doanh nghiệp" : "KOC"}</b></div>
+      <div class="between"><span>Thời gian gửi</span><b>${fmtDateTime(c.created_at)}</b></div>
       <div class="between"><span>Khoản tiền còn được đảm bảo</span><b class="money">${money(c.escrow || 0)}</b></div>
       <div class="between"><span>Trạng thái</span>${statusChip(c.status)}</div>
     </div>
@@ -1209,7 +1257,10 @@ async function contractsAdmin(el) {
     };
     loadContracts(el);
   });
-  loadContracts(el);
+  el.querySelector("#ct-search").addEventListener("keydown", event => {
+    if (event.key === "Enter") el.querySelector("#ct-go").click();
+  });
+  await loadContracts(el);
 }
 async function loadContracts(el) {
   const box = document.getElementById("ct-list");
@@ -1223,13 +1274,13 @@ async function loadContracts(el) {
     return;
   }
   box.innerHTML =
-    `<div class="table-wrap"><table><thead><tr><th>KOC</th><th>Hạng</th><th>Mã hợp đồng (hash)</th><th>Thời gian ký</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    `<div class="table-wrap"><table class="admin-contracts-table"><thead><tr><th>KOC</th><th>Hạng</th><th>Mã hợp đồng (hash)</th><th>Thời gian ký</th><th>Trạng thái</th><th></th></tr></thead><tbody>
     ${r.contracts
       .map(
         (
           c,
         ) => `<tr><td>${esc(c.name)}</td><td>${tierBadge(c.tier)}</td><td style="font-size:11px">${esc((c.contract_hash || "").slice(0, 18))}…</td>
-      <td class="muted">${fmtDate(c.contract_signed_at || c.created_at)}</td><td>${statusChip(c.status)}</td>
+      <td class="muted">${dateTimeStack(c.contract_signed_at)}</td><td>${statusChip(c.status)}</td>
       <td><button class="btn ghost sm" data-view="${c.id}">Chi tiết</button></td></tr>`,
       )
       .join("")}
@@ -1268,7 +1319,7 @@ async function adminCampaigns(el) {
     cancelled: "Đã hủy",
   };
   el.innerHTML = `<h1>Điều phối chiến dịch lớn</h1>
-    <div style="margin-top:16px">${
+    <div id="admin-campaign-list" style="margin-top:16px">${
       r.campaigns.length
         ? r.campaigns
             .map((c) => {
@@ -1282,6 +1333,7 @@ async function adminCampaigns(el) {
               return `<div class="card" style="margin-bottom:12px">
       <div class="between"><div><strong>${esc(c.bizname)}</strong> <span class="chip ${c.status === "completed" ? "g" : c.status === "cancelled" ? "r" : ["pending","quote_pending"].includes(c.status) ? "w" : "b"}">${campaignStatus[c.status] || esc(c.status)}</span></div><div class="row" style="flex-wrap:wrap">${["pending","quote_pending","quoted"].includes(c.status) ? `<button class="btn primary sm" data-campaign-quote="${c.id}">Gửi báo giá</button>` : ""}${c.status === "funded" ? `<button class="btn primary sm" data-campaign-start="${c.id}">Bắt đầu điều phối</button>` : ""}${["coordinating", "assigned"].includes(c.status) && allocations.every(a=>['invited','declined'].includes(a.status)) ? `<button class="btn primary sm" data-assign="${c.id}">Phân bổ KOC</button>` : ""}${["assigned", "in_progress"].includes(c.status) && allocations.length && allocations.every((x) => x.status === "settled") ? `<button class="btn ok sm" data-campaign-complete="${c.id}">Hoàn tất</button>` : ""}${!["completed", "cancelled"].includes(c.status) ? `<button class="btn ghost sm" data-admin-campaign-cancel="${c.id}">Hủy</button>` : ""}</div></div>
       <div class="muted" style="margin-top:6px">Ngân sách KOC ${money(c.budget)} · Phí điều phối ${money(Number(c.management_fee) || Math.max(2000000, Math.round(Number(c.budget) * 0.15)))} · Tổng ${money(Number(c.total_amount) || Number(c.budget) + Number(c.management_fee))}</div><div class="muted" style="margin-top:3px">${c.qty} KOC hạng ${esc(c.tier)} · ngành ${esc(c.category)}</div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Thời gian tạo: ${fmtDateTime(c.created_at)}</div>
       ${c.note ? `<div class="tint-box" style="margin-top:8px;font-size:13px">${esc(c.note)}</div>` : ""}
       <div style="margin-top:8px"><span class="chip ${assigned.length > Number(c.qty) ? "r" : assigned.length === Number(c.qty) ? "g" : "n"}">${assigned.length}/${c.qty} KOC đã gán</span>
         ${assigned.length ? assigned.map((k) => `<span class="chip g" style="margin:2px">${esc(k.name)}</span>`).join("") : '<span class="muted" style="font-size:12px">Chưa gán KOC nào</span>'}
@@ -1291,6 +1343,7 @@ async function adminCampaigns(el) {
             .join("")
         : empty("📣", "Chưa có yêu cầu chiến dịch")
     }</div>`;
+  mountListSearch(el, { key: "admin-campaigns", label: "Tìm chiến dịch", placeholder: "Doanh nghiệp, ngành hàng, KOC hoặc ghi chú…", itemSelector: "#admin-campaign-list > .card", containerSelector: "#admin-campaign-list" });
   el.querySelectorAll('[data-campaign-quote]').forEach(button=>button.addEventListener('click',()=>{
     const c=r.campaigns.find(x=>x.id===button.dataset.campaignQuote),suggested=Number(c.management_fee)||Math.max(2000000,Math.round(Number(c.budget)*.15));
     const m=modal(`<h2>Báo giá chiến dịch lớn</h2><div class="tint-box" style="margin:12px 0"><div class="between"><span>Ngân sách trả KOC</span><b>${money(c.budget)}</b></div></div><div class="field"><label>Phí điều phối NetViet</label><input id="cq-fee" type="number" min="0" step="1000" value="${suggested}"></div><div class="field"><label>Ghi chú báo giá</label><textarea id="cq-note" rows="3">${esc(c.quote_note||'')}</textarea></div><button class="btn primary" id="cq-send">Gửi doanh nghiệp xác nhận</button><button class="btn ghost" id="cq-close" style="margin-top:8px">Đóng</button>`);
@@ -1483,6 +1536,8 @@ let settleView = {
   activeTab: "distribution",
   distributionPage: 1,
   ledgerPage: 1,
+  distributionSearch: "",
+  ledgerSearch: "",
   auditPage: 1,
   auditSearch: "",
   auditCategory: "",
@@ -1493,6 +1548,8 @@ async function settle(el, changes = {}) {
     per: "20",
     distributionPage: settleView.distributionPage,
     ledgerPage: settleView.ledgerPage,
+    distributionSearch: settleView.distributionSearch,
+    ledgerSearch: settleView.ledgerSearch,
     auditPage: settleView.auditPage,
     auditSearch: settleView.auditSearch,
     auditCategory: settleView.auditCategory,
@@ -1583,7 +1640,7 @@ async function settle(el, changes = {}) {
       <td class="money" style="color:var(--success);font-weight:700">+${money(kocFee)}</td>
       <td class="money" style="color:var(--primary);font-weight:700">+${money(netvietFee)}<div class="muted" style="font-size:10px">${isCampaign?'Phí điều phối đã ghi nhận':isKol?'Phí dịch vụ KOL đã ghi nhận':'Sản xuất AI + Phí NT'}</div></td>
       <td class="settlement-status">${isCampaign?`<span class="chip ${s.status==='completed'?'g':s.status==='cancelled'?'r':'b'}">${campaignStatus[s.status]||esc(s.status)}</span>`:isKol?`<span class="chip ${s.status==='completed'?'g':s.status==='cancelled'?'r':'b'}">${kolSettlementStatus[s.status]||esc(s.status)}</span>`:s.status === "completed" ? '<span class="chip g">✓ Đã giải ngân</span>' : '<span class="chip b">Đang xử lý</span>'}</td>
-      <td class="muted" style="font-size:11px">${fmtDate(s.updated_at || s.created_at)}</td>
+      <td class="muted" style="font-size:11px">${dateTimeStack(s.updated_at || s.created_at)}</td>
     </tr>`;
     })
     .join("");
@@ -1604,22 +1661,31 @@ async function settle(el, changes = {}) {
     </div>
     <div class="card settle-panel ${settleView.activeTab === "distribution" ? "active" : ""}" data-settle-panel="distribution" role="tabpanel" ${settleView.activeTab !== "distribution" ? "hidden" : ""}>
       <h2>🏛️ Lịch sử phân bổ tiền</h2>
+      ${searchForm("admin-distribution", "Tìm khoản phân bổ", "Mã đơn, doanh nghiệp hoặc người nhận…", settleView.distributionSearch)}
       <div class="table-wrap" style="margin-top:12px;border:none">
-        <table><thead><tr><th>Mã đơn &amp; Doanh nghiệp</th><th>KOC nhận tiền</th><th>Tổng khoản đảm bảo</th><th>Tiền vào Ví KOC</th><th>Doanh thu NetViet</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
+        <table class="admin-distribution-table"><thead><tr><th>Mã đơn &amp; Doanh nghiệp</th><th>KOC nhận tiền</th><th>Tổng khoản đảm bảo</th><th>Tiền vào Ví KOC</th><th>Doanh thu NetViet</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
         ${rows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Chưa có đơn hàng đối soát</td></tr>'}
         </tbody></table>
       </div>
       <div class="pager" id="distribution-pager"></div>
     </div>
-    <div class="card settle-panel ${settleView.activeTab === "ledger" ? "active" : ""}" data-settle-panel="ledger" role="tabpanel" ${settleView.activeTab !== "ledger" ? "hidden" : ""}><h2>Sổ thu chi toàn hệ thống</h2><div class="table-wrap" style="margin-top:12px;border:none">
-      <table><thead><tr><th>Loại</th><th>Số tiền</th><th>Ghi chú</th><th>Thời gian</th></tr></thead><tbody>
-      ${led.ledger.length ? led.ledger.map((l) => `<tr><td>${ledgerKind(l.kind)}</td><td class="money">${money(l.amount)}</td><td>${esc(l.note || "")}</td><td class="muted">${fmtDate(l.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có giao dịch</td></tr>'}
+    <div class="card settle-panel ${settleView.activeTab === "ledger" ? "active" : ""}" data-settle-panel="ledger" role="tabpanel" ${settleView.activeTab !== "ledger" ? "hidden" : ""}><h2>Sổ thu chi toàn hệ thống</h2>
+      ${searchForm("admin-ledger", "Tìm giao dịch thu chi", "Loại giao dịch, mã tham chiếu hoặc ghi chú…", settleView.ledgerSearch)}
+      <div class="table-wrap" style="margin-top:12px;border:none">
+      <table class="admin-ledger-table"><thead><tr><th>Loại</th><th>Số tiền</th><th>Ghi chú</th><th>Thời gian</th></tr></thead><tbody>
+      ${led.ledger.length ? led.ledger.map((l) => `<tr><td>${ledgerKind(l.kind)}</td><td class="money">${money(l.amount)}</td><td>${esc(l.note || "")}</td><td class="muted">${dateTimeStack(l.created_at)}</td></tr>`).join("") : '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Chưa có giao dịch</td></tr>'}
       </tbody></table></div><div class="pager" id="ledger-pager"></div></div>
     <div class="card audit-card settle-panel ${settleView.activeTab === "audit" ? "active" : ""}" data-settle-panel="audit" role="tabpanel" ${settleView.activeTab !== "audit" ? "hidden" : ""}>
       <div class="between audit-heading"><div><h2>Nhật ký hoạt động hệ thống</h2><p class="muted">Theo dõi các thay đổi quan trọng liên quan đến booking, AI Clone, thanh toán và tài khoản.</p></div><span class="chip n">${num(led.pagination?.audit?.total || 0)} hoạt động</span></div>
       <div class="audit-toolbar"><input id="audit-search" value="${esc(settleView.auditSearch)}" placeholder="Tìm hành động, người thực hiện, mã tham chiếu…"><select id="audit-category"><option value="">Tất cả nghiệp vụ</option><option value="booking" ${settleView.auditCategory === "booking" ? "selected" : ""}>Booking</option><option value="aiclone" ${settleView.auditCategory === "aiclone" ? "selected" : ""}>AI Clone</option><option value="payment" ${settleView.auditCategory === "payment" ? "selected" : ""}>Thanh toán & ví</option><option value="account" ${settleView.auditCategory === "account" ? "selected" : ""}>Tài khoản & hồ sơ</option><option value="other" ${settleView.auditCategory === "other" ? "selected" : ""}>Khác</option></select></div>
       <div id="audit-list"></div><div class="pager" id="audit-pager"></div>
     </div>`;
+  bindSearchForm(el, "admin-distribution", distributionSearch => {
+    settle(el, { distributionSearch, distributionPage: 1, activeTab: "distribution" }).catch(error => toast(error.message, "err"));
+  });
+  bindSearchForm(el, "admin-ledger", ledgerSearch => {
+    settle(el, { ledgerSearch, ledgerPage: 1, activeTab: "ledger" }).catch(error => toast(error.message, "err"));
+  });
   el.querySelectorAll('[data-settlement-kocs]').forEach(button=>button.addEventListener('click',()=>{
     const settlement=list.find(item=>String(item.id)===button.dataset.settlementKocs);
     if(!settlement)return;
@@ -1735,7 +1801,7 @@ function initAuditLog(el, entries, meta) {
         .map((entry) => {
           const [label, group] = auditMeta(entry.action);
           const actor = auditActor(entry);
-          return `<article class="audit-item"><span class="audit-dot ${group}"></span><div class="audit-main"><div class="audit-title"><strong>${esc(label)}</strong><code>${esc(entry.action)}</code></div><div class="audit-detail">${entry.detail ? esc(entry.detail) : "Không có thông tin bổ sung"}</div></div><div class="audit-actor"><strong>${esc(actor.name)}</strong><span>${esc(actor.role)}</span></div><div class="audit-ref" title="${esc(entry.ref || "")}"><span>Tham chiếu</span><code>${esc((entry.ref || "—").slice(0, 14))}${entry.ref?.length > 14 ? "…" : ""}</code></div><time>${fmtDate(entry.created_at)}</time></article>`;
+          return `<article class="audit-item"><span class="audit-dot ${group}"></span><div class="audit-main"><div class="audit-title"><strong>${esc(label)}</strong><code>${esc(entry.action)}</code></div><div class="audit-detail">${entry.detail ? esc(entry.detail) : "Không có thông tin bổ sung"}</div></div><div class="audit-actor"><strong>${esc(actor.name)}</strong><span>${esc(actor.role)}</span></div><div class="audit-ref" title="${esc(entry.ref || "")}"><span>Tham chiếu</span><code>${esc((entry.ref || "—").slice(0, 14))}${entry.ref?.length > 14 ? "…" : ""}</code></div><time>${fmtDateTime(entry.created_at)}</time></article>`;
         })
         .join("")}</div>`
     : empty("🔎", "Không tìm thấy hoạt động phù hợp");
@@ -1768,31 +1834,60 @@ function scard(l, v) {
   return `<div class="card"><div class="muted">${l}</div><div style="font-size:22px;font-weight:800;margin-top:4px" class="money">${v}</div></div>`;
 }
 
+let affiliateFilters = { search: "", status: "", platform: "", flagged: "", page: 1 };
 async function affiliateAdmin(el) {
-  const r = await api("/api/admin/affiliate");
+  const r = await api("/api/admin/affiliate?" + new URLSearchParams({ ...affiliateFilters, per: "20" }));
+  affiliateFilters.page = r.page || 1;
   const t = r.totals;
-  el.innerHTML = `<h1>🔗 Đơn tiếp thị liên kết</h1>
+  el.innerHTML = `<h1>Đơn tiếp thị liên kết</h1>
+    <p class="muted">Tra cứu đơn trên sàn, đối chiếu doanh số và xử lý hoàn đơn.</p>
     <div class="stat-cards" style="margin:16px 0">
       ${scard("Tổng doanh số", money(t.g))}${scard("Hoa hồng KOC", money(t.c))}${scard("Phí nền tảng 1%", money(t.f))}${scard("Đơn cần kiểm tra", num(t.flagged))}
     </div>
-    <div class="table-wrap"><table><thead><tr><th>Mã đơn trên sàn</th><th>Thời gian</th><th>KOC</th><th>Booking</th><th>Sàn</th><th>Doanh số</th><th>Hoa hồng</th><th>Phí 1%</th><th>Trạng thái</th><th style="width:1%;white-space:nowrap"></th></tr></thead><tbody>
+    <div class="affiliate-admin-controls">
+      ${searchForm("admin-affiliate", "Tìm đơn tiếp thị liên kết", "Mã đơn, mã booking hoặc tên KOC…", affiliateFilters.search)}
+      <div class="filters affiliate-admin-filters">
+        <div class="field"><label for="af-status">Trạng thái đơn</label><select id="af-status"><option value="">Tất cả trạng thái</option>${[["pending", "Chờ xác nhận"], ["confirmed", "Đã xác nhận"], ["settled", "Đã đối soát"], ["refunded", "Đã hoàn"], ["cancelled", "Đã hủy"]].map(([value, label]) => `<option value="${value}" ${affiliateFilters.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></div>
+        <div class="field"><label for="af-platform">Sàn</label><select id="af-platform"><option value="">Tất cả sàn</option>${[...new Set([...(r.platforms || []), affiliateFilters.platform].filter(Boolean))].map(value => `<option value="${esc(value)}" ${affiliateFilters.platform === value ? "selected" : ""}>${esc(value)}</option>`).join("")}</select></div>
+        <div class="field"><label for="af-flagged">Đối chiếu</label><select id="af-flagged"><option value="">Tất cả đơn</option><option value="1" ${affiliateFilters.flagged === "1" ? "selected" : ""}>Đơn cần kiểm tra</option></select></div>
+      </div>
+    </div>
+    <p class="list-search-summary" role="status">${num(r.total ?? r.orders.length)} đơn phù hợp</p>
+    <div class="table-wrap"><table class="affiliate-admin-table"><thead><tr><th>Đơn trên sàn</th><th>KOC / Booking</th><th>Thời gian</th><th>Doanh số</th><th>Hoa hồng / Phí</th><th>Trạng thái / Xử lý</th></tr></thead><tbody>
       ${
         r.orders.length
           ? r.orders
               .map(
                 (o) => `<tr>
-        <td>${esc(o.platform_order_id)} ${o.flagged ? '<span class="chip r">⚠ nghi ngờ</span>' : ""}</td>
-        <td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(o.ordered_at || o.created_at)}</td>
-        <td>${esc(o.kocname)}</td><td>${esc(o.bcode)}</td><td>${esc(o.platform)}</td>
-        <td class="money">${money(o.gmv)}</td><td class="money">${money(o.commission_amount)}</td><td class="money">${money(o.platform_fee)}</td>
-        <td>${statusChip(o.status)}</td>
-        <td style="width:1%;white-space:nowrap;text-align:right">${["pending", "confirmed"].includes(o.status) ? `<button class="btn ghost sm" data-refund="${o.id}">Hoàn</button>` : ""}</td></tr>`,
+        <td><strong>${esc(o.platform_order_id)}</strong><small class="muted">${esc(o.platform || "—")}</small>${Number(o.flagged) === 1 ? '<span class="chip r">Cần kiểm tra</span>' : ""}</td>
+        <td><strong>${esc(o.kocname)}</strong><small class="muted">${esc(o.bcode)}</small></td>
+        <td class="muted affiliate-admin-date">${dateTimeStack(o.ordered_at || o.created_at)}</td>
+        <td class="money">${money(o.gmv)}</td><td><strong class="money">${money(o.commission_amount)}</strong><small class="muted">Phí 1%: ${money(o.platform_fee)}</small></td>
+        <td><div class="affiliate-admin-actions">${statusChip(o.status)}${["pending", "confirmed"].includes(o.status) ? `<button class="btn ghost sm" data-refund="${o.id}">Hoàn đơn</button>` : ""}</div></td></tr>`,
               )
               .join("")
-          : '<tr><td colspan="10" class="muted" style="text-align:center;padding:20px">Chưa có đơn tiếp thị liên kết</td></tr>'
+          : '<tr><td colspan="6" class="list-search-empty">Không tìm thấy đơn phù hợp. Thử từ khóa khác hoặc đổi bộ lọc.</td></tr>'
       }
     </tbody></table></div>
+    ${pagerHtml(r.page, r.pages)}
     <p class="hint" style="margin-top:10px">Mỗi đơn được đối chiếu với mã gốc từ sàn. Hệ thống tự đánh dấu hoạt động bất thường để quản trị viên kiểm tra.</p>`;
+  bindSearchForm(el, "admin-affiliate", search => {
+    affiliateFilters.search = search;
+    affiliateFilters.page = 1;
+    affiliateAdmin(el).catch(error => toast(error.message, "err"));
+  });
+  for (const key of ["status", "platform", "flagged"]) {
+    el.querySelector(`#af-${key}`).addEventListener("change", event => {
+      affiliateFilters[key] = event.target.value;
+      affiliateFilters.search = el.querySelector("#search-admin-affiliate").value.trim();
+      affiliateFilters.page = 1;
+      affiliateAdmin(el).catch(error => toast(error.message, "err"));
+    });
+  }
+  el.querySelectorAll("[data-pg]").forEach(button => button.addEventListener("click", () => {
+    affiliateFilters.page = Number(button.dataset.pg);
+    affiliateAdmin(el).catch(error => toast(error.message, "err"));
+  }));
   el.querySelectorAll("[data-refund]").forEach((b) =>
     b.addEventListener("click", async () => {
       if (
@@ -1816,9 +1911,10 @@ async function affiliateAdmin(el) {
 }
 
 let adminKolPage=1;
+let adminKolSearch = "";
 async function kolAdmin(el,page=adminKolPage) {
   adminKolPage=Math.max(1,Number(page)||1);
-  const r = await api(`/api/kol/requests?page=${adminKolPage}&per=10`);
+  const r = await api(`/api/kol/requests?page=${adminKolPage}&per=10&search=${encodeURIComponent(adminKolSearch)}`);
   adminKolPage=r.page||1;
   const prefillBanner = state.kolPrefill
     ? `<div class="tint-box" style="margin-bottom:16px;border-left:4px solid var(--primary);padding:14px">
@@ -1835,23 +1931,28 @@ async function kolAdmin(el,page=adminKolPage) {
     : "";
   el.innerHTML = `<h1 class="icon-heading">${icon("kolRequest", "teaser-icon")} Yêu cầu KOL / Nghệ sĩ</h1><p class="muted" style="margin-bottom:16px">Duyệt / báo giá / từ chối. Phân khúc cao cấp có duyệt riêng.</p>
     ${prefillBanner}
-    <div class="table-wrap"><table><thead><tr><th>KOL</th><th>Thời gian</th><th>Lĩnh vực</th><th>DN</th><th>Ngân sách</th><th>Báo giá</th><th>TT</th><th>Ghi chú</th><th style="width:1%;white-space:nowrap"></th></tr></thead><tbody>
+    ${searchForm("admin-kol", "Tìm yêu cầu KOL", "Tên KOL, doanh nghiệp hoặc lĩnh vực…", adminKolSearch)}
+    <div class="table-wrap"><table class="admin-kol-table"><thead><tr><th>KOL</th><th>Thời gian</th><th>Lĩnh vực</th><th>DN</th><th>Ngân sách</th><th>Báo giá</th><th>TT</th><th>Ghi chú</th><th></th></tr></thead><tbody>
     ${
       r.requests.length
         ? r.requests
             .map(
               (
                 q,
-              ) => `<tr><td>${esc(q.kolname)}</td><td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(q.created_at)}</td><td>${esc(q.field)}</td><td>${esc(q.bizname)}</td>
+              ) => `<tr><td>${esc(q.kolname)}</td><td class="muted admin-kol-date">${dateTimeStack(q.created_at)}</td><td>${esc(q.field)}</td><td>${esc(q.bizname)}</td>
       <td class="money">${money(q.budget)}</td><td>${q.quote?`<b class="money">${money(q.total_amount||q.quote)}</b><div class="muted" style="font-size:10px">KOL ${money(q.quote_kol||q.quote)} · NetViet ${money(q.quote_platform||0)}</div>`:'—'}</td><td>${statusChip(q.status)}</td>
       <td class="muted" style="max-width:200px">${esc(q.admin_note || "—")}</td>
-      <td style="width:1%;white-space:nowrap;text-align:right"><div class="row" style="flex-wrap:wrap">${['pending','quoted'].includes(q.status)?`<button class="btn primary sm" data-quote="${q.id}">${q.status==='quoted'?'Sửa báo giá':'Báo giá'}</button> <button class="btn danger sm" data-reject="${q.id}">Từ chối</button>`:''}${q.status==='funded'?`<button class="btn ok sm" data-confirm-kol="${q.id}">Xác nhận lịch & hợp đồng</button>`:''}${['confirmed','revision_requested'].includes(q.status)?`<button class="btn primary sm" data-deliver-kol="${q.id}">Bàn giao sản phẩm</button>`:''}${q.status==='approved'?`<button class="btn ok sm" data-settle-kol="${q.id}">Giải ngân</button>`:''}${['funded','confirmed','revision_requested','delivered','approved'].includes(q.status)?`<button class="btn danger sm" data-cancel-kol="${q.id}">Hủy & hoàn tiền</button>`:''}</div></td></tr>`,
+      <td class="admin-kol-actions"><div class="row">${['pending','quoted'].includes(q.status)?`<button class="btn primary sm" data-quote="${q.id}">${q.status==='quoted'?'Sửa báo giá':'Báo giá'}</button> <button class="btn danger sm" data-reject="${q.id}">Từ chối</button>`:''}${q.status==='funded'?`<button class="btn ok sm" data-confirm-kol="${q.id}">Xác nhận lịch & hợp đồng</button>`:''}${['confirmed','revision_requested'].includes(q.status)?`<button class="btn primary sm" data-deliver-kol="${q.id}">Bàn giao sản phẩm</button>`:''}${q.status==='approved'?`<button class="btn ok sm" data-settle-kol="${q.id}">Giải ngân</button>`:''}${['funded','confirmed','revision_requested','delivered','approved'].includes(q.status)?`<button class="btn danger sm" data-cancel-kol="${q.id}">Hủy & hoàn tiền</button>`:''}</div></td></tr>`,
             )
             .join("")
-        : '<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">Chưa có yêu cầu KOL</td></tr>'
+          : '<tr><td colspan="9" class="list-search-empty">Không tìm thấy yêu cầu KOL phù hợp. Thử từ khóa khác hoặc xóa tìm kiếm.</td></tr>'
     }
     </tbody></table></div><div class="pager" id="admin-kol-pager"></div>`;
   if(r.pages>1){const pager=el.querySelector('#admin-kol-pager');pager.innerHTML=`<button data-admin-kol-page="${r.page-1}" ${r.page<=1?'disabled':''}>‹</button><span class="muted">${r.page} / ${r.pages}</span><button data-admin-kol-page="${r.page+1}" ${r.page>=r.pages?'disabled':''}>›</button>`;pager.querySelectorAll('[data-admin-kol-page]').forEach(b=>b.addEventListener('click',()=>kolAdmin(el,Number(b.dataset.adminKolPage))))}
+  bindSearchForm(el, "admin-kol", search => {
+    adminKolSearch = search;
+    kolAdmin(el, 1).catch(error => toast(error.message, "err"));
+  });
   if (state.kolPrefill) {
     document
       .getElementById("kol-clear-prefill")
@@ -1923,6 +2024,8 @@ async function kolAdmin(el,page=adminKolPage) {
 }
 
 let leadStatusFilter = "";
+let leadSearch = "";
+let leadPage = 1;
 const LEAD_NEEDS = [
   "Tư vấn booking marketplace",
   "Tư vấn chiến dịch lớn",
@@ -1993,20 +2096,21 @@ function validateLeadStatusTransition(currentStatus, targetStatus) {
 }
 
 async function leadsAdmin(el) {
-  const qs = leadStatusFilter
-    ? `?status=${encodeURIComponent(leadStatusFilter)}`
-    : "";
+  const qs = "?" + new URLSearchParams({ search: leadSearch, status: leadStatusFilter, page: String(leadPage), per: "10" });
   const r = await api("/api/admin/leads" + qs);
+  leadPage = r.page || 1;
   el.innerHTML = `<div class="between" style="align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap">
     <div>
       <h1 class="icon-heading" style="margin:0;white-space:nowrap">${icon("quoteLead", "teaser-icon")} Quản lý khách cần tư vấn</h1>
       <p class="muted" style="margin-top:4px;font-size:13px">Tiếp nhận và theo dõi các lượt liên hệ/tư vấn từ website công khai — không phải nơi tạo booking hay báo giá.</p>
     </div>
     <div style="min-width:200px">
-      <select id="lead-filter" style="width:100%;max-width:220px;padding:8px 12px;border-radius:8px;font-size:14px"><option value="">Tất cả trạng thái</option>${LEAD_STATUSES.map(([v, l]) => `<option value="${v}" ${leadStatusFilter === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+      <label for="lead-filter">Trạng thái tư vấn</label><select id="lead-filter" style="width:100%;max-width:220px;padding:8px 12px;border-radius:8px;font-size:14px"><option value="">Tất cả trạng thái</option>${LEAD_STATUSES.map(([v, l]) => `<option value="${v}" ${leadStatusFilter === v ? "selected" : ""}>${l}</option>`).join("")}</select>
     </div>
   </div>
-    <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Khách hàng</th><th>Thời gian</th><th>Liên hệ</th><th>Nhu cầu</th><th>Nguồn</th><th>Trạng thái</th><th>Tiến độ gần nhất</th><th></th></tr></thead><tbody>
+    ${searchForm("admin-leads", "Tìm khách cần tư vấn", "Tên, công ty, điện thoại hoặc email…", leadSearch)}
+    <p class="list-search-summary" role="status">${num(r.total ?? r.leads.length)} khách hàng phù hợp</p>
+    <div class="table-wrap" style="margin-top:16px"><table class="admin-leads-table"><thead><tr><th>Khách hàng</th><th>Thời gian</th><th>Liên hệ</th><th>Nhu cầu</th><th>Nguồn</th><th>Trạng thái</th><th>Tiến độ gần nhất</th><th></th></tr></thead><tbody>
     ${
       r.leads.length
         ? r.leads
@@ -2017,19 +2121,31 @@ async function leadsAdmin(el) {
                 : `<span class="chip r">⚠ Thiếu nhu cầu</span>`;
               return `<tr>
       <td><b>${esc(l.name)}</b><div class="muted" style="font-size:11px">${esc(l.company || "Cá nhân")}</div></td>
-      <td class="muted" style="font-size:12px;white-space:nowrap">${fmtDate(l.created_at)}</td>
+      <td class="muted admin-leads-date">${dateTimeStack(l.created_at)}</td>
       <td><div>${esc(l.phone)}</div><div class="muted" style="font-size:11px">${esc(l.email || "—")}</div></td>
       <td>${needDisplay}</td><td><span class="chip n">${esc(l.source)}</span></td>
       <td>${leadStatusChip(l.status)}</td>
-      <td class="muted" style="max-width:190px">${esc(l.latest_note || "Chưa có cập nhật")}<div style="font-size:10px;margin-top:3px">${fmtDate(l.updated_at || l.created_at)}</div></td>
-      <td><button class="btn primary sm" data-lead-progress="${l.id}">Theo dõi</button></td></tr>`;
+      <td class="muted" style="max-width:190px">${esc(l.latest_note || "Chưa có cập nhật")}<div style="font-size:10px;margin-top:3px">${dateTimeStack(l.updated_at || l.created_at)}</div></td>
+      <td class="admin-leads-actions"><button class="btn primary sm" data-lead-progress="${l.id}">Theo dõi</button></td></tr>`;
             })
             .join("")
         : '<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">Chưa có khách hàng phù hợp</td></tr>'
     }
     </tbody></table></div>`;
+  el.insertAdjacentHTML("beforeend", pagerHtml(r.page, r.pages));
+  bindSearchForm(el, "admin-leads", search => {
+    leadSearch = search;
+    leadPage = 1;
+    leadsAdmin(el).catch(error => toast(error.message, "err"));
+  });
+  el.querySelectorAll("[data-pg]").forEach(button => button.addEventListener("click", () => {
+    leadPage = Number(button.dataset.pg);
+    leadsAdmin(el).catch(error => toast(error.message, "err"));
+  }));
   document.getElementById("lead-filter").addEventListener("change", (e) => {
     leadStatusFilter = e.target.value;
+    leadSearch = el.querySelector("#search-admin-leads").value.trim();
+    leadPage = 1;
     leadsAdmin(el);
   });
   el.querySelectorAll("[data-lead-progress]").forEach((b) =>
@@ -2058,7 +2174,7 @@ async function leadProgressModal(id, lead, el) {
         ? history.activities
             .map(
               (a) => `<div class="tint-box" style="margin-bottom:8px">
-      <div class="between">${leadStatusChip(a.status)}<span class="muted" style="font-size:11px">${fmtDate(a.created_at)}</span></div>
+      <div class="between">${leadStatusChip(a.status)}<span class="muted" style="font-size:11px">${fmtDateTime(a.created_at)}</span></div>
       <div style="margin-top:6px">${esc(a.note || "—")}</div><div class="muted" style="font-size:11px">${esc(a.actor_name || "Admin")}</div>
     </div>`,
             )
@@ -2174,7 +2290,7 @@ async function aiclone(el) {
     return true;
   });
   el.innerHTML = `<h1 class="icon-heading">${icon("aiClone", "teaser-icon")} AI Clone Avatar — Trung tâm sản xuất</h1><p class="muted" style="margin-bottom:16px">Brief → kịch bản → sản xuất → doanh nghiệp duyệt → KOC duyệt → đăng bài.</p>
-    <div style="margin-top:8px">${
+    <div id="admin-aiclone-list" style="margin-top:8px">${
       displayList.length
         ? displayList
             .map(
@@ -2205,6 +2321,7 @@ async function aiclone(el) {
         ${a.booking_status === "pending_business_review" ? '<span class="chip w">Đã giao doanh nghiệp duyệt</span>' : ""}
         ${["business_approved", "pending_koc_review"].includes(a.booking_status) ? '<span class="chip w">Đã tự động chuyển KOC duyệt</span>' : ""}
       </div></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">${a.booking_id ? "Thời gian tạo booking" : "Thời gian đăng ký"}: ${fmtDateTime(a.booking_id ? a.booking_created_at : a.registered_at)}</div>
       ${a.requirements ? `<div class="tint-box" style="margin-top:10px"><b>Brief:</b> ${esc(a.requirements)}</div>` : ""}
       ${
         a.quote_kocs
@@ -2283,6 +2400,7 @@ async function aiclone(el) {
             .join("")
         : empty("", "Chưa có booking hoặc KOC đăng ký AI Clone Avatar")
     }</div>`;
+  mountListSearch(el, { key: "admin-aiclone", label: "Tìm yêu cầu AI Clone", placeholder: "Mã booking, mã yêu cầu, doanh nghiệp hoặc tên KOC…", itemSelector: "#admin-aiclone-list > .card", containerSelector: "#admin-aiclone-list" });
   el.querySelectorAll("[data-book]").forEach((b) =>
     b.addEventListener("click", async () => {
       try {
@@ -2472,7 +2590,7 @@ async function tiers(el) {
   const cfg = state.config;
   el.innerHTML = `<div class="between"><h1>Khung giá 5 hạng</h1><button class="btn primary sm" id="tr-save">💾 Lưu khung giá</button></div>
     <p class="muted" style="margin-bottom:16px">KOC niêm yết giá phải nằm trong khung của hạng. Sau khi lưu, bảng giá KOC hiện có sẽ được kiểm tra lại theo khung mới.</p>
-    <div class="table-wrap"><table><thead><tr><th>Hạng</th><th>Follower tối thiểu</th><th class="required-label">Follower tối đa</th><th>Giá tối thiểu (đ)</th><th class="required-label">Giá tối đa (đ)</th><th>Phí dịch vụ (%)</th></tr></thead><tbody>
+    <div class="table-wrap"><table class="admin-tiers-table"><thead><tr><th>Hạng</th><th>Follower tối thiểu</th><th class="required-label">Follower tối đa</th><th>Giá tối thiểu (đ)</th><th class="required-label">Giá tối đa (đ)</th><th>Phí dịch vụ (%)</th></tr></thead><tbody>
     ${cfg.tiers
       .map(
         (t) => `<tr><td>${tierBadge(t.name)}</td>
@@ -2524,7 +2642,7 @@ async function tiers(el) {
       const wbox = document.getElementById("tr-warnings");
       if (r.warnings && r.warnings.length) {
         wbox.innerHTML = `<div class="card" style="border-color:var(--error)"><h3 class="icon-heading" style="color:var(--error)">${icon("complaint", "teaser-icon")} ${r.warnings.length} bảng giá KOC hiện đang nằm ngoài khung mới</h3>
-          <table style="margin-top:10px"><thead><tr><th>KOC</th><th>Ngành</th><th>Giá hiện tại</th><th>Khung hạng ${esc(r.warnings[0].tier)}</th></tr></thead><tbody>
+          <table class="admin-tier-warnings-table" style="margin-top:10px"><thead><tr><th>KOC</th><th>Ngành</th><th>Giá hiện tại</th><th>Khung hạng ${esc(r.warnings[0].tier)}</th></tr></thead><tbody>
           ${r.warnings.map((w) => `<tr><td>${esc(w.name)}</td><td>${esc(w.category)}</td><td class="money">${money(w.price)}</td><td class="money">${money(w.min)} – ${money(w.max)}</td></tr>`).join("")}
           </tbody></table><p class="muted" style="margin-top:8px;font-size:12px">Các KOC này cần tự cập nhật lại giá trong trang Hồ sơ của họ để tuân thủ khung mới.</p></div>`;
       } else {

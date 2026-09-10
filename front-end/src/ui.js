@@ -1,9 +1,19 @@
 import { notify } from './notifications.jsx';
+import { formatPaymentTime, formatPaymentTimeParts } from './payment-time.js';
+
+// Event timestamps use the same Vietnam timezone and input formats as payments.
+export const fmtDateTime = formatPaymentTime;
 
 // Shared UI helpers + components for all 3 portals.
 export const money = (n) => (Number(n)||0).toLocaleString('vi-VN') + 'đ';
 export const num = (n) => (Number(n)||0).toLocaleString('vi-VN');
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export const dateTimeStack = (value) => {
+  const { time, date } = formatPaymentTimeParts(value);
+  return date
+    ? `<span class="datetime-stack"><span>${esc(time)}</span><span>${esc(date)}</span></span>`
+    : esc(time);
+};
 export const avatarUrl = (value) => String(value || '').trim() || '/default-avatar.svg';
 const PW_EYE_OPEN = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>`;
 const PW_EYE_CLOSED = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-2.1 2.8"/><path d="M6.2 6.2C3.8 7.8 2.5 12 2.5 12s3.5 6 9.5 6c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;

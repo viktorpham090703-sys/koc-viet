@@ -12,12 +12,17 @@ import { createApiRouter } from './modules/api/api.router.js'
 import { migrate } from './modules/core/db.js'
 import { ensureSeedData } from './modules/core/seed.js'
 import { createHealthRouter } from './modules/health/health.router.js'
+import path from 'node:path'
 import type { ApplicationEnvironment } from './types/environment.js'
 
 export function createApp(config: AppConfig) {
   const app = express()
   const pool = new Pool({ connectionString: config.databaseUrl })
-  const environment: ApplicationEnvironment = { ...process.env, DB: new PostgresD1Adapter(pool), KV: new MemoryKv() }
+  const environment: ApplicationEnvironment = {
+    ...process.env,
+    DB: new PostgresD1Adapter(pool),
+    KV: new MemoryKv(path.resolve(process.cwd(), '.kv-storage.json')),
+  }
   app.disable('x-powered-by')
   app.use(helmet({ crossOriginResourcePolicy: false }))
   app.use(compression())
