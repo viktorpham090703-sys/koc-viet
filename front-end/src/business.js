@@ -181,7 +181,7 @@ async function aiCloneBooking(el) {
           </select></div>
           <div class="field"><label class="required-label">Số lượng video / KOC</label><input id="ac-video-quantity" type="number" min="1" max="100" value="1"></div>
         </div>
-        <p class="hint">Chiết khấu số lượng: từ 5 video -10% · từ 10 video -15% · từ 20 video -20%.</p>
+        <p class="hint">Admin sẽ đánh giá ngành hàng, số lượng video và yêu cầu nội dung để gửi báo giá chính thức.</p>
         <div class="field"><label>Thông điệp chính</label><input id="ac-message" maxlength="500" placeholder="Thông điệp cốt lõi bắt buộc có trong video"></div>
         <div class="field"><label class="required-label">Brief / Yêu cầu kịch bản</label><textarea id="ac-brief" rows="3" placeholder="Mô tả sản phẩm, đối tượng người xem, giọng điệu, điểm cần nhấn mạnh…"></textarea></div>
         
@@ -194,11 +194,10 @@ async function aiCloneBooking(el) {
         </div>
 
         <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-          <b style="font-size:14px">💰 Báo giá dự kiến & Gửi yêu cầu</b>
-          <div class="tint-box" id="ac-quote" style="margin-top:8px">Vui lòng chọn KOC ở danh sách bên trái để tính báo giá dự kiến.</div>
+          <b style="font-size:14px">📩 Gửi yêu cầu báo giá</b>
+          <div class="tint-box" id="ac-quote" style="margin-top:8px" aria-live="polite">Vui lòng chọn KOC ở danh sách bên trái để gửi yêu cầu báo giá.</div>
           <div class="row" style="gap:8px;margin-top:12px">
             <button class="btn primary" id="ac-submit" style="flex:1;padding:12px;font-weight:600">📩 Gửi yêu cầu báo giá cho Admin</button>
-            <button class="btn ghost" id="ac-contact-quote" style="flex:1;padding:12px;font-weight:600">💬 Liên hệ nhận báo giá trực tiếp</button>
           </div>
           <p class="hint" style="margin-top:8px">Đội ngũ hỗ trợ sẽ tiếp nhận yêu cầu, lập báo giá chính thức và gửi lại để doanh nghiệp thanh toán.</p>
         </div>
@@ -216,7 +215,7 @@ async function aiCloneBooking(el) {
       <div class="row" style="gap:8px"><img class="avatar" src="${esc(avatarUrl(k.avatar))}" style="width:40px;height:40px"><div><b style="font-size:13px">${esc(k.name)}</b><div>${tierBadge(k.tier)}</div></div></div>
       <div class="muted" style="font-size:11px;margin-top:6px">${esc(k.province || "")} · ${num(k.followers)} người theo dõi</div>
       <div class="muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.categories.map(esc).join(", ")}</div>
-      <div style="margin-top:6px"><span class="chip g" style="font-size:10px">AI Clone Ready</span></div></button>`,
+      <div style="margin-top:6px"><span class="chip g" style="font-size:10px" title="Đã đăng ký AI Clone. Admin sẽ kiểm tra mức độ phù hợp với ngành hàng trong brief.">Đã đăng ký AI Clone</span></div></button>`,
         )
         .join("") || empty("", "Không tìm thấy KOC đã đăng ký AI Clone");
     list.querySelectorAll("[data-koc]").forEach((button) =>
@@ -236,7 +235,9 @@ async function aiCloneBooking(el) {
     el.querySelector("#ac-count").textContent = selected.size;
   };
   const updateQuote = () => {
-    // Báo giá chỉ được hiển thị sau khi Admin kiểm tra và gửi chính thức.
+    el.querySelector("#ac-quote").textContent = selected.size
+      ? `Đã chọn ${selected.size} KOC. Admin sẽ kiểm tra brief và gửi báo giá chính thức. Bạn chưa cần thanh toán ở bước này.`
+      : "Vui lòng chọn KOC ở danh sách bên trái để gửi yêu cầu báo giá.";
   };
   const renderPagination = () => {
     const box = el.querySelector("#ac-pagination");

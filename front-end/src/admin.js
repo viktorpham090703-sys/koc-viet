@@ -23,6 +23,7 @@ import { state, logout, enhancePortal } from "./app.js";
 import { brandLogo, icon } from "./icons.js";
 import { autoAnimate } from "./animations.js";
 import { bankIdentityHtml } from "./payout-banks.js";
+import { formatPaymentTime as formatBookingTime } from "./payment-time.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
@@ -2183,13 +2184,15 @@ async function aiclone(el) {
       <div class="row">${
         a.quote_kocs
           ? `<div><div class="row"><b>Booking của ${esc(a.business_name || "Doanh nghiệp")}</b><span class="chip b">${num(a.quote_kocs.length)} KOC</span></div>
-           <div class="muted" style="font-size:12px">Mã yêu cầu: ${esc(a.aiclone_batch_id)}</div></div>`
+           <div class="muted" style="font-size:12px">Mã yêu cầu: ${esc(a.aiclone_batch_id)}</div>
+           <div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo booking: ${esc(formatBookingTime(a.booking_created_at))} (giờ Việt Nam)</div></div>`
           : `<img class="avatar" src="${esc(a.avatar)}"><div><div class="row"><b>${esc(a.name)}</b>${tierBadge(a.tier)}</div>
            <div class="muted" style="font-size:12px">📍 ${esc(a.province)} ${a.business_name ? "· " + esc(a.business_name) : ""}</div>`
       }
         ${
           a.booking_code
             ? `<div style="font-size:12px;margin-top:4px"><b>${esc(a.booking_code)}</b> · ${statusChip(a.booking_status)}</div>
+          ${!a.quote_kocs ? `<div class="muted" style="font-size:12px;margin-top:4px">Thời gian tạo booking: ${esc(formatBookingTime(a.booking_created_at))} (giờ Việt Nam)</div>` : ""}
           ${!a.id ? '<div class="chip w" style="margin-top:4px">KOC chưa đăng ký AI Clone</div>' : ""}`
             : `<div class="chip b" style="margin-top:4px">Đã đăng ký dịch vụ</div>`
         }${a.quote_kocs ? "" : "</div>"}</div>

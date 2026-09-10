@@ -672,6 +672,7 @@ tr:hover td{background:#fafafa}
 .tier-Mega{background:linear-gradient(135deg,#fff1c7,#ffd56a);color:#7a4300}
 .empty{text-align:center;padding:40px 16px;color:var(--muted)}
 .empty .ico{font-size:40px}
+.empty .ico>img{margin-inline:auto}
 .spin{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:sp .7s linear infinite;margin:30px auto}
 @keyframes sp{to{transform:rotate(360deg)}}
 .hero-navy{background:var(--navy);color:#fff;border-radius:16px;padding:22px}
