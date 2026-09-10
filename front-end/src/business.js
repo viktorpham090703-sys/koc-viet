@@ -2124,7 +2124,7 @@ async function wallet(el) {
         <p class="muted">Quản lý số dư, tiền nạp, khoản đang được đảm bảo và lịch sử giao dịch</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn primary" id="w-deposit-payos">💳 Nạp tiền trực tuyến (VNPAY-QR)</button>
+        <button class="btn primary" id="w-deposit-payos">💳 Nạp tiền trực tuyến</button>
         <a class="btn ghost sm" href="#/orders">📋 Đơn booking</a>
       </div>
     </div>
