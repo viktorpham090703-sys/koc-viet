@@ -89,6 +89,10 @@ async function businessesAdmin(el) {
   if (bizFilters.search) qs.set("search", bizFilters.search);
   if (bizFilters.status) qs.set("status", bizFilters.status);
   const r = await api("/api/admin/businesses?" + qs.toString());
+  const contactLines = (value) => String(value || "—").split("·")
+    .map((part) => part.trim()).filter(Boolean)
+    .map((part) => `<div>${esc(part)}</div>`).join("") || "—";
+  const emailText = (value) => esc(value || "—").replace("@", "<wbr>@");
   const accountChip = (s) =>
     s === "active"
       ? '<span class="chip g">Hoạt động</span>'
@@ -102,7 +106,7 @@ async function businessesAdmin(el) {
   el.innerHTML = `<div class="between"><div><h1>Quản lý doanh nghiệp</h1>
       <p class="muted">Xem, chỉnh sửa và kiểm soát tài khoản đăng nhập của doanh nghiệp.</p></div>
       <span class="chip b">${num(r.total)} doanh nghiệp</span></div>
-    <div class="filters" style="margin:16px 0">
+    <div class="filters business-admin-filters" style="margin:16px 0">
       <div class="field" style="flex:1"><label>Tìm kiếm</label><input id="biz-search" value="${esc(bizFilters.search)}" placeholder="Tên, email, người liên hệ, mã số thuế…"></div>
       <div class="field"><label>Trạng thái tài khoản</label><select id="biz-status">
         <option value="">Tất cả</option>
@@ -114,18 +118,18 @@ async function businessesAdmin(el) {
       </select></div>
       <button class="btn primary sm" id="biz-filter">Tìm kiếm</button>
     </div>
-    <div class="table-wrap"><table class="admin-business-table"><thead><tr><th>Doanh nghiệp</th><th>Thời gian</th><th>Liên hệ</th><th>Tài khoản</th><th>Booking</th><th>Tổng chi</th><th></th></tr></thead><tbody>
+    <div class="table-wrap admin-business-table-wrap"><table class="admin-business-table"><thead><tr><th>Doanh nghiệp</th><th>Thời gian</th><th>Liên hệ</th><th>Tài khoản</th><th>Booking</th><th>Tổng chi</th><th>Thao tác</th></tr></thead><tbody>
       ${
         r.businesses.length
           ? r.businesses
               .map(
                 (b) => `<tr>
-        <td data-label="Doanh nghiệp"><div class="row">${b.avatar ? `<img class="avatar" src="${esc(b.avatar)}" alt="">` : ""}<div><b>${esc(b.name)}</b><div class="muted" style="font-size:11px">${esc(b.industry || "Chưa cập nhật ngành nghề")}</div></div></div></td>
+        <td data-label="Doanh nghiệp"><div class="row">${b.avatar ? `<img class="avatar" src="${esc(b.avatar)}" alt="">` : '<span class="avatar business-avatar-fallback" aria-hidden="true">🏢</span>'}<div><b>${esc(b.name)}</b><div class="business-secondary">${esc(b.industry || "Chưa cập nhật ngành nghề")}</div></div></div></td>
         <td data-label="Thời gian" class="muted" style="font-size:12px;white-space:nowrap">${dateTimeStack(b.created_at)}</td>
-        <td data-label="Liên hệ"><div>${esc(b.contact || "—")}</div><div class="muted" style="font-size:11px">${esc(b.email || "—")}</div></td>
-        <td data-label="Tài khoản">${accountChip(b.account_status)}<div class="muted" style="font-size:11px;margin-top:3px">${esc(b.login_email || "—")}</div></td>
+        <td data-label="Liên hệ"><div class="business-contact">${contactLines(b.contact)}</div><div class="business-secondary" title="${esc(b.email || "—")}">${emailText(b.email)}</div></td>
+        <td data-label="Tài khoản">${accountChip(b.account_status)}<div class="business-secondary" title="${esc(b.login_email || "—")}">${emailText(b.login_email)}</div></td>
         <td data-label="Booking">${num(b.bookings_count)}</td><td data-label="Tổng chi" class="money">${money(b.total_spend)}</td>
-        <td data-label="Thao tác"><div class="row"><button class="btn ghost sm" data-biz-view="${b.id}">Xem</button>
+        <td data-label="Thao tác"><div class="row business-actions"><button class="btn ghost sm" data-biz-view="${b.id}">Xem</button>
           ${
             b.account_status === "pending"
               ? `<button class="btn ok sm" data-biz-approve="${b.id}">Duyệt</button><button class="btn danger sm" data-biz-reject="${b.id}">Từ chối</button>`
