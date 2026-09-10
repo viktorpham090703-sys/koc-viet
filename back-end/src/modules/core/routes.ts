@@ -2585,6 +2585,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       `SELECT * FROM bookings WHERE id=? AND business_id=?`,
     ).bind(body.booking_id, me.business_id).first();
     if (!booking) return err('Booking không tồn tại', 404);
+    if (booking.type === 'aiclone' && booking.status === 'quote_pending')
+      return err('Vui lòng chờ Admin gửi báo giá chính thức');
     if (!(Number(booking.price) > 0))
       return err('Booking này không cần thanh toán trực tuyến');
     const isAiCloneUpfront = booking.type === 'aiclone' && !booking.post_link;
@@ -2680,6 +2682,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     if (!booking) return err("Booking không tồn tại", 404);
     if (booking.type !== "aiclone")
       return err("Nút demo chỉ áp dụng cho booking AI Clone Avatar");
+    if (booking.status === "quote_pending" || !(Number(booking.price) > 0))
+      return err("Vui lòng chờ Admin gửi báo giá chính thức");
     if (!["payment_pending", "payment_failed", "payment_cancelled", "quote_sent", "quoted", "quote_pending"].includes(booking.status))
       return err("Booking không ở trạng thái chờ thanh toán");
     let payment = await env.DB.prepare(
@@ -2689,7 +2693,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     ).bind(booking.id).first();
     if (!payment) {
       const orderCode = newPayOSOrderCode();
-      const amount = Number(booking.price || booking.aiclone_production_fee || 100000);
+      const amount = Number(booking.price);
       const paymentId = uid();
       await env.DB.prepare(
         `INSERT INTO payment_requests (id, booking_id, business_id, provider, order_code, amount, status, purpose, created_at, updated_at)
@@ -2832,24 +2836,20 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
 
     const placeholders = kocIds.map(() => "?").join(",");
     const { results: selected } = await env.DB.prepare(
-      `SELECT k.id,k.name,p.price
+      `SELECT k.id,k.name
        FROM kocs k
-       LEFT JOIN koc_prices p ON p.koc_id=k.id AND p.category=?
        WHERE k.id IN (${placeholders}) AND k.status='active'
          AND EXISTS(SELECT 1 FROM aiclone registered_ai WHERE registered_ai.koc_id=k.id)`,
-    ).bind(category, ...kocIds).all();
+    ).bind(...kocIds).all();
     if (selected.length !== kocIds.length)
-      return err("Một hoặc nhiều KOC không còn hoạt động");
+      return err("Một hoặc nhiều KOC không còn hoạt động hoặc chưa đăng ký AI Clone");
 
     const batchId = uid();
     const created = [];
     const statements = [];
     for (const koc of selected) {
-      const kocFee = format === "affiliate" ? 0 : Number(koc.price || 0);
-      if (format !== "affiliate" && kocFee <= 0)
-        return err(`${koc.name} chưa có bảng giá cho ngành ${category}`);
-      const platformFee = Math.round((kocFee + productionFee) * 0.05);
-      const estimatedPrice = kocFee + productionFee + platformFee;
+      // Production cost is an internal reference; Admin sets all official quote fees.
+      const platformFee = 0;
       const id = uid();
       const code = "AI" + Math.floor(100000 + Math.random() * 899999);
       const bookingType = format === "review" ? "ad" : format;
@@ -2873,7 +2873,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       );
       created.push({
         id, code, koc_id: koc.id, koc_name: koc.name, price: 0,
-        estimated_price: estimatedPrice, koc_fee: kocFee,
+        estimated_price: null, koc_fee: null,
         production_fee: productionFee, platform_fee: platformFee, status,
       });
     }
@@ -3828,6 +3828,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     if (quoteAction !== "accept") return err("Hành động báo giá không hợp lệ");
 
     const priceToPay = Number(booking.price || 0);
+    if (!Number.isSafeInteger(priceToPay) || priceToPay <= 0)
+      return err("Báo giá chính thức không hợp lệ");
     if (priceToPay > 0) {
       const available = await walletBalance(env, 'business', me.business_id, 'available');
       if (available < priceToPay) return err("Số dư Ví doanh nghiệp không đủ để ký quỹ báo giá", 400);
@@ -5825,9 +5827,11 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         bind.push(q.get("status"));
       }
       if (q.get("search")) {
-        where.push(`(name LIKE ? OR email LIKE ? OR phone LIKE ?)`);
-        const term = `%${q.get("search")}%`;
-        bind.push(term, term, term);
+        // Plain text searches names; contact details require an explicit field.
+        const field = ['email', 'phone'].includes(q.get('searchBy')) ? q.get('searchBy') : 'name';
+        const search = sqlSearch([field], q.get('search'));
+        where.push(search.sql);
+        bind.push(...search.bindings);
       }
       const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
       const total = Number(
