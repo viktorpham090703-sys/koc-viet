@@ -1138,7 +1138,8 @@ table[class*="admin-"][class*="-table"] th,table.koc-directory-table th{white-sp
 .admin-portal .table-wrap table.admin-leads-table{min-width:1200px}
 .admin-portal .table-wrap table.admin-tiers-table{min-width:880px}
 .admin-portal .table-wrap table.admin-tier-warnings-table{min-width:720px}
-.admin-portal .table-wrap table.koc-directory-table{min-width:1320px}
+.admin-portal .table-wrap table.koc-directory-table{min-width:0;width:100%;max-width:100%}
+.admin-portal .table-wrap:has(> table.koc-directory-table){min-width:0;max-width:100%;overflow-x:hidden;scrollbar-gutter:auto}
 .admin-portal .table-wrap table.admin-bookings-table{min-width:0!important;width:100%}
 .admin-portal .table-wrap:has(> table.admin-bookings-table){overflow-x:hidden}
 .admin-portal .table-wrap table.admin-bookings-table :is(th,td){min-width:0;overflow-wrap:anywhere;white-space:normal!important;padding-right:10px;padding-left:10px}
@@ -1243,18 +1244,46 @@ table.admin-partner-earnings-table :is(th,td):nth-child(4){width:12%}
 table.admin-partner-earnings-table :is(th,td):nth-child(5){width:18%}
 table.admin-partner-earnings-table :is(th,td):nth-child(6){width:16%}
 
-table.koc-directory-table :is(th,td):nth-child(1){width:16%}
-table.koc-directory-table :is(th,td):nth-child(2){width:11%}
-table.koc-directory-table :is(th,td):nth-child(3){width:17%}
-table.koc-directory-table :is(th,td):nth-child(4){width:8%}
-table.koc-directory-table :is(th,td):nth-child(5){width:16%}
-table.koc-directory-table :is(th,td):nth-child(6){width:8%}
+table.koc-directory-table :is(th,td):nth-child(1){width:auto}
+table.koc-directory-table :is(th,td):nth-child(2){width:10%}
+table.koc-directory-table :is(th,td):nth-child(3){width:20%}
+table.koc-directory-table :is(th,td):nth-child(4){width:76px}
+table.koc-directory-table :is(th,td):nth-child(5){width:18%}
+table.koc-directory-table :is(th,td):nth-child(6){width:7%}
 table.koc-directory-table :is(th,td):nth-child(7){width:8%}
-table.koc-directory-table :is(th,td):nth-child(8){width:8%}
-table.koc-directory-table :is(th,td):nth-child(9){width:8%}
-table.koc-directory-table :is(th,td):nth-child(4),table.koc-directory-table td:nth-child(4) .chip{white-space:nowrap}
+table.koc-directory-table :is(th,td):nth-child(8){width:88px}
+table.koc-directory-table :is(th,td):nth-child(4),table.koc-directory-table td:nth-child(4) :is(.chip,.tier-badge){white-space:nowrap}
 table.koc-directory-table td:nth-child(5){line-height:1.45}
 table.koc-directory-table td:first-child .row{min-width:0}
+.admin-portal .table-wrap table.koc-directory-table :is(th,td){min-width:0;padding-inline:10px}
+.admin-portal .table-wrap table.koc-directory-table :is(th,td):is(:nth-child(2),:nth-child(4),:nth-child(6),:nth-child(7),:nth-child(8)){padding-inline:8px}
+.admin-portal .table-wrap table.koc-directory-table td:not([colspan]){white-space:normal;overflow-wrap:anywhere}
+.admin-portal table.koc-directory-table td:first-child>.row{align-items:flex-start}
+.admin-portal table.koc-directory-table td:first-child b{flex:1;min-width:0}
+.admin-portal table.koc-directory-table .datetime-stack{max-width:100%;white-space:normal;font-size:12px}
+.admin-portal table.koc-directory-table td:nth-child(7){text-align:left}
+.admin-portal table.koc-directory-table td:nth-child(7) .chip{max-width:100%;white-space:normal;text-align:center;line-height:1.3}
+.admin-portal table.koc-directory-table td:last-child .btn{min-width:0;max-width:100%;padding-inline:8px;white-space:nowrap}
+.koc-directory-table .koc-category-list{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0}
+.koc-directory-table .koc-category-chip{max-width:100%;padding:3px 7px;border-radius:6px;background:#f3f4f6;color:var(--text);font-size:11px;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+.koc-directory-table .koc-categories>summary{list-style:none;cursor:pointer}
+.koc-directory-table .koc-categories>summary::-webkit-details-marker{display:none}
+.koc-directory-table .koc-categories>summary:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:6px}
+.koc-directory-table .koc-category-toggle{padding:3px 5px;color:var(--info);font-size:11px;font-weight:600;line-height:1.35}
+.koc-directory-table .koc-category-collapse,.koc-directory-table .koc-categories[open] .koc-category-expand{display:none}
+.koc-directory-table .koc-categories[open] .koc-category-collapse{display:inline}
+.koc-directory-table .koc-categories[open]>div{margin-top:6px}
+@media(max-width:767px){
+  .admin-portal .table-wrap table.koc-directory-table thead{display:none}
+  .admin-portal .table-wrap table.koc-directory-table tbody{display:block}
+  .admin-portal .table-wrap table.koc-directory-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-bottom:1px solid var(--border)}
+  .admin-portal .table-wrap table.koc-directory-table tbody tr:last-child{border-bottom:0}
+  .admin-portal .table-wrap table.koc-directory-table td{display:block;width:auto;min-width:0;text-align:left;border:0;padding:10px!important}
+  .admin-portal .table-wrap table.koc-directory-table td:is(:first-child,:nth-child(5),:last-child){grid-column:1/-1}
+  .admin-portal .table-wrap table.koc-directory-table td[data-label]::before{content:attr(data-label);display:block;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted)}
+  .admin-portal .table-wrap table.koc-directory-table td:last-child{text-align:right}
+  .admin-portal .table-wrap table.koc-directory-table td:last-child .btn{min-height:44px}
+}
 
 table.admin-bookings-table :is(th,td):nth-child(1){width:10%}
 table.admin-bookings-table :is(th,td):nth-child(2){width:13%}
@@ -1322,7 +1351,7 @@ table.admin-tier-warnings-table :is(th,td):nth-child(3){width:19%}
 table.admin-tier-warnings-table :is(th,td):nth-child(4){width:19%}
 
 table[class*="admin-"][class*="-table"] :is(th,td):last-child,table.koc-directory-table :is(th,td):last-child{white-space:nowrap;text-align:right}
-table[class*="admin-"][class*="-table"] td.money,table[class*="admin-"][class*="-table"] td.numeric,table.koc-directory-table td:nth-child(6),table.koc-directory-table td:nth-child(7){white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+table[class*="admin-"][class*="-table"] td.money,table[class*="admin-"][class*="-table"] td.numeric,table.koc-directory-table td:nth-child(6){white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
 table[class*="admin-"][class*="-table"] td:has(.chip),table.koc-directory-table td:has(.chip){white-space:nowrap}
 table.admin-business-table td:nth-child(2),table.admin-business-table td:nth-child(3),table.admin-partners-table td:nth-child(2),table.admin-partner-earnings-table td:nth-child(6),table.admin-bookings-table td:nth-child(2),table.admin-contracts-table td:nth-child(4),table.admin-distribution-table td:nth-child(7),table.affiliate-admin-table td:nth-child(3),table.admin-kol-table td:nth-child(2),table.admin-leads-table td:nth-child(2),table.koc-directory-table td:nth-child(2){white-space:nowrap}
 .admin-portal table[class*="admin-"][class*="-table"] td:first-child .row,.admin-portal table.koc-directory-table td:first-child .row{min-width:0}
