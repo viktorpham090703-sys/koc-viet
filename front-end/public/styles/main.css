@@ -1170,28 +1170,41 @@ table[class*="admin-"][class*="-table"] th,table.koc-directory-table th{white-sp
 .table-wrap table.admin-partner-members-table{min-width:620px}
 .table-wrap table.admin-partner-earnings-table{min-width:850px}
 
+.admin-portal .business-admin-filters{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(200px,.85fr) auto;align-items:end;gap:14px;padding:16px}
+.admin-portal .business-admin-filters>.field{min-width:0}
+.admin-portal .admin-business-table-wrap{container:admin-business / inline-size}
+/* Keep short utility columns stable; the three text columns share the remaining space. */
+table.admin-business-table{--business-date-width:96px;--business-booking-width:80px;--business-spend-width:132px;--business-action-width:168px}
 table.admin-business-table :is(th,td):nth-child(1){width:auto}
-table.admin-business-table :is(th,td):nth-child(2){width:9%}
-table.admin-business-table :is(th,td):nth-child(3){width:20%}
-table.admin-business-table :is(th,td):nth-child(4){width:15%}
-table.admin-business-table :is(th,td):nth-child(5){width:6%}
-table.admin-business-table :is(th,td):nth-child(6){width:11%}
-table.admin-business-table :is(th,td):nth-child(7){width:128px}
-.admin-portal table.admin-business-table :is(th,td){padding-inline:12px}
+table.admin-business-table :is(th,td):nth-child(2){width:var(--business-date-width)}
+table.admin-business-table :is(th,td):nth-child(3){width:auto}
+table.admin-business-table :is(th,td):nth-child(4){width:auto}
+table.admin-business-table :is(th,td):nth-child(5){width:var(--business-booking-width)}
+table.admin-business-table :is(th,td):nth-child(6){width:var(--business-spend-width)}
+table.admin-business-table :is(th,td):nth-child(7){width:var(--business-action-width)}
+.admin-portal table.admin-business-table :is(th,td){padding-inline:10px}
+.admin-portal table.admin-business-table th{background:#f8fafc;vertical-align:middle}
+.admin-portal table.admin-business-table td{padding-block:16px}
 .admin-portal table.admin-business-table :is(th,td):is(:nth-child(2),:nth-child(5),:nth-child(6),:nth-child(7)){padding-inline:8px}
+.admin-portal .table-wrap table.admin-business-table th:nth-child(5){white-space:nowrap;overflow-wrap:normal;padding-inline:4px}
 .admin-portal .table-wrap table.admin-business-table td:not([colspan]){white-space:normal;overflow-wrap:anywhere}
 .admin-portal table.admin-business-table .datetime-stack{max-width:100%;white-space:normal}
-.admin-portal table.admin-business-table td:first-child>.row{align-items:flex-start;gap:12px}
-.admin-portal table.admin-business-table td:first-child>.row>.avatar{flex:0 0 44px}
+.admin-portal table.admin-business-table td:first-child>.row{align-items:flex-start;gap:10px}
+.admin-portal table.admin-business-table td:first-child>.row>.avatar{flex:0 0 36px;width:36px;height:36px;border-radius:10px}
+.admin-portal table.admin-business-table .business-avatar-fallback{display:grid;place-items:center;font-size:18px}
 .admin-portal table.admin-business-table td:first-child>.row>div{flex:1;min-width:0}
 .admin-portal table.admin-business-table td:first-child b{display:block}
+.admin-portal table.admin-business-table .business-contact{display:grid;gap:2px}
+.admin-portal table.admin-business-table .business-secondary{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.45;overflow-wrap:anywhere}
 .admin-portal table.admin-business-table td:nth-child(4) .chip{max-width:100%;white-space:normal}
 .admin-portal table.admin-business-table :is(th,td):nth-child(5){text-align:center;font-variant-numeric:tabular-nums}
 .admin-portal table.admin-business-table :is(th,td):nth-child(6){text-align:right;font-variant-numeric:tabular-nums}
-.admin-portal table.admin-business-table td:last-child>.row{min-width:0;max-width:100%;flex-wrap:wrap;justify-content:flex-end;gap:6px}
-.admin-portal table.admin-business-table td:last-child>.row:has(>.btn:nth-child(2):last-child){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
-.admin-portal table.admin-business-table td:last-child .btn{min-width:0;max-width:100%;height:auto;min-height:38px;padding:8px;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
-@media (max-width:767px){
+.admin-portal table.admin-business-table td:last-child>.business-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:6px;width:var(--business-action-width);max-width:100%;min-width:0;margin-left:auto}
+.admin-portal table.admin-business-table .business-actions:has(>.btn:nth-child(3))>.btn:first-child{grid-column:1/-1}
+.admin-portal table.admin-business-table .business-actions>.btn:only-child{grid-column:2}
+.admin-portal table.admin-business-table td:last-child .btn{width:100%;min-width:0;max-width:100%;height:auto;min-height:36px;padding:7px 6px;line-height:1.3;white-space:nowrap;overflow-wrap:normal;word-break:normal}
+@container admin-business (max-width:900px){
+  .admin-portal .table-wrap table.admin-business-table{display:block!important}
   .admin-portal .table-wrap table.admin-business-table thead{display:none}
   .admin-portal .table-wrap table.admin-business-table tbody{display:block}
   .admin-portal .table-wrap table.admin-business-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-bottom:1px solid var(--border)}
@@ -1199,7 +1212,6 @@ table.admin-business-table :is(th,td):nth-child(7){width:128px}
   .admin-portal .table-wrap table.admin-business-table td{display:block;width:auto;min-width:0;text-align:left;border:0;padding:10px!important}
   .admin-portal .table-wrap table.admin-business-table td:is(:first-child,:last-child,[colspan]){grid-column:1/-1}
   .admin-portal .table-wrap table.admin-business-table td[data-label]::before{content:attr(data-label);display:block;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted)}
-  .admin-portal .table-wrap table.admin-business-table td:last-child>.row{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:stretch}
   .admin-portal .table-wrap table.admin-business-table td:last-child .btn{min-height:44px}
 }
 
