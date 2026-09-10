@@ -983,10 +983,12 @@ function walletStatusChip(status) {
   const meta = {
     pending: ["Dự kiến", "w"],
     expected: ["Dự kiến", "w"],
-    settled: ["Đã đối soát", "b"],
-    reconciled: ["Đã đối soát", "b"],
-    paid: ["Đã thanh toán", "g"],
-    processing: ["Đang xử lý", "w"],
+    settled: ["Đã chi trả", "g"],
+    reconciled: ["Đã chi trả", "g"],
+    paid: ["Đã chi trả", "g"],
+    processing: ["Đang duyệt (6-24h)", "w"],
+    pending_review: ["Chờ duyệt (6-24h)", "w"],
+    rejected: ["Bị từ chối", "r"],
     cancelled: ["Đơn đã hủy", "r"],
     refunded: ["Đơn đã hoàn", "r"],
   }[status] || [status, "n"];
@@ -996,8 +998,11 @@ function walletStatusChip(status) {
 function withdrawModal(balance, el, payout) {
   const minimumWithdrawLabel = MIN_WITHDRAW_AMOUNT.toLocaleString("vi-VN");
   const hasBank = payout && payout.bank_account && payout.bank_name && /^\d{6}$/.test(String(payout.bank_bin || ""));
-  const m = modal(`<h2>Rút tiền về tài khoản ngân hàng</h2>
+  const m = modal(`<h2>Gửi yêu cầu rút tiền</h2>
     <p class="muted">Khả dụng: <b class="money">${money(balance)}</b> · Tối thiểu ${minimumWithdrawLabel}đ</p>
+    <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);padding:10px 14px;border-radius:8px;margin:10px 0;font-size:12px;color:var(--text);line-height:1.5">
+      ℹ️ <strong>Quy trình chi trả:</strong> Yêu cầu rút tiền sẽ được NetViet kiểm duyệt và chuyển khoản vào tài khoản ngân hàng của bạn trong vòng <strong>6 - 24 giờ làm việc</strong>.
+    </div>
     ${
       hasBank
         ? `<div style="background:var(--bg-muted);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
@@ -1005,16 +1010,16 @@ function withdrawModal(balance, el, payout) {
               <div><span class="muted">Số tài khoản:</span> <b>${esc(payout.bank_account)}</b> (${esc(payout.bank_owner || "")})</div>
              </div>`
         : `<div style="color:var(--error);background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
-              ⚠️ Chưa cập nhật thông tin ngân hàng. Vui lòng thiết lập tài khoản nhận tiền trước khi rút.
+              ⚠️ Chưa cập nhật thông tin ngân hàng. Vui lòng thiết lập tài khoản nhận tiền trong Hồ sơ trước khi rút.
              </div>`
     }
-    <div class="field" style="margin-top:12px"><label class="required-label">Số tiền</label><input id="wd-amt" type="number" placeholder="đ" value="${MIN_WITHDRAW_AMOUNT}" min="${MIN_WITHDRAW_AMOUNT}" step="10000"></div>
+    <div class="field" style="margin-top:12px"><label class="required-label">Số tiền rút</label><input id="wd-amt" type="number" placeholder="đ" value="${MIN_WITHDRAW_AMOUNT}" min="${MIN_WITHDRAW_AMOUNT}" step="10000"></div>
     <div class="field"><label class="required-label">Mã OTP gửi qua email</label><div class="row" style="gap:8px">
       <input id="wd-otp" class="otp-in" inputmode="numeric" maxlength="6" placeholder="••••••" style="flex:1">
       <button class="btn ghost sm" id="wd-send-otp" type="button">Gửi OTP</button>
     </div></div>
-    <button class="btn primary" id="wd-go">🏦 Xác nhận rút tiền</button>
-    <button class="btn ghost" id="wd-cancel" style="margin-top:8px">Hủy</button>`);
+    <button class="btn primary" id="wd-go" style="width:100%">📨 Gửi yêu cầu rút tiền</button>
+    <button class="btn ghost" id="wd-cancel" style="width:100%;margin-top:8px">Hủy</button>`);
   m.querySelector("#wd-cancel").addEventListener("click", closeModal);
   m.querySelector("#wd-send-otp").addEventListener("click", async () => {
     const sendButton = m.querySelector("#wd-send-otp");

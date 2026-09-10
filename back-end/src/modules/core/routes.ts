@@ -20,6 +20,13 @@ import {
   getPayOSPaymentLink,
   verifyPayOSWebhook,
 } from './lib/payos.js';
+import {
+  createVNPayPaymentUrl,
+  verifyVNPaySecureHash,
+  queryVNPayTransaction,
+  formatVNPayDate,
+  vnpayConfig,
+} from './lib/vnpay.js';
 import { createPayOSPayout } from './lib/payosPayout.js';
 import { PAYOUT_BANKS, payoutBankBinError } from './lib/bankDestination.js';
 import { pushPublicKey, sendPushToUser } from './lib/webPush.js';
@@ -870,6 +877,100 @@ async function startPayOSCheckout(
   }
 }
 
+function resolveFrontendOrigin(env, request, requestUrl) {
+  const originHeader = request?.headers?.get?.('origin');
+  if (originHeader && !originHeader.includes(':3000')) {
+    return originHeader;
+  }
+  const referer = request?.headers?.get?.('referer');
+  if (referer) {
+    try {
+      const refUrl = new URL(referer);
+      if (!refUrl.port || refUrl.port !== '3000') {
+        return refUrl.origin;
+      }
+    } catch (_) {}
+  }
+  const cfgReturn = env?.VNPAY_RETURN_URL || process.env.VNPAY_RETURN_URL;
+  if (cfgReturn) {
+    try {
+      return new URL(cfgReturn).origin;
+    } catch (_) {}
+  }
+  const envFrontend = env?.FRONTEND_ORIGIN || process.env.FRONTEND_ORIGIN;
+  if (envFrontend) return envFrontend.trim();
+  return requestUrl?.origin || 'http://localhost:5173';
+}
+
+async function startVNPayCheckout(
+  env,
+  requestUrl,
+  booking,
+  business,
+  purpose = 'final_settlement',
+  clientIp = '127.0.0.1',
+) {
+  const paymentId = uid();
+  const orderCode = newPayOSOrderCode();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO payment_requests
+       (id,booking_id,business_id,provider,order_code,amount,status,purpose,created_at,updated_at)
+       VALUES (?,?,?,'vnpay',?,?,'creating',?,?,?)`,
+    ).bind(
+      paymentId,
+      booking.id,
+      booking.business_id,
+      orderCode,
+      booking.price,
+      purpose,
+      now(),
+      now(),
+    ),
+    env.DB.prepare(
+      `UPDATE bookings SET status='payment_pending',updated_at=? WHERE id=?`,
+    ).bind(now(), booking.id),
+  ]);
+
+  try {
+    const frontendOrigin = resolveFrontendOrigin(env, null, requestUrl);
+    const returnUrl = `${frontendOrigin}/business.html?vnp_route=orders&vnpay=1&orderCode=${orderCode}`;
+    const checkoutUrl = createVNPayPaymentUrl(env, {
+      orderId: orderCode,
+      amount: booking.price,
+      orderInfo: `Booking ${booking.code}`,
+      returnUrl,
+      ipAddr: clientIp,
+    });
+    await env.DB.prepare(
+      `UPDATE payment_requests
+       SET status='pending',checkout_url=?,failure_reason=NULL,updated_at=?
+       WHERE id=?`,
+    ).bind(
+      checkoutUrl,
+      now(),
+      paymentId,
+    ).run();
+    return {
+      paymentId,
+      orderCode,
+      checkoutUrl,
+      status: 'pending',
+    };
+  } catch (error) {
+    const reason = String(error?.message || error).slice(0, 500);
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE payment_requests SET status='failed',failure_reason=?,updated_at=? WHERE id=?`,
+      ).bind(reason, now(), paymentId),
+      env.DB.prepare(
+        `UPDATE bookings SET status='payment_failed',updated_at=? WHERE id=? AND status='payment_pending'`,
+      ).bind(now(), booking.id),
+    ]);
+    throw error;
+  }
+}
+
 async function markPayOSPaymentPaid(env, payment, providerData, source) {
   if (!payment) return { found: false, changed: false };
   const amount = Number(providerData.amount ?? providerData.amountPaid);
@@ -883,7 +984,8 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
     payment.payment_link_id !== paymentLinkId
   ) throw new Error('Mã giao dịch thanh toán không khớp');
 
-  const reference = String(providerData.reference || '').slice(0, 160);
+  const reference = String(providerData.reference || providerData.vnp_TransactionNo || '').slice(0, 160);
+  const provider = payment.provider || 'payos';
 
   if (payment.purpose === 'deposit') {
     if (['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
@@ -908,7 +1010,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
         note: `Nạp tiền vào Ví doanh nghiệp (#${payment.order_code})`,
         postings: [
           {
-            account: walletAccount('system', 'payos', 'cash_clearing'),
+            account: walletAccount('system', provider, 'cash_clearing'),
             amount: -Number(payment.amount),
           },
           {
@@ -923,7 +1025,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
 
     await audit(
       env,
-      'payos',
+      provider,
       'payment.paid',
       payment.id,
       `purpose=deposit source=${source} orderCode=${payment.order_code} amount=${payment.amount}`,
@@ -1029,7 +1131,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
       try {
         const postings = [
           {
-            account: walletAccount('system', 'payos', 'cash_clearing'),
+            account: walletAccount('system', provider, 'cash_clearing'),
             amount: -Number(payment.amount),
           },
           {
@@ -1050,7 +1152,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
           });
         }
         await postWalletEntry(env, {
-          idempotencyKey: `payos-payout:${payment.id}`,
+          idempotencyKey: `${provider}-payout:${payment.id}`,
           eventType: 'booking_settled',
           referenceType: 'payment_request',
           referenceId: payment.id,
@@ -1058,13 +1160,13 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
           postings,
         });
       } catch (e) {
-        console.error('PayOS wallet settlement error:', e?.message || e);
+        console.error('Payment wallet settlement error:', e?.message || e);
       }
     }
 
     await audit(
       env,
-      'payos',
+      provider,
       'payment.paid',
       booking.id,
       `purpose=final_settlement source=${source} orderCode=${payment.order_code} amount=${payment.amount}`,
@@ -1122,14 +1224,14 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
       let avail = await walletBalance(env, 'business', booking.business_id, 'available');
       if (avail < priceToPay) {
         await postWalletEntry(env, {
-          idempotencyKey: `topup-payos:${payment.id}:${now()}`,
+          idempotencyKey: `topup-${provider}:${payment.id}:${now()}`,
           eventType: 'wallet_topup',
           referenceType: 'payment_request',
           referenceId: payment.id,
           note: `Nạp tiền ví doanh nghiệp từ thanh toán đơn ${booking.code}`,
           postings: [
             {
-              account: walletAccount('system', 'payos', 'cash_clearing'),
+              account: walletAccount('system', provider, 'cash_clearing'),
               amount: -priceToPay,
             },
             {
@@ -1140,7 +1242,7 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
         });
       }
       await transferWalletFunds(env, {
-        idempotencyKey: `escrow-hold-payos:${payment.id}`,
+        idempotencyKey: `escrow-hold-${provider}:${payment.id}`,
         eventType: 'escrow_hold',
         referenceType: 'payment_request',
         referenceId: payment.id,
@@ -1153,12 +1255,12 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
       });
     }
   } catch (e) {
-    console.error('payOS payment wallet deduction error:', e?.message || e);
+    console.error('Payment wallet deduction error:', e?.message || e);
   }
 
   await audit(
     env,
-    'payos',
+    provider,
     'payment.paid',
     booking.id,
     `purpose=legacy_escrow source=${source} orderCode=${payment.order_code} amount=${payment.amount}`,
@@ -1236,6 +1338,67 @@ async function syncPayOSPayment(env, payment) {
   return {
     status: status.toLowerCase(),
     checkoutUrl: payment.checkout_url || data.checkoutUrl || '',
+  };
+}
+
+async function syncVNPayPayment(env, payment) {
+  if (['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
+    return {
+      status: payment.status,
+      checkoutUrl: payment.checkout_url || '',
+      amount: payment.amount,
+    };
+  }
+
+  const createdDate = new Date(Number(payment.created_at) * 1000);
+  const transactionDate = formatVNPayDate(createdDate);
+  const data = await queryVNPayTransaction(env, {
+    orderId: payment.order_code,
+    transactionDate,
+  });
+
+  const responseCode = String(data?.vnp_ResponseCode || '');
+  const transactionStatus = String(data?.vnp_TransactionStatus || '');
+  const vnpAmount = Number(data?.vnp_Amount);
+
+  if (responseCode === '00' && transactionStatus === '00') {
+    if (vnpAmount && vnpAmount !== Number(payment.amount) * 100) {
+      throw new Error('Số tiền đã nhận không khớp đơn hàng');
+    }
+    await markPayOSPaymentPaid(
+      env,
+      payment,
+      {
+        amount: Number(payment.amount),
+        reference: data.vnp_TransactionNo || `VNPAY-${payment.order_code}`,
+        vnp_TransactionNo: data.vnp_TransactionNo,
+      },
+      'vnpay_sync',
+    );
+    return {
+      status: 'paid',
+      checkoutUrl: payment.checkout_url || '',
+      amount: payment.amount,
+    };
+  } else if (['02', '07', '09'].includes(transactionStatus)) {
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE payment_requests SET status='failed',failure_reason=?,updated_at=? WHERE id=? AND status!='paid'`,
+      ).bind(`VNPAY transactionStatus: ${transactionStatus}`, now(), payment.id),
+      env.DB.prepare(
+        `UPDATE bookings SET status='payment_failed',updated_at=?
+         WHERE id=? AND status IN ('payment_pending')`,
+      ).bind(now(), payment.booking_id),
+    ]);
+    return {
+      status: 'failed',
+      checkoutUrl: payment.checkout_url || '',
+    };
+  }
+
+  return {
+    status: payment.status,
+    checkoutUrl: payment.checkout_url || '',
   };
 }
 
@@ -2397,6 +2560,191 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     }
   }
 
+  // VNPAY IPN (Instant Payment Notification) - Server-to-Server webhook
+  if (p === "/api/vnpay/ipn" && (m === "GET" || m === "POST")) {
+    try {
+      const config = vnpayConfig(env);
+      const queryParams = m === "GET" ? url.searchParams : new URLSearchParams(body);
+      const vnpParams: Record<string, string> = {};
+      for (const [key, value] of queryParams.entries()) {
+        vnpParams[key] = value;
+      }
+
+      // 1. Kiểm tra chữ ký bảo mật checksum HMAC-SHA512
+      const isValid = verifyVNPaySecureHash(config.hashSecret, vnpParams);
+      if (!isValid) {
+        return J({ RspCode: '97', Message: 'Invalid Checksum' });
+      }
+
+      // 2. Tìm đơn hàng theo vnp_TxnRef
+      const orderCode = Number(vnpParams.vnp_TxnRef);
+      if (!Number.isSafeInteger(orderCode)) {
+        return J({ RspCode: '01', Message: 'Order not found' });
+      }
+      const payment = await env.DB.prepare(
+        `SELECT * FROM payment_requests WHERE order_code=? LIMIT 1`,
+      ).bind(orderCode).first();
+      if (!payment) {
+        return J({ RspCode: '01', Message: 'Order not found' });
+      }
+
+      // 3. Kiểm tra số tiền (VNPAY gửi số tiền đã nhân 100)
+      const vnpAmount = Number(vnpParams.vnp_Amount);
+      if (vnpAmount !== Number(payment.amount) * 100) {
+        return J({ RspCode: '04', Message: 'Invalid Amount' });
+      }
+
+      // 4. Kiểm tra trạng thái đơn trước đó
+      if (['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
+        return J({ RspCode: '02', Message: 'Order already confirmed' });
+      }
+
+      // 5. Cập nhật kết quả thanh toán
+      const responseCode = String(vnpParams.vnp_ResponseCode || '');
+      const transactionStatus = String(vnpParams.vnp_TransactionStatus || '');
+
+      if (responseCode === '00' && transactionStatus === '00') {
+        await markPayOSPaymentPaid(
+          env,
+          payment,
+          {
+            amount: Number(payment.amount),
+            reference: vnpParams.vnp_TransactionNo || `VNPAY-${orderCode}`,
+            vnp_TransactionNo: vnpParams.vnp_TransactionNo,
+          },
+          'vnpay_ipn',
+        );
+        return J({ RspCode: '00', Message: 'Confirm Success' });
+      } else {
+        const failureReason = `VNPAY error code: ${responseCode}`;
+        await env.DB.prepare(
+          `UPDATE payment_requests SET status='failed',failure_reason=?,updated_at=? WHERE id=?`,
+        ).bind(failureReason, now(), payment.id).run();
+        return J({ RspCode: '00', Message: 'Confirm Success' });
+      }
+    } catch (error) {
+      console.warn('VNPAY IPN processing error', error?.message || error);
+      return J({ RspCode: '99', Message: 'Unknown error' });
+    }
+  }
+
+  // VNPAY verify return (gọi từ frontend khi trình duyệt được redirect về từ VNPAY)
+  if (p === "/api/vnpay/verify-return" && m === "POST") {
+    try {
+      const config = vnpayConfig(env);
+      const vnpParams: Record<string, string> = {};
+      if (body && typeof body === 'object') {
+        for (const [key, value] of Object.entries(body)) {
+          if (value !== undefined && value !== null) {
+            vnpParams[key] = String(value);
+          }
+        }
+      }
+
+      // 1. Kiểm tra chữ ký bảo mật checksum HMAC-SHA512
+      const isValid = verifyVNPaySecureHash(config.hashSecret, vnpParams);
+      if (!isValid) {
+        return err('Chữ ký bảo mật VNPAY không hợp lệ', 400);
+      }
+
+      // 2. Tìm đơn hàng theo vnp_TxnRef
+      const orderCode = Number(vnpParams.vnp_TxnRef);
+      if (!Number.isSafeInteger(orderCode)) {
+        return err('Mã đơn hàng không hợp lệ', 400);
+      }
+      const payment = await env.DB.prepare(
+        `SELECT * FROM payment_requests WHERE order_code=? LIMIT 1`,
+      ).bind(orderCode).first();
+      if (!payment) {
+        return err('Không tìm thấy giao dịch', 404);
+      }
+
+      // 3. Kiểm tra số tiền (VNPAY gửi số tiền đã nhân 100)
+      const vnpAmount = Number(vnpParams.vnp_Amount);
+      if (vnpAmount !== Number(payment.amount) * 100) {
+        return err('Số tiền không khớp với đơn hàng', 400);
+      }
+
+      // 4. Cập nhật kết quả thanh toán
+      const responseCode = String(vnpParams.vnp_ResponseCode || '');
+      const transactionStatus = String(vnpParams.vnp_TransactionStatus || '');
+
+      if (responseCode === '00' && (transactionStatus === '00' || !transactionStatus)) {
+        const result = await markPayOSPaymentPaid(
+          env,
+          payment,
+          {
+            amount: Number(payment.amount),
+            reference: vnpParams.vnp_TransactionNo || `VNPAY-${orderCode}`,
+            vnp_TransactionNo: vnpParams.vnp_TransactionNo,
+          },
+          'vnpay_return',
+        );
+        return J({
+          ok: true,
+          status: 'paid',
+          orderCode,
+          amount: payment.amount,
+          changed: result.changed,
+        });
+      } else {
+        const failureReason = `VNPAY error code: ${responseCode}`;
+        if (!['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
+          await env.DB.prepare(
+            `UPDATE payment_requests SET status='failed',failure_reason=?,updated_at=? WHERE id=?`,
+          ).bind(failureReason, now(), payment.id).run();
+        }
+        return J({
+          ok: false,
+          status: 'failed',
+          orderCode,
+          reason: failureReason,
+        });
+      }
+    } catch (error) {
+      console.warn('VNPAY return verification error', error?.message || error);
+      return err(error?.message || 'Lỗi xác thực giao dịch VNPAY', 500);
+    }
+  }
+
+  // VNPAY Return URL handler (nếu đối tác trỏ vnp_ReturnUrl về API thay vì trực tiếp frontend)
+  if (p === "/api/vnpay/return" && m === "GET") {
+    const config = vnpayConfig(env);
+    const isValid = verifyVNPaySecureHash(config.hashSecret, url.searchParams);
+    const targetUrl = new URL(config.returnUrl);
+    for (const [key, value] of url.searchParams.entries()) {
+      targetUrl.searchParams.set(key, value);
+    }
+    if (!isValid) {
+      targetUrl.searchParams.set('vnp_SecureHashValid', 'false');
+    } else {
+      const orderCode = Number(url.searchParams.get('vnp_TxnRef'));
+      const responseCode = String(url.searchParams.get('vnp_ResponseCode') || '');
+      const transactionStatus = String(url.searchParams.get('vnp_TransactionStatus') || '');
+      if (Number.isSafeInteger(orderCode) && responseCode === '00' && (transactionStatus === '00' || !transactionStatus)) {
+        const payment = await env.DB.prepare(
+          `SELECT * FROM payment_requests WHERE order_code=? LIMIT 1`,
+        ).bind(orderCode).first();
+        if (payment && !['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
+          const vnpAmount = Number(url.searchParams.get('vnp_Amount'));
+          if (vnpAmount === Number(payment.amount) * 100) {
+            await markPayOSPaymentPaid(
+              env,
+              payment,
+              {
+                amount: Number(payment.amount),
+                reference: url.searchParams.get('vnp_TransactionNo') || `VNPAY-${orderCode}`,
+                vnp_TransactionNo: url.searchParams.get('vnp_TransactionNo'),
+              },
+              'vnpay_return_get',
+            );
+          }
+        }
+      }
+    }
+    return Response.redirect(targetUrl.toString(), 302);
+  }
+
   // A short-lived, object-scoped token lets the native video player request a
   // private R2 object without exposing the user's login token in the URL.
   if (p === "/api/booking/video/content" && m === "GET") {
@@ -2624,14 +2972,26 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     const business = await env.DB.prepare(
       `SELECT name,email,contact FROM businesses WHERE id=?`,
     ).bind(me.business_id).first();
+    const vnpConfig = vnpayConfig(env);
+    const mode = body.mode || (vnpConfig.hashSecret ? 'vnpay' : 'payos');
     try {
-      const payment = await startPayOSCheckout(
-        env,
-        url,
-        booking,
-        business,
-        paymentPurpose,
-      );
+      const clientIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
+      const payment = mode === 'vnpay'
+        ? await startVNPayCheckout(
+            env,
+            url,
+            booking,
+            business,
+            paymentPurpose,
+            clientIp,
+          )
+        : await startPayOSCheckout(
+            env,
+            url,
+            booking,
+            business,
+            paymentPurpose,
+          );
       await audit(
         env,
         me.id,
@@ -2644,8 +3004,9 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         bookingId: booking.id,
         orderCode: payment.orderCode,
         checkoutUrl: payment.checkoutUrl,
-        qrCode: payment.qrCode,
+        qrCode: payment.qrCode || '',
         paymentRequired: true,
+        mode,
       });
     } catch (error) {
       return err(error?.message || 'Chưa tạo được yêu cầu thanh toán', 502);
@@ -2662,6 +3023,20 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
        WHERE p.order_code=? AND (?='admin' OR p.business_id=?) LIMIT 1`,
     ).bind(orderCode, me.role, me.business_id || '').first();
     if (!payment) return err('Không tìm thấy giao dịch', 404);
+    if (payment.provider === 'vnpay') {
+      try {
+        const result = await syncVNPayPayment(env, payment);
+        return J({ ok: true, ...result, orderCode });
+      } catch (error) {
+        console.warn('VNPAY sync error:', error?.message || error);
+        return J({
+          ok: true,
+          status: payment.status,
+          orderCode,
+          checkoutUrl: payment.checkout_url || '',
+        });
+      }
+    }
     try {
       const result = await syncPayOSPayment(env, payment);
       return J({ ok: true, ...result, orderCode });
@@ -4257,7 +4632,12 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       for (const t of results) {
         const transactionAmount = Number(t.amount || 0);
         if (t.type === "withdraw") {
-          avail -= transactionAmount;
+          if (!["rejected", "cancelled"].includes(t.status)) {
+            avail -= transactionAmount;
+            if (["pending", "processing", "pending_review"].includes(t.status)) {
+              pending += transactionAmount;
+            }
+          }
         } else if (["pending", "expected"].includes(t.status))
           pending += transactionAmount;
         else if (!["cancelled", "refunded"].includes(t.status)) avail += transactionAmount;
@@ -4282,6 +4662,20 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         payout: koc || {},
       });
     } else if (me.role === "business") {
+      try {
+        const pendingVnpay = await env.DB.prepare(
+          `SELECT * FROM payment_requests
+           WHERE business_id=? AND provider='vnpay' AND status='pending' AND created_at > ?`,
+        ).bind(me.business_id, now() - 24 * 3600).all();
+        for (const p of (pendingVnpay.results || [])) {
+          try {
+            await syncVNPayPayment(env, p);
+          } catch (e) {
+            console.warn('Auto-sync pending VNPAY deposit error:', e?.message || e);
+          }
+        }
+      } catch (_) {}
+
       const balances = await walletBalances(env, "business", me.business_id);
       const { results: payments } = await env.DB.prepare(
         `SELECT p.*, b.code as booking_code
@@ -4301,7 +4695,9 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   }
   if (p === "/api/wallet/deposit" && m === "POST") {
     if (me.role !== "business") return err("Chỉ doanh nghiệp được nạp tiền vào ví", 403);
-    if (body.mode && body.mode !== "payos") {
+    const vnpConfig = vnpayConfig(env);
+    const mode = body.mode || (vnpConfig.hashSecret ? 'vnpay' : 'payos');
+    if (!['payos', 'vnpay'].includes(mode)) {
       return err("Phương thức nạp tiền không được hỗ trợ", 400);
     }
     const amount = Number(body.amount);
@@ -4314,8 +4710,41 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     await env.DB.prepare(
       `INSERT INTO payment_requests
        (id,booking_id,business_id,provider,order_code,amount,status,purpose,created_at,updated_at)
-       VALUES (?,'wallet_topup',?,'payos',?,?,'creating','deposit',?,?)`,
-    ).bind(depositId, me.business_id, orderCode, amount, now(), now()).run();
+       VALUES (?,'wallet_topup',?,?,?,?,'creating','deposit',?,?)`,
+    ).bind(depositId, me.business_id, mode, orderCode, amount, now(), now()).run();
+
+    if (mode === 'vnpay') {
+      try {
+        const clientIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
+        const frontendOrigin = resolveFrontendOrigin(env, request, url);
+        const returnUrl = `${frontendOrigin}/business.html?vnp_route=wallet&vnpay=1&orderCode=${orderCode}`;
+        const checkoutUrl = createVNPayPaymentUrl(env, {
+          orderId: orderCode,
+          amount,
+          orderInfo: `Nap tien vi #${orderCode}`,
+          returnUrl,
+          ipAddr: clientIp,
+        });
+        await env.DB.prepare(
+          `UPDATE payment_requests
+           SET status='pending',checkout_url=?,failure_reason=NULL,updated_at=?
+           WHERE id=?`,
+        ).bind(checkoutUrl, now(), depositId).run();
+        return J({
+          ok: true,
+          mode: 'vnpay',
+          depositId,
+          orderCode,
+          checkoutUrl,
+        });
+      } catch (error) {
+        const reason = String(error?.message || error).slice(0, 500);
+        await env.DB.prepare(
+          `UPDATE payment_requests SET status='failed',failure_reason=?,updated_at=? WHERE id=?`,
+        ).bind(reason, now(), depositId).run();
+        throw error;
+      }
+    }
 
     try {
       const paymentPayload = {
@@ -4368,7 +4797,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
 
   if (p === "/api/wallet/withdraw" && m === "POST") {
     if (me.role !== "koc") return err("Không có ví", 403);
-    if (body.mode && body.mode !== "payos") {
+    if (body.mode && !["ticket", "payos"].includes(body.mode)) {
       return err("Phương thức rút tiền không được hỗ trợ", 400);
     }
     const koc = await env.DB.prepare(
@@ -4389,9 +4818,13 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     let avail = 0;
     for (const t of results) {
       const transactionAmount = Number(t.amount || 0);
-      if (t.type === "withdraw") avail -= transactionAmount;
-      else if (["settled", "reconciled", "paid"].includes(t.status))
+      if (t.type === "withdraw") {
+        if (!["rejected", "cancelled"].includes(t.status)) {
+          avail -= transactionAmount;
+        }
+      } else if (["settled", "reconciled", "paid"].includes(t.status)) {
         avail += transactionAmount;
+      }
     }
     if (amount > avail) return err("Số dư khả dụng không đủ");
 
@@ -4402,51 +4835,10 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     if (bankBinError) {
       return err(`${bankBinError}. Vui lòng sửa trong Hồ sơ trước khi rút tiền.`, 422);
     }
+
     const txId = uid();
-    const referenceId = `wd-${txId.slice(0, 16)}`;
-    try {
-      await createPayOSPayout(env, {
-        referenceId,
-        amount,
-        description: `RUT VI KOC ${me.koc_id.slice(0, 8)}`,
-        toBin: koc.bank_bin,
-        toAccountNumber: koc.bank_account,
-      }, referenceId);
-    } catch (error) {
-      const providerCode = String(error?.providerCode || '')
-        .replace(/[^a-zA-Z0-9_.-]/g, '')
-        .slice(0, 50);
-      const providerDescription = String(error?.providerDescription || '')
-        .replace(/[\u0000-\u001f\u007f]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 300);
-      const providerDetail = [
-        providerCode ? `payOS ${providerCode}` : '',
-        providerDescription,
-      ].filter(Boolean).join(': ');
-      const message = `Chưa gửi được yêu cầu rút tiền: ${error?.message || 'Vui lòng thử lại sau'}`
-        + (providerDetail ? ` (${providerDetail})` : '');
-      const rateLimited = error?.rateLimited
-        || Number(error?.status) === 429
-        || providerCode === '429';
-      const retryAfter = Number(error?.retryAfter);
-      const responseHeaders = rateLimited && Number.isFinite(retryAfter)
-        ? { 'Retry-After': String(Math.max(0, Math.ceil(retryAfter))) }
-        : undefined;
-      const invalidDestination = error?.invalidDestination || providerCode === '607';
-      return Response.json({
-        error: message,
-        ...(providerCode ? { providerCode } : {}),
-        ...(providerDescription ? { providerDescription } : {}),
-        ...(rateLimited && Number.isFinite(retryAfter)
-          ? { retryAfter: Math.max(0, Math.ceil(retryAfter)) }
-          : {}),
-      }, {
-        status: rateLimited ? 429 : invalidDestination ? 422 : 400,
-        headers: responseHeaders,
-      });
-    }
+    const ticketCode = `WD${Math.floor(100000 + Math.random() * 900000)}`;
+    const note = `Rút tiền về ${koc.bank_name} (${koc.bank_account}) - Mã: ${ticketCode}`;
 
     await env.DB.prepare(
       `INSERT INTO wallet_tx (id,koc_id,type,amount,status,note,created_at) VALUES (?,?,?,?,?,?,?)`,
@@ -4456,31 +4848,19 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         me.koc_id,
         "withdraw",
         amount,
-        "processing",
-        `Rút tiền về ngân hàng (${koc.bank_name})`,
+        "pending_review",
+        note,
         now(),
       )
       .run();
 
-    try {
-      await transferWalletFunds(env, {
-        idempotencyKey: `withdraw-payos:${txId}`,
-        eventType: 'wallet_withdraw',
-        referenceType: 'wallet_tx',
-        referenceId: txId,
-        note: `KOC rút tiền về ngân hàng (${koc.bank_name})`,
-        source: walletAccount('koc', me.koc_id, 'available'),
-        destinations: [{
-          account: walletAccount('system', 'payos', 'cash_clearing'),
-          amount,
-        }],
-      });
-    } catch (e) {
-      console.error('Wallet withdraw transfer error:', e?.message || e);
-    }
-
-    await audit(env, me.id, "wallet.withdraw_requested_payos", me.koc_id, `amount=${amount}`);
-    return J({ ok: true, mode: 'payos', message: 'Yêu cầu rút tiền đã được gửi thành công' });
+    await audit(env, me.id, "wallet.withdraw_ticket_created", me.koc_id, `amount=${amount} ticket=${ticketCode}`);
+    return J({
+      ok: true,
+      ticketId: txId,
+      ticketCode,
+      message: 'Đã gửi yêu cầu rút tiền thành công! NetViet sẽ duyệt và chuyển khoản trong vòng 6 - 24 giờ làm việc.',
+    });
   }
 
   // ---------- Affiliate ----------
@@ -6234,6 +6614,195 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         },
       });
     }
+
+    // Admin: Danh sách yêu cầu rút tiền KOC (Payout Tickets)
+    if (p === "/api/admin/payout-tickets" && m === "GET") {
+      const status = String(url.searchParams.get('status') || 'all');
+      const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
+      const per = Math.max(1, Math.min(100, Number(url.searchParams.get('per')) || 20));
+      const offset = (page - 1) * per;
+
+      let statusFilter = '';
+      if (status === 'pending') {
+        statusFilter = "AND wt.status IN ('pending_review', 'processing')";
+      } else if (status === 'paid' || status === 'settled') {
+        statusFilter = "AND wt.status IN ('settled', 'paid')";
+      } else if (status === 'rejected') {
+        statusFilter = "AND wt.status = 'rejected'";
+      }
+
+      const countRow = await env.DB.prepare(
+        `SELECT COUNT(*) count
+         FROM wallet_tx wt
+         WHERE wt.type = 'withdraw' ${statusFilter}`
+      ).first('count');
+      const total = Number(countRow || 0);
+
+      const { results } = await env.DB.prepare(
+        `SELECT 
+           wt.id,
+           wt.koc_id,
+           wt.amount,
+           wt.status,
+           wt.note,
+           wt.created_at,
+           k.name as koc_name,
+           k.email as koc_email,
+           k.phone as koc_phone,
+           k.avatar as koc_avatar,
+           k.bank_name,
+           k.bank_account,
+           k.bank_owner,
+           k.bank_bin
+         FROM wallet_tx wt
+         LEFT JOIN kocs k ON k.id = wt.koc_id
+         WHERE wt.type = 'withdraw' ${statusFilter}
+         ORDER BY wt.created_at DESC
+         LIMIT ? OFFSET ?`
+      ).bind(per, offset).all();
+
+      const tickets = (results || []).map((t: any) => {
+        const bankBin = String(t.bank_bin || '').trim();
+        const bankAccount = String(t.bank_account || '').trim();
+        const bankOwner = String(t.bank_owner || t.koc_name || '').trim();
+        const amount = Number(t.amount || 0);
+        const ticketCodeMatch = String(t.note || '').match(/WD\d+/);
+        const ticketCode = ticketCodeMatch ? ticketCodeMatch[0] : `WD${t.id.slice(0, 6)}`;
+        const addInfo = `KOCVIET ${ticketCode}`;
+
+        let vietqrUrl = '';
+        if (bankBin && bankAccount) {
+          vietqrUrl = `https://img.vietqr.io/image/${bankBin}-${bankAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(bankOwner)}`;
+        }
+
+        return {
+          ...t,
+          ticket_code: ticketCode,
+          vietqr_url: vietqrUrl,
+          transfer_info: {
+            bank_bin: bankBin,
+            bank_name: t.bank_name,
+            bank_account: bankAccount,
+            bank_owner: bankOwner,
+            amount,
+            content: addInfo,
+          },
+        };
+      });
+
+      const pendingCountRow = await env.DB.prepare(
+        `SELECT COUNT(*) count FROM wallet_tx WHERE type = 'withdraw' AND status IN ('pending_review', 'processing')`
+      ).first('count');
+      const pendingCount = Number(pendingCountRow || 0);
+
+      return J({
+        tickets,
+        total,
+        page,
+        per,
+        pendingCount,
+      });
+    }
+
+    // Admin: Duyệt yêu cầu rút tiền (sau khi đã quét mã QR chuyển khoản thành công)
+    if (p === "/api/admin/payout-tickets/approve" && m === "POST") {
+      const ticketId = String(body.id || body.ticket_id || '').trim();
+      if (!ticketId) return err('Thiếu mã yêu cầu rút tiền', 400);
+
+      const ticket = await env.DB.prepare(
+        `SELECT wt.*, k.name as koc_name, k.email, k.bank_name, k.bank_account
+         FROM wallet_tx wt
+         JOIN kocs k ON k.id = wt.koc_id
+         WHERE wt.id = ? AND wt.type = 'withdraw'`
+      ).bind(ticketId).first();
+      if (!ticket) return err('Không tìm thấy yêu cầu rút tiền', 404);
+      if (['settled', 'paid'].includes(ticket.status)) {
+        return err('Yêu cầu rút tiền này đã được hoàn tất trước đó', 400);
+      }
+
+      const refCode = String(body.reference_code || '').trim();
+      const adminNote = String(body.note || '').trim();
+      const newNote = `${ticket.note || ''} [Đã chuyển VietQR${refCode ? ` - Mã GD: ${refCode}` : ''}${adminNote ? ` - Ghi chú: ${adminNote}` : ''}]`.trim();
+
+      await env.DB.prepare(
+        `UPDATE wallet_tx SET status = 'settled', note = ? WHERE id = ?`
+      ).bind(newNote, ticketId).run();
+
+      const kocUser = await env.DB.prepare(
+        `SELECT id FROM users WHERE koc_id = ? LIMIT 1`
+      ).bind(ticket.koc_id).first();
+
+      if (kocUser?.id) {
+        await notifyUser(
+          env,
+          kocUser.id,
+          'payout',
+          'Yêu cầu rút tiền đã được chuyển khoản thành công',
+          `NetViet đã chuyển thành công ${Number(ticket.amount).toLocaleString('vi-VN')}đ vào tài khoản ${ticket.bank_name} (${ticket.bank_account}) của bạn.`,
+          '#/wallet',
+        );
+      }
+
+      await audit(
+        env,
+        me.id,
+        'payout.approved',
+        ticketId,
+        `amount=${ticket.amount} koc=${ticket.koc_id} ref=${refCode}`
+      );
+
+      return J({ ok: true, message: 'Đã duyệt và xác nhận chuyển tiền thành công!' });
+    }
+
+    // Admin: Từ chối yêu cầu rút tiền
+    if (p === "/api/admin/payout-tickets/reject" && m === "POST") {
+      const ticketId = String(body.id || body.ticket_id || '').trim();
+      if (!ticketId) return err('Thiếu mã yêu cầu rút tiền', 400);
+
+      const ticket = await env.DB.prepare(
+        `SELECT wt.*, k.name as koc_name, k.email, k.bank_name
+         FROM wallet_tx wt
+         JOIN kocs k ON k.id = wt.koc_id
+         WHERE wt.id = ? AND wt.type = 'withdraw'`
+      ).bind(ticketId).first();
+      if (!ticket) return err('Không tìm thấy yêu cầu rút tiền', 404);
+      if (['settled', 'paid'].includes(ticket.status)) {
+        return err('Không thể từ chối yêu cầu đã chuyển tiền', 400);
+      }
+
+      const reason = String(body.reason || 'Thông tin tài khoản không hợp lệ').trim();
+      const newNote = `${ticket.note || ''} [Từ chối: ${reason}]`.trim();
+
+      await env.DB.prepare(
+        `UPDATE wallet_tx SET status = 'rejected', note = ? WHERE id = ?`
+      ).bind(newNote, ticketId).run();
+
+      const kocUser = await env.DB.prepare(
+        `SELECT id FROM users WHERE koc_id = ? LIMIT 1`
+      ).bind(ticket.koc_id).first();
+
+      if (kocUser?.id) {
+        await notifyUser(
+          env,
+          kocUser.id,
+          'payout',
+          'Yêu cầu rút tiền bị từ chối',
+          `Yêu cầu rút ${Number(ticket.amount).toLocaleString('vi-VN')}đ bị từ chối: ${reason}. Số dư đã được hoàn lại vào ví của bạn.`,
+          '#/wallet',
+        );
+      }
+
+      await audit(
+        env,
+        me.id,
+        'payout.rejected',
+        ticketId,
+        `amount=${ticket.amount} koc=${ticket.koc_id} reason=${reason}`
+      );
+
+      return J({ ok: true, message: 'Đã từ chối yêu cầu và hoàn lại số dư cho KOC!' });
+    }
+
     // Admin: all affiliate orders (reconciliation with sàn)
     if (p === "/api/admin/affiliate") {
       const search = sqlSearch(['o.platform_order_id','k.name','b.code','b.platform'], url.searchParams.get('search') || url.searchParams.get('q'));

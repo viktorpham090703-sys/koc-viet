@@ -1531,7 +1531,9 @@ async function adminCampaigns(el) {
 }
 
 let settleView = {
-  activeTab: "distribution",
+  activeTab: "payout",
+  payoutStatus: "pending",
+  payoutPage: 1,
   distributionPage: 1,
   ledgerPage: 1,
   distributionSearch: "",
@@ -1540,6 +1542,125 @@ let settleView = {
   auditSearch: "",
   auditCategory: "",
 };
+
+function payoutQrModal(ticket, onDone) {
+  const isPending = ticket.status === "pending_review" || ticket.status === "processing";
+  const m = modal(`
+    <div style="max-width:580px;width:100%">
+      <h2>Yêu cầu chi trả hoa hồng #${esc(ticket.ticket_code)}</h2>
+      <p class="muted" style="font-size:12px">Quét mã VietQR bằng ứng dụng ngân hàng để chuyển khoản chính xác 100% không cần nhập tay.</p>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:16px;margin:16px 0;align-items:start" class="payout-modal-grid">
+        <div style="text-align:center;background:#fff;padding:12px;border-radius:12px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.05)">
+          ${ticket.vietqr_url ? `
+            <img src="${ticket.vietqr_url}" alt="VietQR Napas 24/7" style="width:236px;height:236px;display:block;margin:0 auto;border-radius:8px">
+            <div style="font-size:11px;color:#666;margin-top:8px">
+              📱 Dùng App ngân hàng quét mã QR Napas 24/7
+            </div>
+          ` : `
+            <div style="padding:40px 10px;color:var(--error);font-size:12px">
+              ⚠️ Không thể tạo mã QR do thiếu thông tin ngân hàng hợp lệ
+            </div>
+          `}
+        </div>
+
+        <div>
+          <div class="card" style="padding:12px;background:var(--bg-muted);margin-bottom:12px">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase">KOC nhận tiền</div>
+            <div style="font-weight:700;font-size:14px;margin-top:2px">${esc(ticket.koc_name)}</div>
+            <div class="muted" style="font-size:12px">${esc(ticket.koc_phone || ticket.koc_email || "")}</div>
+            
+            <div style="margin-top:10px;font-size:12px;display:flex;flex-direction:column;gap:6px">
+              <div><span class="muted">Ngân hàng:</span> <b>${esc(ticket.bank_name)}</b></div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span><span class="muted">Số TK:</span> <b style="font-size:14px;color:var(--primary)">${esc(ticket.bank_account)}</b></span>
+                <button class="btn ghost sm copy-val-btn" data-val="${esc(ticket.bank_account)}" style="padding:1px 6px;font-size:11px">Sao chép</button>
+              </div>
+              <div><span class="muted">Chủ TK:</span> <b>${esc(ticket.bank_owner || ticket.koc_name)}</b></div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span><span class="muted">Số tiền:</span> <b class="money" style="font-size:15px;color:var(--success)">${money(ticket.amount)}</b></span>
+                <button class="btn ghost sm copy-val-btn" data-val="${ticket.amount}" style="padding:1px 6px;font-size:11px">Sao chép</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span><span class="muted">Nội dung:</span> <code>${esc(ticket.transfer_info?.content || ticket.ticket_code)}</code></span>
+                <button class="btn ghost sm copy-val-btn" data-val="${esc(ticket.transfer_info?.content || ticket.ticket_code)}" style="padding:1px 6px;font-size:11px">Sao chép</button>
+              </div>
+            </div>
+          </div>
+
+          ${isPending ? `
+            <div class="field" style="margin-bottom:8px">
+              <label style="font-size:12px">Mã giao dịch ngân hàng (tùy chọn sau khi chuyển)</label>
+              <input id="payout-ref-input" placeholder="Ví dụ: FT260910..." style="font-size:12px;padding:6px 10px">
+            </div>
+          ` : `
+            <div style="padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.1);color:var(--success);font-size:12px;margin-bottom:10px">
+              ${ticket.status === 'settled' || ticket.status === 'paid' ? '✅ Đã xác nhận chuyển tiền' : '❌ Đã từ chối yêu cầu'}
+              ${ticket.note ? `<div class="muted" style="margin-top:2px;font-size:11px">${esc(ticket.note)}</div>` : ''}
+            </div>
+          `}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;align-items:center">
+        ${isPending ? `
+          <button class="btn primary" id="payout-confirm-btn" style="flex:2 1 200px;min-height:44px;height:auto;padding:10px 16px;white-space:nowrap;font-weight:600;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">✅ Xác nhận đã chuyển tiền</button>
+          <button class="btn ghost" id="payout-cancel-btn" style="flex:1 0 auto;width:auto;min-height:44px;height:auto;padding:10px 14px;color:var(--error);border-color:rgba(217,48,37,0.3);white-space:nowrap;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">❌ Từ chối</button>
+        ` : ''}
+        <button class="btn ghost" id="payout-close-btn" style="${isPending ? 'flex:0 0 auto;width:auto;min-height:44px;height:auto;padding:10px 14px;white-space:nowrap;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box' : 'width:100%'}">Đóng</button>
+      </div>
+    </div>
+  `);
+
+  m.querySelectorAll(".copy-val-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigator.clipboard?.writeText(btn.dataset.val || "");
+      toast("Đã sao chép: " + btn.dataset.val, "ok");
+    });
+  });
+
+  m.querySelector("#payout-close-btn")?.addEventListener("click", closeModal);
+
+  if (isPending) {
+    m.querySelector("#payout-confirm-btn")?.addEventListener("click", async () => {
+      const refCode = m.querySelector("#payout-ref-input")?.value?.trim() || "";
+      const btn = m.querySelector("#payout-confirm-btn");
+      btn.disabled = true;
+      btn.textContent = "Đang xử lý...";
+      try {
+        await post("/api/admin/payout-tickets/approve", {
+          id: ticket.id,
+          reference_code: refCode,
+        });
+        toast("Đã xác nhận chuyển tiền thành công cho KOC!", "ok");
+        closeModal();
+        onDone?.();
+      } catch (err) {
+        toast(err.message || "Không thể duyệt yêu cầu", "err");
+        btn.disabled = false;
+        btn.textContent = "✅ Xác nhận đã chuyển tiền";
+      }
+    });
+
+    m.querySelector("#payout-cancel-btn")?.addEventListener("click", async () => {
+      const reason = await promptDialog("Lý do từ chối yêu cầu rút tiền:", "Thông tin tài khoản không hợp lệ");
+      if (!reason) return;
+      try {
+        await post("/api/admin/payout-tickets/reject", {
+          id: ticket.id,
+          reason,
+        });
+        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví KOC!", "ok");
+        closeModal();
+        onDone?.();
+      } catch (err) {
+        toast(err.message || "Không thể từ chối yêu cầu", "err");
+      }
+    });
+  }
+}
+
 async function settle(el, changes = {}) {
   settleView = { ...settleView, ...changes };
   const ledgerParams = new URLSearchParams({
@@ -1552,9 +1673,15 @@ async function settle(el, changes = {}) {
     auditSearch: settleView.auditSearch,
     auditCategory: settleView.auditCategory,
   });
-  const [kpiData, led] = await Promise.all([
+  const payoutParams = new URLSearchParams({
+    page: String(settleView.payoutPage || 1),
+    per: "20",
+    status: settleView.payoutStatus || "pending",
+  });
+  const [kpiData, led, payoutData] = await Promise.all([
     api("/api/admin/kpi"),
     api("/api/admin/ledger?" + ledgerParams.toString()),
+    api("/api/admin/payout-tickets?" + payoutParams.toString()),
   ]);
   const rawSettlements = led.settlements || [];
   const settlementGroups = new Map();
@@ -1643,20 +1770,102 @@ async function settle(el, changes = {}) {
     })
     .join("");
 
-  el.innerHTML = `<div class="between"><div><h1>Đối soát và giải ngân</h1>
-      <p class="muted">Theo dõi cách khoản thanh toán được chia vào Ví KOC và doanh thu nền tảng sau khi doanh nghiệp giải ngân.</p></div>
+  const payoutTickets = payoutData.tickets || [];
+  const payoutRows = payoutTickets.map(t => {
+    const isPending = t.status === "pending_review" || t.status === "processing";
+    const isPaid = t.status === "settled" || t.status === "paid";
+    const statusLabel = isPaid
+      ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Đã chi trả</span>'
+      : isPending
+      ? '<span class="chip w">⏳ Chờ duyệt (6-24h)</span>'
+      : '<span class="chip r">❌ Bị từ chối</span>';
+
+    return `<tr>
+      <td><b>#${esc(t.ticket_code)}</b></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${avatarUrl(t.koc_avatar, t.koc_name)}
+          <div>
+            <b>${esc(t.koc_name || "KOC")}</b>
+            <div class="muted" style="font-size:11px">${esc(t.koc_phone || t.koc_email || "")}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div>${bankIdentityHtml(state.config?.payoutBanks, t.bank_name, t.bank_bin)}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+          <span style="font-size:13px;font-weight:600">${esc(t.bank_account || "")}</span>
+        </div>
+        <div class="muted" style="font-size:11px">${esc(t.bank_owner || "")}</div>
+      </td>
+      <td>
+        <b class="money" style="font-size:15px;color:var(--primary)">${money(t.amount)}</b>
+      </td>
+      <td>${statusLabel}</td>
+      <td class="muted" style="font-size:11px">${fmtDateTime(t.created_at)}</td>
+      <td style="white-space:nowrap">
+        ${isPending ? `
+          <button class="btn primary sm payout-qr-trigger" data-ticket-id="${esc(t.id)}">💳 Quét VietQR</button>
+          <button class="btn ghost sm payout-reject-trigger" data-ticket-id="${esc(t.id)}" style="color:var(--error);margin-left:4px">Từ chối</button>
+        ` : `
+          <button class="btn ghost sm payout-qr-trigger" data-ticket-id="${esc(t.id)}">👁️ Chi tiết</button>
+        `}
+      </td>
+    </tr>`;
+  }).join("");
+
+  el.innerHTML = `<div class="between"><div><h1>Đối soát và chi trả</h1>
+      <p class="muted">Duyệt chi trả hoa hồng KOC qua VietQR và theo dõi phân bổ tiền booking, doanh thu nền tảng.</p></div>
     <button class="btn primary sm" id="s-run">▶ Chạy đối soát kỳ này</button></div>
     <div class="stat-cards" style="margin:16px 0">
+      ${scard("Yêu cầu rút tiền chờ duyệt", `${payoutData.pendingCount || 0} yêu cầu`)}
       ${scard("Doanh thu NetViet đã ghi sổ", money(platformWalletRevenue || totalNetviet))}
       ${scard("Giải ngân về Ví KOC (Phí KOC)", money(totalKoc))}
       ${scard("Tổng khoản đảm bảo đã hoàn tất", money(totalEscrow))}
-      ${scard("Hoa hồng chờ đối soát", money(kpiData.pendingSettle))}
     </div>
     <div class="settle-tabs" role="tablist" aria-label="Chi tiết đối soát">
+      <button class="${settleView.activeTab === "payout" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "payout"}" data-settle-tab="payout">
+        💳 Yêu cầu rút tiền KOC ${payoutData.pendingCount > 0 ? `<span class="chip r" style="margin-left:6px;padding:1px 6px;font-size:11px;font-weight:700">${payoutData.pendingCount}</span>` : ""}
+      </button>
       <button class="${settleView.activeTab === "distribution" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "distribution"}" data-settle-tab="distribution">🏛️ Phân bổ tiền</button>
       <button class="${settleView.activeTab === "ledger" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "ledger"}" data-settle-tab="ledger">📒 Sổ thu chi</button>
       <button class="${settleView.activeTab === "audit" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "audit"}" data-settle-tab="audit">🕘 Nhật ký hệ thống</button>
     </div>
+
+    <div class="card settle-panel ${settleView.activeTab === "payout" ? "active" : ""}" data-settle-panel="payout" role="tabpanel" ${settleView.activeTab !== "payout" ? "hidden" : ""}>
+      <div class="between" style="flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div>
+          <h2>💳 Danh sách yêu cầu rút tiền KOC</h2>
+          <p class="muted" style="font-size:12px">Kiểm tra thông tin tài khoản và quét mã VietQR để chuyển khoản trực tiếp cho KOC.</p>
+        </div>
+        <div class="payout-filters" style="display:flex;gap:6px">
+          <button class="btn sm ${(!settleView.payoutStatus || settleView.payoutStatus === "pending") ? "primary" : "ghost"}" data-payout-filter="pending">Chờ duyệt ${payoutData.pendingCount > 0 ? `(${payoutData.pendingCount})` : ""}</button>
+          <button class="btn sm ${settleView.payoutStatus === "all" ? "primary" : "ghost"}" data-payout-filter="all">Tất cả (${num(payoutData.total || 0)})</button>
+          <button class="btn sm ${settleView.payoutStatus === "paid" ? "primary" : "ghost"}" data-payout-filter="paid">Đã chi trả</button>
+          <button class="btn sm ${settleView.payoutStatus === "rejected" ? "primary" : "ghost"}" data-payout-filter="rejected">Bị từ chối</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="border:none">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã yêu cầu</th>
+              <th>KOC</th>
+              <th>Tài khoản nhận tiền</th>
+              <th>Số tiền</th>
+              <th>Trạng thái</th>
+              <th>Thời gian</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${payoutRows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Không có yêu cầu rút tiền nào</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div class="pager" id="payout-pager"></div>
+    </div>
+
     <div class="card settle-panel ${settleView.activeTab === "distribution" ? "active" : ""}" data-settle-panel="distribution" role="tabpanel" ${settleView.activeTab !== "distribution" ? "hidden" : ""}>
       <h2>🏛️ Lịch sử phân bổ tiền</h2>
       ${searchForm("admin-distribution", "Tìm khoản phân bổ", "Mã đơn, doanh nghiệp hoặc người nhận…", settleView.distributionSearch)}
@@ -1678,6 +1887,43 @@ async function settle(el, changes = {}) {
       <div class="audit-toolbar"><input id="audit-search" value="${esc(settleView.auditSearch)}" placeholder="Tìm hành động, người thực hiện, mã tham chiếu…"><select id="audit-category"><option value="">Tất cả nghiệp vụ</option><option value="booking" ${settleView.auditCategory === "booking" ? "selected" : ""}>Booking</option><option value="aiclone" ${settleView.auditCategory === "aiclone" ? "selected" : ""}>AI Clone</option><option value="payment" ${settleView.auditCategory === "payment" ? "selected" : ""}>Thanh toán & ví</option><option value="account" ${settleView.auditCategory === "account" ? "selected" : ""}>Tài khoản & hồ sơ</option><option value="other" ${settleView.auditCategory === "other" ? "selected" : ""}>Khác</option></select></div>
       <div id="audit-list"></div><div class="pager" id="audit-pager"></div>
     </div>`;
+
+  el.querySelectorAll("[data-payout-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      settle(el, { payoutStatus: btn.dataset.payoutFilter, payoutPage: 1, activeTab: "payout" }).catch(e => toast(e.message, "err"));
+    });
+  });
+
+  el.querySelectorAll(".payout-qr-trigger").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const ticket = payoutTickets.find(t => String(t.id) === btn.dataset.ticketId);
+      if (ticket) payoutQrModal(ticket, () => settle(el));
+    });
+  });
+
+  el.querySelectorAll(".payout-reject-trigger").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const ticket = payoutTickets.find(t => String(t.id) === btn.dataset.ticketId);
+      if (!ticket) return;
+      const reason = await promptDialog("Lý do từ chối yêu cầu rút tiền:", "Thông tin tài khoản không hợp lệ");
+      if (!reason) return;
+      try {
+        await post("/api/admin/payout-tickets/reject", { id: ticket.id, reason });
+        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví KOC!", "ok");
+        settle(el);
+      } catch (err) {
+        toast(err.message || "Không thể từ chối yêu cầu", "err");
+      }
+    });
+  });
+
+  bindServerPager(
+    el,
+    "#payout-pager",
+    { page: payoutData.page, total: payoutData.total, per: payoutData.per },
+    (page) => settle(el, { payoutPage: page, activeTab: "payout" }),
+  );
+
   bindSearchForm(el, "admin-distribution", distributionSearch => {
     settle(el, { distributionSearch, distributionPage: 1, activeTab: "distribution" }).catch(error => toast(error.message, "err"));
   });
