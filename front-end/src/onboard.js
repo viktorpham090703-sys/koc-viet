@@ -1,5 +1,6 @@
 import { get, post } from "./api.js";
 import { registrationAgeError } from "./registration-age.js";
+import { openIdentityCamera } from "./identity-camera.js";
 import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions, copyToClipboard } from "./ui.js";
 import { state } from "./app.js";
 import {
@@ -856,18 +857,24 @@ export function renderOnboarding(el) {
     return true;
   }
 
-  // ---------- Step 3: eKYC (thông tin định danh + file thật, selfie có camera) + Thông tin nhận thanh toán ----------
+  // ---------- Step 3: eKYC (chụp trực tiếp hoặc chọn ảnh) + Thông tin nhận thanh toán ----------
   function fileRow(label, key, inputId) {
-    return `<div class="field"><label class="required-label">${label}</label>
-      <input type="file" accept="image/*" id="${inputId}">
+    const facingMode = key === "selfie" ? "user" : "environment";
+    return `<div class="field" data-identity-photo="${key}"><label class="required-label" for="${inputId}">${label}</label>
+      <div class="identity-photo-actions">
+        <button type="button" class="btn ghost sm" id="${inputId}-cam-btn" aria-label="Chụp trực tiếp ${label}">Chụp trực tiếp</button>
+        <button type="button" class="btn ghost sm" id="${inputId}-lib-btn" aria-label="Chọn ảnh ${label} từ thư viện">Chọn từ thư viện</button>
+      </div>
+      <input type="file" accept="image/jpeg,image/png,image/webp" id="${inputId}" hidden>
+      <input type="file" accept="image/*" capture="${facingMode}" id="${inputId}-cam-fallback" aria-label="Chụp ${label}" hidden>
       <div class="muted" id="${inputId}-name" style="font-size:11px;margin-top:4px">${d.files[key] ? "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(d.files[key]) : "Chưa chọn ảnh"}</div>
       <div class="err" id="${inputId}-err" style="display:none"></div>
-      <img id="${inputId}-preview" alt="${label}" style="display:${d.files[key + "Preview"] ? "block" : "none"};margin-top:6px;width:140px;height:96px;object-fit:cover;border-radius:8px" ${d.files[key + "Preview"] ? `src="${d.files[key + "Preview"]}"` : ""}>
+      <img class="identity-photo-preview" id="${inputId}-preview" alt="${label}" ${d.files[key + "Preview"] ? `src="${d.files[key + "Preview"]}"` : "hidden"}>
     </div>`;
   }
   function renderStep3() {
     el.innerHTML = wrap(`
-      <p class="muted" style="margin-bottom:12px">Xác minh danh tính — nhập thông tin cá nhân, tải ảnh hai mặt CCCD và ảnh chân dung.</p>
+      <p class="muted" style="margin-bottom:12px">Xác minh danh tính — nhập thông tin cá nhân, chụp hoặc tải ảnh hai mặt CCCD và ảnh chân dung.</p>
       <div class="field"><label class="required-label">Ngày sinh</label><input type="date" id="o-dob" value="${esc(d.dob)}">
         <div class="err" id="o-dob-err" style="display:none"></div></div>
       <div class="field"><label class="required-label">Số CCCD</label><input id="o-cccd" value="${esc(d.cccd)}" placeholder="9-12 số">
@@ -880,16 +887,7 @@ export function renderOnboarding(el) {
         <div class="err" id="o-address-err" style="display:none"></div></div>
       ${fileRow("CCCD mặt trước", "front", "o-file-front")}
       ${fileRow("CCCD mặt sau", "back", "o-file-back")}
-      <div class="field"><label class="required-label">Ảnh chân dung (cầm CCCD)</label>
-        <div class="row" style="gap:8px">
-          <button type="button" class="btn ghost sm" id="o-file-selfie-cam-btn" style="flex:1;text-align:center;cursor:pointer">📷 Chụp trực tiếp</button>
-          <label class="btn ghost sm" style="flex:1;text-align:center;cursor:pointer">🖼 Chọn từ thư viện<input type="file" accept="image/*" id="o-file-selfie-lib" style="display:none"></label>
-        </div>
-        <input type="file" accept="image/*" capture="user" id="o-file-selfie-cam-fallback" style="display:none">
-        <div class="muted" id="o-file-selfie-name" style="font-size:11px;margin-top:4px">${d.files.selfie ? "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(d.files.selfie) : "Chưa chọn ảnh"}</div>
-        <div class="err" id="o-file-selfie-err" style="display:none"></div>
-        <img id="o-file-selfie-preview" style="display:${d.files.selfiePreview ? "block" : "none"};margin-top:6px;max-width:140px;border-radius:8px" ${d.files.selfiePreview ? `src="${d.files.selfiePreview}"` : ""}>
-      </div>
+      ${fileRow("Ảnh chân dung (cầm CCCD)", "selfie", "o-file-selfie")}
       <h3 style="margin-top:18px;font-size:14px">💳 Thông tin nhận thanh toán</h3>
       <p class="muted" style="font-size:12px;margin-bottom:10px">Dùng để nhận 95% phí booking cùng hoa hồng bán hàng sau khi đối soát.</p>
       <div class="field"><label class="required-label" for="o-bank-select-trigger">Ngân hàng</label>${bankPickerHtml("o-bank-select", cfg.payoutBanks, d.bankName, d.bankBin, "o-bank-name-err")}
@@ -920,114 +918,63 @@ export function renderOnboarding(el) {
       d.bankBin = bank.bin;
       fieldErr("o-bank-name-err", "");
     });
-    const showSelfiePreview = (url) => {
-      const img = el.querySelector("#o-file-selfie-preview");
-      if (img) {
-        img.src = url;
-        img.style.display = "block";
+    const savePhoto = (key, name, dataUrl) => {
+      const inputId = "o-file-" + key;
+      d.files[key] = name;
+      d.files[key + "Preview"] = dataUrl;
+      const nameEl = el.querySelector("#" + inputId + "-name");
+      if (nameEl) nameEl.textContent = name;
+      fieldErr(inputId + "-err", "");
+      const preview = el.querySelector("#" + inputId + "-preview");
+      if (preview) {
+        preview.src = dataUrl;
+        preview.hidden = false;
       }
     };
-    const wireFile = (inputId, key) => {
-      const inp = el.querySelector(inputId);
-      if (!inp) return;
-      inp.addEventListener("change", () => {
-        const f = inp.files && inp.files[0];
-        if (!f) return;
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type) || f.size > 10_000_000) {
-          inp.value = '';
-          toast('Ảnh phải là JPEG, PNG hoặc WebP và không vượt quá 10 MB', 'err');
-          return;
-        }
-        d.files[key] = f.name;
-        const nameEl = el.querySelector(
-          key === "selfie" ? "#o-file-selfie-name" : inputId + "-name",
-        );
-        if (nameEl) nameEl.innerHTML = "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(f.name);
-        fieldErr(key === "selfie" ? "o-file-selfie-err" : inputId.replace("#", "") + "-err", "");
-        const reader = new FileReader();
-        reader.onload = () => {
-          d.files[key + "Preview"] = reader.result;
-          if (key === "selfie") showSelfiePreview(reader.result);
-          else {
-            const preview = el.querySelector(inputId + "-preview");
-            if (preview) {
-              preview.src = reader.result;
-              preview.style.display = "block";
-            }
+    for (const [key, label] of [["front", "CCCD mặt trước"], ["back", "CCCD mặt sau"], ["selfie", "ảnh chân dung"]]) {
+      const inputId = "o-file-" + key;
+      const owner = el.querySelector('[data-identity-photo="' + key + '"]');
+      const library = el.querySelector("#" + inputId);
+      const fallback = el.querySelector("#" + inputId + "-cam-fallback");
+      // Only the latest selection may replace this side's draft image.
+      let selection = 0;
+      for (const input of [library, fallback]) {
+        input.addEventListener("change", () => {
+          const file = input.files?.[0];
+          if (!file) return;
+          input.value = "";
+          if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10_000_000) {
+            fieldErr(inputId + "-err", "Ảnh phải là JPEG, PNG hoặc WebP và không vượt quá 10 MB");
+            return;
           }
-        };
-        reader.readAsDataURL(f);
-      });
-    };
-    wireFile("#o-file-front", "front");
-    wireFile("#o-file-back", "back");
-    wireFile("#o-file-selfie-cam-fallback", "selfie");
-    wireFile("#o-file-selfie-lib", "selfie");
-    const camBtn = el.querySelector("#o-file-selfie-cam-btn");
-    if (camBtn)
-      camBtn.addEventListener("click", async () => {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          toast(
-            "Thiết bị không hỗ trợ mở camera trực tiếp, hãy chọn ảnh",
-            "err",
-          );
-          const fb = el.querySelector("#o-file-selfie-cam-fallback");
-          if (fb) fb.click();
-          return;
-        }
-        let stream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "user" },
-            audio: false,
-          });
-        } catch (e) {
-          toast("Không mở được camera (kiểm tra quyền truy cập camera)", "err");
-          const fb = el.querySelector("#o-file-selfie-cam-fallback");
-          if (fb) fb.click();
-          return;
-        }
-        const box = modal(`
-        <h3 style="margin-bottom:10px">📷 Chụp ảnh chân dung</h3>
-        <div style="position:relative;border-radius:10px;overflow:hidden;background:#000">
-          <video id="o-cam-video" autoplay playsinline muted style="width:100%;display:block;transform:scaleX(-1)"></video>
-        </div>
-        <div class="row" style="gap:8px;margin-top:12px">
-          <button type="button" class="btn primary" id="o-cam-shoot" style="flex:1">📸 Chụp</button>
-          <button type="button" class="btn ghost" id="o-cam-cancel" style="flex:1">Hủy</button>
-        </div>
-      `);
-        const video = box.querySelector("#o-cam-video");
-        video.srcObject = stream;
-        const stopStream = () => {
-          stream.getTracks().forEach((t) => t.stop());
-        };
-        box.querySelector("#o-cam-cancel").addEventListener("click", () => {
-          stopStream();
-          closeModal();
+          const currentSelection = ++selection;
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (currentSelection === selection) savePhoto(key, file.name, reader.result);
+          };
+          reader.onerror = () => {
+            if (currentSelection === selection) fieldErr(inputId + "-err", "Không đọc được ảnh. Vui lòng chọn lại.");
+          };
+          reader.readAsDataURL(file);
         });
-        box.querySelector("#o-cam-shoot").addEventListener("click", () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = video.videoWidth || 480;
-          canvas.height = video.videoHeight || 640;
-          const ctx = canvas.getContext("2d");
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-          const name = "selfie-camera-" + Date.now() + ".jpg";
-          d.files.selfie = name;
-          d.files.selfiePreview = dataUrl;
-          const nameEl = el.querySelector("#o-file-selfie-name");
-          if (nameEl) nameEl.innerHTML = "<img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> " + esc(name);
-          fieldErr("o-file-selfie-err", "");
-          showSelfiePreview(dataUrl);
-          stopStream();
-          closeModal();
-          toast("Đã chụp ảnh chân dung", "ok");
+      }
+      el.querySelector("#" + inputId + "-lib-btn").addEventListener("click", () => library.click());
+      el.querySelector("#" + inputId + "-cam-btn").addEventListener("click", () => {
+        openIdentityCamera({
+          owner,
+          label,
+          facingMode: key === "selfie" ? "user" : "environment",
+          onFallback: () => fallback.click(),
+          onCapture: (dataUrl) => {
+            selection++;
+            savePhoto(key, key + "-camera-" + Date.now() + ".jpg", dataUrl);
+            toast("Đã chụp " + label + ". Bạn có thể chụp lại nếu ảnh chưa rõ.", "ok");
+          },
         });
       });
+    }
   }
+
   function collect3() {
     const dob = el.querySelector("#o-dob");
     if (dob) d.dob = dob.value;
@@ -1083,11 +1030,11 @@ export function renderOnboarding(el) {
       ok = false;
     }
     if (!d.files.front) {
-      fieldErr("o-file-front-err", "Vui lòng tải ảnh CCCD mặt trước");
+      fieldErr("o-file-front-err", "Vui lòng chụp hoặc tải ảnh CCCD mặt trước");
       ok = false;
     }
     if (!d.files.back) {
-      fieldErr("o-file-back-err", "Vui lòng tải ảnh CCCD mặt sau");
+      fieldErr("o-file-back-err", "Vui lòng chụp hoặc tải ảnh CCCD mặt sau");
       ok = false;
     }
     if (!d.files.selfie) {
@@ -1095,7 +1042,7 @@ export function renderOnboarding(el) {
       ok = false;
     }
     if (!d.files.front || !d.files.back || !d.files.selfie) {
-      toast("Vui lòng tải đủ ảnh hai mặt CCCD và ảnh chân dung", "err");
+      toast("Vui lòng chụp hoặc tải đủ ảnh hai mặt CCCD và ảnh chân dung", "err");
     }
     if (!d.bankName.trim()) {
       fieldErr("o-bank-name-err", "Chọn ngân hàng nhận thanh toán");
@@ -1425,8 +1372,7 @@ export function renderOnboarding(el) {
           <canvas id="o-sign-pad" width="480" height="200" style="width:100%;height:200px;touch-action:none;cursor:crosshair;display:block"></canvas>
         </div>
         <div class="row" style="gap:8px;margin-top:10px">
-          <button type="button" class="btn ghost" id="o-sign-clear" style="flex:1">Xoá</button>
-          <button type="button" class="btn ghost" id="o-sign-redo" style="flex:1">Ký lại</button>
+          <button type="button" class="btn ghost" id="o-sign-clear" style="flex:1">Xóa chữ ký</button>
         </div>
       </div>
       <div class="row" style="gap:10px;margin-top:16px">
@@ -1483,7 +1429,6 @@ export function renderOnboarding(el) {
       if (confirmBtn) confirmBtn.disabled = true;
     };
     el.querySelector("#o-sign-clear").addEventListener("click", clearPad);
-    el.querySelector("#o-sign-redo").addEventListener("click", clearPad);
 
     el.querySelector("#o-sign-back").addEventListener("click", () => {
       d.signStage = "read";

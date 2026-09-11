@@ -73,27 +73,35 @@ const NAV = [
   ["#/kol", icon("kolRequest", "sidebar-icon"), "KOL / Nghệ sĩ"],
   ["#/campaigns", icon("campaign", "sidebar-icon"), "Chiến dịch lớn"],
   ["#/report", icon("report", "sidebar-icon"), "Báo cáo"],
-  ["#/profile", "🏢", "Hồ sơ DN"],
+  ["#/profile", icon("business", "sidebar-icon"), "Hồ sơ DN"],
 ];
 
 export async function renderBusiness(el, hash) {
-  const page = hash.replace("#/", "") || "dashboard";
-  const active =
-    "#/" +
-    ([
-      "dashboard",
-      "find",
-      "orders",
-      "products",
-      "aiclone-booking",
-      "wallet",
-      "kol",
-      "campaigns",
-      "report",
-      "profile",
-    ].includes(page)
-      ? page
-      : "dashboard");
+  const params = new URLSearchParams(location.search);
+  const routeParam = params.get("app_route") || params.get("vnp_route");
+  let defaultPage = "dashboard";
+  if (routeParam && ["wallet", "orders"].includes(routeParam)) {
+    defaultPage = routeParam;
+  } else if (params.get("vnp_ResponseCode") || params.get("payos")) {
+    defaultPage = "wallet";
+  }
+  const cleanHash = (hash || "").split("?")[0];
+  const rawPage = cleanHash.replace("#/", "") || defaultPage;
+  const page = [
+    "dashboard",
+    "find",
+    "orders",
+    "products",
+    "aiclone-booking",
+    "wallet",
+    "kol",
+    "campaigns",
+    "report",
+    "profile",
+  ].includes(rawPage)
+    ? rawPage
+    : defaultPage;
+  const active = "#/" + page;
   el.innerHTML = `<div class="portal business-portal">
     ${sidebar(active)}
     <div class="main"><div class="topbar portal-topbar">
@@ -406,7 +414,7 @@ async function openKocProfile(kocId, el) {
       <div class="business-koc-profile-head">
         ${koc.cover ? `<img class="business-koc-profile-cover" src="${esc(koc.cover)}" alt="Ảnh bìa ${esc(koc.name)}" onerror="this.hidden=true">` : ""}
         <span class="business-koc-profile-overlay" aria-hidden="true"></span>
-        <button type="button" class="business-koc-profile-close" id="koc-profile-close" aria-label="Đóng hồ sơ">×</button>
+        <button data-modal-dismiss type="button" class="business-koc-profile-close" id="koc-profile-close" aria-label="Đóng hồ sơ">×</button>
         <div class="business-koc-profile-hero-content">
           <img class="business-koc-profile-avatar" src="${esc(avatarUrl(koc.avatar))}" alt="Ảnh đại diện ${esc(koc.name)}">
           <div class="business-koc-profile-identity">
@@ -487,7 +495,7 @@ async function openBookingForm(kocId, el) {
     <div class="field"><label class="required-label">Thời hạn</label><input id="bf-deadline" type="date"></div>
     <p class="hint" id="bf-hint">${BOOKING_PAYMENT_NOTICE}</p>
     <button class="btn primary" id="bf-go">Gửi yêu cầu booking</button>
-    <button class="btn ghost" id="bf-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="bf-cancel" style="margin-top:8px">Hủy</button>`);
   const sel = m.querySelector("#bf-cat");
   const typeSel = m.querySelector("#bf-type");
   const escBox = m.querySelector("#bf-esc-box");
@@ -593,28 +601,53 @@ let businessOrdersSearch = "";
 async function orders(el, page = businessOrdersPage) {
   businessOrdersPage = Math.max(1, Number(page) || 1);
   const params = new URLSearchParams(location.search);
-  const payOSResult = params.get("payos");
-  const orderCode = Number(params.get("orderCode"));
-  if (payOSResult && Number.isSafeInteger(orderCode)) {
-    try {
-      const payment = await post("/api/booking/payment/status", {
-        order_code: orderCode,
-      });
-      if (payment.status === "paid") {
-        toast(
-          "Thanh toán thành công · phí booking được giữ an toàn đến khi bạn xác nhận booking hoàn thành.",
-          "ok",
-        );
-      } else if (payment.status === "cancelled") {
-        toast("Bạn đã hủy thanh toán", "err");
-      } else {
-        toast("Thanh toán đang được xác nhận", "ok");
+  const hashQuery = location.hash.includes("?") ? location.hash.split("?").slice(1).join("?") : "";
+  const hashParams = new URLSearchParams(hashQuery);
+  const payOSResult = params.get("payos") || hashParams.get("payos");
+  const vnpResponseCode = params.get("vnp_ResponseCode") || hashParams.get("vnp_ResponseCode");
+  const orderCode = Number(params.get("orderCode") || hashParams.get("orderCode") || params.get("vnp_TxnRef") || hashParams.get("vnp_TxnRef"));
+  if (vnpResponseCode || (payOSResult && Number.isSafeInteger(orderCode))) {
+    if (vnpResponseCode) {
+      try {
+        const vnpPayload = {};
+        for (const [k, v] of params.entries()) vnpPayload[k] = v;
+        for (const [k, v] of hashParams.entries()) if (!vnpPayload[k]) vnpPayload[k] = v;
+        const res = await post("/api/vnpay/verify-return", vnpPayload);
+        if (res.ok && res.status === "paid") {
+          toast("Thanh toán qua VNPAY thành công · phí booking được giữ an toàn đến khi bạn xác nhận booking hoàn thành.", "ok");
+        } else if (vnpResponseCode === "00") {
+          toast("Thanh toán qua VNPAY thành công!", "ok");
+        } else {
+          toast("Giao dịch VNPAY không thành công hoặc bạn đã hủy", "err");
+        }
+      } catch (e) {
+        console.warn("VNPAY return verify error:", e);
+        if (vnpResponseCode === "00") {
+          toast("Thanh toán qua VNPAY thành công!", "ok");
+        } else {
+          toast(e.message || "Giao dịch VNPAY không thành công", "err");
+        }
       }
-    } catch (e) {
-      toast(e.message, "err");
-    } finally {
-      history.replaceState({}, "", `${location.pathname}${location.hash}`);
+    } else if (payOSResult && Number.isSafeInteger(orderCode)) {
+      try {
+        const payment = await post("/api/booking/payment/status", {
+          order_code: orderCode,
+        });
+        if (payment.status === "paid") {
+          toast(
+            "Thanh toán thành công · phí booking được giữ an toàn đến khi bạn xác nhận booking hoàn thành.",
+            "ok",
+          );
+        } else if (payment.status === "cancelled") {
+          toast("Bạn đã hủy thanh toán", "err");
+        } else {
+          toast("Thanh toán đang được xác nhận", "ok");
+        }
+      } catch (e) {
+        toast(e.message, "err");
+      }
     }
+    history.replaceState({}, "", `${location.pathname}#/orders`);
   }
   const r = await api(`/api/bookings?page=${businessOrdersPage}&per=50&search=${encodeURIComponent(businessOrdersSearch)}`);
   businessOrdersPage = r.page || businessOrdersPage;
@@ -787,7 +820,7 @@ async function openOrder(id, el) {
     ${b.post_link ? `<div class="field"><label>Bài KOC đã đăng (${esc(b.post_platform)})</label><div class="copybox"><a href="${esc(b.post_link)}" target="_blank" style="color:var(--info)">${esc(b.post_link)}</a></div></div>` : ""}
     ${b.reject_reason ? `<div class="chip r">KOC từ chối: ${esc(b.reject_reason)}${b.status === "refund_pending" ? " — khoản thanh toán đang chờ hoàn." : ""}</div>` : ""}
     <div id="ord-act" style="margin-top:14px"></div>
-    <button class="btn ghost" id="ord-close" style="margin-top:8px">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="ord-close" style="margin-top:8px">Đóng</button>`);
   m.querySelector("#ord-close").addEventListener("click", closeModal);
   const act = m.querySelector("#ord-act");
   const hasAiQuote =
@@ -1385,7 +1418,7 @@ function businessProductModal(product, reload) {
     <div class="field"><label>Link ảnh sản phẩm</label><input id="prf-image" type="url" maxlength="2000" value="${value("image_url")}" placeholder="https://..."></div>
     <div class="field"><label>Ghi chú</label><textarea id="prf-notes" maxlength="1000" rows="3" placeholder="Biến thể, chính sách bán hàng, thông tin cần lưu ý…">${value("notes")}</textarea></div>
     <button class="btn primary" id="prf-save">${editing ? "Lưu thay đổi" : "Thêm vào danh mục"}</button>
-    <button class="btn ghost" id="prf-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="prf-cancel" style="margin-top:8px">Hủy</button>`);
 
   m.querySelector("#prf-cancel").addEventListener("click", closeModal);
   m.querySelector("#prf-save").addEventListener("click", async () => {
@@ -1521,7 +1554,7 @@ async function campaigns(el) {
       <div class="grid campaign-detail-meta"><div><span>SL KOC</span><b>${c.qty}</b></div><div><span>Hạng</span>${tierBadge(c.tier)}</div><div><span>Ngành</span><b>${esc(c.category)}</b></div><div><span>Hạn hoàn thành</span><b>${c.deadline ? esc(c.deadline) : "Chưa đặt"}</b></div></div>
       ${c.note ? `<div class="tint-box" style="margin-top:12px"><b>Yêu cầu chiến dịch</b><p>${esc(c.note)}</p></div>` : ""}${c.quote_note ? `<div class="tint-box" style="margin-top:10px"><b>Ghi chú báo giá từ NetViet</b><p>${esc(c.quote_note)}</p></div>` : ""}
       <h3 style="margin-top:18px">KOC và tiến độ (${allocations.length}/${c.qty})</h3><div class="campaign-detail-allocations">${allocations.length ? allocations.map((a) => `<div><span><b>${esc(a.koc_name)}</b><small>${statusChip(a.status)}</small>${a.submission_url ? `<a href="${esc(a.submission_url)}" target="_blank" rel="noopener">Mở nội dung đã nộp</a>` : ""}</span><strong>${money(a.amount)}</strong></div>`).join("") : empty("👥", "NetViet chưa phân bổ KOC")}</div>
-      <button class="btn ghost" id="campaign-detail-close" style="margin-top:14px">Đóng</button>`);
+      <button data-modal-dismiss class="btn ghost" id="campaign-detail-close" style="margin-top:14px">Đóng</button>`);
       m.querySelector("#campaign-detail-close").addEventListener(
         "click",
         closeModal,
@@ -1576,7 +1609,7 @@ async function campaigns(el) {
       <div class="field"><label>Ghi chú</label><textarea id="cf-note" rows="2"></textarea></div>
       <div class="campaign-pricing"><div><span>Ngân sách dành cho KOC</span><b id="cf-creator-budget">0đ</b></div><div><span>Phí điều phối <small>15% · tối thiểu 2.000.000đ</small></span><b id="cf-management-fee">2.000.000đ</b></div><div class="campaign-pricing-total"><span>Tổng dự kiến</span><strong id="cf-total">2.000.000đ</strong></div><p>Chưa bao gồm phí thanh toán, thuế và chi phí phát sinh được xác nhận riêng.</p></div>
       <button class="btn primary" id="cf-go">Gửi cho NetViet</button>
-      <button class="btn ghost" id="cf-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="cf-cancel" style="margin-top:8px">Hủy</button>`);
     const updatePricing = () => {
       const budget = Math.max(
           0,
@@ -1670,7 +1703,7 @@ async function report(el, page = businessReportPage) {
       <div class="between"><span>② Hoa hồng KOC</span><b class="money">${money(t.commission)}</b></div>
       <div class="between"><span>③ Phí nền tảng affiliate (1%)</span><b class="money">${money(t.platformFee)}</b></div>
       <div class="between" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px"><span><b>Tổng DN thanh toán</b></span><b class="money">${money(t.payable)}</b></div>
-    </div><button class="btn primary" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:14px">Đóng</button>`);
+    </div><button data-modal-dismiss class="btn primary" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:14px">Đóng</button>`);
   });
 }
 function btLabel(t, contentType) {
@@ -1816,7 +1849,7 @@ function kolRequestModal(kolId, el) {
     <div class="field" style="margin-top:12px"><label class="required-label">Ngân sách dự kiến (đ)</label><input id="kr-budget" type="number" placeholder="đ"></div>
     <div class="field"><label class="required-label">Brief / yêu cầu</label><textarea id="kr-brief" rows="3" placeholder="Mô tả chiến dịch, thông điệp, thời gian…"></textarea></div>
     <button class="btn primary" id="kr-go">Gửi yêu cầu</button>
-    <button class="btn ghost" id="kr-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="kr-cancel" style="margin-top:8px">Hủy</button>`);
   m.querySelector("#kr-cancel").addEventListener("click", closeModal);
   m.querySelector("#kr-go").addEventListener("click", async () => {
     try {
@@ -1843,7 +1876,7 @@ export function quoteLeadModal(source) {
     <div class="field"><label>Email</label><input id="ql-email"></div>
     <div class="field"><label>Nhu cầu</label><textarea id="ql-need" rows="2"></textarea></div>
     <button class="btn" id="ql-go" style="background:#B91C1C;color:#fff">Gửi yêu cầu</button>
-    <button class="btn ghost" id="ql-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="ql-cancel" style="margin-top:8px">Hủy</button>`);
   m.querySelector("#ql-cancel").addEventListener("click", closeModal);
   m.querySelector("#ql-go").addEventListener("click", async () => {
     const name = m.querySelector("#ql-name").value.trim(),
@@ -2034,25 +2067,50 @@ async function profile(el, editing = false) {
 
 async function wallet(el) {
   const params = new URLSearchParams(location.search);
-  const payOSResult = params.get("payos");
-  const orderCode = Number(params.get("orderCode"));
-  if (payOSResult && Number.isSafeInteger(orderCode)) {
-    try {
-      const payment = await post("/api/booking/payment/status", {
-        order_code: orderCode,
-      });
-      if (payment.status === "paid") {
-        toast("Thanh toán hoặc nạp tiền thành công!", "ok");
-      } else if (payment.status === "cancelled") {
-        toast("Bạn đã hủy giao dịch", "err");
-      } else {
-        toast("Giao dịch đang được xác nhận", "ok");
+  const hashQuery = location.hash.includes("?") ? location.hash.split("?").slice(1).join("?") : "";
+  const hashParams = new URLSearchParams(hashQuery);
+  const payOSResult = params.get("payos") || hashParams.get("payos");
+  const vnpResponseCode = params.get("vnp_ResponseCode") || hashParams.get("vnp_ResponseCode");
+  const orderCode = Number(params.get("orderCode") || hashParams.get("orderCode") || params.get("vnp_TxnRef") || hashParams.get("vnp_TxnRef"));
+  if (vnpResponseCode || (payOSResult && Number.isSafeInteger(orderCode))) {
+    if (vnpResponseCode) {
+      try {
+        const vnpPayload = {};
+        for (const [k, v] of params.entries()) vnpPayload[k] = v;
+        for (const [k, v] of hashParams.entries()) if (!vnpPayload[k]) vnpPayload[k] = v;
+        const res = await post("/api/vnpay/verify-return", vnpPayload);
+        if (res.ok && res.status === "paid") {
+          toast("Nạp tiền ví qua VNPAY thành công!", "ok");
+        } else if (vnpResponseCode === "00") {
+          toast("Nạp tiền ví qua VNPAY thành công!", "ok");
+        } else {
+          toast("Giao dịch VNPAY không thành công hoặc bạn đã hủy", "err");
+        }
+      } catch (e) {
+        console.warn("VNPAY return verify error:", e);
+        if (vnpResponseCode === "00") {
+          toast("Nạp tiền ví qua VNPAY thành công!", "ok");
+        } else {
+          toast(e.message || "Giao dịch VNPAY không thành công", "err");
+        }
       }
-    } catch (e) {
-      toast(e.message, "err");
-    } finally {
-      history.replaceState({}, "", `${location.pathname}${location.hash}`);
+    } else if (payOSResult && Number.isSafeInteger(orderCode)) {
+      try {
+        const payment = await post("/api/booking/payment/status", {
+          order_code: orderCode,
+        });
+        if (payment.status === "paid") {
+          toast("Thanh toán hoặc nạp tiền thành công!", "ok");
+        } else if (payment.status === "cancelled") {
+          toast("Bạn đã hủy giao dịch", "err");
+        } else {
+          toast("Giao dịch đang được xác nhận", "ok");
+        }
+      } catch (e) {
+        toast(e.message, "err");
+      }
     }
+    history.replaceState({}, "", `${location.pathname}#/wallet`);
   }
 
   const w = await api("/api/wallet");
@@ -2109,7 +2167,7 @@ async function wallet(el) {
                   <td style="padding:8px"><span class="chip ${p.purpose === "deposit" ? "g" : p.purpose === "escrow" ? "b" : "w"}">${p.purpose === "deposit" ? "Nạp tiền" : p.purpose === "escrow" ? "Khoản đảm bảo" : "Thanh toán"}</span></td>
                   <td style="padding:8px"><span class="chip ghost">${p.provider === "demo" ? "⚡ Thử nghiệm" : "🏦 Trực tuyến"}</span></td>
                   <td style="padding:8px"><b class="money">${money(p.amount)}</b></td>
-                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? '<span class="chip w">⏳ Chờ thanh toán</span>' : '<span class="chip r">Thất bại</span>'}</td>
+                  <td style="padding:8px">${p.status === "paid" ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Thành công</span>' : p.status === "pending" || p.status === "creating" ? `<div style="display:flex;align-items:center;gap:6px"><span class="chip w">⏳ Chờ thanh toán</span><button class="btn ghost sm sync-payment-btn" data-order="${esc(p.order_code)}" style="padding:2px 8px;font-size:11px" title="Kiểm tra trạng thái từ VNPAY">🔄 Kiểm tra</button></div>` : '<span class="chip r">Thất bại</span>'}</td>
                   <td style="padding:8px;font-size:12px" class="muted">${dateTimeStack(p.created_at)}</td>
                 </tr>
               `,
@@ -2131,6 +2189,27 @@ async function wallet(el) {
     itemSelector: ".business-wallet-payments tbody > tr",
     containerSelector: ".business-wallet-payments",
   });
+  el.querySelectorAll(".sync-payment-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const code = Number(btn.dataset.order);
+      btn.disabled = true;
+      btn.textContent = "Đang kiểm tra...";
+      try {
+        const res = await post("/api/booking/payment/status", { order_code: code });
+        if (res.status === "paid") {
+          toast("Giao dịch đã được xác nhận thành công!", "ok");
+        } else {
+          toast(`Trạng thái giao dịch: ${res.status}`, "ok");
+        }
+        await wallet(el);
+      } catch (err) {
+        toast(err.message || "Không thể kiểm tra giao dịch", "err");
+        btn.disabled = false;
+        btn.textContent = "🔄 Kiểm tra";
+      }
+    });
+  });
   el.querySelector("#w-deposit-payos").addEventListener("click", () =>
     depositModal(),
   );
@@ -2139,7 +2218,7 @@ async function wallet(el) {
 function depositModal() {
   const m = modal(`
     <h2>Nạp tiền trực tuyến</h2>
-    <p class="muted" style="margin-bottom:12px">Thanh toán nhanh bằng mã QR ngân hàng.</p>
+    <p class="muted" style="margin-bottom:12px">Thanh toán an toàn qua cổng <strong>VNPAY-QR</strong> (quét mã ngân hàng, thẻ ATM, thẻ quốc tế).</p>
     <div class="field">
       <label class="required-label">Chọn mốc số tiền hoặc nhập số tiền khác</label>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">
@@ -2150,8 +2229,8 @@ function depositModal() {
       </div>
       <input id="dep-amt" type="number" placeholder="Nhập số tiền (tối thiểu 10.000đ)" value="500000" min="10000" step="10000">
     </div>
-    <button class="btn primary" id="dep-go" style="width:100%;margin-top:8px">💳 Mở trang thanh toán</button>
-    <button class="btn ghost" id="dep-cancel" style="width:100%;margin-top:6px">Hủy</button>
+    <button class="btn primary" id="dep-go" style="width:100%;margin-top:8px">💳 Thanh toán qua VNPAY</button>
+    <button data-modal-dismiss class="btn ghost" id="dep-cancel" style="width:100%;margin-top:6px">Hủy</button>
   `);
 
   m.querySelectorAll(".preset-btn").forEach((btn) => {

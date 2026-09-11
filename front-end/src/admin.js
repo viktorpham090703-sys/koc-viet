@@ -29,12 +29,12 @@ import { mountListSearch, searchForm, bindSearchForm } from "./list-search.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
-  ["#/businesses", "🏢", "Quản lý doanh nghiệp"],
-  ["#/partners", "🤝", "Đối tác KOC Việt"],
+  ["#/businesses", icon("business", "sidebar-icon"), "Quản lý doanh nghiệp"],
+  ["#/partners", '<i class="sidebar-icon sidebar-icon-emoji" aria-hidden="true">🤝</i>', "Đối tác KOC Việt"],
   ["#/queue", icon("approval", "sidebar-icon"), "Quản lý KOC"],
   ["#/allbookings", icon("booking", "sidebar-icon"), "Booking toàn sàn"],
   ["#/complaints", icon("complaint", "sidebar-icon"), "Khiếu nại"],
-  ["#/affiliate", "🔗", "Đơn tiếp thị liên kết"],
+  ["#/affiliate", icon("affiliate", "sidebar-icon"), "Đơn tiếp thị liên kết"],
   ["#/kol", icon("kolRequest", "sidebar-icon"), "Yêu cầu KOL"],
   ["#/leads", icon("quoteLead", "sidebar-icon"), "Khách cần tư vấn"],
   ["#/campaigns", icon("coordination", "sidebar-icon"), "Điều phối chiến dịch"],
@@ -231,7 +231,7 @@ async function businessDetail(id) {
       <div class="between"><span>Số tài khoản</span><b>${esc(b.bank_account || "—")}</b></div>
       <div class="between"><span>Chủ tài khoản</span><b>${esc(b.bank_owner || "—")}</b></div>
     </div>
-    <button class="btn ghost" id="biz-detail-close">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="biz-detail-close">Đóng</button>`);
   document
     .getElementById("biz-license-download")
     ?.addEventListener("click", () => {
@@ -316,9 +316,9 @@ async function partnersAdmin(el) {
         <td data-label="KOC">${num(p.member_count)}</td>
         <td data-label="Hoa hồng tích luỹ" class="money">${money(p.earned_total)}<div class="muted" style="font-size:11px">${num(p.earned_bookings)} booking</div></td>
         <td data-label="Số dư ví" class="money">${money(p.wallet_revenue)}</td>
-        <td data-label="Trạng thái">${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</td>
+        <td data-label="Trạng thái">${statusChip(p.status)}</td>
         <td data-label="Tài khoản">${p.account_user_id ? '<span class="chip g">Đã cấp</span>' : '<span class="chip n">Chưa cấp</span>'}</td>
-        <td data-label="Thao tác"><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button></td>
+        <td data-label="Thao tác"><div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button>${p.status === "active" ? `<button class="btn danger sm" data-pt-lock="${p.id}">Khóa</button>` : p.status === "locked" ? `<button class="btn ok sm" data-pt-unlock="${p.id}">Mở khóa</button>` : ""}</div></td>
       </tr>`).join("")
           : `<tr><td colspan="9">${empty("🤝", "Chưa có đối tác nào")}</td></tr>`
       }
@@ -328,6 +328,29 @@ async function partnersAdmin(el) {
   el.querySelectorAll("[data-pt-view]").forEach((b) =>
     b.addEventListener("click", () => partnerDetail(b.dataset.ptView, el)),
   );
+  el.querySelectorAll("[data-pt-lock]").forEach((b) =>
+    b.addEventListener("click", () => partnerStatus(b.dataset.ptLock, "lock", el)),
+  );
+  el.querySelectorAll("[data-pt-unlock]").forEach((b) =>
+    b.addEventListener("click", () => partnerStatus(b.dataset.ptUnlock, "unlock", el)),
+  );
+}
+
+async function partnerStatus(id, action, listEl) {
+  let reason = "";
+  if (action === "lock") {
+    reason = await promptDialog("Nhập lý do khóa đối tác:");
+    if (reason === null) return;
+    if (!reason.trim()) return toast("Vui lòng nhập lý do khóa", "err");
+  } else if (!(await confirmDialog("Mở khóa đối tác này?"))) return;
+  try {
+    await post("/api/admin/partners/status", { id, action, reason });
+    toast(action === "lock" ? "Đã khóa đối tác" : "Đã mở khóa đối tác", "ok");
+    closeModal();
+    partnersAdmin(listEl);
+  } catch (e) {
+    toast(e.message, "err");
+  }
 }
 
 function partnerKocPickerHtml(kocs, { checked = [] } = {}) {
@@ -446,7 +469,7 @@ async function partnerCreate(listEl) {
     </div>
     <div class="row" style="gap:8px;margin-top:14px">
       <button class="btn primary" id="pt-save">Tạo đối tác</button>
-      <button class="btn ghost" id="pt-cancel">Huỷ</button>
+      <button data-modal-dismiss class="btn ghost" id="pt-cancel">Huỷ</button>
     </div>`);
   bindPartnerAvatar("pt-avatar", (v) => (avatar = v));
   const listBox = document.getElementById("pt-koc-list");
@@ -497,7 +520,7 @@ async function partnerDetail(id, listEl) {
   modal(`<div class="between"><div class="row" style="gap:10px">
       ${avatar ? `<div style="width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--tint);flex:none"><img src="${esc(avatar)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>` : ""}
       <h2 style="margin:0">${esc(p.name)}</h2></div>
-      ${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</div>
+      ${statusChip(p.status)}</div>
     <div class="tint-box" style="margin:14px 0">
       <div class="between"><span>Ngân hàng nhận</span>${bankIdentityHtml(banks, p.bank_name, p.bank_bin, "—")}</div>
       <div class="between"><span>Số tài khoản</span><b>${esc(p.bank_account || "—")}</b></div>
@@ -509,7 +532,7 @@ async function partnerDetail(id, listEl) {
       ${
         p.account
           ? `<div class="between"><span>Email đăng nhập</span><b>${esc(p.account.email)}</b></div>
-             <div class="between"><span>Trạng thái</span>${p.account.status === "active" ? '<span class="chip g">Hoạt động</span>' : `<span class="chip n">${esc(p.account.status)}</span>`}</div>
+             <div class="between"><span>Trạng thái</span>${statusChip(p.account.status)}</div>
              <div style="margin-top:10px"><button class="btn ghost sm" id="pt-d-account-reset">Đặt lại mật khẩu & gửi lại email</button></div>`
           : `<p class="muted" style="margin:0 0 10px">Đối tác chưa có tài khoản đăng nhập.</p>
              <div class="field" style="margin:0 0 8px"><label class="required-label">Email đăng nhập</label><input id="pt-d-account-email" type="email" placeholder="email@doanhnghiep.vn"></div>
@@ -524,10 +547,11 @@ async function partnerDetail(id, listEl) {
       <div class="field" style="margin:0"><label class="required-label">Tỷ lệ chia (% của 5%)</label>
         <input id="pt-d-rate" type="number" step="1" min="1" max="100" value="${Math.round(Number(p.fee_rate) * 100)}"></div>
       <div class="field" style="margin:0"><label class="required-label">Trạng thái</label>
+        ${p.status === "locked" ? statusChip("locked") : `
         <select id="pt-d-status">
           <option value="active" ${p.status === "active" ? "selected" : ""}>Hoạt động</option>
           <option value="paused" ${p.status === "paused" ? "selected" : ""}>Tạm dừng</option>
-        </select></div>
+        </select>`}</div>
     </div>
     <p class="muted" style="font-size:12px;margin:0 0 12px">Thông tin ngân hàng nhận chi trả ở trên do đối tác tự cập nhật trong cổng đối tác — admin chỉ xem.</p>
     <button class="btn primary sm" id="pt-d-save" style="margin:4px 0 16px">Lưu thay đổi</button>
@@ -557,8 +581,13 @@ async function partnerDetail(id, listEl) {
           : `<tr><td colspan="6">${empty("💸", "Chưa phát sinh hoa hồng")}</td></tr>`
       }
     </tbody></table></div>
-    <button class="btn ghost" id="pt-d-close">Đóng</button>`);
+    <div class="row" style="gap:8px;margin-top:4px">
+      ${p.status === "active" ? '<button class="btn danger" id="pt-d-lock">Khóa đối tác</button>' : p.status === "locked" ? '<button class="btn ok" id="pt-d-unlock">Mở khóa đối tác</button>' : ""}
+      <button data-modal-dismiss class="btn ghost" id="pt-d-close">Đóng</button>
+    </div>`);
   document.getElementById("pt-d-close").addEventListener("click", closeModal);
+  document.getElementById("pt-d-lock")?.addEventListener("click", () => partnerStatus(id, "lock", listEl));
+  document.getElementById("pt-d-unlock")?.addEventListener("click", () => partnerStatus(id, "unlock", listEl));
   bindPartnerAvatar("pt-d-avatar", (v) => (avatar = v));
   document.getElementById("pt-d-account-create")?.addEventListener("click", async () => {
     const email = document.getElementById("pt-d-account-email").value.trim();
@@ -608,7 +637,7 @@ async function partnerDetail(id, listEl) {
         name,
         avatar,
         fee_rate: ratePct / 100,
-        status: document.getElementById("pt-d-status").value,
+        status: document.getElementById("pt-d-status")?.value || p.status,
       });
       toast("Đã lưu", "ok");
       closeModal();
@@ -647,7 +676,7 @@ async function partnerAddMembers(id, listEl) {
     </div>
     <div class="row" style="gap:8px;margin-top:14px">
       <button class="btn primary" id="pt-a-save">Thêm</button>
-      <button class="btn ghost" id="pt-a-cancel">Huỷ</button>
+      <button data-modal-dismiss class="btn ghost" id="pt-a-cancel">Huỷ</button>
     </div>`);
   const listBox = document.getElementById("pt-a-list");
   let searchTimer;
@@ -796,6 +825,7 @@ async function kocDirectory(el) {
         <option value="pending" ${kocDirectoryFilters.status === "pending" ? "selected" : ""}>Chờ duyệt</option>
         <option value="leader_ok" ${kocDirectoryFilters.status === "leader_ok" ? "selected" : ""}>Trưởng nhóm đã duyệt</option>
         <option value="active" ${kocDirectoryFilters.status === "active" ? "selected" : ""}>Đang hoạt động</option>
+        <option value="locked" ${kocDirectoryFilters.status === "locked" ? "selected" : ""}>Đã khóa</option>
         <option value="rejected" ${kocDirectoryFilters.status === "rejected" ? "selected" : ""}>Đã từ chối</option>
       </select></div>
       <button class="btn primary sm" id="koc-directory-filter">Tìm</button>
@@ -837,10 +867,16 @@ async function loadKocDirectory(el) {
       <td data-label="Liên hệ"><div>${esc(k.phone || "—")}</div><div class="muted" style="font-size:11px">${esc(k.email || "—")}</div></td>
       <td data-label="Hạng">${tierBadge(k.tier)}</td><td data-label="Ngành hàng">${kocDirectoryCategories(k.categories)}</td>
       <td data-label="Người theo dõi"><span title="${esc(num(k.followers))} người theo dõi" aria-label="${esc(num(k.followers))} người theo dõi">${compactKocFollowers(k.followers)}</span></td><td data-label="Trạng thái">${statusChip(k.status)}</td>
-      <td data-label="Thao tác"><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button></td></tr>`).join("")}
+      <td data-label="Thao tác"><div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button>${k.status === "active" ? `<button class="btn danger sm" data-koc-lock="${k.id}">Khóa</button>` : k.status === "locked" ? `<button class="btn ok sm" data-koc-unlock="${k.id}">Mở khóa</button>` : ""}</div></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml(r.page, r.pages)}`;
   box.querySelectorAll("[data-koc-directory-detail]").forEach((button) =>
-    button.addEventListener("click", () => kocDetail(r.kocs.find((k) => k.id === button.dataset.kocDirectoryDetail))),
+    button.addEventListener("click", () => kocDetail(r.kocs.find((k) => k.id === button.dataset.kocDirectoryDetail), el)),
+  );
+  box.querySelectorAll("[data-koc-lock]").forEach((button) =>
+    button.addEventListener("click", () => kocStatus(button.dataset.kocLock, "lock", el)),
+  );
+  box.querySelectorAll("[data-koc-unlock]").forEach((button) =>
+    button.addEventListener("click", () => kocStatus(button.dataset.kocUnlock, "unlock", el)),
   );
   box.querySelectorAll("[data-pg]").forEach((button) =>
     button.addEventListener("click", () => {
@@ -848,6 +884,23 @@ async function loadKocDirectory(el) {
       loadKocDirectory(el);
     }),
   );
+}
+
+async function kocStatus(id, action, el) {
+  let reason = "";
+  if (action === "lock") {
+    reason = await promptDialog("Nhập lý do khóa KOC:");
+    if (reason === null) return;
+    if (!reason.trim()) return toast("Vui lòng nhập lý do khóa", "err");
+  } else if (!(await confirmDialog("Mở khóa KOC này?"))) return;
+  try {
+    await post("/api/admin/kocs/status", { id, action, reason });
+    toast(action === "lock" ? "Đã khóa KOC" : "Đã mở khóa KOC", "ok");
+    closeModal();
+    if (el) loadKocDirectory(el);
+  } catch (e) {
+    toast(e.message, "err");
+  }
 }
 
 async function queue(el) {
@@ -897,7 +950,7 @@ async function act(id, approve, el) {
   closeModal();
   queue(el);
 }
-async function kocDetail(k) {
+async function kocDetail(k, listEl = null) {
   try {
     const result = await api(
       `/api/admin/koc-identity/${encodeURIComponent(k.id)}`,
@@ -923,6 +976,7 @@ async function kocDetail(k) {
       <div class="between"><span>SĐT / Email</span><b style="font-size:12px">${esc(k.phone || "")} · ${esc(k.email || "—")}</b></div>
       <div class="between"><span>Mã hợp đồng</span><b style="font-size:11px">${esc((k.contract_hash || "").slice(0, 20))}…</b></div>
     </div>
+    ${k.status === "locked" ? `<div class="tint-box" style="margin:0 0 12px"><b>Lý do khóa</b><div>${esc(k.locked_reason || "—")}</div><div class="muted" style="font-size:12px">${k.locked_at ? fmtDateTime(k.locked_at) : ""}</div></div>` : ""}
     ${k.bio ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Giới thiệu</div><div class="muted">${esc(k.bio)}</div></div>` : ""}
     ${(k.prices || []).length ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Bảng giá booking</div>${k.prices.map((price) => `<div class="between"><span>${esc(price.category)}</span><b>${money(price.price)}</b></div>`).join("")}</div>` : ""}
     <div class="tint-box" style="margin:0 0 12px">
@@ -950,11 +1004,14 @@ async function kocDetail(k) {
       .join("")}</div>
     <div class="row">
       ${k.contract_html ? '<button class="btn primary" id="admin-view-contract">📜 Xem hợp đồng đã ký</button>' : ""}
-      <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
+      ${k.status === "active" ? '<button class="btn danger" id="admin-koc-lock">Khóa KOC</button>' : k.status === "locked" ? '<button class="btn ok" id="admin-koc-unlock">Mở khóa KOC</button>' : ""}
+      <button data-modal-dismiss class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
     </div>`);
   document
     .getElementById("admin-view-contract")
     ?.addEventListener("click", () => showSignedContract(k));
+  document.getElementById("admin-koc-lock")?.addEventListener("click", () => kocStatus(k.id, "lock", listEl));
+  document.getElementById("admin-koc-unlock")?.addEventListener("click", () => kocStatus(k.id, "unlock", listEl));
   const identityImages = [
     k.kyc_front_image,
     k.kyc_back_image,
@@ -986,7 +1043,7 @@ function showSignedContract(c) {
     <div class="copybox" style="margin:10px 0;word-break:break-all;font-size:11px"><b>SHA-256:</b> ${esc(c.contract_hash || "")}</div>
     <iframe id="admin-contract-frame" title="Hợp đồng đã ký của ${esc(c.name)}" sandbox="allow-same-origin allow-modals"
       style="width:100%;height:72vh;border:1px solid #d1d5db;border-radius:10px;background:#e5e7eb"></iframe>
-    <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:10px">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:10px">Đóng</button>`);
   dialog.style.maxWidth = "1180px";
   const frame = document.getElementById("admin-contract-frame");
   const printDocument = buildContractPrintDocument(c);
@@ -1236,7 +1293,7 @@ function complaintDetail(c, el) {
     </div>`
         : ""
     }
-    <button class="btn ghost" id="cp-close" style="margin-top:10px">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="cp-close" style="margin-top:10px">Đóng</button>`);
   m.querySelector("#cp-close").addEventListener("click", closeModal);
   const note = () => (m.querySelector("#cp-note")?.value || "").trim();
   const doAct = async (action) => {
@@ -1374,7 +1431,7 @@ async function adminCampaigns(el) {
   mountListSearch(el, { key: "admin-campaigns", label: "Tìm chiến dịch", placeholder: "Doanh nghiệp, ngành hàng, KOC hoặc ghi chú…", itemSelector: "#admin-campaign-list > .card", containerSelector: "#admin-campaign-list" });
   el.querySelectorAll('[data-campaign-quote]').forEach(button=>button.addEventListener('click',()=>{
     const c=r.campaigns.find(x=>x.id===button.dataset.campaignQuote),suggested=Number(c.management_fee)||Math.max(2000000,Math.round(Number(c.budget)*.15));
-    const m=modal(`<h2>Báo giá chiến dịch lớn</h2><div class="tint-box" style="margin:12px 0"><div class="between"><span>Ngân sách trả KOC</span><b>${money(c.budget)}</b></div></div><div class="field"><label>Phí điều phối NetViet</label><input id="cq-fee" type="number" min="0" step="1000" value="${suggested}"></div><div class="field"><label>Ghi chú báo giá</label><textarea id="cq-note" rows="3">${esc(c.quote_note||'')}</textarea></div><button class="btn primary" id="cq-send">Gửi doanh nghiệp xác nhận</button><button class="btn ghost" id="cq-close" style="margin-top:8px">Đóng</button>`);
+    const m=modal(`<h2>Báo giá chiến dịch lớn</h2><div class="tint-box" style="margin:12px 0"><div class="between"><span>Ngân sách trả KOC</span><b>${money(c.budget)}</b></div></div><div class="field"><label>Phí điều phối NetViet</label><input id="cq-fee" type="number" min="0" step="1000" value="${suggested}"></div><div class="field"><label>Ghi chú báo giá</label><textarea id="cq-note" rows="3">${esc(c.quote_note||'')}</textarea></div><button class="btn primary" id="cq-send">Gửi doanh nghiệp xác nhận</button><button data-modal-dismiss class="btn ghost" id="cq-close" style="margin-top:8px">Đóng</button>`);
     m.querySelector('#cq-close').addEventListener('click',closeModal);m.querySelector('#cq-send').addEventListener('click',async()=>{try{await post('/api/campaign/action',{id:c.id,action:'quote',managementFee:Number(m.querySelector('#cq-fee').value),note:m.querySelector('#cq-note').value.trim()});toast('Đã gửi báo giá','ok');closeModal();adminCampaigns(el)}catch(e){toast(e.message,'err')}});
   }));
   el.querySelectorAll("[data-campaign-start]").forEach((b) =>
@@ -1412,7 +1469,7 @@ async function adminCampaigns(el) {
   el.querySelectorAll('[data-replace-allocation]').forEach(button=>button.addEventListener('click',async()=>{
     const c=r.campaigns.find(x=>x.id===button.dataset.campaignId),categoryQuery=c.category==='Tất cả'?'':`&category=${encodeURIComponent(c.category)}`,kocs=await api(`/api/kocs?tier=${encodeURIComponent(c.tier)}${categoryQuery}`),used=new Set((c.allocations||[]).map(a=>a.koc_id));
     const candidates=kocs.kocs.filter(k=>!used.has(k.id));
-    const m=modal(`<h2>Chọn KOC thay thế</h2><p class="muted" style="margin:6px 0 12px">Khoản phân bổ được giữ nguyên để không làm lệch ngân sách.</p>${candidates.length?candidates.map(k=>`<button class="btn ghost" data-replacement-koc="${k.id}" style="margin-bottom:8px;justify-content:flex-start"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><span>${esc(k.name)} · ${esc(k.tier)}</span></button>`).join(''):empty('🔍','Không còn KOC phù hợp')}<button class="btn ghost" id="replace-close">Đóng</button>`);
+    const m=modal(`<h2>Chọn KOC thay thế</h2><p class="muted" style="margin:6px 0 12px">Khoản phân bổ được giữ nguyên để không làm lệch ngân sách.</p>${candidates.length?candidates.map(k=>`<button class="btn ghost" data-replacement-koc="${k.id}" style="margin-bottom:8px;justify-content:flex-start"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><span>${esc(k.name)} · ${esc(k.tier)}</span></button>`).join(''):empty('🔍','Không còn KOC phù hợp')}<button data-modal-dismiss class="btn ghost" id="replace-close">Đóng</button>`);
     m.querySelector('#replace-close').addEventListener('click',closeModal);m.querySelectorAll('[data-replacement-koc]').forEach(k=>k.addEventListener('click',async()=>{try{await post('/api/admin/campaign-allocation-replace',{allocationId:button.dataset.replaceAllocation,kocId:k.dataset.replacementKoc});toast('Đã mời KOC thay thế','ok');closeModal();adminCampaigns(el)}catch(e){toast(e.message,'err')}}));
   }));
   el.querySelectorAll("[data-campaign-complete]").forEach((b) =>
@@ -1481,7 +1538,7 @@ async function adminCampaigns(el) {
           : empty("🔍", "Không có KOC phù hợp")
       }</div>
       <button class="btn primary" id="asg-go" style="margin-top:10px">Xác nhận phân bổ</button>
-      <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:8px">Đóng</button>`);
+      <button data-modal-dismiss class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:8px">Đóng</button>`);
       const boxes = [...document.querySelectorAll("[data-kid]")];
       const allocationInputs = [
         ...document.querySelectorAll("[data-allocation-for]"),
@@ -1561,7 +1618,9 @@ async function adminCampaigns(el) {
 }
 
 let settleView = {
-  activeTab: "distribution",
+  activeTab: "payout",
+  payoutStatus: "pending",
+  payoutPage: 1,
   distributionPage: 1,
   ledgerPage: 1,
   distributionSearch: "",
@@ -1570,6 +1629,125 @@ let settleView = {
   auditSearch: "",
   auditCategory: "",
 };
+
+function payoutQrModal(ticket, onDone) {
+  const isPending = ticket.status === "pending_review" || ticket.status === "processing";
+  const m = modal(`
+    <div style="max-width:580px;width:100%">
+      <h2>Yêu cầu chi trả hoa hồng #${esc(ticket.ticket_code)}</h2>
+      <p class="muted" style="font-size:12px">Quét mã VietQR bằng ứng dụng ngân hàng để chuyển khoản chính xác 100% không cần nhập tay.</p>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:16px;margin:16px 0;align-items:start" class="payout-modal-grid">
+        <div style="text-align:center;background:#fff;padding:12px;border-radius:12px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.05)">
+          ${ticket.vietqr_url ? `
+            <img src="${ticket.vietqr_url}" alt="VietQR Napas 24/7" style="width:236px;height:236px;display:block;margin:0 auto;border-radius:8px">
+            <div style="font-size:11px;color:#666;margin-top:8px">
+              📱 Dùng App ngân hàng quét mã QR Napas 24/7
+            </div>
+          ` : `
+            <div style="padding:40px 10px;color:var(--error);font-size:12px">
+              ⚠️ Không thể tạo mã QR do thiếu thông tin ngân hàng hợp lệ
+            </div>
+          `}
+        </div>
+
+        <div>
+          <div class="card" style="padding:12px;background:var(--bg-muted);margin-bottom:12px">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase">${ticket.owner_type === 'partner' ? 'Đối tác' : 'KOC'} nhận tiền</div>
+            <div style="font-weight:700;font-size:14px;margin-top:2px">${esc(ticket.koc_name)}</div>
+            <div class="muted" style="font-size:12px">${esc(ticket.koc_phone || ticket.koc_email || "")}</div>
+            
+            <div style="margin-top:10px;font-size:12px;display:flex;flex-direction:column;gap:6px">
+              <div><span class="muted">Ngân hàng:</span> <b>${esc(ticket.bank_name)}</b></div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span><span class="muted">Số TK:</span> <b style="font-size:14px;color:var(--primary)">${esc(ticket.bank_account)}</b></span>
+                <button class="btn ghost sm copy-val-btn" data-val="${esc(ticket.bank_account)}" style="padding:1px 6px;font-size:11px">Sao chép</button>
+              </div>
+              <div><span class="muted">Chủ TK:</span> <b>${esc(ticket.bank_owner || ticket.koc_name)}</b></div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span><span class="muted">Số tiền:</span> <b class="money" style="font-size:15px;color:var(--success)">${money(ticket.amount)}</b></span>
+                <button class="btn ghost sm copy-val-btn" data-val="${ticket.amount}" style="padding:1px 6px;font-size:11px">Sao chép</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span><span class="muted">Nội dung:</span> <code>${esc(ticket.transfer_info?.content || ticket.ticket_code)}</code></span>
+                <button class="btn ghost sm copy-val-btn" data-val="${esc(ticket.transfer_info?.content || ticket.ticket_code)}" style="padding:1px 6px;font-size:11px">Sao chép</button>
+              </div>
+            </div>
+          </div>
+
+          ${isPending ? `
+            <div class="field" style="margin-bottom:8px">
+              <label style="font-size:12px">Mã giao dịch ngân hàng (tùy chọn sau khi chuyển)</label>
+              <input id="payout-ref-input" placeholder="Ví dụ: FT260910..." style="font-size:12px;padding:6px 10px">
+            </div>
+          ` : `
+            <div style="padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.1);color:var(--success);font-size:12px;margin-bottom:10px">
+              ${ticket.status === 'settled' || ticket.status === 'paid' ? '✅ Đã xác nhận chuyển tiền' : '❌ Đã từ chối yêu cầu'}
+              ${ticket.note ? `<div class="muted" style="margin-top:2px;font-size:11px">${esc(ticket.note)}</div>` : ''}
+            </div>
+          `}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;align-items:center">
+        ${isPending ? `
+          <button class="btn primary" id="payout-confirm-btn" style="flex:2 1 200px;min-height:44px;height:auto;padding:10px 16px;white-space:nowrap;font-weight:600;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">✅ Xác nhận đã chuyển tiền</button>
+          <button class="btn ghost" id="payout-cancel-btn" style="flex:1 0 auto;width:auto;min-height:44px;height:auto;padding:10px 14px;color:var(--error);border-color:rgba(217,48,37,0.3);white-space:nowrap;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">❌ Từ chối</button>
+        ` : ''}
+        <button data-modal-dismiss class="btn ghost" id="payout-close-btn" style="${isPending ? 'flex:0 0 auto;width:auto;min-height:44px;height:auto;padding:10px 14px;white-space:nowrap;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box' : 'width:100%'}">Đóng</button>
+      </div>
+    </div>
+  `);
+
+  m.querySelectorAll(".copy-val-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigator.clipboard?.writeText(btn.dataset.val || "");
+      toast("Đã sao chép: " + btn.dataset.val, "ok");
+    });
+  });
+
+  m.querySelector("#payout-close-btn")?.addEventListener("click", closeModal);
+
+  if (isPending) {
+    m.querySelector("#payout-confirm-btn")?.addEventListener("click", async () => {
+      const refCode = m.querySelector("#payout-ref-input")?.value?.trim() || "";
+      const btn = m.querySelector("#payout-confirm-btn");
+      btn.disabled = true;
+      btn.textContent = "Đang xử lý...";
+      try {
+        await post("/api/admin/payout-tickets/approve", {
+          id: ticket.id,
+          reference_code: refCode,
+        });
+        toast("Đã xác nhận chuyển tiền thành công cho KOC!", "ok");
+        closeModal();
+        onDone?.();
+      } catch (err) {
+        toast(err.message || "Không thể duyệt yêu cầu", "err");
+        btn.disabled = false;
+        btn.textContent = "✅ Xác nhận đã chuyển tiền";
+      }
+    });
+
+    m.querySelector("#payout-cancel-btn")?.addEventListener("click", async () => {
+      const reason = await promptDialog("Lý do từ chối yêu cầu rút tiền:", "Thông tin tài khoản không hợp lệ");
+      if (!reason) return;
+      try {
+        await post("/api/admin/payout-tickets/reject", {
+          id: ticket.id,
+          reason,
+        });
+        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví người nhận!", "ok");
+        closeModal();
+        onDone?.();
+      } catch (err) {
+        toast(err.message || "Không thể từ chối yêu cầu", "err");
+      }
+    });
+  }
+}
+
 async function settle(el, changes = {}) {
   settleView = { ...settleView, ...changes };
   const ledgerParams = new URLSearchParams({
@@ -1582,9 +1760,15 @@ async function settle(el, changes = {}) {
     auditSearch: settleView.auditSearch,
     auditCategory: settleView.auditCategory,
   });
-  const [kpiData, led] = await Promise.all([
+  const payoutParams = new URLSearchParams({
+    page: String(settleView.payoutPage || 1),
+    per: "20",
+    status: settleView.payoutStatus || "pending",
+  });
+  const [kpiData, led, payoutData] = await Promise.all([
     api("/api/admin/kpi"),
     api("/api/admin/ledger?" + ledgerParams.toString()),
+    api("/api/admin/payout-tickets?" + payoutParams.toString()),
   ]);
   const rawSettlements = led.settlements || [];
   const settlementGroups = new Map();
@@ -1673,20 +1857,102 @@ async function settle(el, changes = {}) {
     })
     .join("");
 
-  el.innerHTML = `<div class="between"><div><h1>Đối soát và giải ngân</h1>
-      <p class="muted">Theo dõi cách khoản thanh toán được chia vào Ví KOC và doanh thu nền tảng sau khi doanh nghiệp giải ngân.</p></div>
+  const payoutTickets = payoutData.tickets || [];
+  const payoutRows = payoutTickets.map(t => {
+    const isPending = t.status === "pending_review" || t.status === "processing";
+    const isPaid = t.status === "settled" || t.status === "paid";
+    const statusLabel = isPaid
+      ? '<span class="chip g"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em> Đã chi trả</span>'
+      : isPending
+      ? '<span class="chip w">⏳ Chờ duyệt (6-24h)</span>'
+      : '<span class="chip r">❌ Bị từ chối</span>';
+
+    return `<tr>
+      <td><b>#${esc(t.ticket_code)}</b></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${avatarUrl(t.koc_avatar, t.koc_name)}
+          <div>
+            <b>${esc(t.koc_name || "Người nhận")}</b><span class="chip n">${t.owner_type === "partner" ? "Đối tác" : "KOC"}</span>
+            <div class="muted" style="font-size:11px">${esc(t.koc_phone || t.koc_email || "")}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div>${bankIdentityHtml(state.config?.payoutBanks, t.bank_name, t.bank_bin)}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+          <span style="font-size:13px;font-weight:600">${esc(t.bank_account || "")}</span>
+        </div>
+        <div class="muted" style="font-size:11px">${esc(t.bank_owner || "")}</div>
+      </td>
+      <td>
+        <b class="money" style="font-size:15px;color:var(--primary)">${money(t.amount)}</b>
+      </td>
+      <td>${statusLabel}</td>
+      <td class="muted" style="font-size:11px">${fmtDateTime(t.created_at)}</td>
+      <td style="white-space:nowrap">
+        ${isPending ? `
+          <button class="btn primary sm payout-qr-trigger" data-ticket-id="${esc(t.id)}">💳 Quét VietQR</button>
+          <button class="btn ghost sm payout-reject-trigger" data-ticket-id="${esc(t.id)}" style="color:var(--error);margin-left:4px">Từ chối</button>
+        ` : `
+          <button class="btn ghost sm payout-qr-trigger" data-ticket-id="${esc(t.id)}">👁️ Chi tiết</button>
+        `}
+      </td>
+    </tr>`;
+  }).join("");
+
+  el.innerHTML = `<div class="between"><div><h1>Đối soát và chi trả</h1>
+      <p class="muted">Duyệt chi trả cho KOC và đối tác qua VietQR và theo dõi phân bổ tiền booking, doanh thu nền tảng.</p></div>
     <button class="btn primary sm" id="s-run">▶ Chạy đối soát kỳ này</button></div>
     <div class="stat-cards" style="margin:16px 0">
+      ${scard("Yêu cầu rút tiền chờ duyệt", `${payoutData.pendingCount || 0} yêu cầu`)}
       ${scard("Doanh thu NetViet đã ghi sổ", money(platformWalletRevenue || totalNetviet))}
       ${scard("Giải ngân về Ví KOC (Phí KOC)", money(totalKoc))}
       ${scard("Tổng khoản đảm bảo đã hoàn tất", money(totalEscrow))}
-      ${scard("Hoa hồng chờ đối soát", money(kpiData.pendingSettle))}
     </div>
     <div class="settle-tabs" role="tablist" aria-label="Chi tiết đối soát">
+      <button class="${settleView.activeTab === "payout" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "payout"}" data-settle-tab="payout">
+        💳 Yêu cầu rút tiền KOC / Đối tác ${payoutData.pendingCount > 0 ? `<span class="chip r" style="margin-left:6px;padding:1px 6px;font-size:11px;font-weight:700">${payoutData.pendingCount}</span>` : ""}
+      </button>
       <button class="${settleView.activeTab === "distribution" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "distribution"}" data-settle-tab="distribution">🏛️ Phân bổ tiền</button>
       <button class="${settleView.activeTab === "ledger" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "ledger"}" data-settle-tab="ledger">📒 Sổ thu chi</button>
       <button class="${settleView.activeTab === "audit" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "audit"}" data-settle-tab="audit">🕘 Nhật ký hệ thống</button>
     </div>
+
+    <div class="card settle-panel ${settleView.activeTab === "payout" ? "active" : ""}" data-settle-panel="payout" role="tabpanel" ${settleView.activeTab !== "payout" ? "hidden" : ""}>
+      <div class="between" style="flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div>
+          <h2>💳 Danh sách yêu cầu rút tiền KOC / Đối tác</h2>
+          <p class="muted" style="font-size:12px">Kiểm tra thông tin tài khoản và quét mã VietQR để chuyển khoản trực tiếp cho KOC hoặc đối tác.</p>
+        </div>
+        <div class="payout-filters" style="display:flex;gap:6px">
+          <button class="btn sm ${(!settleView.payoutStatus || settleView.payoutStatus === "pending") ? "primary" : "ghost"}" data-payout-filter="pending">Chờ duyệt ${payoutData.pendingCount > 0 ? `(${payoutData.pendingCount})` : ""}</button>
+          <button class="btn sm ${settleView.payoutStatus === "all" ? "primary" : "ghost"}" data-payout-filter="all">Tất cả (${num(payoutData.total || 0)})</button>
+          <button class="btn sm ${settleView.payoutStatus === "paid" ? "primary" : "ghost"}" data-payout-filter="paid">Đã chi trả</button>
+          <button class="btn sm ${settleView.payoutStatus === "rejected" ? "primary" : "ghost"}" data-payout-filter="rejected">Bị từ chối</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="border:none">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã yêu cầu</th>
+              <th>Người nhận</th>
+              <th>Tài khoản nhận tiền</th>
+              <th>Số tiền</th>
+              <th>Trạng thái</th>
+              <th>Thời gian</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${payoutRows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Không có yêu cầu rút tiền nào</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div class="pager" id="payout-pager"></div>
+    </div>
+
     <div class="card settle-panel ${settleView.activeTab === "distribution" ? "active" : ""}" data-settle-panel="distribution" role="tabpanel" ${settleView.activeTab !== "distribution" ? "hidden" : ""}>
       <h2>🏛️ Lịch sử phân bổ tiền</h2>
       ${searchForm("admin-distribution", "Tìm khoản phân bổ", "Mã đơn, doanh nghiệp hoặc người nhận…", settleView.distributionSearch)}
@@ -1708,6 +1974,43 @@ async function settle(el, changes = {}) {
       <div class="audit-toolbar"><input id="audit-search" value="${esc(settleView.auditSearch)}" placeholder="Tìm hành động, người thực hiện, mã tham chiếu…"><select id="audit-category"><option value="">Tất cả nghiệp vụ</option><option value="booking" ${settleView.auditCategory === "booking" ? "selected" : ""}>Booking</option><option value="aiclone" ${settleView.auditCategory === "aiclone" ? "selected" : ""}>AI Clone</option><option value="payment" ${settleView.auditCategory === "payment" ? "selected" : ""}>Thanh toán & ví</option><option value="account" ${settleView.auditCategory === "account" ? "selected" : ""}>Tài khoản & hồ sơ</option><option value="other" ${settleView.auditCategory === "other" ? "selected" : ""}>Khác</option></select></div>
       <div id="audit-list"></div><div class="pager" id="audit-pager"></div>
     </div>`;
+
+  el.querySelectorAll("[data-payout-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      settle(el, { payoutStatus: btn.dataset.payoutFilter, payoutPage: 1, activeTab: "payout" }).catch(e => toast(e.message, "err"));
+    });
+  });
+
+  el.querySelectorAll(".payout-qr-trigger").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const ticket = payoutTickets.find(t => String(t.id) === btn.dataset.ticketId);
+      if (ticket) payoutQrModal(ticket, () => settle(el));
+    });
+  });
+
+  el.querySelectorAll(".payout-reject-trigger").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const ticket = payoutTickets.find(t => String(t.id) === btn.dataset.ticketId);
+      if (!ticket) return;
+      const reason = await promptDialog("Lý do từ chối yêu cầu rút tiền:", "Thông tin tài khoản không hợp lệ");
+      if (!reason) return;
+      try {
+        await post("/api/admin/payout-tickets/reject", { id: ticket.id, reason });
+        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví người nhận!", "ok");
+        settle(el);
+      } catch (err) {
+        toast(err.message || "Không thể từ chối yêu cầu", "err");
+      }
+    });
+  });
+
+  bindServerPager(
+    el,
+    "#payout-pager",
+    { page: payoutData.page, total: payoutData.total, per: payoutData.per },
+    (page) => settle(el, { payoutPage: page, activeTab: "payout" }),
+  );
+
   bindSearchForm(el, "admin-distribution", distributionSearch => {
     settle(el, { distributionSearch, distributionPage: 1, activeTab: "distribution" }).catch(error => toast(error.message, "err"));
   });
@@ -1719,7 +2022,7 @@ async function settle(el, changes = {}) {
     if(!settlement)return;
     const campaign=settlement.type==='campaign'||String(settlement.code||'').startsWith('CD-');
     const names=campaign?String(settlement.koc_name||'').split(' · ').filter(name=>name&&name!=='Chưa phân bổ'):(settlement.koc_names||[settlement.koc_name]).filter(Boolean);
-    const m=modal(`<div class="between"><div><h2>Danh sách KOC</h2><p class="muted" style="margin-top:4px">${esc(settlement.code)} · ${esc(settlement.business_name||'Doanh nghiệp')}</p></div><span class="chip n">${names.length} KOC</span></div><div class="settlement-koc-detail-list">${names.map((name,index)=>`<div><span>${index+1}</span><b>${esc(name)}</b></div>`).join('')}</div><button class="btn ghost" id="settlement-koc-close" style="margin-top:14px">Đóng</button>`);
+    const m=modal(`<div class="between"><div><h2>Danh sách KOC</h2><p class="muted" style="margin-top:4px">${esc(settlement.code)} · ${esc(settlement.business_name||'Doanh nghiệp')}</p></div><span class="chip n">${names.length} KOC</span></div><div class="settlement-koc-detail-list">${names.map((name,index)=>`<div><span>${index+1}</span><b>${esc(name)}</b></div>`).join('')}</div><button data-modal-dismiss class="btn ghost" id="settlement-koc-close" style="margin-top:14px">Đóng</button>`);
     m.querySelector('#settlement-koc-close').addEventListener('click',closeModal);
   }));
   bindServerPager(
@@ -1995,7 +2298,7 @@ async function kolAdmin(el,page=adminKolPage) {
       const m =
         modal(`<h2>Báo giá KOL</h2><div class="field" style="margin-top:12px"><label class="required-label">Thù lao KOL (đ)</label><input id="kq-kol" type="number" min="1" step="1000" value="${Number(request?.quote_kol||0)||''}"></div><div class="field"><label>Phí dịch vụ NetViet (đ)</label><input id="kq-platform" type="number" min="0" step="1000" value="${Number(request?.quote_platform||0)}"></div><div class="field"><label>Chi phí bổ sung (đ)</label><input id="kq-additional" type="number" min="0" step="1000" value="${Number(request?.quote_additional||0)}"></div>
       <div class="field"><label>Ghi chú</label><textarea id="kq-note" rows="2">${esc(request?.admin_note||'')}</textarea></div>
-      <button class="btn primary" id="kq-go">Gửi báo giá</button><button class="btn ghost" id="kq-x" style="margin-top:8px">Hủy</button>`);
+      <button class="btn primary" id="kq-go">Gửi báo giá</button><button data-modal-dismiss class="btn ghost" id="kq-x" style="margin-top:8px">Hủy</button>`);
       m.querySelector("#kq-x").addEventListener("click", closeModal);
       m.querySelector("#kq-go").addEventListener("click", async () => {
         try {
@@ -2017,7 +2320,7 @@ async function kolAdmin(el,page=adminKolPage) {
     }),
   );
   el.querySelectorAll('[data-confirm-kol]').forEach(b=>b.addEventListener('click',async()=>{const contractReference=await promptDialog('Nhập mã hợp đồng hoặc nội dung xác nhận lịch:');if(!contractReference)return;try{await post('/api/admin/kol-action',{id:b.dataset.confirmKol,action:'confirm',contractReference});toast('Đã xác nhận lịch và hợp đồng KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
-  el.querySelectorAll('[data-deliver-kol]').forEach(b=>b.addEventListener('click',()=>{const m=modal(`<h2>Bàn giao sản phẩm KOL</h2><div class="field"><label class="required-label">Link sản phẩm / biên bản bàn giao</label><input id="kd-url" placeholder="https://..."></div><div class="field"><label>Ghi chú</label><textarea id="kd-note" rows="3"></textarea></div><button class="btn primary" id="kd-go">Gửi doanh nghiệp nghiệm thu</button><button class="btn ghost" id="kd-close" style="margin-top:8px">Đóng</button>`);m.querySelector('#kd-close').addEventListener('click',closeModal);m.querySelector('#kd-go').addEventListener('click',async()=>{try{await post('/api/admin/kol-action',{id:b.dataset.deliverKol,action:'deliver',deliveryUrl:m.querySelector('#kd-url').value.trim(),note:m.querySelector('#kd-note').value.trim()});toast('Đã bàn giao sản phẩm KOL','ok');closeModal();kolAdmin(el)}catch(e){toast(e.message,'err')}})}));
+  el.querySelectorAll('[data-deliver-kol]').forEach(b=>b.addEventListener('click',()=>{const m=modal(`<h2>Bàn giao sản phẩm KOL</h2><div class="field"><label class="required-label">Link sản phẩm / biên bản bàn giao</label><input id="kd-url" placeholder="https://..."></div><div class="field"><label>Ghi chú</label><textarea id="kd-note" rows="3"></textarea></div><button class="btn primary" id="kd-go">Gửi doanh nghiệp nghiệm thu</button><button data-modal-dismiss class="btn ghost" id="kd-close" style="margin-top:8px">Đóng</button>`);m.querySelector('#kd-close').addEventListener('click',closeModal);m.querySelector('#kd-go').addEventListener('click',async()=>{try{await post('/api/admin/kol-action',{id:b.dataset.deliverKol,action:'deliver',deliveryUrl:m.querySelector('#kd-url').value.trim(),note:m.querySelector('#kd-note').value.trim()});toast('Đã bàn giao sản phẩm KOL','ok');closeModal();kolAdmin(el)}catch(e){toast(e.message,'err')}})}));
   el.querySelectorAll('[data-settle-kol]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Giải ngân thù lao vào Ví KOL và ghi nhận phí NetViet?')))return;try{await post('/api/admin/kol-action',{id:b.dataset.settleKol,action:'settle'});toast('Đã giải ngân yêu cầu KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll('[data-cancel-kol]').forEach(b=>b.addEventListener('click',async()=>{const note=await promptDialog('Lý do hủy và hoàn tiền:');if(!note)return;try{await post('/api/admin/kol-action',{id:b.dataset.cancelKol,action:'cancel',note});toast('Đã hủy và hoàn tiền doanh nghiệp','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll("[data-reject]").forEach((b) =>
@@ -2026,7 +2329,7 @@ async function kolAdmin(el,page=adminKolPage) {
       <p class="muted" style="margin:8px 0 12px">Lý do sẽ được hiển thị cho doanh nghiệp đã gửi yêu cầu.</p>
       <div class="field"><label class="required-label">Lý do từ chối</label><textarea id="kr-reason" rows="4" maxlength="500" placeholder="Nhập lý do cụ thể…"></textarea></div>
       <button class="btn danger" id="kr-reject-go">Xác nhận từ chối</button>
-      <button class="btn ghost" id="kr-reject-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="kr-reject-cancel" style="margin-top:8px">Hủy</button>`);
       m.querySelector("#kr-reject-cancel").addEventListener(
         "click",
         closeModal,
@@ -2195,7 +2498,7 @@ async function leadProgressModal(id, lead, el) {
     <div class="field"><label class="required-label">Nhu cầu tư vấn</label><select id="lp-need">${LEAD_NEEDS.map((n) => `<option value="${esc(n)}" ${lead.need === n ? "selected" : ""}>${esc(leadNeedLabel(n))}</option>`).join("")}</select></div>
     <div id="lp-branch-box"></div>
     <div class="field" style="margin-top:10px"><label class="required-label">Ghi chú tiến độ</label><textarea id="lp-note" rows="3" maxlength="1000" placeholder="VD: Đã gọi điện tư vấn nhu cầu, giải đáp thắc mắc cho khách hàng…"></textarea></div>
-    <button class="btn primary" id="lp-save">Lưu cập nhật</button><button class="btn ghost" id="lp-close" style="margin-top:8px">Đóng</button>
+    <button class="btn primary" id="lp-save">Lưu cập nhật</button><button data-modal-dismiss class="btn ghost" id="lp-close" style="margin-top:8px">Đóng</button>
     <h3 style="margin-top:18px">Lịch sử chăm sóc</h3>
     <div style="max-height:240px;overflow:auto;margin-top:8px">${
       history.activities.length
@@ -2478,7 +2781,7 @@ async function aiclone(el) {
       <div class="tint-box between"><b>Tổng báo giá</b><b class="money" id="aiq-total">0đ</b></div>
       <div class="field"><label>Ghi chú gửi doanh nghiệp</label><textarea id="aiq-note" rows="3" maxlength="1000" placeholder="Hạng mục sản xuất, thời gian thực hiện, điều kiện áp dụng…"></textarea></div>
       <button class="btn primary" id="aiq-send">Gửi báo giá cho doanh nghiệp</button>
-      <button class="btn ghost" id="aiq-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="aiq-cancel" style="margin-top:8px">Hủy</button>`);
       const kocAllocations = () =>
         [...m.querySelectorAll(".aiq-koc-fee")].map((input) => ({
           booking_id: input.dataset.bookingId,
@@ -2545,7 +2848,7 @@ async function aiclone(el) {
       <p class="muted">Kịch bản là căn cứ sản xuất và được hiển thị cho doanh nghiệp/KOC.</p>
       <div class="field" style="margin-top:12px"><label class="required-label">Nội dung kịch bản</label><textarea id="ai-script" rows="12">${esc(button.dataset.current || "")}</textarea></div>
       <button class="btn primary" id="ai-script-save">Duyệt kịch bản & chuyển sản xuất</button>
-      <button class="btn ghost" id="ai-script-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="ai-script-cancel" style="margin-top:8px">Hủy</button>`);
       document
         .getElementById("ai-script-cancel")
         .addEventListener("click", closeModal);
@@ -2576,7 +2879,7 @@ async function aiclone(el) {
       <div class="field" style="margin-top:12px"><label class="required-label">Link video bản dựng</label><input id="dv-link" type="url" placeholder="https://…/video.mp4"></div>
       <div id="dv-preview" style="display:none;margin-bottom:12px"><video controls playsinline style="width:100%;max-height:360px;border-radius:12px;background:#111"></video></div>
       <button class="btn navy" id="dv-go">Gửi video cho ${targetLabel} xem và duyệt</button>
-      <button class="btn ghost" id="dv-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="dv-cancel" style="margin-top:8px">Hủy</button>`);
       const linkInput = document.getElementById("dv-link");
       const preview = document.getElementById("dv-preview");
       linkInput.addEventListener("input", () => {

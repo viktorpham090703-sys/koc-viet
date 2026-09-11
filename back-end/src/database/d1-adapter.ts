@@ -87,7 +87,7 @@ class PreparedStatement {
 }
 
 export class PostgresD1Adapter {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly pool: Pool | PoolClient, private readonly inTransaction = false) {}
 
   prepare(sql: string) {
     return new PreparedStatement(this.pool, sql)
@@ -98,26 +98,34 @@ export class PostgresD1Adapter {
     return { count: 1, duration: 0 }
   }
 
-  async batch(statements: PreparedStatement[]) {
-    const client = await this.pool.connect()
+  async transaction<T>(work: (db: PostgresD1Adapter) => Promise<T>): Promise<T> {
+    if (this.inTransaction) return work(this)
+    const client = await (this.pool as Pool).connect()
     try {
       await client.query('BEGIN')
-      const results = []
-      for (const statement of statements) {
-        const result = await statement.executeWith(client)
-        results.push({
-          success: true,
-          results: result.rows,
-          meta: { changes: result.rowCount ?? 0, last_row_id: null },
-        })
-      }
+      const result = await work(new PostgresD1Adapter(client, true))
       await client.query('COMMIT')
-      return results
+      return result
     } catch (error) {
       await client.query('ROLLBACK')
       throw error
     } finally {
       client.release()
     }
+  }
+
+  async batch(statements: PreparedStatement[]) {
+    return this.transaction(async (db) => {
+      const results = []
+      for (const statement of statements) {
+        const result = await statement.executeWith(db.pool)
+        results.push({
+          success: true as const,
+          results: result.rows,
+          meta: { changes: result.rowCount ?? 0, last_row_id: null },
+        })
+      }
+      return results
+    })
   }
 }

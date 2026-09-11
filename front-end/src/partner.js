@@ -1,10 +1,12 @@
 import { api, post } from "./api.js";
+import { withdrawModal } from "./withdrawal.js";
 import {
   money,
   num,
   esc,
   fmtDate,
   tierBadge,
+  statusChip,
   spinner,
   empty,
   toast,
@@ -206,10 +208,16 @@ async function wallet(el, page = 1) {
       <h1 class="icon-heading">${icon("wallet", "teaser-icon")} Ví đối tác</h1>
       <p class="muted">Theo dõi số tiền có thể rút và lịch sử rút tiền.</p>
     </div>
-    <div class="card" style="padding:16px;border-left:4px solid var(--primary);margin-bottom:20px">
+    <div class="card" style="padding:16px;margin-bottom:20px">
       <div class="muted" style="font-size:12px">Số tiền có thể rút</div>
       <div class="money" style="font-size:30px;font-weight:800;margin-top:6px;color:var(--primary)">${money(r.balance)}</div>
+      <p class="muted" style="margin-top:6px">Đang chờ chi trả: <b class="money">${money(r.pending || 0)}</b></p>
       <p class="muted" style="font-size:12px;margin-top:6px">KOC Việt đối soát và chuyển khoản thủ công về tài khoản ngân hàng trong hồ sơ của bạn.</p>
+      <div class="row" style="gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button type="button" class="btn primary" id="pn-withdraw" ${bankIncomplete(r.payout) || r.balance < r.minimumWithdraw ? 'disabled' : ''}>Rút về ngân hàng</button>
+        <a href="#/profile" class="btn ghost">Cập nhật ngân hàng</a>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:8px">${bankIncomplete(r.payout) ? 'Cập nhật đầy đủ ngân hàng nhận tiền để gửi yêu cầu rút.' : `Rút tối thiểu ${money(r.minimumWithdraw)}. Xác thực bằng OTP gửi đến email đăng nhập.`}</p>
     </div>
     <div class="card">
       <h2>Lịch sử rút tiền</h2>
@@ -218,12 +226,14 @@ async function wallet(el, page = 1) {
       </tr></thead><tbody>${r.rows.map((row) => `<tr>
         <td>${esc(row.reference_id || row.id)}</td>
         <td class="money">${money(row.amount)}</td>
-        <td><span class="chip g">Đã chi trả</span></td>
+        <td><span class="chip ${row.status === 'pending_review' ? 'w' : row.status === 'rejected' ? 'r' : 'g'}">${row.status === 'pending_review' ? 'Chờ duyệt' : row.status === 'rejected' ? 'Bị từ chối' : 'Đã chi trả'}</span></td>
         <td style="white-space:nowrap">${fmtDate(row.created_at)}</td>
         <td>${esc(row.note || "—")}</td>
       </tr>`).join("")}</tbody></table></div>` : empty("💸", "Chưa có lịch sử rút tiền")}
       ${pagerHtml(r.page, r.pages)}
     </div>`;
+    el.querySelector('#pn-withdraw').addEventListener('click', () =>
+      withdrawModal(r.balance, r.payout, () => wallet(el), '/api/partner/wallet/withdraw', r.minimumWithdraw));
     el.querySelectorAll("[data-pg]").forEach((button) =>
       button.addEventListener("click", () => wallet(el, Number(button.dataset.pg))),
     );
@@ -280,7 +290,7 @@ async function profile(el, editing = false) {
         <div class="row" style="gap:14px;align-items:center">
           <div style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:28px;flex:none">${p.avatar ? `<img src="${esc(p.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">` : "🤝"}</div>
           <div><h2 style="margin:0">${esc(p.name)}</h2>
-            <p class="muted" style="margin-top:2px">${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'} · Chia sẻ ${pct}% của phí dịch vụ 5%</p>
+            <p class="muted" style="margin-top:2px">${statusChip(p.status)} · Chia sẻ ${pct}% của phí dịch vụ 5%</p>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { withdrawModal } from "./withdrawal.js";
 import { api, post } from "./api.js";
 import { mountListSearch, mountRemoteSearch } from "./list-search.js";
 import {
@@ -43,7 +44,6 @@ import {
   socialPlatformIcon,
 } from "./social-channels.js";
 
-const MIN_WITHDRAW_AMOUNT = 10_000;
 
 const NAV = [
   ["#/home", icon("home", "nav-icon"), "Trang chủ"],
@@ -535,7 +535,7 @@ async function openBooking(id, el) {
     ${b.post_link ? `<div class="field"><label>Bài đã đăng (${esc(b.post_platform)})</label><div class="copybox">${esc(b.post_link)}</div></div>` : ""}
     ${b.reject_reason ? `<div class="chip r">Lý do từ chối: ${esc(b.reject_reason)}</div>` : ""}
     <div id="bk-actions" style="margin-top:14px"></div>
-    <button class="btn ghost" id="bk-close" style="margin-top:8px">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="bk-close" style="margin-top:8px">Đóng</button>`);
   m.querySelector("#bk-close").addEventListener("click", closeModal);
   const copyAff = m.querySelector("#bk-copyaff");
   if (copyAff)
@@ -723,22 +723,38 @@ async function doAction(id, action, extra, el) {
 
 let kocContentSearch = '';
 let kocContentPage = 1;
+let kocContentKind = 'all';
 async function content(el, page = kocContentPage) {
-  const r = await api(`/api/bookings?work=content&page=${page}&per=12&search=${encodeURIComponent(kocContentSearch)}`);
+  const params = new URLSearchParams({
+    work: 'content',
+    page: String(page),
+    per: '12',
+    search: kocContentSearch,
+  });
+  if (kocContentKind !== 'all') params.set('type', kocContentKind);
+  const r = await api(`/api/bookings?${params}`);
   kocContentPage = r.page;
   const active = r.bookings.filter((b) =>
     ["confirmed", "producing", "posted"].includes(b.status),
   );
-  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Nội dung đang sản xuất</h2></div><div class="m-body"></div>`;
+  const kinds = [['all','Tất cả'],['aiclone','AI Clone Avatar'],['review','Review'],['advertising','Quảng cáo'],['affiliate','Tiếp thị liên kết'],['combo','Combo']];
+  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Nội dung đang sản xuất</h2></div><div class="m-body">
+    <div class="booking-type-tabs" id="ct-tabs">${kinds.map(([key,label]) => `<button type="button" class="${key === kocContentKind ? 'active' : ''}" data-kind="${key}" aria-pressed="${key === kocContentKind}">${label}</button>`).join('')}</div>
+    <div class="koc-content-grid"></div>
+  </div>`;
   const body = el.querySelector(".m-body");
-  body.classList.add("koc-content-grid");
-  mountRemoteSearch(el,{key:'koc-content',label:'Tìm nội dung',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocContentSearch,anchor:'.koc-content-grid',meta:r,
+  const grid = body.querySelector('.koc-content-grid');
+  mountRemoteSearch(body,{key:'koc-content',label:'Tìm nội dung',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocContentSearch,anchor:'.koc-content-grid',meta:r,
     onSearch:query=>{kocContentSearch=query;return content(el,1);},onPage:page=>content(el,page)});
+  body.querySelectorAll('#ct-tabs [data-kind]').forEach(button => button.addEventListener('click', () => {
+    kocContentKind = button.dataset.kind;
+    content(el, 1);
+  }));
   if (!active.length) {
-    body.innerHTML = empty("🎬", kocContentSearch ? "Không tìm thấy nội dung phù hợp" : "Chưa có nội dung nào đang chạy");
+    grid.innerHTML = empty("🎬", kocContentSearch ? "Không tìm thấy nội dung phù hợp" : "Chưa có nội dung nào đang chạy");
     return;
   }
-  body.innerHTML = active
+  grid.innerHTML = active
     .map(
       (b) => `<div class="list-item koc-content-card">
     <div class="between"><strong>${esc(b.bizname)}</strong>${statusChip(b.status)}</div>
@@ -750,7 +766,7 @@ async function content(el, page = kocContentPage) {
   </div>`,
     )
     .join("");
-  body
+  grid
     .querySelectorAll("[data-open]")
     .forEach((bt) =>
       bt.addEventListener("click", () => openBooking(bt.dataset.open, el)),
@@ -946,7 +962,7 @@ async function wallet(el) {
   document
     .getElementById("w-withdraw-payos")
     .addEventListener("click", () =>
-      withdrawModal(w.balance, el, w.payout),
+      withdrawModal(w.balance, w.payout, () => wallet(el)),
     );
   const tx = document.getElementById("w-tx");
   if (!w.transactions.length) {
@@ -983,111 +999,18 @@ function walletStatusChip(status) {
   const meta = {
     pending: ["Dự kiến", "w"],
     expected: ["Dự kiến", "w"],
-    settled: ["Đã đối soát", "b"],
-    reconciled: ["Đã đối soát", "b"],
-    paid: ["Đã thanh toán", "g"],
-    processing: ["Đang xử lý", "w"],
+    settled: ["Đã chi trả", "g"],
+    reconciled: ["Đã chi trả", "g"],
+    paid: ["Đã chi trả", "g"],
+    processing: ["Đang duyệt (6-24h)", "w"],
+    pending_review: ["Chờ duyệt (6-24h)", "w"],
+    rejected: ["Bị từ chối", "r"],
     cancelled: ["Đơn đã hủy", "r"],
     refunded: ["Đơn đã hoàn", "r"],
   }[status] || [status, "n"];
   return `<span class="chip ${meta[1]}">${esc(meta[0])}</span>`;
 }
 
-function withdrawModal(balance, el, payout) {
-  const minimumWithdrawLabel = MIN_WITHDRAW_AMOUNT.toLocaleString("vi-VN");
-  const hasBank = payout && payout.bank_account && payout.bank_name && /^\d{6}$/.test(String(payout.bank_bin || ""));
-  const m = modal(`<h2>Rút tiền về tài khoản ngân hàng</h2>
-    <p class="muted">Khả dụng: <b class="money">${money(balance)}</b> · Tối thiểu ${minimumWithdrawLabel}đ</p>
-    ${
-      hasBank
-        ? `<div style="background:var(--bg-muted);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
-              <div class="between"><span class="muted">Ngân hàng nhận:</span> ${bankIdentityHtml(state.config?.payoutBanks, payout.bank_name, payout.bank_bin)}</div>
-              <div><span class="muted">Số tài khoản:</span> <b>${esc(payout.bank_account)}</b> (${esc(payout.bank_owner || "")})</div>
-             </div>`
-        : `<div style="color:var(--error);background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;margin:10px 0;font-size:13px">
-              ⚠️ Chưa cập nhật thông tin ngân hàng. Vui lòng thiết lập tài khoản nhận tiền trước khi rút.
-             </div>`
-    }
-    <div class="field" style="margin-top:12px"><label class="required-label">Số tiền</label><input id="wd-amt" type="number" placeholder="đ" value="${MIN_WITHDRAW_AMOUNT}" min="${MIN_WITHDRAW_AMOUNT}" step="10000"></div>
-    <div class="field"><label class="required-label">Mã OTP gửi qua email</label><div class="row" style="gap:8px">
-      <input id="wd-otp" class="otp-in" inputmode="numeric" maxlength="6" placeholder="••••••" style="flex:1">
-      <button class="btn ghost sm" id="wd-send-otp" type="button">Gửi OTP</button>
-    </div></div>
-    <button class="btn primary" id="wd-go">🏦 Xác nhận rút tiền</button>
-    <button class="btn ghost" id="wd-cancel" style="margin-top:8px">Hủy</button>`);
-  m.querySelector("#wd-cancel").addEventListener("click", closeModal);
-  m.querySelector("#wd-send-otp").addEventListener("click", async () => {
-    const sendButton = m.querySelector("#wd-send-otp");
-    sendButton.disabled = true;
-    sendButton.textContent = "Đang gửi…";
-    try {
-      const result = await post("/api/otp", {});
-      toast("Mã OTP đã được gửi tới email của bạn", "ok");
-      let remaining = Number(result.resendIn || 30);
-      const timer = setInterval(() => {
-        remaining--;
-        if (remaining <= 0 || !m.isConnected) {
-          clearInterval(timer);
-          if (m.isConnected) {
-            sendButton.disabled = false;
-            sendButton.textContent = "Gửi lại OTP";
-          }
-        } else {
-          sendButton.textContent = `Gửi lại (${remaining}s)`;
-        }
-      }, 1000);
-    } catch (error) {
-      toast(error.message, "err");
-      sendButton.disabled = false;
-      sendButton.textContent = "Gửi OTP";
-    }
-  });
-  m.querySelector("#wd-go").addEventListener("click", async () => {
-    const amount = Number(m.querySelector("#wd-amt").value);
-    const otp = m.querySelector("#wd-otp").value.trim();
-    if (!amount || amount < MIN_WITHDRAW_AMOUNT) {
-      toast(`Ngưỡng rút tối thiểu ${minimumWithdrawLabel}đ`, "err");
-      return;
-    }
-    if (!otp) {
-      toast("Vui lòng nhập mã OTP", "err");
-      return;
-    }
-    const goBtn = m.querySelector("#wd-go");
-    goBtn.disabled = true;
-    try {
-      const res = await post("/api/wallet/withdraw", { amount, otp });
-      toast(res.message || "Yêu cầu rút tiền thành công", "ok");
-      closeModal();
-      wallet(el);
-    } catch (e) {
-      toast(e.message, "err");
-      const retryAfter = Math.max(0, Math.ceil(Number(e.retryAfter)));
-      if (Number.isFinite(retryAfter) && retryAfter > 0) {
-        const originalLabel = goBtn.textContent;
-        let remaining = retryAfter;
-        goBtn.textContent = `Thử lại (${remaining}s)`;
-        const timer = setInterval(() => {
-          remaining--;
-          if (remaining <= 0 || !m.isConnected) {
-            clearInterval(timer);
-            if (m.isConnected) {
-              goBtn.disabled = false;
-              goBtn.textContent = originalLabel;
-            }
-          } else {
-            goBtn.textContent = `Thử lại (${remaining}s)`;
-          }
-        }, 1000);
-      } else {
-        goBtn.disabled = false;
-      }
-    }
-  });
-}
-
-// ---------- Điều khoản xác nhận tham gia Chương trình "AI Clone Avatar" ----------
-// Toàn văn lấy từ file DieuKhoan_XacNhan_AICloneAvatar.docx — KOC bắt buộc cuộn hết mới được tick đồng ý.
 function aiCloneTermsBody() {
   return `
     <p class="aic-doc-sub">Dành cho KOC/KOL tham gia Nền tảng KOC Việt – NetViet</p>
@@ -1207,7 +1130,7 @@ function openAiCloneTermsModal(kocName, onConfirm) {
       .aic-agree-wrap input{ width:auto; margin-top:2px; }
     </style>
     <div class="aic-modal-head">
-      <p class="aic-modal-title">📄 Điều khoản xác nhận tham gia Chương trình "AI Clone Avatar"</p>
+      <h2 class="aic-modal-title">📄 Điều khoản xác nhận tham gia Chương trình "AI Clone Avatar"</h2>
       <p class="aic-modal-sub">Vui lòng đọc hết toàn văn trước khi đồng ý tham gia</p>
     </div>
     <div class="aic-scroll" id="aic-scroll">${aiCloneTermsBody()}</div>
@@ -1216,7 +1139,7 @@ function openAiCloneTermsModal(kocName, onConfirm) {
       <span class="required-label">Tôi đã đọc và đồng ý toàn bộ Điều khoản tham gia Chương trình AI Clone Avatar.</span>
     </label>
     <div class="row" style="gap:10px;margin-top:14px">
-      <button type="button" class="btn ghost" id="aic-cancel" style="flex:1">Hủy</button>
+      <button data-modal-dismiss type="button" class="btn ghost" id="aic-cancel" style="flex:1">Hủy</button>
       <button type="button" class="btn primary" id="aic-confirm" style="flex:2" disabled>✔ Xác nhận & Đăng ký</button>
     </div>`);
 

@@ -39,6 +39,9 @@ export function getOAuthSession(state: string) {
 
 export function getOAuthRedirectUri(env: any, platform: string): string {
   const normalized = String(platform || '').toLowerCase();
+  if (normalized === 'youtube' && env.GOOGLE_REDIRECT_URI) {
+    return String(env.GOOGLE_REDIRECT_URI).trim();
+  }
   if (normalized === 'tiktok' && env.TIKTOK_REDIRECT_URI) {
     return String(env.TIKTOK_REDIRECT_URI).trim();
   }

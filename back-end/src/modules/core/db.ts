@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-09-04-partner-program-v3';
+const SCHEMA_GUARD_VERSION = '2026-09-11-partner-withdrawals-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -718,6 +718,14 @@ async function ensureV14Schema(env) {
       console.warn('partner program schema migration skipped', e && e.message || e);
     }
   }
+  await env.DB.exec(`CREATE TABLE IF NOT EXISTS partner_payout_tickets (
+    id TEXT PRIMARY KEY, partner_id TEXT NOT NULL REFERENCES partners(id),
+    user_id TEXT NOT NULL REFERENCES users(id), amount BIGINT NOT NULL CHECK (amount >= 10000),
+    status TEXT NOT NULL DEFAULT 'pending_review' CHECK (status IN ('pending_review','settled','rejected')),
+    bank_name TEXT NOT NULL, bank_bin TEXT NOT NULL, bank_account TEXT NOT NULL, bank_owner TEXT NOT NULL,
+    note TEXT NOT NULL, created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL
+  )`);
+  await env.DB.exec(`CREATE INDEX IF NOT EXISTS idx_partner_payout_created ON partner_payout_tickets(partner_id,created_at DESC)`);
   // Upgrade a `partners` table left by an earlier build of this feature
   // (business-linked, missing the standalone avatar/bank columns).
   const partnerColumns = await env.DB.prepare(`PRAGMA table_info(partners)`).all();
