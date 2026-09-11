@@ -20,6 +20,9 @@ import {
 } from "./industry-icons.js";
 import { renderHomeKolInsights } from "./kol-insights.js";
 
+const BOOKING_PAYMENT_NOTICE =
+  "Phí booking được trừ từ số dư khả dụng của bạn và giữ an toàn cho đến khi KOC hoàn thành booking và bạn duyệt bài đăng. KOC sẽ nhận được phí ngay sau khi bạn xác nhận booking hoàn thành.";
+
 export const LANDING_ROUTES = [
   "/trang-chu",
   "/koc",
@@ -229,7 +232,7 @@ function pageHome() {
         <article class="lp-step-card">
           <div class="lp-step-badge">2</div>
           <h4>BOOKING &amp; ĐẶT CỌC</h4>
-          <p>Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.</p>
+          <p>${BOOKING_PAYMENT_NOTICE}</p>
         </article>
         <article class="lp-step-card">
           <div class="lp-step-badge">3</div>
@@ -239,7 +242,7 @@ function pageHome() {
         <article class="lp-step-card">
           <div class="lp-step-badge">4</div>
           <h4>ĐO LƯỜNG &amp; CHI TRẢ</h4>
-          <p>Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.</p>
+          <p>KOC hoàn thành booking, bạn duyệt bài đăng và phí booking được chuyển ngay cho KOC. Báo cáo kết quả được cập nhật minh bạch.</p>
         </article>
       </div>
     </div>
@@ -269,7 +272,7 @@ function pageHome() {
             <span class="lp-proof-badge">Ví đảm bảo</span>
           </div>
           <h3 class="lp-proof-card-title">Thanh toán an toàn</h3>
-          <p class="lp-proof-card-desc">Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p>
+          <p class="lp-proof-card-desc">${BOOKING_PAYMENT_NOTICE}</p>
         </article>
         <article class="lp-card lp-proof-card lp-proof-blue">
           <div class="lp-proof-card-top">
@@ -761,7 +764,7 @@ function pageBusiness() {
             <span class="lp-proof-badge">An toàn</span>
           </div>
           <h3 class="lp-proof-card-title">VÍ ĐẢM BẢO</h3>
-          <p class="lp-proof-card-desc">Tiền được tạm giữ trên nền tảng và chỉ giải ngân khi doanh nghiệp xác nhận hoàn thành. Nếu phát sinh vấn đề, doanh nghiệp có cơ chế khiếu nại và hoàn tiền theo chính sách.</p>
+          <p class="lp-proof-card-desc">${BOOKING_PAYMENT_NOTICE}</p>
         </article>
         <article class="lp-card lp-proof-card lp-proof-blue">
           <div class="lp-proof-card-top">
@@ -823,7 +826,7 @@ function pageBusiness() {
         </article>
         <article class="lp-step">
           <div class="num">3</div>
-          <p><strong>THANH TOÁN ĐẢM BẢO</strong>Thanh toán vào ví đảm bảo — nhận mã giao dịch và hoá đơn điện tử.</p>
+          <p><strong>THANH TOÁN ĐẢM BẢO</strong>Phí booking được giữ an toàn đến khi KOC hoàn thành booking và doanh nghiệp duyệt bài đăng.</p>
         </article>
         <article class="lp-step">
           <div class="num">4</div>
@@ -1038,13 +1041,13 @@ function pageMarketplace() {
         <ol class="lp-marketplace-flow-list">
           <li class="lp-marketplace-flow-step"><span class="step-idx">01</span><span><strong>Chọn gói</strong><small>trên hồ sơ</small></span></li>
           <li class="lp-marketplace-flow-step"><span class="step-idx">02</span><span><strong>Gửi link</strong><small>dữ liệu SP</small></span></li>
-          <li class="lp-marketplace-flow-step"><span class="step-idx">03</span><span><strong>Thanh toán</strong><small>ví đảm bảo</small></span></li>
+          <li class="lp-marketplace-flow-step"><span class="step-idx">03</span><span><strong>Thanh toán</strong><small>được giữ an toàn</small></span></li>
           <li class="lp-marketplace-flow-step"><span class="step-idx">04</span><span><strong>Đăng bài</strong><small>&amp; xác nhận</small></span></li>
-          <li class="lp-marketplace-flow-step"><span class="step-idx">05</span><span><strong>Giải ngân</strong><small>95%</small></span></li>
+          <li class="lp-marketplace-flow-step"><span class="step-idx">05</span><span><strong>KOC nhận phí</strong><small>sau khi bạn duyệt</small></span></li>
         </ol>
         <p class="lp-flow-assurance">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-          <span>Mỗi giao dịch có mã riêng, tra cứu trọn đời</span>
+          <span>${BOOKING_PAYMENT_NOTICE}</span>
         </p>
       </div>
     </div>
