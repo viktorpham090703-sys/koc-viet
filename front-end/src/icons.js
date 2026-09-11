@@ -34,8 +34,15 @@ export const ICONS = Object.freeze({
 });
 
 export function icon(name, className = "") {
-  const src = ICONS[name];
+  let src = ICONS[name];
   if (!src) return "";
+  // Trim before resizing so desktop sidebars and mobile navigation share a scale.
+  if (className.split(/\s+/).some((name) => name === "sidebar-icon" || name === "nav-icon")) {
+    src = src.replace(
+      /\/upload\/(?:[^/]+\/)*(?=v\d+\/)/,
+      "/upload/e_trim/c_limit,f_auto,q_auto,w_128,h_128/",
+    );
+  }
   const classes = ["app-icon", className].filter(Boolean).join(" ");
   return `<img class="${classes}" src="${src}" alt="" aria-hidden="true" decoding="async">`;
 }
