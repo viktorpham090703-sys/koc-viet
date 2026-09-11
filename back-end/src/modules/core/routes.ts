@@ -1901,7 +1901,7 @@ export async function route(request, env, url) {
     const platform = url.searchParams.get("platform") || "TikTok";
     const state = url.searchParams.get("state") || uid();
     const result = getSocialAuthUrl(env, platform, state);
-    setOAuthSession(state, { status: "pending" });
+    setOAuthSession(state, { status: "pending", platform });
     return J({
       platform,
       state,
@@ -1994,7 +1994,6 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
 
   if (p === "/api/oauth/social/callback" && (m === "GET" || m === "POST")) {
     const wantsJson = url.searchParams.get("format") === "json" || request.headers.get("accept")?.includes("application/json") || m === "POST";
-    const platform = url.searchParams.get("platform") || body?.platform || "TikTok";
     let code = url.searchParams.get("code") || body?.code;
     let state = url.searchParams.get("state") || body?.state || "";
     const errorParam = url.searchParams.get("error") || body?.error;
@@ -2008,6 +2007,9 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
         if (extractedState && !state) state = extractedState;
       } catch (_) {}
     }
+
+    const session = state ? getOAuthSession(state) : null;
+    const platform = url.searchParams.get("platform") || session?.platform || body?.platform || "TikTok";
 
     if (errorParam || !code) {
       const errMsg = errorParam || 'Không nhận được mã ủy quyền từ nhà cung cấp';

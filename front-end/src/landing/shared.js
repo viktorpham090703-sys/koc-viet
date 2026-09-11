@@ -137,8 +137,8 @@ export function lpFooter() {
           <div class="lp-footer-col">
             <h4>Hỗ trợ</h4>
             <a href="/ho-tro">Câu hỏi thường gặp</a>
-            <a href="/ho-tro">Điều khoản sử dụng</a>
-            <a href="/ho-tro">Chính sách bảo mật</a>
+            <a href="/terms.html" target="_blank">Điều khoản sử dụng</a>
+            <a href="/privacy.html" target="_blank">Chính sách bảo mật</a>
           </div>
           <div class="lp-footer-col">
             <h4>Liên hệ</h4>
