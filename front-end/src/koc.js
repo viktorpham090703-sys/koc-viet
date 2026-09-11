@@ -723,22 +723,38 @@ async function doAction(id, action, extra, el) {
 
 let kocContentSearch = '';
 let kocContentPage = 1;
+let kocContentKind = 'all';
 async function content(el, page = kocContentPage) {
-  const r = await api(`/api/bookings?work=content&page=${page}&per=12&search=${encodeURIComponent(kocContentSearch)}`);
+  const params = new URLSearchParams({
+    work: 'content',
+    page: String(page),
+    per: '12',
+    search: kocContentSearch,
+  });
+  if (kocContentKind !== 'all') params.set('type', kocContentKind);
+  const r = await api(`/api/bookings?${params}`);
   kocContentPage = r.page;
   const active = r.bookings.filter((b) =>
     ["confirmed", "producing", "posted"].includes(b.status),
   );
-  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Nội dung đang sản xuất</h2></div><div class="m-body"></div>`;
+  const kinds = [['all','Tất cả'],['aiclone','AI Clone Avatar'],['review','Review'],['advertising','Quảng cáo'],['affiliate','Tiếp thị liên kết'],['combo','Combo']];
+  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Nội dung đang sản xuất</h2></div><div class="m-body">
+    <div class="booking-type-tabs" id="ct-tabs">${kinds.map(([key,label]) => `<button type="button" class="${key === kocContentKind ? 'active' : ''}" data-kind="${key}" aria-pressed="${key === kocContentKind}">${label}</button>`).join('')}</div>
+    <div class="koc-content-grid"></div>
+  </div>`;
   const body = el.querySelector(".m-body");
-  body.classList.add("koc-content-grid");
-  mountRemoteSearch(el,{key:'koc-content',label:'Tìm nội dung',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocContentSearch,anchor:'.koc-content-grid',meta:r,
+  const grid = body.querySelector('.koc-content-grid');
+  mountRemoteSearch(body,{key:'koc-content',label:'Tìm nội dung',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocContentSearch,anchor:'.koc-content-grid',meta:r,
     onSearch:query=>{kocContentSearch=query;return content(el,1);},onPage:page=>content(el,page)});
+  body.querySelectorAll('#ct-tabs [data-kind]').forEach(button => button.addEventListener('click', () => {
+    kocContentKind = button.dataset.kind;
+    content(el, 1);
+  }));
   if (!active.length) {
-    body.innerHTML = empty("🎬", kocContentSearch ? "Không tìm thấy nội dung phù hợp" : "Chưa có nội dung nào đang chạy");
+    grid.innerHTML = empty("🎬", kocContentSearch ? "Không tìm thấy nội dung phù hợp" : "Chưa có nội dung nào đang chạy");
     return;
   }
-  body.innerHTML = active
+  grid.innerHTML = active
     .map(
       (b) => `<div class="list-item koc-content-card">
     <div class="between"><strong>${esc(b.bizname)}</strong>${statusChip(b.status)}</div>
@@ -750,7 +766,7 @@ async function content(el, page = kocContentPage) {
   </div>`,
     )
     .join("");
-  body
+  grid
     .querySelectorAll("[data-open]")
     .forEach((bt) =>
       bt.addEventListener("click", () => openBooking(bt.dataset.open, el)),

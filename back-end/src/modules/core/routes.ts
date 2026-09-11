@@ -6066,6 +6066,40 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         `name=${name} rate=${feeRate} kocs=${kocIds.length}`);
       return J({ ok: true, id: partnerId });
     }
+    if (p === "/api/admin/partners/status" && m === "POST") {
+      const id = String(body.id || "");
+      const action = String(body.action || "");
+      if (!id || !["lock", "unlock"].includes(action))
+        return err("Thao tác trạng thái đối tác không hợp lệ");
+      const partner = await env.DB.prepare("SELECT id,name,status FROM partners WHERE id=?")
+        .bind(id).first();
+      if (!partner) return err("Không tìm thấy đối tác", 404);
+      if (action === "lock" && partner.status === "locked")
+        return err("Đối tác đã bị khóa", 409);
+      if (action === "lock" && partner.status !== "active")
+        return err("Chỉ có thể khóa đối tác đang hoạt động", 409);
+      if (action === "unlock" && partner.status !== "locked")
+        return err("Đối tác chưa bị khóa", 409);
+      const reason = String(body.reason || "").trim().slice(0, 300);
+      if (action === "lock" && !reason) return err("Vui lòng nhập lý do khóa");
+      const nextStatus = action === "lock" ? "locked" : "active";
+      await env.DB.batch([
+        env.DB.prepare("UPDATE partners SET status=?,updated_at=? WHERE id=?")
+          .bind(nextStatus, now(), id),
+        env.DB.prepare(
+          `UPDATE users SET status=?,locked_at=?,locked_reason=?,session_version=session_version+1,updated_at=?
+           WHERE role='partner' AND partner_id=?`,
+        ).bind(
+          nextStatus,
+          action === "lock" ? now() : null,
+          action === "lock" ? reason : null,
+          now(),
+          id,
+        ),
+      ]);
+      await audit(env, me.id, action === "lock" ? "partner.lock" : "partner.unlock", id, reason);
+      return J({ ok: true, status: nextStatus });
+    }
     if (p === "/api/admin/partners/update" && m === "POST") {
       const id = String(body.id || "");
       const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
@@ -6082,8 +6116,10 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       const status = body.status == null
         ? partner.status
         : String(body.status);
-      if (!["active", "paused"].includes(status))
+      if (!["active", "paused"].includes(status) && !(status === "locked" && partner.status === "locked"))
         return err("Trạng thái đối tác không hợp lệ");
+      if (partner.status === "locked" && status !== "locked")
+        return err("Đối tác đang bị khóa; hãy mở khóa trước", 409);
       const note = body.note == null
         ? partner.note
         : String(body.note).trim().slice(0, 500);
@@ -6104,6 +6140,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
         .bind(id).first();
       if (!partner) return err("Không tìm thấy đối tác", 404);
+      if (partner.status === "locked") return err("Đối tác đang bị khóa", 409);
       const add = Array.isArray(body.add)
         ? [...new Set(body.add.map((v) => String(v)))].filter(Boolean)
         : [];
@@ -6150,6 +6187,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
         .bind(id).first();
       if (!partner) return err("Không tìm thấy đối tác", 404);
+      if (partner.status === "locked") return err("Đối tác đang bị khóa", 409);
       const existing = await env.DB.prepare(
         "SELECT id FROM users WHERE partner_id=? AND role='partner'",
       ).bind(id).first();
@@ -6248,9 +6286,16 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
            JOIN partners p ON p.id=pm.partner_id
            WHERE pm.koc_id=? AND pm.status='active' LIMIT 1`,
         ).bind(row.id).first();
+        const account = await env.DB.prepare(
+          `SELECT status account_status,locked_at,locked_reason
+           FROM users WHERE role='koc' AND koc_id=? LIMIT 1`,
+        ).bind(row.id).first();
         kocs.push({
           ...parseKoc(row),
           prices: prices.results,
+          account_status: account?.account_status || null,
+          locked_at: account?.locked_at || null,
+          locked_reason: account?.locked_reason || null,
           partner_id: partner?.id || null,
           partner_name: partner?.name || null,
           partner_status: partner?.status || null,
@@ -6262,6 +6307,39 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         page,
         pages: Math.ceil(total / per) || 1,
       });
+    }
+    if (p === "/api/admin/kocs/status" && m === "POST") {
+      const id = String(body.id || "");
+      const action = String(body.action || "");
+      if (!id || !["lock", "unlock"].includes(action))
+        return err("Thao tác trạng thái KOC không hợp lệ");
+      const koc = await env.DB.prepare("SELECT id,name,status FROM kocs WHERE id=?")
+        .bind(id).first();
+      if (!koc) return err("Không tìm thấy hồ sơ KOC", 404);
+      if (action === "lock" && koc.status === "locked")
+        return err("KOC đã bị khóa", 409);
+      if (action === "lock" && koc.status !== "active")
+        return err("Chỉ có thể khóa KOC đang hoạt động", 409);
+      if (action === "unlock" && koc.status !== "locked")
+        return err("KOC chưa bị khóa", 409);
+      const reason = String(body.reason || "").trim().slice(0, 300);
+      if (action === "lock" && !reason) return err("Vui lòng nhập lý do khóa");
+      const nextStatus = action === "lock" ? "locked" : "active";
+      await env.DB.batch([
+        env.DB.prepare("UPDATE kocs SET status=? WHERE id=?").bind(nextStatus, id),
+        env.DB.prepare(
+          `UPDATE users SET status=?,locked_at=?,locked_reason=?,session_version=session_version+1,updated_at=?
+           WHERE role='koc' AND koc_id=?`,
+        ).bind(
+          nextStatus,
+          action === "lock" ? now() : null,
+          action === "lock" ? reason : null,
+          now(),
+          id,
+        ),
+      ]);
+      await audit(env, me.id, action === "lock" ? "koc.lock" : "koc.unlock", id, reason);
+      return J({ ok: true, status: nextStatus });
     }
     if (p.startsWith("/api/admin/koc-identity/") && m === "GET") {
       const kocId = p.split("/")[4];
@@ -6283,6 +6361,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         "SELECT id,name,email,status FROM kocs WHERE id=?",
       ).bind(body.id).first();
       if (!koc) return err("Không tìm thấy hồ sơ KOC", 404);
+      if (koc.status === "locked") return err("KOC đang bị khóa; hãy mở khóa trước", 409);
       await env.DB.batch([
         env.DB.prepare("UPDATE kocs SET status=? WHERE id=?")
           .bind(status, body.id),

@@ -6,6 +6,7 @@ import {
   esc,
   fmtDate,
   tierBadge,
+  statusChip,
   spinner,
   empty,
   toast,
@@ -289,7 +290,7 @@ async function profile(el, editing = false) {
         <div class="row" style="gap:14px;align-items:center">
           <div style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:28px;flex:none">${p.avatar ? `<img src="${esc(p.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">` : "🤝"}</div>
           <div><h2 style="margin:0">${esc(p.name)}</h2>
-            <p class="muted" style="margin-top:2px">${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'} · Chia sẻ ${pct}% của phí dịch vụ 5%</p>
+            <p class="muted" style="margin-top:2px">${statusChip(p.status)} · Chia sẻ ${pct}% của phí dịch vụ 5%</p>
           </div>
         </div>
       </div>
