@@ -70,7 +70,7 @@ const NAV = [
   ["#/kol", icon("kolRequest", "sidebar-icon"), "KOL / Nghệ sĩ"],
   ["#/campaigns", icon("campaign", "sidebar-icon"), "Chiến dịch lớn"],
   ["#/report", icon("report", "sidebar-icon"), "Báo cáo"],
-  ["#/profile", "🏢", "Hồ sơ DN"],
+  ["#/profile", icon("business", "sidebar-icon"), "Hồ sơ DN"],
 ];
 
 export async function renderBusiness(el, hash) {
