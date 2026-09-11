@@ -411,7 +411,7 @@ async function openKocProfile(kocId, el) {
       <div class="business-koc-profile-head">
         ${koc.cover ? `<img class="business-koc-profile-cover" src="${esc(koc.cover)}" alt="Ảnh bìa ${esc(koc.name)}" onerror="this.hidden=true">` : ""}
         <span class="business-koc-profile-overlay" aria-hidden="true"></span>
-        <button type="button" class="business-koc-profile-close" id="koc-profile-close" aria-label="Đóng hồ sơ">×</button>
+        <button data-modal-dismiss type="button" class="business-koc-profile-close" id="koc-profile-close" aria-label="Đóng hồ sơ">×</button>
         <div class="business-koc-profile-hero-content">
           <img class="business-koc-profile-avatar" src="${esc(avatarUrl(koc.avatar))}" alt="Ảnh đại diện ${esc(koc.name)}">
           <div class="business-koc-profile-identity">
@@ -485,7 +485,7 @@ async function openBookingForm(kocId, el) {
     <div class="field"><label class="required-label">Thời hạn</label><input id="bf-deadline" type="date"></div>
     <p class="hint" id="bf-hint">Phí được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.</p>
     <button class="btn primary" id="bf-go">Gửi yêu cầu booking</button>
-    <button class="btn ghost" id="bf-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="bf-cancel" style="margin-top:8px">Hủy</button>`);
   const sel = m.querySelector("#bf-cat");
   const typeSel = m.querySelector("#bf-type");
   const escBox = m.querySelector("#bf-esc-box");
@@ -823,7 +823,7 @@ async function openOrder(id, el) {
     ${b.post_link ? `<div class="field"><label>Bài KOC đã đăng (${esc(b.post_platform)})</label><div class="copybox"><a href="${esc(b.post_link)}" target="_blank" style="color:var(--info)">${esc(b.post_link)}</a></div></div>` : ""}
     ${b.reject_reason ? `<div class="chip r">KOC từ chối: ${esc(b.reject_reason)}${b.status === "refund_pending" ? " — khoản thanh toán đang chờ hoàn." : ""}</div>` : ""}
     <div id="ord-act" style="margin-top:14px"></div>
-    <button class="btn ghost" id="ord-close" style="margin-top:8px">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="ord-close" style="margin-top:8px">Đóng</button>`);
   m.querySelector("#ord-close").addEventListener("click", closeModal);
   const act = m.querySelector("#ord-act");
   const hasAiQuote =
@@ -1421,7 +1421,7 @@ function businessProductModal(product, reload) {
     <div class="field"><label>Link ảnh sản phẩm</label><input id="prf-image" type="url" maxlength="2000" value="${value("image_url")}" placeholder="https://..."></div>
     <div class="field"><label>Ghi chú</label><textarea id="prf-notes" maxlength="1000" rows="3" placeholder="Biến thể, chính sách bán hàng, thông tin cần lưu ý…">${value("notes")}</textarea></div>
     <button class="btn primary" id="prf-save">${editing ? "Lưu thay đổi" : "Thêm vào danh mục"}</button>
-    <button class="btn ghost" id="prf-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="prf-cancel" style="margin-top:8px">Hủy</button>`);
 
   m.querySelector("#prf-cancel").addEventListener("click", closeModal);
   m.querySelector("#prf-save").addEventListener("click", async () => {
@@ -1557,7 +1557,7 @@ async function campaigns(el) {
       <div class="grid campaign-detail-meta"><div><span>SL KOC</span><b>${c.qty}</b></div><div><span>Hạng</span>${tierBadge(c.tier)}</div><div><span>Ngành</span><b>${esc(c.category)}</b></div><div><span>Hạn hoàn thành</span><b>${c.deadline ? esc(c.deadline) : "Chưa đặt"}</b></div></div>
       ${c.note ? `<div class="tint-box" style="margin-top:12px"><b>Yêu cầu chiến dịch</b><p>${esc(c.note)}</p></div>` : ""}${c.quote_note ? `<div class="tint-box" style="margin-top:10px"><b>Ghi chú báo giá từ NetViet</b><p>${esc(c.quote_note)}</p></div>` : ""}
       <h3 style="margin-top:18px">KOC và tiến độ (${allocations.length}/${c.qty})</h3><div class="campaign-detail-allocations">${allocations.length ? allocations.map((a) => `<div><span><b>${esc(a.koc_name)}</b><small>${statusChip(a.status)}</small>${a.submission_url ? `<a href="${esc(a.submission_url)}" target="_blank" rel="noopener">Mở nội dung đã nộp</a>` : ""}</span><strong>${money(a.amount)}</strong></div>`).join("") : empty("👥", "NetViet chưa phân bổ KOC")}</div>
-      <button class="btn ghost" id="campaign-detail-close" style="margin-top:14px">Đóng</button>`);
+      <button data-modal-dismiss class="btn ghost" id="campaign-detail-close" style="margin-top:14px">Đóng</button>`);
       m.querySelector("#campaign-detail-close").addEventListener(
         "click",
         closeModal,
@@ -1612,7 +1612,7 @@ async function campaigns(el) {
       <div class="field"><label>Ghi chú</label><textarea id="cf-note" rows="2"></textarea></div>
       <div class="campaign-pricing"><div><span>Ngân sách dành cho KOC</span><b id="cf-creator-budget">0đ</b></div><div><span>Phí điều phối <small>15% · tối thiểu 2.000.000đ</small></span><b id="cf-management-fee">2.000.000đ</b></div><div class="campaign-pricing-total"><span>Tổng dự kiến</span><strong id="cf-total">2.000.000đ</strong></div><p>Chưa bao gồm phí thanh toán, thuế và chi phí phát sinh được xác nhận riêng.</p></div>
       <button class="btn primary" id="cf-go">Gửi cho NetViet</button>
-      <button class="btn ghost" id="cf-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="cf-cancel" style="margin-top:8px">Hủy</button>`);
     const updatePricing = () => {
       const budget = Math.max(
           0,
@@ -1706,7 +1706,7 @@ async function report(el, page = businessReportPage) {
       <div class="between"><span>② Hoa hồng KOC</span><b class="money">${money(t.commission)}</b></div>
       <div class="between"><span>③ Phí nền tảng affiliate (1%)</span><b class="money">${money(t.platformFee)}</b></div>
       <div class="between" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px"><span><b>Tổng DN thanh toán</b></span><b class="money">${money(t.payable)}</b></div>
-    </div><button class="btn primary" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:14px">Đóng</button>`);
+    </div><button data-modal-dismiss class="btn primary" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:14px">Đóng</button>`);
   });
 }
 function btLabel(t, contentType) {
@@ -1852,7 +1852,7 @@ function kolRequestModal(kolId, el) {
     <div class="field" style="margin-top:12px"><label class="required-label">Ngân sách dự kiến (đ)</label><input id="kr-budget" type="number" placeholder="đ"></div>
     <div class="field"><label class="required-label">Brief / yêu cầu</label><textarea id="kr-brief" rows="3" placeholder="Mô tả chiến dịch, thông điệp, thời gian…"></textarea></div>
     <button class="btn primary" id="kr-go">Gửi yêu cầu</button>
-    <button class="btn ghost" id="kr-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="kr-cancel" style="margin-top:8px">Hủy</button>`);
   m.querySelector("#kr-cancel").addEventListener("click", closeModal);
   m.querySelector("#kr-go").addEventListener("click", async () => {
     try {
@@ -1879,7 +1879,7 @@ export function quoteLeadModal(source) {
     <div class="field"><label>Email</label><input id="ql-email"></div>
     <div class="field"><label>Nhu cầu</label><textarea id="ql-need" rows="2"></textarea></div>
     <button class="btn" id="ql-go" style="background:#B91C1C;color:#fff">Gửi yêu cầu</button>
-    <button class="btn ghost" id="ql-cancel" style="margin-top:8px">Hủy</button>`);
+    <button data-modal-dismiss class="btn ghost" id="ql-cancel" style="margin-top:8px">Hủy</button>`);
   m.querySelector("#ql-cancel").addEventListener("click", closeModal);
   m.querySelector("#ql-go").addEventListener("click", async () => {
     const name = m.querySelector("#ql-name").value.trim(),
@@ -2233,7 +2233,7 @@ function depositModal() {
       <input id="dep-amt" type="number" placeholder="Nhập số tiền (tối thiểu 10.000đ)" value="500000" min="10000" step="10000">
     </div>
     <button class="btn primary" id="dep-go" style="width:100%;margin-top:8px">💳 Thanh toán qua VNPAY</button>
-    <button class="btn ghost" id="dep-cancel" style="width:100%;margin-top:6px">Hủy</button>
+    <button data-modal-dismiss class="btn ghost" id="dep-cancel" style="width:100%;margin-top:6px">Hủy</button>
   `);
 
   m.querySelectorAll(".preset-btn").forEach((btn) => {
