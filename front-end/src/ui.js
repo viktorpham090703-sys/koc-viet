@@ -246,10 +246,59 @@ export function skeletonKocView() {
   </div>`;
 }
 
+function mountModalShell(dialog) {
+  const body = document.createElement('div');
+  body.className = 'modal-body';
+  body.append(...dialog.childNodes);
+  const header = document.createElement('header');
+  header.className = 'modal-header';
+  const originalTitle = body.querySelector('h2');
+  // The profile card uses the heading as part of its image hero; retain that
+  // identity in the body while adding the fixed accessible title above it.
+  const title = originalTitle && dialog.classList.contains('business-koc-profile-modal')
+    ? originalTitle.cloneNode(true)
+    : originalTitle || document.createElement('h2');
+  if (!title.textContent.trim()) title.textContent = body.querySelector('img')?.alt || 'Chi tiết';
+  if (!title.id) title.id = 'modal-title';
+  title.classList.add('modal-title');
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('aria-labelledby', title.id);
+
+  // Reuse dismiss controls so callers keep their cleanup and back-navigation handlers.
+  const dismiss = body.querySelector('[data-modal-dismiss], .business-koc-profile-close');
+  const keepCancel = dismiss && /^(Hủy|Huỷ)$/.test(dismiss.textContent.trim());
+  const close = dismiss && !keepCancel ? dismiss : document.createElement('button');
+  if (!dismiss) close.addEventListener('click', closeModal);
+  else if (keepCancel) close.addEventListener('click', () => dismiss.click());
+  close.classList.add('modal-close');
+  close.removeAttribute('style');
+  close.type = 'button';
+  close.textContent = '×';
+  close.setAttribute('aria-label', 'Đóng');
+  close.title = 'Đóng';
+  header.append(title, close);
+  dialog.append(header, body);
+}
+
 export function modal(html) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-bg"><div class="modal">${html}</div></div>`;
-  root.querySelector('.modal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('modal-bg')) closeModal(); });
+  // Preserve the table headings when narrow dialogs stack each record vertically.
+  root.querySelectorAll('table').forEach(table => {
+    const headings = table.tHead?.rows;
+    if (headings?.length !== 1 || [...headings[0].cells].some(cell => cell.colSpan !== 1)) return;
+    const labels = [...headings[0].cells].map(cell => cell.textContent.trim() || 'Thao tác');
+    table.classList.add('modal-data-table');
+    [...table.tBodies].forEach(body => [...body.rows].forEach(row => {
+      if (row.cells.length === 1 && row.cells[0].colSpan > 1) {
+        row.classList.add('modal-table-empty');
+        return;
+      }
+      [...row.cells].forEach((cell, index) => { cell.dataset.label = labels[index] || 'Thao tác'; });
+    }));
+  });
+  mountModalShell(root.querySelector('.modal'));
   return root.querySelector('.modal');
 }
 export function modalClose() { closeModal(); }
@@ -284,7 +333,7 @@ function decisionDialog(options) {
   return new Promise(resolve => {
     root.innerHTML = `<div class="modal-bg decision-backdrop" role="presentation">
       <section class="modal decision-modal" role="dialog" aria-modal="true" aria-labelledby="decision-title">
-        <button class="decision-close" type="button" aria-label="Đóng">×</button>
+        <button class="decision-close" data-modal-dismiss type="button" aria-label="Đóng">×</button>
         <div class="decision-icon" aria-hidden="true">?</div>
         <h2 id="decision-title">${esc(options.title)}</h2>
         <p id="decision-message" class="${options.input && options.required ? 'required-label' : ''}">${esc(options.message).replace(/\n/g, '<br>')}</p>
@@ -295,7 +344,7 @@ function decisionDialog(options) {
         </div>
       </section>
     </div>`;
-    const backdrop = root.querySelector('.decision-backdrop');
+    mountModalShell(root.querySelector('.modal'));
     const input = root.querySelector('.decision-input');
     let settled = false;
     const finish = value => {
@@ -320,7 +369,6 @@ function decisionDialog(options) {
       if (event.key === 'Escape') cancel();
       if (event.key === 'Enter' && (!options.input || (!event.shiftKey && event.ctrlKey))) accept();
     };
-    backdrop.addEventListener('click', event => { if (event.target === backdrop) cancel(); });
     root.querySelector('.decision-close').addEventListener('click', cancel);
     root.querySelector('.decision-cancel').addEventListener('click', cancel);
     root.querySelector('.decision-confirm').addEventListener('click', accept);

@@ -28,6 +28,7 @@ import {
   vnpayConfig,
 } from './lib/vnpay.js';
 import { createPayOSPayout } from './lib/payosPayout.js';
+import { createPartnerPayout, resolvePartnerPayout, PAYOUT_TICKET_SOURCE, MIN_PARTNER_WITHDRAW, PartnerPayoutError } from './lib/partnerPayout.js';
 import { PAYOUT_BANKS, payoutBankBinError } from './lib/bankDestination.js';
 import { pushPublicKey, sendPushToUser } from './lib/webPush.js';
 import {
@@ -1738,12 +1739,12 @@ export async function route(request, env, url) {
 
   // ---------- Authenticated email OTP for wallet withdrawal ----------
   if (p === "/api/otp" && m === "POST") {
-    if (!me || me.role !== 'koc') return err('Chưa đăng nhập', 401);
-    const koc = await env.DB.prepare('SELECT email FROM kocs WHERE id=?')
-      .bind(me.koc_id).first();
+    if (!me || !['koc', 'partner'].includes(me.role)) return err('Chưa đăng nhập', 401);
+    const koc = me.role === 'koc' ? await env.DB.prepare('SELECT email FROM kocs WHERE id=?')
+      .bind(me.koc_id).first() : null;
     const email = String(koc?.email || me.email || '').trim().toLowerCase();
     if (!email) return err('Tài khoản chưa có email nhận OTP');
-    const result = await createAndSendEmailOtp(env, request, email, 'withdraw');
+    const result = await createAndSendEmailOtp(env, request, email, me.role === 'partner' ? 'partner_withdraw' : 'withdraw');
     if (!result.sent)
       return err(
         result.warning || 'Chưa gửi được mã OTP. Vui lòng thử lại sau.',
@@ -5560,9 +5561,18 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   }
 
   // ================= PARTNER =================
+  if (p === '/api/partner/wallet/withdraw' && m === 'POST') {
+    if (me.role !== 'partner' || !me.partner_id) return err('403', 403);
+    let ticket;
+    try { ticket = await createPartnerPayout(env, me, body, request); }
+    catch (error) { return err(error instanceof PartnerPayoutError ? error.message : 'Chưa gửi được yêu cầu rút tiền. Vui lòng thử lại.', error instanceof PartnerPayoutError ? 400 : 500); }
+    if (ticket.error) return err(ticket.error);
+    await audit(env, me.id, 'partner.withdraw_ticket_created', ticket.id, `amount=${ticket.amount}`);
+    return J({ ok: true, ticketId: ticket.id, message: 'Đã gửi yêu cầu rút tiền. NetViet sẽ duyệt và chuyển khoản trong vòng 6 - 24 giờ làm việc.' });
+  }
   if (p === "/api/partner/wallet" && m === "GET") {
     if (me.role !== "partner") return err("403", 403);
-    const partner = await env.DB.prepare("SELECT id FROM partners WHERE id=?")
+    const partner = await env.DB.prepare("SELECT * FROM partners WHERE id=?")
       .bind(me.partner_id).first();
     if (!partner) return err("Không tìm thấy đối tác", 404);
     const requestedPage = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
@@ -5574,24 +5584,30 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       JOIN journal_entries j ON j.id=lp.journal_entry_id
       WHERE a.owner_type='partner' AND a.owner_id=?
         AND a.bucket IN ('revenue','payout_pending') AND lp.amount<0 AND lp.applied=1
+        AND NOT EXISTS (SELECT 1 FROM partner_payout_tickets t WHERE t.id=j.reference_id)
         AND EXISTS (
           SELECT 1 FROM ledger_postings credit
           JOIN wallet_accounts destination ON destination.id=credit.account_id
           WHERE credit.journal_entry_id=j.id AND credit.amount>0 AND credit.applied=1
             AND destination.owner_type='system' AND destination.bucket='cash_clearing'
         )`;
-    const total = Number(await env.DB.prepare(
-      `SELECT COUNT(DISTINCT j.id) c ${historyFrom}`,
-    ).bind(String(partner.id)).first("c")) || 0;
+    const history = `(
+      SELECT id,id reference_id,note,created_at,amount,status FROM partner_payout_tickets WHERE partner_id=?
+      UNION ALL
+      SELECT j.id,j.reference_id,j.note,j.created_at,-SUM(lp.amount) amount,'settled' status
+      ${historyFrom} GROUP BY j.id,j.reference_id,j.note,j.created_at
+    ) history`;
+    const total = Number(await env.DB.prepare(`SELECT COUNT(*) c FROM ${history}`)
+      .bind(String(partner.id), String(partner.id)).first('c')) || 0;
     const pages = Math.max(1, Math.ceil(total / per));
     const page = Math.min(requestedPage, pages);
     const { results } = await env.DB.prepare(
-      `SELECT j.id,j.reference_id,j.note,j.created_at,-SUM(lp.amount) amount
-       ${historyFrom}
-       GROUP BY j.id,j.reference_id,j.note,j.created_at
-       ORDER BY j.created_at DESC,j.id DESC LIMIT ? OFFSET ?`,
-    ).bind(String(partner.id), per, (page - 1) * per).all();
-    return J({ balance: Math.max(0, balance), rows: results, page, pages, total });
+      `SELECT * FROM ${history} ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?`,
+    ).bind(String(partner.id), String(partner.id), per, (page - 1) * per).all();
+    const pending = await walletBalance(env, 'partner', partner.id, 'payout_pending');
+    return J({ balance: Math.max(0, balance), pending, rows: results, page, pages, total,
+      minimumWithdraw: MIN_PARTNER_WITHDRAW,
+      payout: { bank_name: partner.bank_name, bank_bin: partner.bank_bin, bank_account: partner.bank_account, bank_owner: partner.bank_owner } });
   }
   if (p === "/api/partner/overview" && m === "GET") {
     if (me.role !== "partner") return err("403", 403);
@@ -6635,29 +6651,14 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
 
       const countRow = await env.DB.prepare(
         `SELECT COUNT(*) count
-         FROM wallet_tx wt
+         FROM ${PAYOUT_TICKET_SOURCE} wt
          WHERE wt.type = 'withdraw' ${statusFilter}`
       ).first('count');
       const total = Number(countRow || 0);
 
       const { results } = await env.DB.prepare(
-        `SELECT 
-           wt.id,
-           wt.koc_id,
-           wt.amount,
-           wt.status,
-           wt.note,
-           wt.created_at,
-           k.name as koc_name,
-           k.email as koc_email,
-           k.phone as koc_phone,
-           k.avatar as koc_avatar,
-           k.bank_name,
-           k.bank_account,
-           k.bank_owner,
-           k.bank_bin
-         FROM wallet_tx wt
-         LEFT JOIN kocs k ON k.id = wt.koc_id
+        `SELECT wt.*
+         FROM ${PAYOUT_TICKET_SOURCE} wt
          WHERE wt.type = 'withdraw' ${statusFilter}
          ORDER BY wt.created_at DESC
          LIMIT ? OFFSET ?`
@@ -6669,7 +6670,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         const bankOwner = String(t.bank_owner || t.koc_name || '').trim();
         const amount = Number(t.amount || 0);
         const ticketCodeMatch = String(t.note || '').match(/WD\d+/);
-        const ticketCode = ticketCodeMatch ? ticketCodeMatch[0] : `WD${t.id.slice(0, 6)}`;
+        const ticketCode = t.owner_type === 'partner' ? t.id : ticketCodeMatch ? ticketCodeMatch[0] : `WD${t.id.slice(0, 6)}`;
         const addInfo = `KOCVIET ${ticketCode}`;
 
         let vietqrUrl = '';
@@ -6693,7 +6694,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       });
 
       const pendingCountRow = await env.DB.prepare(
-        `SELECT COUNT(*) count FROM wallet_tx WHERE type = 'withdraw' AND status IN ('pending_review', 'processing')`
+        `SELECT COUNT(*) count FROM ${PAYOUT_TICKET_SOURCE} wt WHERE type = 'withdraw' AND status IN ('pending_review', 'processing')`
       ).first('count');
       const pendingCount = Number(pendingCountRow || 0);
 
@@ -6704,6 +6705,21 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         per,
         pendingCount,
       });
+    }
+
+    if (['/api/admin/payout-tickets/approve', '/api/admin/payout-tickets/reject'].includes(p) && m === 'POST'
+        && String(body.id || body.ticket_id || '').startsWith('PWD')) {
+      const id = String(body.id || body.ticket_id).trim();
+      const approve = p.endsWith('/approve');
+      const detail = String(approve ? (body.reference_code || body.note || '') : (body.reason || 'Thông tin tài khoản không hợp lệ')).trim().slice(0, 500);
+      let ticket;
+      try { ticket = await resolvePartnerPayout(env, id, approve, detail); }
+      catch (error) { return err(error instanceof PartnerPayoutError ? error.message : 'Chưa xử lý được yêu cầu rút tiền. Vui lòng thử lại.', error instanceof PartnerPayoutError ? 409 : 500); }
+      await audit(env, me.id, approve ? 'partner.payout_approved' : 'partner.payout_rejected', id, `amount=${ticket.amount} ${detail}`);
+      await notifyUser(env, ticket.user_id, 'payout', approve ? 'Yêu cầu rút tiền đã được chuyển khoản' : 'Yêu cầu rút tiền bị từ chối',
+        approve ? `Đã chuyển ${Number(ticket.amount).toLocaleString('vi-VN')}đ về ${ticket.bank_name} (${ticket.bank_account}).`
+          : `Yêu cầu rút tiền bị từ chối: ${detail}. Số tiền đã được hoàn lại vào ví.`, '#/wallet');
+      return J({ ok: true, message: approve ? 'Đã xác nhận chuyển tiền cho đối tác.' : 'Đã từ chối yêu cầu và hoàn tiền vào ví đối tác.' });
     }
 
     // Admin: Duyệt yêu cầu rút tiền (sau khi đã quét mã QR chuyển khoản thành công)
