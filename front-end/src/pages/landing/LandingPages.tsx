@@ -9,11 +9,13 @@ const img={
   price: '/images/pricing-hero-seamless.png',
   community: '/images/community-hero-seamless.png',
 }
+const bookingPaymentNotice =
+  'Phí booking được trừ từ số dư khả dụng của bạn và giữ an toàn cho đến khi KOC hoàn thành booking và bạn duyệt bài đăng. KOC sẽ nhận được phí ngay sau khi bạn xác nhận booking hoàn thành.'
 const flow:Array<[string,string]>=[
   ['TÌM & CHỌN','Doanh nghiệp lọc KOC theo ngành hàng, tỉnh, hạng, giá; xem hồ sơ với chỉ số hiệu quả thật và bảng giá công khai.'],
-  ['BOOKING & ĐẶT CỌC','Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.'],
+  ['BOOKING & ĐẶT CỌC',bookingPaymentNotice],
   ['SẢN XUẤT & ĐĂNG BÀI','KOC xác nhận, tự sản xuất content đúng chất giọng của mình và đăng bài kèm link affiliate riêng.'],
-  ['ĐO LƯỜNG & CHI TRẢ','Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.'],
+  ['ĐO LƯỜNG & CHI TRẢ','KOC hoàn thành booking, bạn duyệt bài đăng và phí booking được chuyển ngay cho KOC. Báo cáo kết quả được cập nhật minh bạch.'],
 ]
 
 export function CampaignVideoPlayer({
@@ -383,7 +385,7 @@ export function HomeLanding(){
             <article className="lp-step-card">
               <div className="lp-step-badge">2</div>
               <h4>BOOKING &amp; ĐẶT CỌC</h4>
-              <p>Gửi yêu cầu kèm link dữ liệu sản phẩm để KOC kiểm tra. Thanh toán tạm giữ vào ví đảm bảo của nền tảng.</p>
+              <p>{bookingPaymentNotice}</p>
             </article>
             <article className="lp-step-card">
               <div className="lp-step-badge">3</div>
@@ -393,7 +395,7 @@ export function HomeLanding(){
             <article className="lp-step-card">
               <div className="lp-step-badge">4</div>
               <h4>ĐO LƯỜNG &amp; CHI TRẢ</h4>
-              <p>Hệ thống ghi nhận click, đơn hàng theo thời gian thực. Hoàn thành: KOC nhận 95% phí booking + hoa hồng; doanh nghiệp nhận báo cáo minh bạch.</p>
+              <p>KOC hoàn thành booking, bạn duyệt bài đăng và phí booking được chuyển ngay cho KOC. Báo cáo kết quả được cập nhật minh bạch.</p>
             </article>
           </div>
         </div>
@@ -427,7 +429,7 @@ export function HomeLanding(){
                 <span className="lp-proof-badge">Ví đảm bảo</span>
               </div>
               <h3 className="lp-proof-card-title">Thanh toán an toàn</h3>
-              <p className="lp-proof-card-desc">Doanh nghiệp không sợ mất tiền, KOC không sợ bị chậm phí. Tiền chỉ được chuyển khi hai bên xác nhận hoàn thành.</p>
+              <p className="lp-proof-card-desc">{bookingPaymentNotice}</p>
             </article>
 
             <article className="lp-card lp-proof-card lp-proof-blue">

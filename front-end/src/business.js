@@ -28,6 +28,9 @@ import { autoAnimate } from "./animations.js";
 import { socialProfileUrl } from "./social-channels.js";
 import { mountListSearch } from "./list-search.js";
 
+const BOOKING_PAYMENT_NOTICE =
+  "Phí booking được trừ từ số dư khả dụng của bạn và giữ an toàn cho đến khi KOC hoàn thành booking và bạn duyệt bài đăng. KOC sẽ nhận được phí ngay sau khi bạn xác nhận booking hoàn thành.";
+
 function businessSearchForm(key, label, placeholder, value) {
   return `<form class="list-search-toolbar" id="${key}-form" role="search">
     <div class="list-search-field"><label for="${key}">${label}</label><input type="search" id="${key}" name="search" value="${esc(value)}" placeholder="${placeholder}" maxlength="120"></div>
@@ -430,6 +433,13 @@ async function openKocProfile(kocId, el) {
             ? `<a href="${esc(social.url)}" target="_blank" rel="noopener noreferrer"><span><b>${esc(social.platform || "Mạng xã hội")}</b><small>${esc(social.handle)}</small></span><strong>${num(social.followers || koc.followers)} follower ↗</strong></a>`
             : `<div><span><b>${esc(social.platform || "Mạng xã hội")}</b><small>${esc(social.handle)}</small></span><strong>${num(social.followers || koc.followers)} follower</strong></div>`).join("")}</div>`
             : '<p class="muted">KOC chưa cập nhật kênh mạng xã hội.</p>'}
+          <aside class="business-koc-off-platform-warning" role="note">
+            <span class="business-koc-off-platform-warning-icon" aria-hidden="true">⚠</span>
+            <div>
+              <strong>Giao dịch an toàn trên KOC Việt</strong>
+              <p><b>Lưu ý:</b> Tự thoả thuận booking ngoài app với KOC sẽ có giá cao hơn trong app. Doanh nghiệp và KOC đều không được bảo vệ trước các rủi ro về giao dịch và tự chịu trách nhiệm trước các nguy cơ lừa đảo cùng những thiệt hại liên quan. Khi bị phát hiện, doanh nghiệp và KOC đều bị cấm vĩnh viễn trên KOCViet.</p>
+            </div>
+          </aside>
         </div>
         <div class="business-koc-profile-section">
           <h3>Giá booking niêm yết</h3>
@@ -464,7 +474,7 @@ async function openBookingForm(kocId, el) {
       </select></div>
     <div class="field"><label class="required-label">Gói ngành hàng (giá niêm yết cố định)</label>
       <select id="bf-cat">${prices.map((p) => `<option value="${esc(p.category)}" data-price="${p.price}">${esc(p.category)} — ${money(p.price)}</option>`).join("")}</select></div>
-    <div class="tint-box between" id="bf-esc-box"><span>Giá booking · khoản tiền được giữ an toàn khi gửi yêu cầu</span><b class="money" id="bf-price">${money(prices[0].price)}</b></div>
+    <div class="tint-box between" id="bf-esc-box"><span>Phí booking · được giữ an toàn đến khi hoàn thành</span><b class="money" id="bf-price">${money(prices[0].price)}</b></div>
     <div id="bf-aff" style="display:none">
       <div class="field" style="margin-top:12px"><label class="required-label">🛒 Sàn áp dụng</label>
         <select id="bf-plat">${PLATFORMS.map((pl) => `<option>${pl}</option>`).join("")}</select></div>
@@ -475,7 +485,7 @@ async function openBookingForm(kocId, el) {
     <div class="field" style="margin-top:12px"><label class="required-label">${icon("productData")} Link dữ liệu sản phẩm (bắt buộc)</label><input id="bf-link" placeholder="https://… (thông tin, hình ảnh, giá, chính sách)"></div>
     <div class="field"><label class="required-label">Mô tả yêu cầu</label><textarea id="bf-req" rows="3" placeholder="Yêu cầu nội dung, thông điệp…"></textarea></div>
     <div class="field"><label class="required-label">Thời hạn</label><input id="bf-deadline" type="date"></div>
-    <p class="hint" id="bf-hint">Phí được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.</p>
+    <p class="hint" id="bf-hint">${BOOKING_PAYMENT_NOTICE}</p>
     <button class="btn primary" id="bf-go">Gửi yêu cầu booking</button>
     <button class="btn ghost" id="bf-cancel" style="margin-top:8px">Hủy</button>`);
   const sel = m.querySelector("#bf-cat");
@@ -495,20 +505,7 @@ async function openBookingForm(kocId, el) {
     affBox.style.display = showAff ? "block" : "none";
     escBox.style.display = hasListedFee ? "flex" : "none";
     catField.style.display = hasListedFee ? "block" : "none";
-    const feeLabel =
-      t === "review"
-        ? "Phí đánh giá sản phẩm"
-        : t === "advertising"
-          ? "Phí quảng cáo"
-          : t === "affiliate"
-            ? "Phí booking theo giá ngành hàng"
-            : "Phí gói kết hợp";
-    m.querySelector("#bf-hint").textContent =
-      `${feeLabel} được trừ từ số dư khả dụng và giữ an toàn khi gửi yêu cầu. ` +
-      `Khi bạn duyệt bài đăng, KOC nhận 95% và NetViet nhận 5%.` +
-      (showAff
-        ? " Hoa hồng bán hàng được ghi nhận riêng theo doanh số và chuyển vào ví KOC sau đối soát; doanh nghiệp trả thêm phí nền tảng 1%."
-        : "");
+    m.querySelector("#bf-hint").textContent = BOOKING_PAYMENT_NOTICE;
     m.querySelector("#bf-go").textContent = "Gửi yêu cầu booking";
   }
   typeSel.addEventListener("change", syncType);
@@ -605,7 +602,7 @@ async function orders(el, page = businessOrdersPage) {
       });
       if (payment.status === "paid") {
         toast(
-          "Thanh toán thành công · booking đã hoàn tất và KOC nhận 95%",
+          "Thanh toán thành công · phí booking được giữ an toàn đến khi bạn xác nhận booking hoàn thành.",
           "ok",
         );
       } else if (payment.status === "cancelled") {
@@ -931,7 +928,7 @@ async function openOrder(id, el) {
         <b>${b.status === "payment_failed" ? "Chưa tạo được yêu cầu thanh toán" : b.status === "payment_cancelled" ? "Thanh toán đã bị hủy" : "Booking đang chờ thanh toán"}</b>
         <p class="muted" style="margin-top:4px">${
           b.post_link
-            ? "KOC đã đăng bài. Booking sẽ hoàn tất và 95% được ghi vào ví KOC sau khi thanh toán được xác nhận."
+            ? "KOC đã đăng bài. Phí booking được giữ an toàn cho đến khi bạn xác nhận booking hoàn thành; KOC sẽ nhận được phí ngay sau đó."
             : b.type === "aiclone"
               ? `Admin đã gửi báo giá chính thức${b.aiclone_quote_note ? `: ${esc(b.aiclone_quote_note)}` : ""}. Thanh toán để NetViet bắt đầu sản xuất video.`
               : "Đây là booking theo quy trình đảm bảo thanh toán cũ; KOC chỉ nhận booking sau khi giao dịch được xác nhận."
@@ -2080,7 +2077,7 @@ async function wallet(el) {
       <div class="card" style="padding:16px;border-left:4px solid var(--warning)">
         <div class="muted" style="font-size:12px">Khoản đang được đảm bảo</div>
         <div class="money" style="font-size:24px;font-weight:700;margin-top:6px;color:var(--warning)">${money(w.escrow || 0)}</div>
-        <div class="muted" style="font-size:11px;margin-top:4px">Tiền giữ an toàn chờ KOC hoàn thành bài đăng</div>
+        <div class="muted" style="font-size:11px;margin-top:4px">Phí booking được giữ an toàn đến khi KOC hoàn thành và bạn duyệt bài đăng</div>
       </div>
     </div>
 

@@ -1391,3 +1391,46 @@ table.admin-business-table td:nth-child(2),table.admin-business-table td:nth-chi
   .affiliate-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
   .koc-ai-booking-list{grid-template-columns:1fr}
 }
+
+/* Booking outside KOC Việt is unsupported: place the warning beside the social links
+   so businesses see it before leaving the platform to inspect a KOC channel. */
+.business-koc-off-platform-warning{
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  gap:10px;
+  margin-top:12px;
+  padding:12px;
+  border:1px solid #fed7aa;
+  border-radius:12px;
+  background:linear-gradient(135deg,#fff7ed,#fffbeb);
+  color:#7c2d12;
+  box-shadow:0 4px 14px rgba(194,65,12,.07);
+}
+.business-koc-off-platform-warning-icon{
+  display:grid;
+  width:28px;
+  height:28px;
+  place-items:center;
+  border-radius:9px;
+  background:#ffedd5;
+  color:#c2410c;
+  font-size:15px;
+  font-weight:800;
+}
+.business-koc-off-platform-warning strong{
+  display:block;
+  color:#9a3412;
+  font-size:12px;
+  line-height:1.35;
+}
+.business-koc-off-platform-warning p{
+  margin:4px 0 0;
+  color:#9a5a38;
+  font-size:11px;
+  line-height:1.55;
+}
+.business-koc-off-platform-warning p b{color:#9a3412}
+@media(max-width:620px){
+  .business-koc-off-platform-warning{padding:11px;grid-template-columns:24px minmax(0,1fr);gap:9px}
+  .business-koc-off-platform-warning-icon{width:24px;height:24px;border-radius:8px;font-size:13px}
+}
