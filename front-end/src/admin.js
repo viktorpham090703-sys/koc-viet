@@ -316,9 +316,9 @@ async function partnersAdmin(el) {
         <td data-label="KOC">${num(p.member_count)}</td>
         <td data-label="Hoa hồng tích luỹ" class="money">${money(p.earned_total)}<div class="muted" style="font-size:11px">${num(p.earned_bookings)} booking</div></td>
         <td data-label="Số dư ví" class="money">${money(p.wallet_revenue)}</td>
-        <td data-label="Trạng thái">${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</td>
+        <td data-label="Trạng thái">${statusChip(p.status)}</td>
         <td data-label="Tài khoản">${p.account_user_id ? '<span class="chip g">Đã cấp</span>' : '<span class="chip n">Chưa cấp</span>'}</td>
-        <td data-label="Thao tác"><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button></td>
+        <td data-label="Thao tác"><div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" data-pt-view="${p.id}">Xem</button>${p.status === "active" ? `<button class="btn danger sm" data-pt-lock="${p.id}">Khóa</button>` : p.status === "locked" ? `<button class="btn ok sm" data-pt-unlock="${p.id}">Mở khóa</button>` : ""}</div></td>
       </tr>`).join("")
           : `<tr><td colspan="9">${empty("🤝", "Chưa có đối tác nào")}</td></tr>`
       }
@@ -328,6 +328,29 @@ async function partnersAdmin(el) {
   el.querySelectorAll("[data-pt-view]").forEach((b) =>
     b.addEventListener("click", () => partnerDetail(b.dataset.ptView, el)),
   );
+  el.querySelectorAll("[data-pt-lock]").forEach((b) =>
+    b.addEventListener("click", () => partnerStatus(b.dataset.ptLock, "lock", el)),
+  );
+  el.querySelectorAll("[data-pt-unlock]").forEach((b) =>
+    b.addEventListener("click", () => partnerStatus(b.dataset.ptUnlock, "unlock", el)),
+  );
+}
+
+async function partnerStatus(id, action, listEl) {
+  let reason = "";
+  if (action === "lock") {
+    reason = await promptDialog("Nhập lý do khóa đối tác:");
+    if (reason === null) return;
+    if (!reason.trim()) return toast("Vui lòng nhập lý do khóa", "err");
+  } else if (!(await confirmDialog("Mở khóa đối tác này?"))) return;
+  try {
+    await post("/api/admin/partners/status", { id, action, reason });
+    toast(action === "lock" ? "Đã khóa đối tác" : "Đã mở khóa đối tác", "ok");
+    closeModal();
+    partnersAdmin(listEl);
+  } catch (e) {
+    toast(e.message, "err");
+  }
 }
 
 function partnerKocPickerHtml(kocs, { checked = [] } = {}) {
@@ -497,7 +520,7 @@ async function partnerDetail(id, listEl) {
   modal(`<div class="between"><div class="row" style="gap:10px">
       ${avatar ? `<div style="width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--tint);flex:none"><img src="${esc(avatar)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>` : ""}
       <h2 style="margin:0">${esc(p.name)}</h2></div>
-      ${p.status === "active" ? '<span class="chip g">Hoạt động</span>' : '<span class="chip n">Tạm dừng</span>'}</div>
+      ${statusChip(p.status)}</div>
     <div class="tint-box" style="margin:14px 0">
       <div class="between"><span>Ngân hàng nhận</span>${bankIdentityHtml(banks, p.bank_name, p.bank_bin, "—")}</div>
       <div class="between"><span>Số tài khoản</span><b>${esc(p.bank_account || "—")}</b></div>
@@ -509,7 +532,7 @@ async function partnerDetail(id, listEl) {
       ${
         p.account
           ? `<div class="between"><span>Email đăng nhập</span><b>${esc(p.account.email)}</b></div>
-             <div class="between"><span>Trạng thái</span>${p.account.status === "active" ? '<span class="chip g">Hoạt động</span>' : `<span class="chip n">${esc(p.account.status)}</span>`}</div>
+             <div class="between"><span>Trạng thái</span>${statusChip(p.account.status)}</div>
              <div style="margin-top:10px"><button class="btn ghost sm" id="pt-d-account-reset">Đặt lại mật khẩu & gửi lại email</button></div>`
           : `<p class="muted" style="margin:0 0 10px">Đối tác chưa có tài khoản đăng nhập.</p>
              <div class="field" style="margin:0 0 8px"><label class="required-label">Email đăng nhập</label><input id="pt-d-account-email" type="email" placeholder="email@doanhnghiep.vn"></div>
@@ -524,10 +547,11 @@ async function partnerDetail(id, listEl) {
       <div class="field" style="margin:0"><label class="required-label">Tỷ lệ chia (% của 5%)</label>
         <input id="pt-d-rate" type="number" step="1" min="1" max="100" value="${Math.round(Number(p.fee_rate) * 100)}"></div>
       <div class="field" style="margin:0"><label class="required-label">Trạng thái</label>
+        ${p.status === "locked" ? statusChip("locked") : `
         <select id="pt-d-status">
           <option value="active" ${p.status === "active" ? "selected" : ""}>Hoạt động</option>
           <option value="paused" ${p.status === "paused" ? "selected" : ""}>Tạm dừng</option>
-        </select></div>
+        </select>`}</div>
     </div>
     <p class="muted" style="font-size:12px;margin:0 0 12px">Thông tin ngân hàng nhận chi trả ở trên do đối tác tự cập nhật trong cổng đối tác — admin chỉ xem.</p>
     <button class="btn primary sm" id="pt-d-save" style="margin:4px 0 16px">Lưu thay đổi</button>
@@ -557,8 +581,13 @@ async function partnerDetail(id, listEl) {
           : `<tr><td colspan="6">${empty("💸", "Chưa phát sinh hoa hồng")}</td></tr>`
       }
     </tbody></table></div>
-    <button data-modal-dismiss class="btn ghost" id="pt-d-close">Đóng</button>`);
+    <div class="row" style="gap:8px;margin-top:4px">
+      ${p.status === "active" ? '<button class="btn danger" id="pt-d-lock">Khóa đối tác</button>' : p.status === "locked" ? '<button class="btn ok" id="pt-d-unlock">Mở khóa đối tác</button>' : ""}
+      <button data-modal-dismiss class="btn ghost" id="pt-d-close">Đóng</button>
+    </div>`);
   document.getElementById("pt-d-close").addEventListener("click", closeModal);
+  document.getElementById("pt-d-lock")?.addEventListener("click", () => partnerStatus(id, "lock", listEl));
+  document.getElementById("pt-d-unlock")?.addEventListener("click", () => partnerStatus(id, "unlock", listEl));
   bindPartnerAvatar("pt-d-avatar", (v) => (avatar = v));
   document.getElementById("pt-d-account-create")?.addEventListener("click", async () => {
     const email = document.getElementById("pt-d-account-email").value.trim();
@@ -608,7 +637,7 @@ async function partnerDetail(id, listEl) {
         name,
         avatar,
         fee_rate: ratePct / 100,
-        status: document.getElementById("pt-d-status").value,
+        status: document.getElementById("pt-d-status")?.value || p.status,
       });
       toast("Đã lưu", "ok");
       closeModal();
@@ -796,6 +825,7 @@ async function kocDirectory(el) {
         <option value="pending" ${kocDirectoryFilters.status === "pending" ? "selected" : ""}>Chờ duyệt</option>
         <option value="leader_ok" ${kocDirectoryFilters.status === "leader_ok" ? "selected" : ""}>Trưởng nhóm đã duyệt</option>
         <option value="active" ${kocDirectoryFilters.status === "active" ? "selected" : ""}>Đang hoạt động</option>
+        <option value="locked" ${kocDirectoryFilters.status === "locked" ? "selected" : ""}>Đã khóa</option>
         <option value="rejected" ${kocDirectoryFilters.status === "rejected" ? "selected" : ""}>Đã từ chối</option>
       </select></div>
       <button class="btn primary sm" id="koc-directory-filter">Tìm</button>
@@ -837,10 +867,16 @@ async function loadKocDirectory(el) {
       <td data-label="Liên hệ"><div>${esc(k.phone || "—")}</div><div class="muted" style="font-size:11px">${esc(k.email || "—")}</div></td>
       <td data-label="Hạng">${tierBadge(k.tier)}</td><td data-label="Ngành hàng">${kocDirectoryCategories(k.categories)}</td>
       <td data-label="Người theo dõi"><span title="${esc(num(k.followers))} người theo dõi" aria-label="${esc(num(k.followers))} người theo dõi">${compactKocFollowers(k.followers)}</span></td><td data-label="Trạng thái">${statusChip(k.status)}</td>
-      <td data-label="Thao tác"><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button></td></tr>`).join("")}
+      <td data-label="Thao tác"><div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" data-koc-directory-detail="${k.id}">Chi tiết</button>${k.status === "active" ? `<button class="btn danger sm" data-koc-lock="${k.id}">Khóa</button>` : k.status === "locked" ? `<button class="btn ok sm" data-koc-unlock="${k.id}">Mở khóa</button>` : ""}</div></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml(r.page, r.pages)}`;
   box.querySelectorAll("[data-koc-directory-detail]").forEach((button) =>
-    button.addEventListener("click", () => kocDetail(r.kocs.find((k) => k.id === button.dataset.kocDirectoryDetail))),
+    button.addEventListener("click", () => kocDetail(r.kocs.find((k) => k.id === button.dataset.kocDirectoryDetail), el)),
+  );
+  box.querySelectorAll("[data-koc-lock]").forEach((button) =>
+    button.addEventListener("click", () => kocStatus(button.dataset.kocLock, "lock", el)),
+  );
+  box.querySelectorAll("[data-koc-unlock]").forEach((button) =>
+    button.addEventListener("click", () => kocStatus(button.dataset.kocUnlock, "unlock", el)),
   );
   box.querySelectorAll("[data-pg]").forEach((button) =>
     button.addEventListener("click", () => {
@@ -848,6 +884,23 @@ async function loadKocDirectory(el) {
       loadKocDirectory(el);
     }),
   );
+}
+
+async function kocStatus(id, action, el) {
+  let reason = "";
+  if (action === "lock") {
+    reason = await promptDialog("Nhập lý do khóa KOC:");
+    if (reason === null) return;
+    if (!reason.trim()) return toast("Vui lòng nhập lý do khóa", "err");
+  } else if (!(await confirmDialog("Mở khóa KOC này?"))) return;
+  try {
+    await post("/api/admin/kocs/status", { id, action, reason });
+    toast(action === "lock" ? "Đã khóa KOC" : "Đã mở khóa KOC", "ok");
+    closeModal();
+    if (el) loadKocDirectory(el);
+  } catch (e) {
+    toast(e.message, "err");
+  }
 }
 
 async function queue(el) {
@@ -897,7 +950,7 @@ async function act(id, approve, el) {
   closeModal();
   queue(el);
 }
-async function kocDetail(k) {
+async function kocDetail(k, listEl = null) {
   try {
     const result = await api(
       `/api/admin/koc-identity/${encodeURIComponent(k.id)}`,
@@ -923,6 +976,7 @@ async function kocDetail(k) {
       <div class="between"><span>SĐT / Email</span><b style="font-size:12px">${esc(k.phone || "")} · ${esc(k.email || "—")}</b></div>
       <div class="between"><span>Mã hợp đồng</span><b style="font-size:11px">${esc((k.contract_hash || "").slice(0, 20))}…</b></div>
     </div>
+    ${k.status === "locked" ? `<div class="tint-box" style="margin:0 0 12px"><b>Lý do khóa</b><div>${esc(k.locked_reason || "—")}</div><div class="muted" style="font-size:12px">${k.locked_at ? fmtDateTime(k.locked_at) : ""}</div></div>` : ""}
     ${k.bio ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Giới thiệu</div><div class="muted">${esc(k.bio)}</div></div>` : ""}
     ${(k.prices || []).length ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Bảng giá booking</div>${k.prices.map((price) => `<div class="between"><span>${esc(price.category)}</span><b>${money(price.price)}</b></div>`).join("")}</div>` : ""}
     <div class="tint-box" style="margin:0 0 12px">
@@ -950,11 +1004,14 @@ async function kocDetail(k) {
       .join("")}</div>
     <div class="row">
       ${k.contract_html ? '<button class="btn primary" id="admin-view-contract">📜 Xem hợp đồng đã ký</button>' : ""}
+      ${k.status === "active" ? '<button class="btn danger" id="admin-koc-lock">Khóa KOC</button>' : k.status === "locked" ? '<button class="btn ok" id="admin-koc-unlock">Mở khóa KOC</button>' : ""}
       <button data-modal-dismiss class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
     </div>`);
   document
     .getElementById("admin-view-contract")
     ?.addEventListener("click", () => showSignedContract(k));
+  document.getElementById("admin-koc-lock")?.addEventListener("click", () => kocStatus(k.id, "lock", listEl));
+  document.getElementById("admin-koc-unlock")?.addEventListener("click", () => kocStatus(k.id, "unlock", listEl));
   const identityImages = [
     k.kyc_front_image,
     k.kyc_back_image,

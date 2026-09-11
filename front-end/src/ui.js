@@ -65,6 +65,10 @@ export function stars(r) {
 }
 
 const STATUS = {
+  active:    ['Hoạt động','g'],
+  locked:    ['Đã khóa','r'],
+  paused:    ['Tạm dừng','n'],
+  leader_ok: ['Trưởng nhóm đã duyệt','b'],
   quote_pending: ['Chờ Admin báo giá','w'],
   quote_requested: ['Chờ Admin báo giá','w'],
   quoted: ['Admin đã gửi báo giá · Chờ thanh toán','b'],
