@@ -91,18 +91,27 @@ test("late permission resolution after cancel immediately stops the acquired str
   assert.equal(ui.captured.length, 0);
 });
 
-for (const dismissal of ["cancel", "escape", "backdrop", "route", "pagehide", "owner-removed", "modal-removed"]) {
+test("clicking outside keeps the camera open until explicitly closed", async () => {
+  const { track, stream } = camera();
+  const ui = setup(async () => stream);
+  await flush();
+  const event = new Event("click");
+  Object.assign(event, { clientX: 0, clientY: 0 });
+  ui.dialog.dispatchEvent(event);
+  assert.equal(ui.dialog.open, true);
+  assert.equal(track.stops, 0);
+  ui.click("[data-camera-cancel]");
+  assert.equal(ui.dialog.open, false);
+  assert.equal(track.stops, 1);
+});
+
+for (const dismissal of ["cancel", "escape", "route", "pagehide", "owner-removed", "modal-removed"]) {
   test(`releases camera on ${dismissal}`, async () => {
     const { track, stream } = camera();
     const ui = setup(async () => stream);
     await flush();
     if (dismissal === "cancel") ui.click("[data-camera-cancel]");
     if (dismissal === "escape") ui.dialog.dispatchEvent(new Event("cancel", { cancelable: true }));
-    if (dismissal === "backdrop") {
-      const event = new Event("click");
-      Object.assign(event, { clientX: 0, clientY: 0 });
-      ui.dialog.dispatchEvent(event);
-    }
     if (dismissal === "route") ui.window.dispatchEvent(new Event("hashchange"));
     if (dismissal === "pagehide") ui.window.dispatchEvent(new Event("pagehide"));
     if (dismissal === "owner-removed") { ui.owner.isConnected = false; ui.observer.callback(); }

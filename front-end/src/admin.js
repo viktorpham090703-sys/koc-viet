@@ -231,7 +231,7 @@ async function businessDetail(id) {
       <div class="between"><span>Số tài khoản</span><b>${esc(b.bank_account || "—")}</b></div>
       <div class="between"><span>Chủ tài khoản</span><b>${esc(b.bank_owner || "—")}</b></div>
     </div>
-    <button class="btn ghost" id="biz-detail-close">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="biz-detail-close">Đóng</button>`);
   document
     .getElementById("biz-license-download")
     ?.addEventListener("click", () => {
@@ -446,7 +446,7 @@ async function partnerCreate(listEl) {
     </div>
     <div class="row" style="gap:8px;margin-top:14px">
       <button class="btn primary" id="pt-save">Tạo đối tác</button>
-      <button class="btn ghost" id="pt-cancel">Huỷ</button>
+      <button data-modal-dismiss class="btn ghost" id="pt-cancel">Huỷ</button>
     </div>`);
   bindPartnerAvatar("pt-avatar", (v) => (avatar = v));
   const listBox = document.getElementById("pt-koc-list");
@@ -557,7 +557,7 @@ async function partnerDetail(id, listEl) {
           : `<tr><td colspan="6">${empty("💸", "Chưa phát sinh hoa hồng")}</td></tr>`
       }
     </tbody></table></div>
-    <button class="btn ghost" id="pt-d-close">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="pt-d-close">Đóng</button>`);
   document.getElementById("pt-d-close").addEventListener("click", closeModal);
   bindPartnerAvatar("pt-d-avatar", (v) => (avatar = v));
   document.getElementById("pt-d-account-create")?.addEventListener("click", async () => {
@@ -647,7 +647,7 @@ async function partnerAddMembers(id, listEl) {
     </div>
     <div class="row" style="gap:8px;margin-top:14px">
       <button class="btn primary" id="pt-a-save">Thêm</button>
-      <button class="btn ghost" id="pt-a-cancel">Huỷ</button>
+      <button data-modal-dismiss class="btn ghost" id="pt-a-cancel">Huỷ</button>
     </div>`);
   const listBox = document.getElementById("pt-a-list");
   let searchTimer;
@@ -950,7 +950,7 @@ async function kocDetail(k) {
       .join("")}</div>
     <div class="row">
       ${k.contract_html ? '<button class="btn primary" id="admin-view-contract">📜 Xem hợp đồng đã ký</button>' : ""}
-      <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
+      <button data-modal-dismiss class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''">Đóng</button>
     </div>`);
   document
     .getElementById("admin-view-contract")
@@ -986,7 +986,7 @@ function showSignedContract(c) {
     <div class="copybox" style="margin:10px 0;word-break:break-all;font-size:11px"><b>SHA-256:</b> ${esc(c.contract_hash || "")}</div>
     <iframe id="admin-contract-frame" title="Hợp đồng đã ký của ${esc(c.name)}" sandbox="allow-same-origin allow-modals"
       style="width:100%;height:72vh;border:1px solid #d1d5db;border-radius:10px;background:#e5e7eb"></iframe>
-    <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:10px">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:10px">Đóng</button>`);
   dialog.style.maxWidth = "1180px";
   const frame = document.getElementById("admin-contract-frame");
   const printDocument = buildContractPrintDocument(c);
@@ -1236,7 +1236,7 @@ function complaintDetail(c, el) {
     </div>`
         : ""
     }
-    <button class="btn ghost" id="cp-close" style="margin-top:10px">Đóng</button>`);
+    <button data-modal-dismiss class="btn ghost" id="cp-close" style="margin-top:10px">Đóng</button>`);
   m.querySelector("#cp-close").addEventListener("click", closeModal);
   const note = () => (m.querySelector("#cp-note")?.value || "").trim();
   const doAct = async (action) => {
@@ -1374,7 +1374,7 @@ async function adminCampaigns(el) {
   mountListSearch(el, { key: "admin-campaigns", label: "Tìm chiến dịch", placeholder: "Doanh nghiệp, ngành hàng, KOC hoặc ghi chú…", itemSelector: "#admin-campaign-list > .card", containerSelector: "#admin-campaign-list" });
   el.querySelectorAll('[data-campaign-quote]').forEach(button=>button.addEventListener('click',()=>{
     const c=r.campaigns.find(x=>x.id===button.dataset.campaignQuote),suggested=Number(c.management_fee)||Math.max(2000000,Math.round(Number(c.budget)*.15));
-    const m=modal(`<h2>Báo giá chiến dịch lớn</h2><div class="tint-box" style="margin:12px 0"><div class="between"><span>Ngân sách trả KOC</span><b>${money(c.budget)}</b></div></div><div class="field"><label>Phí điều phối NetViet</label><input id="cq-fee" type="number" min="0" step="1000" value="${suggested}"></div><div class="field"><label>Ghi chú báo giá</label><textarea id="cq-note" rows="3">${esc(c.quote_note||'')}</textarea></div><button class="btn primary" id="cq-send">Gửi doanh nghiệp xác nhận</button><button class="btn ghost" id="cq-close" style="margin-top:8px">Đóng</button>`);
+    const m=modal(`<h2>Báo giá chiến dịch lớn</h2><div class="tint-box" style="margin:12px 0"><div class="between"><span>Ngân sách trả KOC</span><b>${money(c.budget)}</b></div></div><div class="field"><label>Phí điều phối NetViet</label><input id="cq-fee" type="number" min="0" step="1000" value="${suggested}"></div><div class="field"><label>Ghi chú báo giá</label><textarea id="cq-note" rows="3">${esc(c.quote_note||'')}</textarea></div><button class="btn primary" id="cq-send">Gửi doanh nghiệp xác nhận</button><button data-modal-dismiss class="btn ghost" id="cq-close" style="margin-top:8px">Đóng</button>`);
     m.querySelector('#cq-close').addEventListener('click',closeModal);m.querySelector('#cq-send').addEventListener('click',async()=>{try{await post('/api/campaign/action',{id:c.id,action:'quote',managementFee:Number(m.querySelector('#cq-fee').value),note:m.querySelector('#cq-note').value.trim()});toast('Đã gửi báo giá','ok');closeModal();adminCampaigns(el)}catch(e){toast(e.message,'err')}});
   }));
   el.querySelectorAll("[data-campaign-start]").forEach((b) =>
@@ -1412,7 +1412,7 @@ async function adminCampaigns(el) {
   el.querySelectorAll('[data-replace-allocation]').forEach(button=>button.addEventListener('click',async()=>{
     const c=r.campaigns.find(x=>x.id===button.dataset.campaignId),categoryQuery=c.category==='Tất cả'?'':`&category=${encodeURIComponent(c.category)}`,kocs=await api(`/api/kocs?tier=${encodeURIComponent(c.tier)}${categoryQuery}`),used=new Set((c.allocations||[]).map(a=>a.koc_id));
     const candidates=kocs.kocs.filter(k=>!used.has(k.id));
-    const m=modal(`<h2>Chọn KOC thay thế</h2><p class="muted" style="margin:6px 0 12px">Khoản phân bổ được giữ nguyên để không làm lệch ngân sách.</p>${candidates.length?candidates.map(k=>`<button class="btn ghost" data-replacement-koc="${k.id}" style="margin-bottom:8px;justify-content:flex-start"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><span>${esc(k.name)} · ${esc(k.tier)}</span></button>`).join(''):empty('🔍','Không còn KOC phù hợp')}<button class="btn ghost" id="replace-close">Đóng</button>`);
+    const m=modal(`<h2>Chọn KOC thay thế</h2><p class="muted" style="margin:6px 0 12px">Khoản phân bổ được giữ nguyên để không làm lệch ngân sách.</p>${candidates.length?candidates.map(k=>`<button class="btn ghost" data-replacement-koc="${k.id}" style="margin-bottom:8px;justify-content:flex-start"><img class="avatar" src="${esc(avatarUrl(k.avatar))}"><span>${esc(k.name)} · ${esc(k.tier)}</span></button>`).join(''):empty('🔍','Không còn KOC phù hợp')}<button data-modal-dismiss class="btn ghost" id="replace-close">Đóng</button>`);
     m.querySelector('#replace-close').addEventListener('click',closeModal);m.querySelectorAll('[data-replacement-koc]').forEach(k=>k.addEventListener('click',async()=>{try{await post('/api/admin/campaign-allocation-replace',{allocationId:button.dataset.replaceAllocation,kocId:k.dataset.replacementKoc});toast('Đã mời KOC thay thế','ok');closeModal();adminCampaigns(el)}catch(e){toast(e.message,'err')}}));
   }));
   el.querySelectorAll("[data-campaign-complete]").forEach((b) =>
@@ -1481,7 +1481,7 @@ async function adminCampaigns(el) {
           : empty("🔍", "Không có KOC phù hợp")
       }</div>
       <button class="btn primary" id="asg-go" style="margin-top:10px">Xác nhận phân bổ</button>
-      <button class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:8px">Đóng</button>`);
+      <button data-modal-dismiss class="btn ghost" onclick="document.getElementById('modal-root').innerHTML=''" style="margin-top:8px">Đóng</button>`);
       const boxes = [...document.querySelectorAll("[data-kid]")];
       const allocationInputs = [
         ...document.querySelectorAll("[data-allocation-for]"),
@@ -1596,7 +1596,7 @@ function payoutQrModal(ticket, onDone) {
 
         <div>
           <div class="card" style="padding:12px;background:var(--bg-muted);margin-bottom:12px">
-            <div style="font-size:11px;color:var(--muted);text-transform:uppercase">KOC nhận tiền</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase">${ticket.owner_type === 'partner' ? 'Đối tác' : 'KOC'} nhận tiền</div>
             <div style="font-weight:700;font-size:14px;margin-top:2px">${esc(ticket.koc_name)}</div>
             <div class="muted" style="font-size:12px">${esc(ticket.koc_phone || ticket.koc_email || "")}</div>
             
@@ -1637,7 +1637,7 @@ function payoutQrModal(ticket, onDone) {
           <button class="btn primary" id="payout-confirm-btn" style="flex:2 1 200px;min-height:44px;height:auto;padding:10px 16px;white-space:nowrap;font-weight:600;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">✅ Xác nhận đã chuyển tiền</button>
           <button class="btn ghost" id="payout-cancel-btn" style="flex:1 0 auto;width:auto;min-height:44px;height:auto;padding:10px 14px;color:var(--error);border-color:rgba(217,48,37,0.3);white-space:nowrap;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">❌ Từ chối</button>
         ` : ''}
-        <button class="btn ghost" id="payout-close-btn" style="${isPending ? 'flex:0 0 auto;width:auto;min-height:44px;height:auto;padding:10px 14px;white-space:nowrap;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box' : 'width:100%'}">Đóng</button>
+        <button data-modal-dismiss class="btn ghost" id="payout-close-btn" style="${isPending ? 'flex:0 0 auto;width:auto;min-height:44px;height:auto;padding:10px 14px;white-space:nowrap;font-size:14px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box' : 'width:100%'}">Đóng</button>
       </div>
     </div>
   `);
@@ -1681,7 +1681,7 @@ function payoutQrModal(ticket, onDone) {
           id: ticket.id,
           reason,
         });
-        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví KOC!", "ok");
+        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví người nhận!", "ok");
         closeModal();
         onDone?.();
       } catch (err) {
@@ -1816,7 +1816,7 @@ async function settle(el, changes = {}) {
         <div style="display:flex;align-items:center;gap:8px">
           ${avatarUrl(t.koc_avatar, t.koc_name)}
           <div>
-            <b>${esc(t.koc_name || "KOC")}</b>
+            <b>${esc(t.koc_name || "Người nhận")}</b><span class="chip n">${t.owner_type === "partner" ? "Đối tác" : "KOC"}</span>
             <div class="muted" style="font-size:11px">${esc(t.koc_phone || t.koc_email || "")}</div>
           </div>
         </div>
@@ -1845,7 +1845,7 @@ async function settle(el, changes = {}) {
   }).join("");
 
   el.innerHTML = `<div class="between"><div><h1>Đối soát và chi trả</h1>
-      <p class="muted">Duyệt chi trả hoa hồng KOC qua VietQR và theo dõi phân bổ tiền booking, doanh thu nền tảng.</p></div>
+      <p class="muted">Duyệt chi trả cho KOC và đối tác qua VietQR và theo dõi phân bổ tiền booking, doanh thu nền tảng.</p></div>
     <button class="btn primary sm" id="s-run">▶ Chạy đối soát kỳ này</button></div>
     <div class="stat-cards" style="margin:16px 0">
       ${scard("Yêu cầu rút tiền chờ duyệt", `${payoutData.pendingCount || 0} yêu cầu`)}
@@ -1855,7 +1855,7 @@ async function settle(el, changes = {}) {
     </div>
     <div class="settle-tabs" role="tablist" aria-label="Chi tiết đối soát">
       <button class="${settleView.activeTab === "payout" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "payout"}" data-settle-tab="payout">
-        💳 Yêu cầu rút tiền KOC ${payoutData.pendingCount > 0 ? `<span class="chip r" style="margin-left:6px;padding:1px 6px;font-size:11px;font-weight:700">${payoutData.pendingCount}</span>` : ""}
+        💳 Yêu cầu rút tiền KOC / Đối tác ${payoutData.pendingCount > 0 ? `<span class="chip r" style="margin-left:6px;padding:1px 6px;font-size:11px;font-weight:700">${payoutData.pendingCount}</span>` : ""}
       </button>
       <button class="${settleView.activeTab === "distribution" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "distribution"}" data-settle-tab="distribution">🏛️ Phân bổ tiền</button>
       <button class="${settleView.activeTab === "ledger" ? "active" : ""}" role="tab" aria-selected="${settleView.activeTab === "ledger"}" data-settle-tab="ledger">📒 Sổ thu chi</button>
@@ -1865,8 +1865,8 @@ async function settle(el, changes = {}) {
     <div class="card settle-panel ${settleView.activeTab === "payout" ? "active" : ""}" data-settle-panel="payout" role="tabpanel" ${settleView.activeTab !== "payout" ? "hidden" : ""}>
       <div class="between" style="flex-wrap:wrap;gap:10px;margin-bottom:12px">
         <div>
-          <h2>💳 Danh sách yêu cầu rút tiền KOC</h2>
-          <p class="muted" style="font-size:12px">Kiểm tra thông tin tài khoản và quét mã VietQR để chuyển khoản trực tiếp cho KOC.</p>
+          <h2>💳 Danh sách yêu cầu rút tiền KOC / Đối tác</h2>
+          <p class="muted" style="font-size:12px">Kiểm tra thông tin tài khoản và quét mã VietQR để chuyển khoản trực tiếp cho KOC hoặc đối tác.</p>
         </div>
         <div class="payout-filters" style="display:flex;gap:6px">
           <button class="btn sm ${(!settleView.payoutStatus || settleView.payoutStatus === "pending") ? "primary" : "ghost"}" data-payout-filter="pending">Chờ duyệt ${payoutData.pendingCount > 0 ? `(${payoutData.pendingCount})` : ""}</button>
@@ -1880,7 +1880,7 @@ async function settle(el, changes = {}) {
           <thead>
             <tr>
               <th>Mã yêu cầu</th>
-              <th>KOC</th>
+              <th>Người nhận</th>
               <th>Tài khoản nhận tiền</th>
               <th>Số tiền</th>
               <th>Trạng thái</th>
@@ -1939,7 +1939,7 @@ async function settle(el, changes = {}) {
       if (!reason) return;
       try {
         await post("/api/admin/payout-tickets/reject", { id: ticket.id, reason });
-        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví KOC!", "ok");
+        toast("Đã từ chối yêu cầu và hoàn lại tiền vào ví người nhận!", "ok");
         settle(el);
       } catch (err) {
         toast(err.message || "Không thể từ chối yêu cầu", "err");
@@ -1965,7 +1965,7 @@ async function settle(el, changes = {}) {
     if(!settlement)return;
     const campaign=settlement.type==='campaign'||String(settlement.code||'').startsWith('CD-');
     const names=campaign?String(settlement.koc_name||'').split(' · ').filter(name=>name&&name!=='Chưa phân bổ'):(settlement.koc_names||[settlement.koc_name]).filter(Boolean);
-    const m=modal(`<div class="between"><div><h2>Danh sách KOC</h2><p class="muted" style="margin-top:4px">${esc(settlement.code)} · ${esc(settlement.business_name||'Doanh nghiệp')}</p></div><span class="chip n">${names.length} KOC</span></div><div class="settlement-koc-detail-list">${names.map((name,index)=>`<div><span>${index+1}</span><b>${esc(name)}</b></div>`).join('')}</div><button class="btn ghost" id="settlement-koc-close" style="margin-top:14px">Đóng</button>`);
+    const m=modal(`<div class="between"><div><h2>Danh sách KOC</h2><p class="muted" style="margin-top:4px">${esc(settlement.code)} · ${esc(settlement.business_name||'Doanh nghiệp')}</p></div><span class="chip n">${names.length} KOC</span></div><div class="settlement-koc-detail-list">${names.map((name,index)=>`<div><span>${index+1}</span><b>${esc(name)}</b></div>`).join('')}</div><button data-modal-dismiss class="btn ghost" id="settlement-koc-close" style="margin-top:14px">Đóng</button>`);
     m.querySelector('#settlement-koc-close').addEventListener('click',closeModal);
   }));
   bindServerPager(
@@ -2241,7 +2241,7 @@ async function kolAdmin(el,page=adminKolPage) {
       const m =
         modal(`<h2>Báo giá KOL</h2><div class="field" style="margin-top:12px"><label class="required-label">Thù lao KOL (đ)</label><input id="kq-kol" type="number" min="1" step="1000" value="${Number(request?.quote_kol||0)||''}"></div><div class="field"><label>Phí dịch vụ NetViet (đ)</label><input id="kq-platform" type="number" min="0" step="1000" value="${Number(request?.quote_platform||0)}"></div><div class="field"><label>Chi phí bổ sung (đ)</label><input id="kq-additional" type="number" min="0" step="1000" value="${Number(request?.quote_additional||0)}"></div>
       <div class="field"><label>Ghi chú</label><textarea id="kq-note" rows="2">${esc(request?.admin_note||'')}</textarea></div>
-      <button class="btn primary" id="kq-go">Gửi báo giá</button><button class="btn ghost" id="kq-x" style="margin-top:8px">Hủy</button>`);
+      <button class="btn primary" id="kq-go">Gửi báo giá</button><button data-modal-dismiss class="btn ghost" id="kq-x" style="margin-top:8px">Hủy</button>`);
       m.querySelector("#kq-x").addEventListener("click", closeModal);
       m.querySelector("#kq-go").addEventListener("click", async () => {
         try {
@@ -2263,7 +2263,7 @@ async function kolAdmin(el,page=adminKolPage) {
     }),
   );
   el.querySelectorAll('[data-confirm-kol]').forEach(b=>b.addEventListener('click',async()=>{const contractReference=await promptDialog('Nhập mã hợp đồng hoặc nội dung xác nhận lịch:');if(!contractReference)return;try{await post('/api/admin/kol-action',{id:b.dataset.confirmKol,action:'confirm',contractReference});toast('Đã xác nhận lịch và hợp đồng KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
-  el.querySelectorAll('[data-deliver-kol]').forEach(b=>b.addEventListener('click',()=>{const m=modal(`<h2>Bàn giao sản phẩm KOL</h2><div class="field"><label class="required-label">Link sản phẩm / biên bản bàn giao</label><input id="kd-url" placeholder="https://..."></div><div class="field"><label>Ghi chú</label><textarea id="kd-note" rows="3"></textarea></div><button class="btn primary" id="kd-go">Gửi doanh nghiệp nghiệm thu</button><button class="btn ghost" id="kd-close" style="margin-top:8px">Đóng</button>`);m.querySelector('#kd-close').addEventListener('click',closeModal);m.querySelector('#kd-go').addEventListener('click',async()=>{try{await post('/api/admin/kol-action',{id:b.dataset.deliverKol,action:'deliver',deliveryUrl:m.querySelector('#kd-url').value.trim(),note:m.querySelector('#kd-note').value.trim()});toast('Đã bàn giao sản phẩm KOL','ok');closeModal();kolAdmin(el)}catch(e){toast(e.message,'err')}})}));
+  el.querySelectorAll('[data-deliver-kol]').forEach(b=>b.addEventListener('click',()=>{const m=modal(`<h2>Bàn giao sản phẩm KOL</h2><div class="field"><label class="required-label">Link sản phẩm / biên bản bàn giao</label><input id="kd-url" placeholder="https://..."></div><div class="field"><label>Ghi chú</label><textarea id="kd-note" rows="3"></textarea></div><button class="btn primary" id="kd-go">Gửi doanh nghiệp nghiệm thu</button><button data-modal-dismiss class="btn ghost" id="kd-close" style="margin-top:8px">Đóng</button>`);m.querySelector('#kd-close').addEventListener('click',closeModal);m.querySelector('#kd-go').addEventListener('click',async()=>{try{await post('/api/admin/kol-action',{id:b.dataset.deliverKol,action:'deliver',deliveryUrl:m.querySelector('#kd-url').value.trim(),note:m.querySelector('#kd-note').value.trim()});toast('Đã bàn giao sản phẩm KOL','ok');closeModal();kolAdmin(el)}catch(e){toast(e.message,'err')}})}));
   el.querySelectorAll('[data-settle-kol]').forEach(b=>b.addEventListener('click',async()=>{if(!(await confirmDialog('Giải ngân thù lao vào Ví KOL và ghi nhận phí NetViet?')))return;try{await post('/api/admin/kol-action',{id:b.dataset.settleKol,action:'settle'});toast('Đã giải ngân yêu cầu KOL','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll('[data-cancel-kol]').forEach(b=>b.addEventListener('click',async()=>{const note=await promptDialog('Lý do hủy và hoàn tiền:');if(!note)return;try{await post('/api/admin/kol-action',{id:b.dataset.cancelKol,action:'cancel',note});toast('Đã hủy và hoàn tiền doanh nghiệp','ok');kolAdmin(el)}catch(e){toast(e.message,'err')}}));
   el.querySelectorAll("[data-reject]").forEach((b) =>
@@ -2272,7 +2272,7 @@ async function kolAdmin(el,page=adminKolPage) {
       <p class="muted" style="margin:8px 0 12px">Lý do sẽ được hiển thị cho doanh nghiệp đã gửi yêu cầu.</p>
       <div class="field"><label class="required-label">Lý do từ chối</label><textarea id="kr-reason" rows="4" maxlength="500" placeholder="Nhập lý do cụ thể…"></textarea></div>
       <button class="btn danger" id="kr-reject-go">Xác nhận từ chối</button>
-      <button class="btn ghost" id="kr-reject-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="kr-reject-cancel" style="margin-top:8px">Hủy</button>`);
       m.querySelector("#kr-reject-cancel").addEventListener(
         "click",
         closeModal,
@@ -2441,7 +2441,7 @@ async function leadProgressModal(id, lead, el) {
     <div class="field"><label class="required-label">Nhu cầu tư vấn</label><select id="lp-need">${LEAD_NEEDS.map((n) => `<option value="${esc(n)}" ${lead.need === n ? "selected" : ""}>${esc(leadNeedLabel(n))}</option>`).join("")}</select></div>
     <div id="lp-branch-box"></div>
     <div class="field" style="margin-top:10px"><label class="required-label">Ghi chú tiến độ</label><textarea id="lp-note" rows="3" maxlength="1000" placeholder="VD: Đã gọi điện tư vấn nhu cầu, giải đáp thắc mắc cho khách hàng…"></textarea></div>
-    <button class="btn primary" id="lp-save">Lưu cập nhật</button><button class="btn ghost" id="lp-close" style="margin-top:8px">Đóng</button>
+    <button class="btn primary" id="lp-save">Lưu cập nhật</button><button data-modal-dismiss class="btn ghost" id="lp-close" style="margin-top:8px">Đóng</button>
     <h3 style="margin-top:18px">Lịch sử chăm sóc</h3>
     <div style="max-height:240px;overflow:auto;margin-top:8px">${
       history.activities.length
@@ -2724,7 +2724,7 @@ async function aiclone(el) {
       <div class="tint-box between"><b>Tổng báo giá</b><b class="money" id="aiq-total">0đ</b></div>
       <div class="field"><label>Ghi chú gửi doanh nghiệp</label><textarea id="aiq-note" rows="3" maxlength="1000" placeholder="Hạng mục sản xuất, thời gian thực hiện, điều kiện áp dụng…"></textarea></div>
       <button class="btn primary" id="aiq-send">Gửi báo giá cho doanh nghiệp</button>
-      <button class="btn ghost" id="aiq-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="aiq-cancel" style="margin-top:8px">Hủy</button>`);
       const kocAllocations = () =>
         [...m.querySelectorAll(".aiq-koc-fee")].map((input) => ({
           booking_id: input.dataset.bookingId,
@@ -2791,7 +2791,7 @@ async function aiclone(el) {
       <p class="muted">Kịch bản là căn cứ sản xuất và được hiển thị cho doanh nghiệp/KOC.</p>
       <div class="field" style="margin-top:12px"><label class="required-label">Nội dung kịch bản</label><textarea id="ai-script" rows="12">${esc(button.dataset.current || "")}</textarea></div>
       <button class="btn primary" id="ai-script-save">Duyệt kịch bản & chuyển sản xuất</button>
-      <button class="btn ghost" id="ai-script-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="ai-script-cancel" style="margin-top:8px">Hủy</button>`);
       document
         .getElementById("ai-script-cancel")
         .addEventListener("click", closeModal);
@@ -2822,7 +2822,7 @@ async function aiclone(el) {
       <div class="field" style="margin-top:12px"><label class="required-label">Link video bản dựng</label><input id="dv-link" type="url" placeholder="https://…/video.mp4"></div>
       <div id="dv-preview" style="display:none;margin-bottom:12px"><video controls playsinline style="width:100%;max-height:360px;border-radius:12px;background:#111"></video></div>
       <button class="btn navy" id="dv-go">Gửi video cho ${targetLabel} xem và duyệt</button>
-      <button class="btn ghost" id="dv-cancel" style="margin-top:8px">Hủy</button>`);
+      <button data-modal-dismiss class="btn ghost" id="dv-cancel" style="margin-top:8px">Hủy</button>`);
       const linkInput = document.getElementById("dv-link");
       const preview = document.getElementById("dv-preview");
       linkInput.addEventListener("input", () => {
