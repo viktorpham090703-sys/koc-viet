@@ -274,7 +274,7 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
   .koc-portal .stat-tile .v{font-size:24px}
   .koc-portal .booking-type-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
   .koc-portal .booking-type-tabs button:first-child{grid-column:auto}
-  .koc-portal #bk-list,.koc-portal .koc-content-grid,.koc-portal .m-body.koc-affiliate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
+  .koc-portal #bk-list,.koc-portal .koc-content-grid,.koc-portal .koc-affiliate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
   .koc-portal #bk-list>.booking-grid-card,.koc-portal .koc-content-grid>.koc-content-card,.koc-portal .koc-affiliate-grid>.koc-affiliate-card{display:flex;min-width:0;height:100%;margin:0;padding:16px;flex-direction:column;border-radius:16px;box-shadow:0 5px 16px rgba(11,31,58,.045)}
   .koc-portal #bk-list>.booking-grid-card [data-video],.koc-portal .koc-content-grid>.koc-content-card>[data-open]{margin-top:auto!important}
   .koc-portal #bk-list>.empty,.koc-portal .koc-content-grid>.empty,.koc-portal .koc-affiliate-grid>.empty{grid-column:1/-1}
@@ -368,7 +368,7 @@ h1{font-size:22px;font-weight:800}h2{font-size:18px;font-weight:700}h3{font-size
   .koc-portal .koc-content-grid>.koc-content-card:hover,.koc-portal .koc-affiliate-grid>.koc-affiliate-card:hover{transform:translateY(-3px);border-color:#ffc5b8;box-shadow:0 12px 28px rgba(11,31,58,.09)}
   .koc-portal .koc-content-grid>.koc-content-card .copybox{margin-top:14px!important}
   .koc-portal .koc-content-grid>.koc-content-card>[data-open]{margin-top:auto!important}
-  .koc-portal .m-body.koc-affiliate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px;align-items:start}
+  .koc-portal .koc-affiliate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px;align-items:start}
   .koc-portal .koc-affiliate-grid>.koc-affiliate-card{min-width:0;margin:0;padding:18px;border-radius:16px;box-shadow:0 5px 18px rgba(11,31,58,.045);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
   .koc-portal .koc-content-grid>.empty,.koc-portal .koc-affiliate-grid>.empty{grid-column:1/-1}
   .koc-portal .m-body.koc-profile-body,.koc-portal .m-body.koc-profile-edit-body{max-width:1100px}
@@ -1378,7 +1378,7 @@ table.admin-business-table td:nth-child(2),table.admin-business-table td:nth-chi
 .admin-portal table[class*="admin-"][class*="-table"] td:first-child .row,.admin-portal table.koc-directory-table td:first-child .row{min-width:0}
 .admin-portal table[class*="admin-"][class*="-table"] td:first-child b,.admin-portal table.koc-directory-table td:first-child b{min-width:0;overflow-wrap:anywhere}
 .koc-portal #koc-view>.list-search,.koc-portal #koc-view>.list-search-empty{margin:16px 20px}
-.koc-portal .m-body.koc-affiliate-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));align-items:start}
+.koc-portal .koc-affiliate-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));align-items:start}
 .affiliate-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px;padding:16px 0;margin-top:4px;border-block:1px solid var(--border)}
 .affiliate-metrics>div{min-width:0;overflow-wrap:anywhere}
 .affiliate-metrics .v{font-variant-numeric:tabular-nums}
