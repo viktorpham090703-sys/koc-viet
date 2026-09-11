@@ -1425,8 +1425,7 @@ export function renderOnboarding(el) {
           <canvas id="o-sign-pad" width="480" height="200" style="width:100%;height:200px;touch-action:none;cursor:crosshair;display:block"></canvas>
         </div>
         <div class="row" style="gap:8px;margin-top:10px">
-          <button type="button" class="btn ghost" id="o-sign-clear" style="flex:1">Xoá</button>
-          <button type="button" class="btn ghost" id="o-sign-redo" style="flex:1">Ký lại</button>
+          <button type="button" class="btn ghost" id="o-sign-clear" style="flex:1">Xóa chữ ký</button>
         </div>
       </div>
       <div class="row" style="gap:10px;margin-top:16px">
@@ -1483,7 +1482,6 @@ export function renderOnboarding(el) {
       if (confirmBtn) confirmBtn.disabled = true;
     };
     el.querySelector("#o-sign-clear").addEventListener("click", clearPad);
-    el.querySelector("#o-sign-redo").addEventListener("click", clearPad);
 
     el.querySelector("#o-sign-back").addEventListener("click", () => {
       d.signStage = "read";
