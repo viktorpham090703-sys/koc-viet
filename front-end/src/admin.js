@@ -29,12 +29,12 @@ import { mountListSearch, searchForm, bindSearchForm } from "./list-search.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
-  ["#/businesses", "🏢", "Quản lý doanh nghiệp"],
-  ["#/partners", "🤝", "Đối tác KOC Việt"],
+  ["#/businesses", icon("business", "sidebar-icon"), "Quản lý doanh nghiệp"],
+  ["#/partners", '<i class="sidebar-icon sidebar-icon-emoji" aria-hidden="true">🤝</i>', "Đối tác KOC Việt"],
   ["#/queue", icon("approval", "sidebar-icon"), "Quản lý KOC"],
   ["#/allbookings", icon("booking", "sidebar-icon"), "Booking toàn sàn"],
   ["#/complaints", icon("complaint", "sidebar-icon"), "Khiếu nại"],
-  ["#/affiliate", "🔗", "Đơn tiếp thị liên kết"],
+  ["#/affiliate", icon("affiliate", "sidebar-icon"), "Đơn tiếp thị liên kết"],
   ["#/kol", icon("kolRequest", "sidebar-icon"), "Yêu cầu KOL"],
   ["#/leads", icon("quoteLead", "sidebar-icon"), "Khách cần tư vấn"],
   ["#/campaigns", icon("coordination", "sidebar-icon"), "Điều phối chiến dịch"],
