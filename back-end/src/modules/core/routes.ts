@@ -1,6 +1,7 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
 import { sqlSearch, matchesSearch, listPage } from './lib/listSearch.js';
+import { bookingKindFilter } from './lib/bookingKind.js';
 import { TIERS, CATEGORIES, KOC_AVATARS, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
@@ -3471,17 +3472,10 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       cond.push("b.status=?");
       bind.push(st);
     }
-    const bt2 = url.searchParams.get("type");
-    if (bt2 === "aiclone") {
-      cond.push("b.type='aiclone'");
-    } else if (["review", "advertising"].includes(bt2)) {
-      cond.push(
-        `b.type!='aiclone' AND COALESCE(b.booking_type,'ad')='ad' AND COALESCE(b.content_type,'review')=?`,
-      );
-      bind.push(bt2);
-    } else if (bt2) {
-      cond.push("b.booking_type=?");
-      bind.push(bt2);
+    const kind = bookingKindFilter(url.searchParams.get("type"));
+    if (kind) {
+      cond.push(kind.sql);
+      bind.push(...kind.bindings);
     }
     const q2 = url.searchParams.get("search") || url.searchParams.get("q");
     if (q2) {
@@ -4871,11 +4865,12 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   // ---------- Affiliate ----------
   if (p === "/api/affiliate") {
     if (me.role !== "koc") return err("403", 403);
+    const kind = bookingKindFilter(url.searchParams.get("type"));
     const { results } = await env.DB.prepare(
       `SELECT a.*, b.code, b.category, b.post_platform, b.created_at booking_created_at FROM affiliate a JOIN bookings b ON b.id=a.booking_id
-       WHERE a.koc_id=? ORDER BY a.orders DESC`,
+       WHERE a.koc_id=?${kind ? ` AND ${kind.sql}` : ""} ORDER BY a.orders DESC`,
     )
-      .bind(me.koc_id)
+      .bind(me.koc_id, ...(kind?.bindings ?? []))
       .all();
     return J({ affiliates: results });
   }
@@ -4913,12 +4908,13 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   // ---------- Affiliate LINKS (per-KOC, auto-generated on accept) ----------
   if (p === "/api/affiliate/links") {
     if (me.role !== "koc") return err("403", 403);
+    const kind = bookingKindFilter(url.searchParams.get("type"));
     const { results } = await env.DB.prepare(
       `SELECT al.*, b.code, b.category, b.commission_rate, b.status bstatus, b.post_platform, bz.name bizname
        FROM affiliate_links al JOIN bookings b ON b.id=al.booking_id JOIN businesses bz ON bz.id=b.business_id
-       WHERE al.koc_id=? ORDER BY al.created_at DESC, al.rowid DESC`,
+       WHERE al.koc_id=?${kind ? ` AND ${kind.sql}` : ""} ORDER BY al.created_at DESC, al.rowid DESC`,
     )
-      .bind(me.koc_id)
+      .bind(me.koc_id, ...(kind?.bindings ?? []))
       .all();
     for (const l of results) {
       const agg = await env.DB.prepare(
