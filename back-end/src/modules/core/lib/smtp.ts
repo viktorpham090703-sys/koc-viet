@@ -58,9 +58,7 @@ function requiredEnv(env, name) {
 
 function mailConfig(env) {
   const apiKey = requiredEnv(env, 'BREVO_API_KEY');
-  const senderEmail = String(
-    env.EMAIL_FROM_ADDRESS || 'quankle2004@gmail.com'
-  ).trim();
+  const senderEmail = requiredEnv(env, 'EMAIL_FROM_ADDRESS');
   const senderName = repairUtf8Mojibake(
     String(env.EMAIL_FROM_NAME || 'KOC Việt').trim()
   );
