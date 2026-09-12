@@ -4,6 +4,7 @@ import { openIdentityCamera } from "./identity-camera.js";
 import { money, num, esc, toast, modal, closeModal, confirmDialog, copyToClipboard } from "./ui.js";
 import { parseIntegerInput, bindIntegerInputs } from "./number-input.js";
 import { bindProvincePicker } from "./province-picker.js";
+import "./province-picker.css";
 import { state } from "./app.js";
 import {
   bankPickerHtml,
