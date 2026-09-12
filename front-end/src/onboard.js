@@ -1,7 +1,9 @@
 import { get, post } from "./api.js";
 import { registrationAgeError } from "./registration-age.js";
 import { openIdentityCamera } from "./identity-camera.js";
-import { money, esc, toast, modal, closeModal, confirmDialog, provinceOptions, copyToClipboard } from "./ui.js";
+import { money, num, esc, toast, modal, closeModal, confirmDialog, copyToClipboard } from "./ui.js";
+import { parseIntegerInput, bindIntegerInputs } from "./number-input.js";
+import { bindProvincePicker } from "./province-picker.js";
 import { state } from "./app.js";
 import {
   bankPickerHtml,
@@ -533,10 +535,10 @@ export function renderOnboarding(el) {
         displayName: stats.displayName || d.socials[idx]?.displayName || "",
       };
 
-      // Recalculate total followers
+      // Use the largest verified channel for registration and tiering.
       const verifiedChannels = d.socials.filter((s) => s.verified);
       d.followers = verifiedChannels.reduce(
-        (sum, s) => sum + (Number(s.followers) || 0),
+        (largest, s) => Math.max(largest, Number(s.followers) || 0),
         0,
       );
       d.followers_verified = 1;
@@ -555,11 +557,11 @@ export function renderOnboarding(el) {
     const hasVerified = verifiedSocials.length > 0;
     if (!isManual) {
       if (hasVerified) {
-        const sumVerifiedFollowers = verifiedSocials.reduce(
-          (sum, s) => sum + (Number(s.followers) || 0),
+        const maxVerifiedFollowers = verifiedSocials.reduce(
+          (largest, s) => Math.max(largest, Number(s.followers) || 0),
           0,
         );
-        d.followers = sumVerifiedFollowers;
+        d.followers = maxVerifiedFollowers;
         d.followers_verified = 1;
       } else {
         d.followers = 0;
@@ -569,7 +571,17 @@ export function renderOnboarding(el) {
 
     const catList = cfg.categories.concat(["Khác"]);
     el.innerHTML = wrap(`
-      <div class="field"><label class="required-label">Tỉnh/Thành phố</label><select id="o-prov">${provinceOptions(cfg.provinces, d.province)}</select></div>
+      <div class="field"><label class="required-label" for="o-prov">Tỉnh/Thành phố</label>
+        <div class="province-picker">
+          <input id="o-prov" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="o-provinces" value="${esc(d.province)}" placeholder="Gõ để tìm tỉnh/thành phố" autocomplete="off" aria-describedby="o-prov-err">
+          <button type="button" class="province-picker-toggle" data-province-toggle tabindex="-1" aria-label="Hiện danh sách tỉnh/thành phố"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="province-picker-panel" data-province-panel hidden>
+            <div id="o-provinces" role="listbox" aria-label="Danh sách tỉnh/thành phố">${cfg.provinces.map((province, i) => `<div id="o-province-${i}" role="option" aria-selected="${province === d.province}">${esc(province)}</div>`).join("")}</div>
+            <p class="province-picker-empty" data-province-empty role="status" hidden>Không tìm thấy tỉnh/thành phố phù hợp.</p>
+          </div>
+        </div>
+        <div class="err" id="o-prov-err" role="alert" style="display:none"></div>
+      </div>
       <div class="field"><label class="required-label">Ngành hàng (chọn nhiều)</label>
         <div id="o-cats" style="display:flex;flex-wrap:wrap;gap:8px">${catList.map((c) => `<button type="button" class="chip" data-c="${esc(c)}" style="cursor:pointer;padding:8px 14px;${d.categories.includes(c) ? "background:var(--primary);color:#fff" : ""}">${esc(c)}</button>`).join("")}</div>
         ${d.categories.includes("Khác") ? `<div class="field" style="margin-top:8px"><label class="required-label" for="o-cat-other">Ngành hàng khác</label><input id="o-cat-other" value="${esc(d.customCategory)}" placeholder="Nhập tên ngành hàng khác"></div>` : ""}
@@ -584,14 +596,21 @@ export function renderOnboarding(el) {
       })}
       <div class="field">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
-          <label class="required-label" for="o-fol" style="margin:0">Tổng số người theo dõi</label>
+          <label class="required-label" for="o-fol" style="margin:0">Số người theo dõi lớn nhất trên một kênh</label>
           ${(!isManual && hasVerified) ? `<span class="social-verified-tag" style="font-size:11px">🔒 Đã đồng bộ từ mạng xã hội (${Number(d.followers).toLocaleString('vi-VN')} người theo dõi)</span>` : ""}
         </div>
-        <input id="o-fol" type="number" min="${MIN_KOC_REGISTRATION_FOLLOWERS}" max="2000000000" step="1" value="${d.followers || ""}" placeholder="Ví dụ: 5000" aria-describedby="o-fol-help" ${(!isManual && hasVerified) ? "readonly style='background:#f1f5f9;cursor:not-allowed;font-weight:700;color:var(--navy)'" : ""}>
+        <input id="o-fol" type="text" inputmode="numeric" data-integer-input value="${Number.isFinite(d.followers) && d.followers ? num(d.followers) : ""}" placeholder="Ví dụ: 1.000.000" aria-describedby="o-fol-help" ${(!isManual && hasVerified) ? "readonly style='background:#f1f5f9;cursor:not-allowed;font-weight:700;color:var(--navy)'" : ""}>
       </div>
-      <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">${(!isManual && hasVerified) ? "✓ Số lượng người theo dõi đã được đồng bộ tự động từ tài khoản mạng xã hội và được khóa để bảo vệ độ chính xác hồ sơ." : "Bạn cần có tối thiểu 1.000 người theo dõi để đăng ký tài khoản KOC."}</p>
+      <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">${(!isManual && hasVerified) ? "Đã lấy số người theo dõi lớn nhất trong các kênh đã xác thực." : "Nhập số người theo dõi của kênh có lượng theo dõi cao nhất, không cộng các kênh. Tối thiểu 1.000 người. Có thể nhập 1000000 hoặc 1.000.000."}</p>
       <div class="field"><label>Giới thiệu</label><textarea id="o-bio" rows="2">${esc(d.bio)}</textarea></div>`);
     bindChrome();
+    bindIntegerInputs(el);
+    bindProvincePicker(el.querySelector(".province-picker"));
+    const provinceInput = el.querySelector("#o-prov");
+    provinceInput.addEventListener("input", () => {
+      fieldErr("o-prov-err", "");
+      provinceInput.removeAttribute("aria-invalid");
+    });
     el.querySelectorAll("#o-cats [data-c]").forEach((b) =>
       b.addEventListener("click", (e) => {
         e.preventDefault();
@@ -738,9 +757,9 @@ export function renderOnboarding(el) {
   }
   function collect1() {
     const prov = el.querySelector("#o-prov");
-    if (prov) d.province = prov.value;
+    if (prov) d.province = prov.value.trim();
     const fol = el.querySelector("#o-fol");
-    if (fol && !fol.hasAttribute("readonly")) d.followers = Number(fol.value) || 0;
+    if (fol && !fol.hasAttribute("readonly")) d.followers = parseIntegerInput(fol.value);
     const bio = el.querySelector("#o-bio");
     if (bio) d.bio = bio.value;
     const other = el.querySelector("#o-cat-other");
@@ -765,6 +784,12 @@ export function renderOnboarding(el) {
   }
   function validate1() {
     collect1();
+    if (!cfg.provinces.includes(d.province)) {
+      fieldErr("o-prov-err", "Vui lòng chọn tỉnh/thành phố trong danh sách gợi ý.");
+      el.querySelector("#o-prov").setAttribute("aria-invalid", "true");
+      el.querySelector("#o-prov").focus();
+      return false;
+    }
     if (!d.categories.length) {
       toast("Chọn ít nhất 1 ngành hàng", "err");
       return false;
@@ -804,7 +829,7 @@ export function renderOnboarding(el) {
       d.followers < MIN_KOC_REGISTRATION_FOLLOWERS ||
       d.followers > 2_000_000_000
     ) {
-      toast("Bạn cần có ít nhất 1.000 người theo dõi để đăng ký", "err");
+      toast("Nhập số người theo dõi từ 1.000 đến 2.000.000.000, ví dụ: 1.000.000", "err");
       return false;
     }
     return true;
@@ -830,13 +855,14 @@ export function renderOnboarding(el) {
         <p class="muted" style="font-size:12px;margin-top:8px">Hạng càng cao, khung giá niêm yết theo ngành hàng càng rộng. Hạng được xem xét định kỳ theo số người theo dõi, tỉ lệ hoàn thành booking và điểm đánh giá.</p>
       </div>
       <p class="muted" style="margin:12px 0 6px">Đặt phí cố định cho từng ngành hàng (trong khung):</p>
-      ${d.categories.map((c) => `<div class="field"><label class="required-label">${esc(c)}</label><input type="number" data-price="${esc(c)}" value="${d.prices[c] || tr.min}" placeholder="${money(tr.min)}"></div>`).join("")}
+      ${d.categories.map((c, i) => `<div class="field"><label class="required-label" for="o-price-${i}">${esc(c)}</label><input id="o-price-${i}" type="text" inputmode="numeric" data-integer-input data-price="${esc(c)}" value="${num(d.prices[c] || tr.min)}" placeholder="${num(tr.min)}"></div>`).join("")}
       ${d.categories.length ? "" : '<p class="err">Bạn chưa chọn ngành hàng ở bước trước.</p>'}`);
     bindChrome();
+    bindIntegerInputs(el);
   }
   function collect2() {
     el.querySelectorAll("[data-price]").forEach((inp) => {
-      d.prices[inp.dataset.price] = Number(inp.value) || 0;
+      d.prices[inp.dataset.price] = parseIntegerInput(inp.value);
     });
   }
   function validate2() {
@@ -844,10 +870,12 @@ export function renderOnboarding(el) {
     collect2();
     let ok = true;
     el.querySelectorAll("[data-price]").forEach((inp) => {
-      const v = Number(inp.value) || 0;
-      if (v < tr.min || v > tr.max) {
+      const v = d.prices[inp.dataset.price];
+      const invalid = !Number.isSafeInteger(v) || v < tr.min || v > tr.max;
+      inp.style.borderColor = invalid ? "var(--error)" : "";
+      inp.setAttribute("aria-invalid", String(invalid));
+      if (invalid) {
         ok = false;
-        inp.style.borderColor = "var(--error)";
       }
     });
     if (!ok) {
@@ -894,7 +922,7 @@ export function renderOnboarding(el) {
         <div class="err" id="o-bank-name-err" style="display:none"></div></div>
       <div class="field"><label class="required-label">Số tài khoản</label><input id="o-bank-account" value="${esc(d.bankAccount)}" placeholder="Số tài khoản (chỉ số)">
         <div class="err" id="o-bank-account-err" style="display:none"></div></div>
-      <div class="field"><label class="required-label">Chủ tài khoản</label><input id="o-bank-owner" value="${esc(d.bankOwner)}" placeholder="Tên chủ tài khoản (không dấu)">
+      <div class="field"><label class="required-label" for="o-bank-owner">Chủ tài khoản</label><input id="o-bank-owner" value="${esc(d.bankOwner)}" placeholder="Tên chủ tài khoản">
         <div class="err" id="o-bank-owner-err" style="display:none"></div></div>`);
     bindChrome();
     const dobInput = el.querySelector("#o-dob");
