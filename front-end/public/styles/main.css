@@ -65,7 +65,7 @@
   table{display:block!important;width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch}
   .portal{display:block!important}
   .portal-burger{display:inline-block}
-  .sidebar{position:fixed!important;top:0;left:0;height:100vh!important;width:260px!important;z-index:700;
+  .sidebar{position:fixed!important;top:0;left:0;height:100vh;width:260px!important;z-index:700;
     transform:translateX(-100%);transition:transform .22s ease;box-shadow:2px 0 16px rgba(0,0,0,.2)}
   .sidebar.open{transform:translateX(0)}
   .portal.drawer-open .portal-scrim{display:block}
