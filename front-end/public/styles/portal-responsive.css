@@ -32,8 +32,29 @@ body {
     padding-right: max(14px, env(safe-area-inset-right));
     padding-bottom: max(16px, env(safe-area-inset-bottom));
     padding-left: max(14px, env(safe-area-inset-left));
-    overflow-y: auto;
+    overflow: hidden;
     overscroll-behavior: contain;
+  }
+
+  /* Scroll only the navigation; keep logout reachable below it on short screens. */
+  .business-portal .portal-nav,
+  .admin-portal .portal-nav {
+    flex: 0 1 auto;
+  }
+
+  .sidebar .btn.ghost.portal-sidebar-logout {
+    display: flex;
+    flex: 0 0 auto;
+    min-height: 44px;
+    width: 100%;
+    color: #fff;
+    background: rgba(255, 255, 255, .06);
+    border-color: rgba(255, 255, 255, .22);
+  }
+
+  .portal-sidebar-logout:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 
   .portal-burger {
