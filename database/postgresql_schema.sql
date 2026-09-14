@@ -584,7 +584,22 @@ CREATE TABLE IF NOT EXISTS partner_members (
   status TEXT NOT NULL DEFAULT 'active',
   assigned_at BIGINT NOT NULL,
   assigned_by TEXT,
-  removed_at BIGINT
+  removed_at BIGINT,
+  source TEXT NOT NULL DEFAULT 'admin',
+  invite_id TEXT,
+  accepted_at BIGINT,
+  activated_at BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS partner_invite_links (
+  id TEXT PRIMARY KEY,
+  partner_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at BIGINT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  revoked_at BIGINT,
+  use_count BIGINT NOT NULL DEFAULT 0,
+  last_used_at BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS partner_earnings (
@@ -600,8 +615,12 @@ CREATE TABLE IF NOT EXISTS partner_earnings (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_active_koc
   ON partner_members (koc_id) WHERE status = 'active';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_current_koc
+  ON partner_members (koc_id) WHERE status IN ('pending', 'active');
 CREATE INDEX IF NOT EXISTS idx_partner_members_partner
   ON partner_members (partner_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_invite_links_active_partner
+  ON partner_invite_links (partner_id) WHERE status = 'active';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_earnings_booking
   ON partner_earnings (booking_id);
 CREATE INDEX IF NOT EXISTS idx_partner_earnings_partner

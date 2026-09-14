@@ -335,10 +335,11 @@ function decisionDialog(options) {
   const root = document.getElementById('modal-root');
   if (!root) return Promise.resolve(options.input ? null : false);
   return new Promise(resolve => {
-    root.innerHTML = `<div class="modal-bg decision-backdrop" role="presentation">
+    const host = document.createElement('div');
+    host.innerHTML = `<div class="modal-bg decision-backdrop" role="presentation">
       <section class="modal decision-modal" role="dialog" aria-modal="true" aria-labelledby="decision-title">
         <button class="decision-close" data-modal-dismiss type="button" aria-label="Đóng">×</button>
-        <div class="decision-icon" aria-hidden="true">?</div>
+        <div class="decision-icon decision-icon-brand" aria-hidden="true"><img src="/images/koc-viet-app-icon.png" alt=""></div>
         <h2 id="decision-title">${esc(options.title)}</h2>
         <p id="decision-message" class="${options.input && options.required ? 'required-label' : ''}">${esc(options.message).replace(/\n/g, '<br>')}</p>
         ${options.input ? `<textarea class="decision-input" aria-labelledby="decision-message" aria-required="${Boolean(options.required)}" rows="4" placeholder="${esc(options.placeholder)}">${esc(options.inputValue)}</textarea><small class="decision-error" hidden>Vui lòng nhập nội dung trước khi tiếp tục.</small>` : ''}
@@ -348,14 +349,18 @@ function decisionDialog(options) {
         </div>
       </section>
     </div>`;
-    mountModalShell(root.querySelector('.modal'));
-    const input = root.querySelector('.decision-input');
+    const backdrop = host.firstElementChild;
+    const previousFocus = document.activeElement;
+    root.appendChild(backdrop);
+    mountModalShell(backdrop.querySelector('.modal'));
+    const input = backdrop.querySelector('.decision-input');
     let settled = false;
     const finish = value => {
       if (settled) return;
       settled = true;
       document.removeEventListener('keydown', onKeydown);
-      root.innerHTML = '';
+      backdrop.remove();
+      if (previousFocus?.isConnected) previousFocus.focus();
       resolve(value);
     };
     const cancel = () => finish(options.input ? null : false);
@@ -363,7 +368,7 @@ function decisionDialog(options) {
       if (!options.input) return finish(true);
       const value = input.value.trim();
       if (options.required && !value) {
-        root.querySelector('.decision-error').hidden = false;
+        backdrop.querySelector('.decision-error').hidden = false;
         input.focus();
         return;
       }
@@ -373,11 +378,11 @@ function decisionDialog(options) {
       if (event.key === 'Escape') cancel();
       if (event.key === 'Enter' && (!options.input || (!event.shiftKey && event.ctrlKey))) accept();
     };
-    root.querySelector('.decision-close').addEventListener('click', cancel);
-    root.querySelector('.decision-cancel').addEventListener('click', cancel);
-    root.querySelector('.decision-confirm').addEventListener('click', accept);
+    backdrop.querySelector('.decision-close').addEventListener('click', cancel);
+    backdrop.querySelector('.decision-cancel').addEventListener('click', cancel);
+    backdrop.querySelector('.decision-confirm').addEventListener('click', accept);
     document.addEventListener('keydown', onKeydown);
-    setTimeout(() => (input || root.querySelector('.decision-confirm')).focus(), 0);
+    setTimeout(() => (input || backdrop.querySelector('.decision-confirm'))?.focus(), 0);
   });
 }
 

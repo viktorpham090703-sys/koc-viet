@@ -1592,7 +1592,7 @@ async function profile(el, editing = false) {
         new_password: newPassword,
       });
       toast("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.", "ok");
-      setTimeout(() => logout(), 1200);
+      setTimeout(() => logout({ skipConfirmation: true }), 1200);
     } catch (e) {
       toast(e.message, "err");
       button.disabled = false;

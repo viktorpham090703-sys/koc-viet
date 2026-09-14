@@ -1,5 +1,13 @@
 import { api, post } from "./api.js";
-import { toast, spinner, esc, passwordInputHtml, bindPasswordToggles } from "./ui.js";
+import {
+  toast,
+  spinner,
+  esc,
+  passwordInputHtml,
+  bindPasswordToggles,
+  confirmDialog,
+  copyToClipboard,
+} from "./ui.js";
 import { renderKoc } from "./koc.js";
 import { renderBusiness } from "./business.js";
 import { renderAdmin } from "./admin.js";
@@ -16,6 +24,10 @@ import {
 
 export const state = { user: null, config: null };
 const appEl = document.getElementById("app");
+const PARTNER_INVITE_STORAGE = "koc-viet:partner-invite";
+
+const partnerInviteHash = (token) =>
+  `#/tham-gia-doi-tac/${encodeURIComponent(String(token || ""))}`;
 
 window.onerror = (m) => {
   console.error(m);
@@ -51,14 +63,48 @@ function goHash(newHash) {
   if (!changed) route();
 }
 
-export async function logout() {
+function showLogoutTransition() {
+  const root = document.getElementById("modal-root");
+  if (!root) return;
+  root.innerHTML = `<div class="logout-transition-backdrop" role="status" aria-live="polite">
+    <div class="logout-transition-card">
+      <div class="logout-transition-logo-wrap" aria-hidden="true">
+        <img class="logout-transition-logo" src="/images/koc-viet-app-icon.png" alt="">
+      </div>
+      <div class="logout-transition-spinner" aria-hidden="true"></div>
+      <strong>Đang đăng xuất…</strong>
+      <span>Vui lòng chờ trong giây lát</span>
+    </div>
+  </div>`;
+}
+
+export async function logout(options = {}) {
+  if (!options?.skipConfirmation) {
+    const confirmed = await confirmDialog(
+      "Bạn có chắc chắn muốn đăng xuất không?",
+      {
+        title: "Xác nhận đăng xuất",
+        confirmText: "Đăng xuất",
+        cancelText: "Hủy",
+        tone: "danger",
+      },
+    );
+    if (!confirmed) return false;
+  }
+
+  showLogoutTransition();
   await disconnectPwaNotifications();
   try {
     await post("/api/logout");
   } catch (_) {}
   state.user = null;
   setPwaAuthenticated(false);
+  const modalRoot = document.getElementById("modal-root");
+  if (modalRoot?.querySelector(".logout-transition-backdrop")) {
+    modalRoot.innerHTML = "";
+  }
   goHash("#/login");
+  return true;
 }
 
 async function route() {
@@ -104,6 +150,13 @@ async function route() {
   }
   if (hash === "#/forgot-password") {
     return renderForgotPassword(appEl);
+  }
+  if (hash.startsWith("#/tham-gia-doi-tac/")) {
+    let token = "";
+    try {
+      token = decodeURIComponent(hash.slice("#/tham-gia-doi-tac/".length));
+    } catch (_) {}
+    return renderPartnerInvite(appEl, token);
   }
 
   if (!state.user) {
@@ -244,6 +297,14 @@ async function doLogin() {
     state.user = r.user;
     setPwaAuthenticated(true);
     toast("Xin chào " + r.user.name, "ok");
+    const inviteToken = sessionStorage.getItem(PARTNER_INVITE_STORAGE);
+    if (inviteToken) {
+      sessionStorage.removeItem(PARTNER_INVITE_STORAGE);
+      if (r.user.role === "koc") {
+        goHash(partnerInviteHash(inviteToken));
+        return;
+      }
+    }
     goHash(
       r.user.role === "koc"
         ? "#/home"
@@ -256,6 +317,114 @@ async function doLogin() {
     btn.disabled = false;
     btn.textContent = "Đăng nhập";
   }
+}
+
+async function renderPartnerInvite(el, token) {
+  if (!token) {
+    el.innerHTML = partnerInviteMessage(
+      "Liên kết không hợp lệ",
+      "Liên kết mời bị thiếu thông tin. Hãy nhờ đối tác gửi lại đường dẫn mới.",
+    );
+    return;
+  }
+
+  el.innerHTML = `<div class="partner-invite-page"><div class="partner-invite-card partner-invite-loading">${spinner()}</div></div>`;
+  let preview;
+  try {
+    preview = await post("/api/partner-invite/preview", { token });
+  } catch (error) {
+    el.innerHTML = partnerInviteMessage(
+      "Liên kết không còn hiệu lực",
+      error.message || "Hãy nhờ đối tác gửi lại đường dẫn mời mới.",
+    );
+    return;
+  }
+
+  const partner = preview.partner || {};
+  const membership = preview.membership;
+  const initial = esc(String(partner.name || "Đ").charAt(0).toUpperCase());
+  let actionHtml = "";
+  if (!state.user) {
+    actionHtml = `<div class="partner-invite-actions">
+      <button class="btn primary" type="button" data-invite-login>Đăng nhập để tham gia</button>
+      <button class="btn ghost" type="button" data-invite-register>Đăng ký tài khoản KOC</button>
+    </div>`;
+  } else if (state.user.role !== "koc") {
+    actionHtml = `<div class="partner-invite-notice warning">Tài khoản hiện tại không phải tài khoản KOC. Vui lòng đăng xuất và đăng nhập bằng tài khoản KOC để tham gia.</div>
+      <button class="btn ghost" type="button" data-invite-logout>Đăng xuất</button>`;
+  } else if (membership?.samePartner) {
+    actionHtml = `<div class="partner-invite-notice success">Bạn ${membership.status === "pending" ? "đã đăng ký qua lời mời này và đang chờ duyệt" : "đã thuộc đối tác này"}.</div>
+      <a class="btn primary" href="#/home">Về trang chủ KOC</a>`;
+  } else if (membership) {
+    actionHtml = `<div class="partner-invite-notice warning">Bạn đang thuộc đối tác <b>${esc(membership.partnerName)}</b>. Liên kết mời không thể tự động chuyển đối tác; vui lòng liên hệ quản trị viên nếu cần thay đổi.</div>
+      <a class="btn ghost" href="#/home">Về trang chủ KOC</a>`;
+  } else {
+    actionHtml = `<div class="partner-invite-actions">
+      <button class="btn primary" type="button" data-invite-accept>Tham gia đối tác này</button>
+      <a class="btn ghost" href="#/home">Để sau</a>
+    </div>`;
+  }
+
+  el.innerHTML = `<div class="partner-invite-page">
+    <section class="partner-invite-card" aria-labelledby="partner-invite-title">
+      <a class="partner-invite-brand" href="/trang-chu" aria-label="KOC Việt">
+        <img src="/images/koc-viet-logo.png" alt="" width="46" height="46"><strong>KOC VIỆT</strong>
+      </a>
+      <div class="partner-invite-avatar">${partner.avatar ? `<img src="${esc(partner.avatar)}" alt="Ảnh đại diện ${esc(partner.name)}">` : initial}</div>
+      <span class="partner-invite-eyebrow">LỜI MỜI HỢP TÁC</span>
+      <h1 id="partner-invite-title">${esc(partner.name)}</h1>
+      <p>Mời bạn tham gia đội ngũ KOC của đối tác trên KOC Việt. Việc tham gia không làm thay đổi thu nhập booking của bạn.</p>
+      ${actionHtml}
+      <button class="partner-invite-copy" type="button" data-invite-copy>🔗 Sao chép liên kết này</button>
+    </section>
+  </div>`;
+
+  el.querySelector("[data-invite-copy]")?.addEventListener("click", async () => {
+    const copied = await copyToClipboard(location.href);
+    toast(copied ? "Đã sao chép liên kết" : "Không thể sao chép liên kết", copied ? "ok" : "err");
+  });
+  el.querySelector("[data-invite-login]")?.addEventListener("click", () => {
+    sessionStorage.setItem(PARTNER_INVITE_STORAGE, token);
+    goHash("#/login");
+  });
+  el.querySelector("[data-invite-register]")?.addEventListener("click", async () => {
+    sessionStorage.setItem(PARTNER_INVITE_STORAGE, token);
+    const { renderOnboarding } = await import("./onboard.js");
+    renderOnboarding(el, {
+      partnerInviteToken: token,
+      partnerName: partner.name,
+      cancelHash: partnerInviteHash(token),
+    });
+  });
+  el.querySelector("[data-invite-logout]")?.addEventListener("click", logout);
+  el.querySelector("[data-invite-accept]")?.addEventListener("click", async (event) => {
+    const accepted = await confirmDialog(
+      `Bạn có chắc chắn muốn tham gia đội KOC của ${partner.name}?`,
+      { title: "Xác nhận tham gia", confirmText: "Tham gia", cancelText: "Hủy" },
+    );
+    if (!accepted) return;
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = "Đang tham gia…";
+    try {
+      await post("/api/partner-invite/accept", { token });
+      sessionStorage.removeItem(PARTNER_INVITE_STORAGE);
+      toast(`Bạn đã tham gia đối tác ${partner.name}`, "ok");
+      renderPartnerInvite(el, token);
+    } catch (error) {
+      toast(error.message, "err");
+      button.disabled = false;
+      button.textContent = "Tham gia đối tác này";
+    }
+  });
+}
+
+function partnerInviteMessage(title, message) {
+  return `<div class="partner-invite-page"><section class="partner-invite-card">
+    <a class="partner-invite-brand" href="/trang-chu"><img src="/images/koc-viet-logo.png" alt="" width="46" height="46"><strong>KOC VIỆT</strong></a>
+    <div class="partner-invite-avatar">!</div><h1>${esc(title)}</h1><p>${esc(message)}</p>
+    <a class="btn primary" href="/trang-chu">Về trang chủ</a>
+  </section></div>`;
 }
 
 // ---- Forgot / reset password (email OTP, no auth required) ----
