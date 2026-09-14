@@ -74,22 +74,30 @@ function partnerBannersHtml(p) {
   </div>`;
 }
 
+function partnerAccountAvatarHtml(partner) {
+  if (partner?.avatar) {
+    return `<img src="${esc(partner.avatar)}" alt="" decoding="async">`;
+  }
+  return esc(String(partner?.name || state.user.name || "Đ").charAt(0).toUpperCase());
+}
+
 export async function renderPartner(el, hash) {
   const page = hash.replace("#/", "") || "dashboard";
   const active = "#/" + (PAGES.includes(page) ? page : "dashboard");
+  const profileResponse = await api("/api/partner/profile").catch(() => ({ partner: null }));
+  const partnerProfile = profileResponse.partner;
+  const accountName = partnerProfile?.name || state.user.name;
   el.innerHTML = `<div class="portal business-portal">
     <div class="sidebar"><div class="brand"><a class="portal-brand-link" href="#/dashboard" aria-label="KOC Việt — Cổng đối tác">${brandLogo()}</a></div>
       <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav><button class="btn ghost sm portal-sidebar-logout" id="pn-logout">Đăng xuất</button></div>
     <div class="main"><div class="topbar portal-topbar">
       <div class="portal-context"><span class="portal-context-label">KOC VIET</span><h2>Cổng đối tác</h2></div>
-      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ đối tác"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "P").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Đối tác</span></div></a></div></div>
-      <div class="content"><div id="pn-banners"></div><div id="pn-view"></div></div></div></div>`;
+      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ đối tác"><div class="portal-account-avatar partner-account-logo" aria-hidden="true">${partnerAccountAvatarHtml(partnerProfile)}</div><div class="portal-account-meta"><strong>${esc(accountName)}</strong><span>Đối tác</span></div></a></div></div>
+      <div class="content"><div id="pn-banners">${partnerBannersHtml(partnerProfile)}</div><div id="pn-view"></div></div></div></div>`;
   document.getElementById("pn-logout").addEventListener("click", logout);
   enhancePortal();
   const view = document.getElementById("pn-view");
   try {
-    // One shell-level fetch to drive the reminder banners on every page.
-    void refreshPartnerBanners();
     if (active === "#/dashboard") await dashboard(view);
     else if (active === "#/kocs") await kocsPage(view);
     else if (active === "#/report") await report(view);
@@ -522,6 +530,11 @@ async function profile(el, editing = false) {
         bank_account: el.querySelector("#pf-bank-account").value.trim(),
         bank_owner: el.querySelector("#pf-bank-owner").value.trim(),
       });
+      state.user.name = name;
+      const topbarAvatar = document.querySelector(".portal-account-avatar");
+      const topbarName = document.querySelector(".portal-account-meta strong");
+      if (topbarAvatar) topbarAvatar.innerHTML = partnerAccountAvatarHtml({ name, avatar });
+      if (topbarName) topbarName.textContent = name;
       toast("Đã lưu hồ sơ", "ok");
       void refreshPartnerBanners();
       profile(el);

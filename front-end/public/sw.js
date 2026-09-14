@@ -1,5 +1,5 @@
-const SHELL_CACHE = "koc-viet-shell-v5";
-const RUNTIME_CACHE = "koc-viet-runtime-v4";
+const SHELL_CACHE = "koc-viet-shell-v6";
+const RUNTIME_CACHE = "koc-viet-runtime-v5";
 const NOTIFICATION_STATE_CACHE = "koc-viet-notifications-v1";
 const NOTIFICATION_STATE_URL = "/__koc-viet-notification-state__";
 const APP_SHELL = [

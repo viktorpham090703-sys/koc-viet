@@ -96,7 +96,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    serviceWorkerRegistration = await navigator.serviceWorker.register("/sw.js?v=20260914-invite-redirect-v1", {
+    serviceWorkerRegistration = await navigator.serviceWorker.register("/sw.js?v=20260914-partner-logo-v1", {
       scope: "/",
     });
     await serviceWorkerRegistration.update();
