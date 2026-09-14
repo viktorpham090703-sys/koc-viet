@@ -411,7 +411,7 @@ async function renderPartnerInvite(el, token) {
       await post("/api/partner-invite/accept", { token });
       sessionStorage.removeItem(PARTNER_INVITE_STORAGE);
       toast(`Bạn đã tham gia đối tác ${partner.name}`, "ok");
-      renderPartnerInvite(el, token);
+      goHash("#/home");
     } catch (error) {
       toast(error.message, "err");
       button.disabled = false;
