@@ -181,12 +181,13 @@ function bindPartnerInviteCard(scope, invite, refresh) {
     }
   });
   scope.querySelector("[data-partner-invite-rotate]")?.addEventListener("click", async (event) => {
+    // Keep the element before awaiting: DOM Event.currentTarget becomes null afterwards.
+    const button = event.currentTarget;
     const confirmed = await confirmDialog(
       "Liên kết cũ sẽ ngừng hoạt động ngay. Bạn có chắc chắn muốn tạo liên kết mới?",
       { title: "Tạo lại liên kết mời", confirmText: "Tạo liên kết mới", cancelText: "Hủy", tone: "danger" },
     );
     if (!confirmed) return;
-    const button = event.currentTarget;
     button.disabled = true;
     button.textContent = "Đang tạo…";
     try {
