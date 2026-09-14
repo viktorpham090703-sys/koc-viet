@@ -606,14 +606,14 @@ async function partnerDetail(id, listEl) {
       btn.textContent = "Cấp tài khoản đăng nhập";
     }
   });
-  document.getElementById("pt-d-account-reset")?.addEventListener("click", async () => {
+  document.getElementById("pt-d-account-reset")?.addEventListener("click", async (event) => {
+    const btn = event.currentTarget;
     if (
       !(await confirmDialog(
         "Đặt lại mật khẩu cho tài khoản này? Mật khẩu mới sẽ được gửi qua email, mật khẩu cũ sẽ không còn dùng được.",
       ))
     )
       return;
-    const btn = document.getElementById("pt-d-account-reset");
     btn.disabled = true;
     btn.textContent = "Đang gửi…";
     try {
