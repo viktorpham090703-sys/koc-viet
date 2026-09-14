@@ -398,12 +398,13 @@ async function renderPartnerInvite(el, token) {
   });
   el.querySelector("[data-invite-logout]")?.addEventListener("click", logout);
   el.querySelector("[data-invite-accept]")?.addEventListener("click", async (event) => {
+    // currentTarget is cleared after an awaited dialog; capture it synchronously.
+    const button = event.currentTarget;
     const accepted = await confirmDialog(
       `Bạn có chắc chắn muốn tham gia đội KOC của ${partner.name}?`,
       { title: "Xác nhận tham gia", confirmText: "Tham gia", cancelText: "Hủy" },
     );
     if (!accepted) return;
-    const button = event.currentTarget;
     button.disabled = true;
     button.textContent = "Đang tham gia…";
     try {
