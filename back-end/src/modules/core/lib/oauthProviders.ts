@@ -118,6 +118,11 @@ export function getSocialAuthUrl(
         isMock: true,
       };
     }
+
+    const codeVerifier = crypto.randomBytes(32).toString('base64url');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+    setOAuthSession(state, { status: 'pending', platform: 'YouTube', codeVerifier });
+
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
@@ -127,6 +132,8 @@ export function getSocialAuthUrl(
       include_granted_scopes: 'true',
       state,
       prompt: 'consent',
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
     return { url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`, isMock: false };
   }
@@ -233,16 +240,21 @@ export async function exchangeOAuthCode(
       throw new Error('Chưa cấu hình GOOGLE_CLIENT_ID hoặc GOOGLE_CLIENT_SECRET');
     }
 
+    const tokenParams: Record<string, string> = {
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    };
+    if (codeVerifier) {
+      tokenParams.code_verifier = codeVerifier;
+    }
+
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
+      body: new URLSearchParams(tokenParams),
     });
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
