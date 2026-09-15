@@ -6,6 +6,8 @@ import {
   normalizeSocialDrafts,
   socialPlatformIcon,
   socialChannelPickerHtml,
+  PENDING_APPROVAL_PLATFORMS,
+  isPlatformPendingApproval,
 } from "./social-channels.js";
 
 test("offers only the five supported social platforms", () => {
@@ -228,7 +230,7 @@ test("always renders unlink button for ineligible or primary channels and never 
   assert.ok(!html.includes('disabled title="Kênh chính đã liên kết cố định"'), "Never disables platform pills or locks channels");
 });
 
-test("renders Demo badge and note for Threads platform", () => {
+test("renders approved active channel for Threads without demo badge", () => {
   const html = socialChannelPickerHtml({
     socials: [
       {
@@ -243,33 +245,66 @@ test("renders Demo badge and note for Threads platform", () => {
     mode: "auto",
   });
 
-  // Check Demo badge in pill and card header
-  assert.ok(html.includes('class="platform-pill-demo-tag"'), "Renders Demo badge in platform pill");
-  assert.ok(html.includes('class="social-card-demo-badge"'), "Renders Demo badge in social card header");
-  assert.ok(html.includes("Kênh Threads (Bản thử nghiệm / Demo)"), "Renders clear Demo heading");
-  assert.ok(html.includes("Kết nối Threads (Demo)"), "Renders Demo CTA button text");
-  assert.ok(html.includes("chế độ thử nghiệm (Demo)"), "Explains demo status in subtext");
+  // Verify Threads is approved and active
+  assert.ok(html.includes("Chưa kết nối tài khoản Threads"), "Renders standard unconnected title");
+  assert.ok(html.includes("Kết nối Threads"), "Renders clear connect CTA text");
+  assert.ok(html.includes('data-social-oauth="Threads"'), "Binds OAuth click listener for Threads");
+  assert.ok(!html.includes("Demo"), "No Demo badge or demo text appears for Threads");
+  assert.ok(!html.includes('class="btn-card-action locked"'), "Threads is not locked");
 });
 
-test("does not render Demo badge for Threads in manual mode", () => {
+test("identifies TikTok and Facebook as pending platform approval", () => {
+  assert.deepEqual([...PENDING_APPROVAL_PLATFORMS], ["TikTok", "Facebook"]);
+  assert.equal(isPlatformPendingApproval("TikTok"), true);
+  assert.equal(isPlatformPendingApproval("Facebook"), true);
+  assert.equal(isPlatformPendingApproval("YouTube"), false);
+  assert.equal(isPlatformPendingApproval("Instagram"), false);
+  assert.equal(isPlatformPendingApproval("Threads"), false);
+});
+
+test("locks connect button and prevents OAuth clicks for TikTok and Facebook in auto mode", () => {
   const html = socialChannelPickerHtml({
     socials: [
-      {
-        platform: "Threads",
-        handle: "https://www.threads.net/@creator",
-        followers: 0,
-        verified: false,
-      },
+      { platform: "TikTok", handle: "", followers: 0, verified: false },
+      { platform: "Facebook", handle: "", followers: 0, verified: false },
+    ],
+    prefix: "test",
+    escapeHtml: (s) => s,
+    mode: "auto",
+  });
+
+  // Verify locked buttons
+  assert.ok(html.includes('class="btn-card-action locked" disabled aria-disabled="true"'), "Renders disabled locked button");
+  assert.ok(html.includes("Đang chờ duyệt"), "Button displays 'Đang chờ duyệt'");
+  assert.ok(!html.includes('data-social-oauth="TikTok"'), "Does NOT bind OAuth click listener for TikTok");
+  assert.ok(!html.includes('data-social-oauth="Facebook"'), "Does NOT bind OAuth click listener for Facebook");
+
+  // Verify pending badges & messages
+  assert.ok(html.includes('class="social-card-pending-badge"'), "Renders pending approval badge in card header");
+  assert.ok(html.includes('class="platform-pill-pending-tag"'), "Renders pending tag in platform pills");
+  assert.ok(html.includes("Kênh TikTok (Đang chờ nền tảng xét duyệt)"), "Displays clear pending heading for TikTok");
+  assert.ok(html.includes("Kênh Facebook (Đang chờ nền tảng xét duyệt)"), "Displays clear pending heading for Facebook");
+  assert.ok(html.includes("data-switch-to-manual"), "Provides quick link to switch to manual mode");
+});
+
+test("allows TikTok and Facebook manual entry without locked state in manual mode", () => {
+  const html = socialChannelPickerHtml({
+    socials: [
+      { platform: "TikTok", handle: "https://www.tiktok.com/@mybrand", followers: 0, verified: false },
+      { platform: "Facebook", handle: "https://facebook.com/mybrand", followers: 0, verified: false },
     ],
     prefix: "test",
     escapeHtml: (s) => s,
     mode: "manual",
   });
 
-  assert.ok(!html.includes('class="platform-pill-demo-tag"'), "No Demo badge in manual platform pill");
-  assert.ok(!html.includes('class="social-card-demo-badge"'), "No Demo badge in manual social card header");
-  assert.ok(!html.includes("Demo"), "No Demo text appears in manual mode for Threads");
+  // In manual mode, inputs must remain editable and no locked buttons
+  assert.ok(!html.includes('class="btn-card-action locked"'), "No locked button in manual mode");
+  assert.ok(!html.includes("Đang chờ duyệt"), "No pending approval text on manual buttons");
+  assert.ok(html.includes('value="https://www.tiktok.com/@mybrand"'), "Preserves manual input for TikTok");
+  assert.ok(html.includes('value="https://facebook.com/mybrand"'), "Preserves manual input for Facebook");
 });
+
 
 
 

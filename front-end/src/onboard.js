@@ -16,6 +16,7 @@ import {
   normalizeSocialDrafts,
   isValidSocialUrl,
   socialChannelPickerHtml,
+  isPlatformPendingApproval,
 } from "./social-channels.js";
 
 const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
@@ -658,10 +659,23 @@ export function renderOnboarding(el, options = {}) {
         render();
       }),
     );
+    el.querySelectorAll("[data-switch-to-manual]").forEach((link) =>
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        collect1();
+        d.socialMode = "manual";
+        render();
+      }),
+    );
     el.querySelectorAll("[data-social-oauth]").forEach((button) =>
       button.addEventListener("click", async () => {
-        collect1();
         const platform = button.dataset.socialOauth;
+        if (isPlatformPendingApproval(platform)) {
+          toast(`Tính năng kết nối tự động với ${platform} đang chờ nền tảng xét duyệt. Vui lòng chuyển sang tab "Nhập link thủ công" để điền liên kết.`, "err");
+          return;
+        }
+        collect1();
         window.__lastOAuthPlatform = platform;
         const oldText = button.textContent;
         button.disabled = true;

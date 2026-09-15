@@ -1970,7 +1970,7 @@ export async function route(request, env, url) {
   // ---------- Social OAuth2 Connect (YouTube, TikTok, Meta) ----------
   if (p === "/api/oauth/social/auth-url" && m === "GET") {
     const platform = url.searchParams.get("platform") || "TikTok";
-    const state = url.searchParams.get("state") || uid();
+    const state = url.searchParams.get("state") || `${platform}_${uid()}`;
     const result = getSocialAuthUrl(env, platform, state);
     setOAuthSession(state, { status: "pending", platform });
     return J({
@@ -2080,7 +2080,22 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
     }
 
     const session = state ? getOAuthSession(state) : null;
-    const platform = url.searchParams.get("platform") || session?.platform || body?.platform || "TikTok";
+    let detectedPlatform = url.searchParams.get("platform") || session?.platform || body?.platform;
+    if (!detectedPlatform && state) {
+      const lowerState = state.toLowerCase();
+      if (lowerState === 'youtube' || lowerState.startsWith('youtube_') || lowerState.includes('youtube')) {
+        detectedPlatform = 'YouTube';
+      } else if (lowerState === 'tiktok' || lowerState.startsWith('tiktok_') || lowerState.includes('tiktok')) {
+        detectedPlatform = 'TikTok';
+      } else if (lowerState === 'instagram' || lowerState.startsWith('instagram_') || lowerState.includes('instagram')) {
+        detectedPlatform = 'Instagram';
+      } else if (lowerState === 'facebook' || lowerState.startsWith('facebook_') || lowerState.includes('facebook')) {
+        detectedPlatform = 'Facebook';
+      } else if (lowerState === 'threads' || lowerState.startsWith('threads_') || lowerState.includes('threads')) {
+        detectedPlatform = 'Threads';
+      }
+    }
+    const platform = detectedPlatform || "YouTube";
 
     if (errorParam || !code) {
       const errMsg = errorParam || 'Không nhận được mã ủy quyền từ nhà cung cấp';

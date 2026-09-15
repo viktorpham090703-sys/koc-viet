@@ -20,6 +20,16 @@ test('generates real Google OAuth URL when GOOGLE_CLIENT_ID is present', () => {
   assert.ok(auth.url.includes('state=csrf-state-123'));
 });
 
+test('generates real Threads OAuth URL when THREADS_APP_ID is present', () => {
+  const env = { PORT: 3000, THREADS_APP_ID: '1637121447938714', THREADS_APP_SECRET: 'test-secret' };
+  const auth = getSocialAuthUrl(env, 'Threads', 'csrf-threads-123');
+  assert.equal(auth.isMock, false);
+  assert.ok(auth.url.startsWith('https://threads.net/oauth/authorize'));
+  assert.ok(auth.url.includes('client_id=1637121447938714'));
+  assert.ok(auth.url.includes('scope=threads_basic'));
+  assert.ok(auth.url.includes('state=csrf-threads-123'));
+});
+
 test('generates dev mock channel stats with verified flag and followers', () => {
   const stats = generateDevMockChannelStats('TikTok', 12500);
   assert.equal(stats.platform, 'TikTok');
