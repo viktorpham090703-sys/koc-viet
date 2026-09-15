@@ -17,15 +17,25 @@ export interface SocialChannelStats {
   notice?: string;
 }
 
-const oauthSessions = new Map<string, { status: string; stats?: SocialChannelStats; error?: string; codeVerifier?: string; updatedAt: number }>();
+export interface OAuthSessionData {
+  status: string;
+  platform?: string;
+  stats?: SocialChannelStats;
+  error?: string;
+  codeVerifier?: string;
+  updatedAt?: number;
+}
 
-export function setOAuthSession(state: string, data: { status: string; stats?: SocialChannelStats; error?: string; codeVerifier?: string }) {
+const oauthSessions = new Map<string, OAuthSessionData>();
+
+export function setOAuthSession(state: string, data: Partial<OAuthSessionData>) {
   if (!state) return;
-  oauthSessions.set(state, { ...data, updatedAt: Date.now() });
+  const existing = oauthSessions.get(state) || { status: 'pending' };
+  oauthSessions.set(state, { ...existing, ...data, updatedAt: Date.now() });
   if (oauthSessions.size > 200) {
     const cutoff = Date.now() - 15 * 60 * 1000;
     for (const [k, v] of oauthSessions.entries()) {
-      if (v.updatedAt < cutoff) oauthSessions.delete(k);
+      if ((v.updatedAt || 0) < cutoff) oauthSessions.delete(k);
     }
   }
 }
@@ -51,8 +61,11 @@ export function getOAuthRedirectUri(env: any, platform: string): string {
   if (normalized === 'facebook' && env.META_REDIRECT_URI) {
     return String(env.META_REDIRECT_URI).trim();
   }
+  if (normalized === 'threads' && env.THREADS_REDIRECT_URI) {
+    return String(env.THREADS_REDIRECT_URI).trim();
+  }
   const origin = env.BACKEND_ORIGIN || `http://localhost:${env.PORT || 3000}`;
-  return `${origin}/api/oauth/social/callback?platform=${encodeURIComponent(platform)}`;
+  return `${origin}/api/oauth/social/callback`;
 }
 
 export function getSocialAuthUrl(env: any, platform: string, state: string): { url: string; isMock: boolean } {
@@ -139,6 +152,24 @@ export function getSocialAuthUrl(env: any, platform: string, state: string): { u
       state,
     });
     return { url: `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`, isMock: false };
+  }
+
+  if (normalizedPlatform === 'threads') {
+    const appId = String(env.THREADS_APP_ID || env.META_APP_ID || '').trim();
+    if (!appId) {
+      return {
+        url: `/api/oauth/social/dev-connect?platform=Threads&state=${encodeURIComponent(state)}`,
+        isMock: true,
+      };
+    }
+    const params = new URLSearchParams({
+      client_id: appId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'threads_basic',
+      state,
+    });
+    return { url: `https://threads.net/oauth/authorize?${params.toString()}`, isMock: false };
   }
 
   return {
@@ -464,6 +495,68 @@ export async function exchangeOAuthCode(
       verifiedAt,
       isPersonalAccount,
       notice,
+    };
+  }
+
+  if (normalizedPlatform === 'threads') {
+    const appId = String(env.THREADS_APP_ID || env.META_APP_ID || '').trim();
+    const appSecret = String(env.THREADS_APP_SECRET || env.META_APP_SECRET || '').trim();
+    if (!appId || !appSecret) {
+      throw new Error('Chưa cấu hình THREADS_APP_ID hoặc THREADS_APP_SECRET');
+    }
+
+    const tokenRes = await fetch('https://graph.threads.net/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: appId,
+        client_secret: appSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+        code,
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData?.access_token;
+    if (!accessToken) {
+      const rawMsg = tokenData?.error_message || tokenData?.error?.message || tokenData?.error || 'Lỗi đổi token Threads';
+      console.error('[Threads OAuth Error]', JSON.stringify(tokenData));
+      throw new Error(rawMsg);
+    }
+
+    let username = '';
+    let displayName = '';
+    let avatarUrl = '';
+    let followers = 0;
+    try {
+      const meRes = await fetch(`https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url,threads_biography&access_token=${accessToken}`);
+      const meData = await meRes.json();
+      console.log('[Threads Me Data]', JSON.stringify(meData));
+      if (meData?.username) username = meData.username;
+      if (meData?.name) displayName = meData.name;
+      if (meData?.threads_profile_picture_url) avatarUrl = meData.threads_profile_picture_url;
+    } catch (_) {}
+
+    try {
+      const userRes = await fetch(`https://graph.threads.net/v1.0/me?fields=follower_count&access_token=${accessToken}`);
+      const userData = await userRes.json();
+      if (userData?.follower_count !== undefined) {
+        followers = Number(userData.follower_count || 0);
+      }
+    } catch (_) {}
+
+    const handle = `https://www.threads.net/@${(username || 'creator').replace(/^@+/, '')}`;
+
+    return {
+      platform: 'Threads',
+      handle,
+      url: handle,
+      displayName: displayName || (username ? `@${username}` : 'Threads User'),
+      followers: followers > 0 ? followers : 0,
+      avatarUrl,
+      verified: true,
+      verificationSource: 'oauth2_threads',
+      verifiedAt,
     };
   }
 
