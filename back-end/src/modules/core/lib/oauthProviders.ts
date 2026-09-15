@@ -47,30 +47,68 @@ export function getOAuthSession(state: string) {
   return oauthSessions.get(state) || null;
 }
 
-export function getOAuthRedirectUri(env: any, platform: string): string {
+export function getOAuthRedirectUri(env: any, platform: string, requestOrigin?: string): string {
   const normalized = String(platform || '').toLowerCase();
-  if (normalized === 'youtube' && env.GOOGLE_REDIRECT_URI) {
+  if (normalized === 'youtube' && env?.GOOGLE_REDIRECT_URI) {
     return String(env.GOOGLE_REDIRECT_URI).trim();
   }
-  if (normalized === 'tiktok' && env.TIKTOK_REDIRECT_URI) {
+  if (normalized === 'tiktok' && env?.TIKTOK_REDIRECT_URI) {
     return String(env.TIKTOK_REDIRECT_URI).trim();
   }
-  if (normalized === 'instagram' && env.INSTAGRAM_REDIRECT_URI) {
+  if (normalized === 'instagram' && env?.INSTAGRAM_REDIRECT_URI) {
     return String(env.INSTAGRAM_REDIRECT_URI).trim();
   }
-  if (normalized === 'facebook' && env.META_REDIRECT_URI) {
+  if (normalized === 'facebook' && env?.META_REDIRECT_URI) {
     return String(env.META_REDIRECT_URI).trim();
   }
-  if (normalized === 'threads' && env.THREADS_REDIRECT_URI) {
+  if (normalized === 'threads' && env?.THREADS_REDIRECT_URI) {
     return String(env.THREADS_REDIRECT_URI).trim();
   }
-  const origin = env.BACKEND_ORIGIN || `http://localhost:${env.PORT || 3000}`;
+
+  // 1. Explicit BACKEND_ORIGIN configured in env
+  if (env?.BACKEND_ORIGIN) {
+    const origin = String(env.BACKEND_ORIGIN).trim().replace(/\/+$/, '');
+    return `${origin}/api/oauth/social/callback`;
+  }
+
+  // 2. Infer origin from any other configured platform redirect URI in env (e.g. THREADS_REDIRECT_URI = https://kocviet.com/...)
+  const otherRedirectUri =
+    env?.THREADS_REDIRECT_URI ||
+    env?.INSTAGRAM_REDIRECT_URI ||
+    env?.TIKTOK_REDIRECT_URI ||
+    env?.META_REDIRECT_URI;
+  if (otherRedirectUri) {
+    try {
+      const u = new URL(String(otherRedirectUri).trim());
+      if (u.protocol && u.host && !u.host.includes('localhost') && !u.host.includes('127.0.0.1')) {
+        return `${u.origin}/api/oauth/social/callback`;
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fall back to requestOrigin if provided and not localhost
+  if (requestOrigin) {
+    try {
+      const u = new URL(String(requestOrigin).trim());
+      if (u.protocol && u.host && !u.host.includes('localhost') && !u.host.includes('127.0.0.1')) {
+        return `${u.origin}/api/oauth/social/callback`;
+      }
+    } catch (_) {}
+  }
+
+  // 4. Localhost fallback
+  const origin = `http://localhost:${env?.PORT || 3000}`;
   return `${origin}/api/oauth/social/callback`;
 }
 
-export function getSocialAuthUrl(env: any, platform: string, state: string): { url: string; isMock: boolean } {
+export function getSocialAuthUrl(
+  env: any,
+  platform: string,
+  state: string,
+  requestOrigin?: string,
+): { url: string; isMock: boolean } {
   const normalizedPlatform = String(platform || '').toLowerCase();
-  const redirectUri = getOAuthRedirectUri(env, platform);
+  const redirectUri = getOAuthRedirectUri(env, platform, requestOrigin);
 
   if (normalizedPlatform === 'youtube') {
     const clientId = String(env.GOOGLE_CLIENT_ID || '').trim();

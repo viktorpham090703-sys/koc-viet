@@ -46,3 +46,34 @@ test('generates mock channel stats with random followers when not specified', ()
   assert.equal(stats.verified, true);
 });
 
+test('resolves Google OAuth redirect URI using explicit or inferred origin', () => {
+  // Case 1: Explicit GOOGLE_REDIRECT_URI
+  const env1 = {
+    PORT: 3000,
+    GOOGLE_CLIENT_ID: 'google-id',
+    GOOGLE_CLIENT_SECRET: 'secret',
+    GOOGLE_REDIRECT_URI: 'https://kocviet.com/api/oauth/social/callback',
+  };
+  const auth1 = getSocialAuthUrl(env1, 'YouTube', 'csrf-1');
+  assert.ok(auth1.url.includes('redirect_uri=https%3A%2F%2Fkocviet.com%2Fapi%2Foauth%2Fsocial%2Fcallback'));
+
+  // Case 2: Inferred from THREADS_REDIRECT_URI when GOOGLE_REDIRECT_URI is not set
+  const env2 = {
+    PORT: 3000,
+    GOOGLE_CLIENT_ID: 'google-id',
+    GOOGLE_CLIENT_SECRET: 'secret',
+    THREADS_REDIRECT_URI: 'https://kocviet.com/api/oauth/social/callback',
+  };
+  const auth2 = getSocialAuthUrl(env2, 'YouTube', 'csrf-2');
+  assert.ok(auth2.url.includes('redirect_uri=https%3A%2F%2Fkocviet.com%2Fapi%2Foauth%2Fsocial%2Fcallback'));
+
+  // Case 3: Inferred from requestOrigin
+  const env3 = {
+    PORT: 3000,
+    GOOGLE_CLIENT_ID: 'google-id',
+    GOOGLE_CLIENT_SECRET: 'secret',
+  };
+  const auth3 = getSocialAuthUrl(env3, 'YouTube', 'csrf-3', 'https://kocviet.com');
+  assert.ok(auth3.url.includes('redirect_uri=https%3A%2F%2Fkocviet.com%2Fapi%2Foauth%2Fsocial%2Fcallback'));
+});
+

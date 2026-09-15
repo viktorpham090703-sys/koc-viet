@@ -1970,8 +1970,11 @@ export async function route(request, env, url) {
   // ---------- Social OAuth2 Connect (YouTube, TikTok, Meta) ----------
   if (p === "/api/oauth/social/auth-url" && m === "GET") {
     const platform = url.searchParams.get("platform") || "TikTok";
-    const state = url.searchParams.get("state") || `${platform}_${uid()}`;
-    const result = getSocialAuthUrl(env, platform, state);
+    const reqOrigin =
+      request.headers.get("origin") ||
+      (request.headers.get("referer") ? new URL(request.headers.get("referer")).origin : "") ||
+      url.origin;
+    const result = getSocialAuthUrl(env, platform, state, reqOrigin);
     setOAuthSession(state, { status: "pending", platform });
     return J({
       platform,
