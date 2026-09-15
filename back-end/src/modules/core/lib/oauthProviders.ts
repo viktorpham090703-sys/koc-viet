@@ -118,6 +118,11 @@ export function getSocialAuthUrl(
         isMock: true,
       };
     }
+
+    const codeVerifier = crypto.randomBytes(32).toString('base64url');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+    setOAuthSession(state, { status: 'pending', platform: 'YouTube', codeVerifier });
+
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
@@ -127,6 +132,8 @@ export function getSocialAuthUrl(
       include_granted_scopes: 'true',
       state,
       prompt: 'consent',
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
     return { url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`, isMock: false };
   }
@@ -233,16 +240,21 @@ export async function exchangeOAuthCode(
       throw new Error('Chưa cấu hình GOOGLE_CLIENT_ID hoặc GOOGLE_CLIENT_SECRET');
     }
 
+    const tokenParams: Record<string, string> = {
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    };
+    if (codeVerifier) {
+      tokenParams.code_verifier = codeVerifier;
+    }
+
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
+      body: new URLSearchParams(tokenParams),
     });
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
@@ -566,30 +578,78 @@ export async function exchangeOAuthCode(
     let displayName = '';
     let avatarUrl = '';
     let followers = 0;
-    try {
-      const meRes = await fetch(`https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url,threads_biography&access_token=${accessToken}`);
-      const meData = await meRes.json();
-      console.log('[Threads Me Data]', JSON.stringify(meData));
-      if (meData?.username) username = meData.username;
-      if (meData?.name) displayName = meData.name;
-      if (meData?.threads_profile_picture_url) avatarUrl = meData.threads_profile_picture_url;
-    } catch (_) {}
 
+    const authHeaders = {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'KOC-Viet-App/1.0',
+    };
+
+    // 1. Fetch user profile from /me or /{user_id}
     try {
-      const userRes = await fetch(`https://graph.threads.net/v1.0/me?fields=follower_count&access_token=${accessToken}`);
-      const userData = await userRes.json();
-      if (userData?.follower_count !== undefined) {
-        followers = Number(userData.follower_count || 0);
+      let meRes = await fetch(
+        'https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url,threads_biography',
+        { headers: authHeaders },
+      );
+      let meData = await meRes.json();
+      console.log('[Threads Me Data]', JSON.stringify(meData));
+
+      // Fallback with user_id if /me alias did not return username
+      if (!meData?.username && tokenData?.user_id) {
+        meRes = await fetch(
+          `https://graph.threads.net/v1.0/${tokenData.user_id}?fields=id,username,name,threads_profile_picture_url,threads_biography`,
+          { headers: authHeaders },
+        );
+        meData = await meRes.json();
+        console.log('[Threads User_ID Data]', JSON.stringify(meData));
+      }
+
+      // Fallback with access_token query parameter if needed
+      if (!meData?.username) {
+        meRes = await fetch(
+          `https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url,threads_biography&access_token=${encodeURIComponent(accessToken)}`,
+        );
+        meData = await meRes.json();
+        console.log('[Threads QueryParam Data]', JSON.stringify(meData));
+      }
+
+      if (meData?.username) username = String(meData.username).trim();
+      if (meData?.name) displayName = String(meData.name).trim();
+      if (meData?.threads_profile_picture_url) avatarUrl = String(meData.threads_profile_picture_url).trim();
+      
+      if (!username && meData?.error) {
+        console.error('[Threads Profile Error]', JSON.stringify(meData.error));
+        throw new Error(meData.error.message || 'Lỗi truy vấn hồ sơ Threads');
+      }
+    } catch (e: any) {
+      console.error('[Threads Fetch Profile Error]', e.message);
+      if (!username) {
+        throw new Error(e.message || 'Không thể lấy thông tin tài khoản Threads');
+      }
+    }
+
+    // 2. Fetch follower count via Threads Insights API
+    try {
+      const insightsRes = await fetch(
+        'https://graph.threads.net/v1.0/me/threads_insights?metric=followers_count',
+        { headers: authHeaders },
+      );
+      const insightsData = await insightsRes.json();
+      console.log('[Threads Insights Data]', JSON.stringify(insightsData));
+      const metricItem = insightsData?.data?.find?.((item: any) => item.name === 'followers_count');
+      const val = metricItem?.values?.[0]?.value ?? metricItem?.total_value?.value;
+      if (typeof val === 'number') {
+        followers = val;
       }
     } catch (_) {}
 
-    const handle = `https://www.threads.net/@${(username || 'creator').replace(/^@+/, '')}`;
+    const cleanUsername = username.replace(/^@+/, '');
+    const handle = `https://www.threads.net/@${cleanUsername}`;
 
     return {
       platform: 'Threads',
       handle,
       url: handle,
-      displayName: displayName || (username ? `@${username}` : 'Threads User'),
+      displayName: displayName || `@${cleanUsername}`,
       followers: followers > 0 ? followers : 0,
       avatarUrl,
       verified: true,
