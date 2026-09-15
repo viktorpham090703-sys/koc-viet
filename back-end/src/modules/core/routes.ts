@@ -2197,6 +2197,20 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       return new Response(failHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
   }
+
+  // ---------- Meta / Threads Deauthorize & Data Deletion Callbacks ----------
+  if ((p === "/api/oauth/social/deauthorize" || p === "/api/oauth/meta/deauthorize") && (m === "GET" || m === "POST")) {
+    return J({ success: true, message: "Deauthorized successfully" });
+  }
+
+  if ((p === "/api/oauth/social/data-deletion" || p === "/api/oauth/meta/delete") && (m === "GET" || m === "POST")) {
+    const confirmationCode = "del_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+    return J({
+      url: `https://kocviet.com/privacy.html?code=${confirmationCode}`,
+      confirmation_code: confirmationCode
+    });
+  }
+
   // ---------- KOC list / marketplace (server filter+paginate) ----------
   if (p === "/api/kocs") {
     const q = url.searchParams;
