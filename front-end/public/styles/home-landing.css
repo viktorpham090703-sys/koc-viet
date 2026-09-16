@@ -2577,27 +2577,24 @@
 }
 
 @media (min-width: 1025px) {
-  .lp-home .lp-marketplace-hero {
-    padding-top: clamp(20px, 3vh, 32px);
-  }
-
   .lp-home .lp-marketplace-hero .lp-hero-home-inner {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    gap: 36px;
+    grid-template-columns: minmax(500px, 1fr) minmax(0, 1.15fr);
+    gap: 32px;
     align-items: center;
   }
 
   .lp-home .lp-marketplace-hero .lp-hero-visual {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     min-width: 0;
   }
 
   .lp-home .lp-marketplace-hero .lp-hero-visual img {
+    height: 585px;
+    max-height: 585px;
     width: auto;
     max-width: 100%;
-    max-height: min(60vh, 520px);
     object-fit: contain;
     margin: 0 auto;
   }
