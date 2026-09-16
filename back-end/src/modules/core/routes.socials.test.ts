@@ -3,9 +3,18 @@ import test from 'node:test'
 import {
   MIN_KOC_REGISTRATION_FOLLOWERS,
   preserveVerifiedPrimarySocial,
+  sameSocialAccountHandle,
   validKocRegistrationFollowerCount,
   validateSocialsInput,
 } from './routes.js'
+
+test('account changes compare exact identities, including Facebook profile IDs', () => {
+  assert.equal(sameSocialAccountHandle('@koc', 'https://www.tiktok.com/@koc'), true)
+  assert.equal(sameSocialAccountHandle('https://tiktok.com/@koc/', 'https://www.tiktok.com/@koc'), true)
+  assert.equal(sameSocialAccountHandle('@verified-koc', '@other-verified-koc'), false)
+  assert.equal(sameSocialAccountHandle('https://facebook.com/profile.php?id=1', 'https://facebook.com/profile.php?id=2'), false)
+  assert.equal(sameSocialAccountHandle('https://tiktok.com/@koc', 'https://example.com/@koc'), false)
+})
 
 test('requires at least 1,000 followers for KOC registration', () => {
   assert.equal(MIN_KOC_REGISTRATION_FOLLOWERS, 1000)

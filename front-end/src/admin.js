@@ -26,6 +26,7 @@ import { autoAnimate } from "./animations.js";
 import { bankIdentityHtml } from "./payout-banks.js";
 import { formatPaymentTime as formatBookingTime } from "./payment-time.js";
 import { mountListSearch, searchForm, bindSearchForm } from "./list-search.js";
+import { socialProfileUrl } from "./social-channels.js";
 
 const NAV = [
   ["#/dashboard", icon("kpi", "sidebar-icon"), "Tổng quan hoạt động"],
@@ -45,10 +46,10 @@ const NAV = [
 
 export async function renderAdmin(el, hash) {
   const requestedPage = hash.replace("#/", "") || "dashboard";
-  const kocSection = ["queue", "contracts", "kocs"].includes(requestedPage)
+  const kocSection = ["queue", "contracts", "kocs", "social-changes"].includes(requestedPage)
     ? requestedPage
     : "queue";
-  const page = ["contracts", "kocs"].includes(requestedPage)
+  const page = ["contracts", "kocs", "social-changes"].includes(requestedPage)
     ? "queue"
     : requestedPage;
   const keys = NAV.map((n) => n[0].replace("#/", ""));
@@ -774,15 +775,17 @@ async function kpi(el) {
 async function kocManagement(el, section = "queue") {
   el.innerHTML = `<div class="between"><div><h1>Quản lý KOC</h1>
       <p class="muted">Duyệt hồ sơ và quản lý hợp đồng điện tử của KOC tại một nơi.</p></div></div>
-    <div class="row" style="margin:16px 0;gap:8px" role="tablist" aria-label="Quản lý KOC">
+    <div class="row" style="margin:16px 0;gap:8px;flex-wrap:wrap" role="tablist" aria-label="Quản lý KOC">
       <a class="btn ${section === "queue" ? "primary" : "ghost"} sm" href="#/queue" role="tab" aria-selected="${section === "queue"}">Hồ sơ chờ duyệt</a>
       <a class="btn ${section === "contracts" ? "primary" : "ghost"} sm" href="#/contracts" role="tab" aria-selected="${section === "contracts"}">Hợp đồng điện tử</a>
       <a class="btn ${section === "kocs" ? "primary" : "ghost"} sm" href="#/kocs" role="tab" aria-selected="${section === "kocs"}">Thông tin KOC</a>
+      <a class="btn ${section === "social-changes" ? "primary" : "ghost"} sm" href="#/social-changes" role="tab" aria-selected="${section === "social-changes"}">Yêu cầu đổi kênh</a>
     </div>
     <div id="koc-management-content"></div>`;
   const content = el.querySelector("#koc-management-content");
   if (section === "contracts") await contractsAdmin(content);
   else if (section === "kocs") await kocDirectory(content);
+  else if (section === "social-changes") await socialChanges(content);
   else await queue(content);
 }
 
@@ -884,6 +887,46 @@ async function loadKocDirectory(el) {
       loadKocDirectory(el);
     }),
   );
+}
+
+async function socialChanges(el) {
+  const { requests } = await api('/api/admin/social-changes');
+  const channels = (socials) => socials.map((s) => {
+    const url = socialProfileUrl(s);
+    return `<p style="overflow-wrap:anywhere">${esc(s.platform)} · ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(s.handle)}</a>` : esc(s.handle)}</p>`;
+  }).join('');
+  el.innerHTML = `<h2>Yêu cầu đổi kênh mạng xã hội</h2><p class="muted">Kiểm tra quyền sở hữu và số người theo dõi của kênh chính mới trước khi duyệt.</p>
+    ${requests.length ? requests.map((k, index) => `<section class="card" style="margin-top:16px" data-social-request="${esc(k.id)}">
+      <h3>${esc(k.name)}</h3><p class="muted">Gửi lúc ${fmtDateTime(k.request.submitted_at)}</p>
+      <h4>Kênh hiện tại</h4>${channels(k.socials)}
+      <h4>Kênh đề nghị thay đổi</h4>${channels(k.request.socials)}
+      <div class="field"><label for="social-followers-${index}">Số người theo dõi đã xác minh của kênh chính mới</label>
+        <input id="social-followers-${index}" data-followers type="number" min="1000" max="2000000000" step="1" placeholder="Nhập số đã kiểm tra"></div>
+      <p class="hint">Hạng KOC sẽ được cập nhật theo số người theo dõi đã xác minh.</p>
+      <div class="field"><label for="social-reason-${index}">Lý do từ chối (bắt buộc khi từ chối)</label><textarea id="social-reason-${index}" data-reason maxlength="600" rows="2"></textarea></div>
+      <div class="row" style="flex-wrap:wrap"><button type="button" class="btn primary sm" data-review="approve">Xác nhận kênh mới</button>
+        <button type="button" class="btn danger sm" data-review="reject">Từ chối</button></div>
+    </section>`).join('') : '<p class="muted">Không có yêu cầu đổi kênh đang chờ duyệt.</p>'}`;
+  el.querySelectorAll('[data-review]').forEach((button) => button.addEventListener('click', async () => {
+    const card = button.closest('[data-social-request]');
+    const k = requests.find((item) => item.id === card.dataset.socialRequest);
+    const followers = Number(card.querySelector('[data-followers]').value);
+    const reason = card.querySelector('[data-reason]').value.trim();
+    if (button.dataset.review === 'approve' && (!Number.isSafeInteger(followers) || followers < 1000 || followers > 2000000000))
+      return toast('Nhập số người theo dõi đã xác minh, tối thiểu 1.000', 'err');
+    if (button.dataset.review === 'reject' && !reason) return toast('Nhập lý do từ chối', 'err');
+    const buttons = card.querySelectorAll('button');
+    buttons.forEach((b) => { b.disabled = true; });
+    try {
+      await post('/api/admin/social-changes/review', { id: k.id, request_id: k.request.id,
+        action: button.dataset.review, followers, reason });
+      toast(button.dataset.review === 'approve' ? 'Đã xác minh và cập nhật kênh mới' : 'Đã từ chối và thông báo cho KOC', 'ok');
+      await socialChanges(el);
+    } catch (error) {
+      toast(error.message, 'err');
+      buttons.forEach((b) => { b.disabled = false; });
+    }
+  }));
 }
 
 async function kocStatus(id, action, el) {

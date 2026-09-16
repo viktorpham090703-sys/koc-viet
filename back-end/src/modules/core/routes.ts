@@ -86,6 +86,18 @@ function normalizedSocialHandle(value) {
   }
 }
 
+export function sameSocialAccountHandle(current, requested) {
+  try {
+    const normalize = (value) => {
+      const url = new URL(value);
+      return `${url.hostname.toLowerCase().replace(/^www\./, '')}${url.pathname.replace(/\/$/, '')}${url.search}`;
+    };
+    return normalize(current) === normalize(requested);
+  } catch (_) {
+    return normalizedSocialHandle(current) === normalizedSocialHandle(requested);
+  }
+}
+
 function validSocialReference(value) {
   const raw = String(value || '').trim();
   try {
@@ -336,7 +348,7 @@ function requestIp(request) {
 
 function parseKoc(r) {
   if (!r) return null;
-  const { engagement: _engagement, ...koc } = r;
+  const { engagement: _engagement, social_change_request: _socialChangeRequest, ...koc } = r;
   return {
     ...koc,
     categories: JSON.parse(r.categories || "[]"),
@@ -2863,6 +2875,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   // ---------- everything below needs auth ----------
   if (!me) return err("Chưa đăng nhập", 401);
   const isAdmin = me.role === "admin";
+  if (p.startsWith('/api/admin/social-changes') && !isAdmin) return err('Không có quyền duyệt đổi kênh', 403);
 
   // ---------- In-app notifications ----------
   if (p === "/api/push/config" && m === "GET") {
@@ -6310,6 +6323,56 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         pages: Math.ceil(total / per) || 1,
       });
     }
+    if (p === "/api/admin/social-changes" && m === "GET") {
+      const { results } = await env.DB.prepare(
+        `SELECT id,name,socials,social_change_request FROM kocs
+         WHERE social_change_request LIKE ? ORDER BY created_at DESC,rowid DESC`,
+      ).bind('%"status":"pending"%').all();
+      return J({ requests: results.map((k) => ({
+        id: k.id, name: k.name, socials: JSON.parse(k.socials || '[]'),
+        request: JSON.parse(k.social_change_request),
+      })) });
+    }
+    if (p === "/api/admin/social-changes/review" && m === "POST") {
+      if (!['approve', 'reject'].includes(body.action)) return err('Thao tác không hợp lệ');
+      const k = await env.DB.prepare('SELECT * FROM kocs WHERE id=?').bind(body.id).first();
+      if (!k) return err('Không tìm thấy hồ sơ KOC', 404);
+      const request = JSON.parse(k.social_change_request || 'null');
+      if (request?.status !== 'pending' || request.id !== body.request_id)
+        return err('Yêu cầu đã được xử lý hoặc thay đổi. Vui lòng tải lại.', 409);
+      const approved = body.action === 'approve';
+      const reason = String(body.reason || '').trim().slice(0, 600);
+      if (!approved && !reason) return err('Nhập lý do từ chối');
+      const reviewedAt = now();
+      const reviewed = JSON.stringify({ ...request, status: approved ? 'approved' : 'rejected',
+        reason, reviewed_at: reviewedAt, reviewed_by: me.id });
+      let result;
+      if (approved) {
+        if (!validKocRegistrationFollowerCount(body.followers))
+          return err('Nhập số người theo dõi đã xác minh, tối thiểu 1.000');
+        const followers = Number(body.followers);
+        const socials = validateSocialsInput(request.socials).socials;
+        if (!socials.length) return err('Yêu cầu không có kênh hợp lệ');
+        socials[0] = { ...socials[0], followers, verified: true,
+          verificationSource: 'manual_review', verifiedAt: reviewedAt };
+        result = await env.DB.prepare(
+          `UPDATE kocs SET socials=?,followers=?,followers_verified=1,followers_verified_at=?,
+           followers_verification_source='manual_review',tier=?,social_change_request=?
+           WHERE id=? AND social_change_request=?`,
+        ).bind(JSON.stringify(socials), followers, reviewedAt, tierOf(followers), reviewed,
+          k.id, k.social_change_request).run();
+      } else {
+        result = await env.DB.prepare(
+          'UPDATE kocs SET social_change_request=? WHERE id=? AND social_change_request=?',
+        ).bind(reviewed, k.id, k.social_change_request).run();
+      }
+      if (!result.meta.changes) return err('Yêu cầu đã được xử lý hoặc thay đổi. Vui lòng tải lại.', 409);
+      await audit(env, me.id, `koc.social_change_${body.action}`, k.id, reviewed);
+      await notifyKoc(env, k.id, 'social_change',
+        approved ? 'Đã duyệt đổi kênh mạng xã hội' : 'Yêu cầu đổi kênh chưa được duyệt',
+        approved ? 'Kênh mới đã được xác minh và cập nhật vào hồ sơ.' : reason, '#/profile');
+      return J({ ok: true });
+    }
     if (p === "/api/admin/kocs/status" && m === "POST") {
       const id = String(body.id || "");
       const action = String(body.action || "");
@@ -7639,6 +7702,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       .all();
     const koc = parseKoc(k);
     koc.email = k.email || me.email || "";
+    koc.social_change_request = JSON.parse(k.social_change_request || 'null');
     koc.prices = pr.results;
     return J({ koc });
   }
@@ -7678,23 +7742,30 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       if (socialResult.error) return err(socialResult.error);
       socials = socialResult.socials;
     }
-    if (k.followers_verified) {
+    let socialChangeRequest = JSON.parse(k.social_change_request || 'null');
+    let submittedSocialChange = false;
+    if (Number(k.followers_verified) > 0) {
       const currentSocials = JSON.parse(k.socials || "[]");
       const currentSocial = currentSocials[0] || {};
       const requestedSocial = socials[0] || {};
       const samePlatform =
         normalizedSocialPlatform(currentSocial.platform) ===
         normalizedSocialPlatform(requestedSocial.platform);
-      const sameHandle = socialHandlesMatch(
-        currentSocial.handle,
-        requestedSocial.handle,
-      );
-      if (!samePlatform || !sameHandle)
-        return err(
-          "Kênh mạng xã hội đã được xác minh. Hãy liên hệ admin để đổi kênh và xác minh lại.",
-          409,
-        );
-      socials = preserveVerifiedPrimarySocial(currentSocial, socials.slice(1));
+      const sameHandle = sameSocialAccountHandle(currentSocial.handle, requestedSocial.handle);
+      if (!samePlatform || !sameHandle) {
+        if (!socials.length) return err('Chọn ít nhất một kênh mạng xã hội');
+        if (socialChangeRequest?.status === 'pending' &&
+            JSON.stringify(socialChangeRequest.socials) !== JSON.stringify(socials))
+          return err('Bạn đã có yêu cầu đổi kênh đang chờ admin duyệt.', 409);
+        if (socialChangeRequest?.status !== 'pending') {
+          socialChangeRequest = { id: uid(), status: 'pending', socials, submitted_at: now() };
+          submittedSocialChange = true;
+        }
+        socials = currentSocials;
+      } else {
+        socials = preserveVerifiedPrimarySocial(currentSocial, socials.slice(1));
+        if (socialChangeRequest?.status === 'pending') socials = currentSocials;
+      }
     }
     const categories = Array.isArray(body.categories)
       ? [
@@ -7736,8 +7807,9 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     const oldAccepting = JSON.parse(k.accepting || "{}");
     const accepting = {};
     categories.forEach((c) => (accepting[c] = oldAccepting[c] !== false));
-    await env.DB.prepare(
-      `UPDATE kocs SET email=?,bio=?,province=?,avatar=?,cover=?,socials=?,categories=?,accepting=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=? WHERE id=?`,
+    const profileUpdate = await env.DB.prepare(
+      `UPDATE kocs SET email=?,bio=?,province=?,avatar=?,cover=?,socials=?,categories=?,accepting=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=?,social_change_request=?
+       WHERE id=? AND COALESCE(social_change_request,'')=? AND COALESCE(socials,'[]')=?`,
     )
       .bind(
         email,
@@ -7752,9 +7824,13 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         bankBin,
         bankAccount,
         bankOwner,
+        socialChangeRequest ? JSON.stringify(socialChangeRequest) : null,
         me.koc_id,
+        k.social_change_request || '',
+        k.socials || '[]',
       )
       .run();
+    if (!profileUpdate.meta.changes) return err('Hồ sơ vừa được cập nhật. Vui lòng tải lại trước khi lưu.', 409);
     // Profile edits (including avatar/cover changes) must not revoke the
     // current login session. session_version is reserved for security events
     // such as changing or resetting a password.
@@ -7772,7 +7848,12 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       );
     await env.DB.batch(stmts);
     await audit(env, me.id, "koc.profile_update", me.koc_id, "");
-    return J({ ok: true });
+    if (submittedSocialChange) {
+      await audit(env, me.id, 'koc.social_change_request', me.koc_id, JSON.stringify(socialChangeRequest));
+      await notifyAdmins(env, 'social_change', 'KOC yêu cầu đổi kênh mạng xã hội',
+        `${k.name} đã gửi kênh mới để xác minh lại.`, '#/social-changes');
+    }
+    return J({ ok: true, social_change_pending: socialChangeRequest?.status === 'pending' });
   }
 
   // ---------- Business profile (view/edit — logo, cover, ngành nghề, MST, TK nhận thanh toán) ----------
