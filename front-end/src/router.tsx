@@ -7,6 +7,7 @@ import { BusinessRegisterPage } from './pages/auth/BusinessRegisterPage'
 import { MarketplacePage } from './pages/public/MarketplacePage'
 import { KocProfilePage } from './pages/public/KocProfilePage'
 import { RecruitLanding } from './pages/public/RecruitLanding'
+import { RegisterPortalPage } from './pages/public/RegisterPortalPage'
 import { ResourcePage } from './pages/resources/ResourcePage'
 import { useAuth } from './context/AuthContext'
 import type { Role } from './types'
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
   { path:'/cong-dong', element:<CommunityLanding/> },
   { path:'/ho-tro', element:<SupportLanding/> },
   { path:'/tuyen-koc', element:<RecruitLanding/> },
+  { path:'/dang-ky', element:<RegisterPortalPage/> },
   { path:'/login', element:<LoginPage/> },
   { path:'/forgot-password', element:<ForgotPasswordPage/> },
   { path:'/business-register', element:<BusinessRegisterPage/> },

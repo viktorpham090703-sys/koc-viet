@@ -26,6 +26,6 @@ export function LoginPage() {
       <button className="btn primary" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
     </form>
     <div className="row" style={{marginTop:12}}><Link to="/forgot-password">Quên mật khẩu?</Link></div>
-    <div className="row" style={{marginTop:12}}><Link className="btn ghost sm" to="/explore">Khám phá KOC</Link><Link className="btn ghost sm" to="/business-register">Đăng ký doanh nghiệp</Link></div>
+    <div className="row" style={{marginTop:12,gap:8,display:'flex',flexWrap:'wrap'}}><Link className="btn ghost sm" to="/explore">Khám phá KOC</Link><Link className="btn ghost sm" to="/dang-ky">Đăng ký KOC</Link><Link className="btn ghost sm" to="/dang-ky?role=business">Đăng ký doanh nghiệp</Link></div>
   </div></div>
 }
