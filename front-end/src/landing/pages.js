@@ -836,13 +836,6 @@ function pageBusiness() {
           <p><strong>THEO DÕI &amp; ĐỐI SOÁT</strong>Theo dõi click, đơn hàng, doanh thu và xuất file đối soát.</p>
         </article>
       </div>
-      <div class="lp-business-process-cta">
-        <h3>Bắt đầu chiến dịch đầu tiên của bạn</h3>
-        <div style="display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:14px">
-          <a href="/#/business-register" class="btn primary nv-lift" style="background:#B91C1C;color:#fff;border:none">Đăng ký Doanh nghiệp để booking</a>
-          <a href="/#/explore" class="btn ghost nv-lift">Khám phá danh sách KOC</a>
-        </div>
-      </div>
     </div>
   </section>`;
 
