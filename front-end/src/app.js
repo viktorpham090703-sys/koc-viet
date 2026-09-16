@@ -114,6 +114,25 @@ async function route() {
   const landingPath = location.hash
     ? location.hash.slice(1)
     : location.pathname;
+  if (landingPath === "/dang-ky" || landingPath.startsWith("/dang-ky?")) {
+    if (landingPath.includes("role=business")) {
+      const { renderBusinessRegister } = await import("./business-register.js");
+      return renderBusinessRegister(appEl);
+    }
+    if (landingPath.includes("role=koc")) {
+      const { renderOnboarding } = await import("./onboard.js");
+      return renderOnboarding(appEl, { cancelHash: "#/dang-ky" });
+    }
+    return renderRegisterPortal(appEl);
+  }
+  if (landingPath === "/tuyen-koc" || landingPath.startsWith("/tuyen-koc?")) {
+    const { renderOnboarding } = await import("./onboard.js");
+    return renderOnboarding(appEl, { cancelHash: "#/dang-ky" });
+  }
+  if (landingPath === "/business-register" || landingPath.startsWith("/business-register?")) {
+    const { renderBusinessRegister } = await import("./business-register.js");
+    return renderBusinessRegister(appEl);
+  }
   if (LANDING_ROUTES.includes(landingPath)) {
     appEl.innerHTML = renderLandingBody(landingPath);
     bindLandingEvents(appEl);
@@ -141,10 +160,22 @@ async function route() {
   if (hash === "#/aiclone-landing") {
     return renderAiCloneLanding(appEl);
   }
-  if (hash === "#/tuyen-koc") {
-    return renderRecruitLanding(appEl);
+  if (hash === "#/dang-ky" || hash.startsWith("#/dang-ky?")) {
+    if (hash.includes("role=business")) {
+      const { renderBusinessRegister } = await import("./business-register.js");
+      return renderBusinessRegister(appEl);
+    }
+    if (hash.includes("role=koc")) {
+      const { renderOnboarding } = await import("./onboard.js");
+      return renderOnboarding(appEl, { cancelHash: "#/dang-ky" });
+    }
+    return renderRegisterPortal(appEl);
   }
-  if (hash === "#/business-register") {
+  if (hash === "#/tuyen-koc" || hash.startsWith("#/tuyen-koc?")) {
+    const { renderOnboarding } = await import("./onboard.js");
+    return renderOnboarding(appEl, { cancelHash: "#/dang-ky" });
+  }
+  if (hash === "#/business-register" || hash.startsWith("#/business-register?")) {
     const { renderBusinessRegister } = await import("./business-register.js");
     return renderBusinessRegister(appEl);
   }
@@ -273,8 +304,8 @@ async function renderLogin() {
       </form>
       <div class="auth-quick-links">
         <a href="#/explore" class="btn ghost sm">Khám phá KOC</a>
-        <a href="#/tuyen-koc" class="btn ghost sm">Trở thành KOC</a>
-        <a href="#/business-register" class="btn ghost sm auth-business-register">Đăng ký doanh nghiệp</a>
+        <a href="#/dang-ky" class="btn ghost sm">Trở thành KOC</a>
+        <a href="#/dang-ky?role=business" class="btn ghost sm auth-business-register">Đăng ký doanh nghiệp</a>
       </div>
     </div>
     </div>
@@ -565,34 +596,13 @@ function shell(inner) {
       <a href="#/login" class="btn primary sm">Đăng nhập</a></div>${inner}</div>`;
 }
 
-async function renderRecruitLanding(el) {
-  const { renderOnboarding } = await import("./onboard.js");
-  const benefits = [
-    [
-      "01",
-      "Tự đặt giá",
-      "Niêm yết mức phí theo ngành hàng và hạng KOC của bạn.",
-    ],
-    [
-      "02",
-      "Toàn quyền lựa chọn",
-      "Xem brief, sản phẩm và thời hạn trước khi nhận booking.",
-    ],
-    [
-      "03",
-      "Thêm thu nhập từ tiếp thị liên kết",
-      "Chia sẻ đường dẫn sản phẩm và nhận hoa hồng từ đơn phát sinh.",
-    ],
-    [
-      "04",
-      "Ví và đối soát minh bạch",
-      "Theo dõi từng khoản thu, trạng thái và lịch sử rút tiền.",
-    ],
-  ];
-  el.innerHTML = `<div class="koc-recruit">
-    <header class="koc-recruit-header">
-      <div class="koc-recruit-container koc-recruit-header-inner">
-        <a href="/trang-chu" class="logo" aria-label="KOC Việt">KOC Việt</a>
+function renderRegisterPortal(el) {
+  el.innerHTML = `<div class="reg-portal-page">
+    <header class="reg-portal-header">
+      <div class="koc-recruit-container reg-portal-header-inner">
+        <a href="/trang-chu" class="lp-logo" aria-label="KOC Việt">
+          <img src="https://res.cloudinary.com/drxum5uxt/image/upload/v1785865656/LogoDaXoaNen_r82hx2.png" alt="KOC Việt">
+        </a>
         <div class="koc-recruit-header-actions">
           <a href="/trang-chu" class="koc-recruit-back" aria-label="Quay lại trang chủ">
             <span aria-hidden="true">←</span><span>Quay lại trang chủ</span>
@@ -602,117 +612,85 @@ async function renderRecruitLanding(el) {
       </div>
     </header>
 
-    <main>
-      <section class="koc-recruit-hero">
-        <div class="koc-recruit-container koc-recruit-hero-grid">
-          <div class="koc-recruit-hero-copy">
-            <span class="koc-recruit-eyebrow">CỘNG ĐỒNG KOC VIỆT</span>
-            <h1>Biến sức ảnh hưởng thành nguồn thu nhập bền vững</h1>
-            <p>Chủ động niêm yết bảng giá, chọn booking phù hợp và theo dõi thanh toán minh bạch trên một nền tảng duy nhất.</p>
-            <div class="koc-recruit-hero-actions">
-              <button class="btn grad nv-lift" id="start-onboard">Bắt đầu đăng ký miễn phí <span aria-hidden="true">→</span></button>
-              <a href="#koc-how-it-works" class="koc-recruit-text-link">Xem cách hoạt động</a>
-            </div>
-            <div class="koc-recruit-trust">
-              <span>✓ Đăng ký miễn phí</span>
-              <span>✓ Chủ động bảng giá</span>
-              <span>✓ Hợp đồng điện tử</span>
-            </div>
-          </div>
-          <div class="koc-recruit-preview" aria-label="Tổng quan quyền lợi KOC">
-            <div class="koc-recruit-preview-top">
-              <span class="koc-recruit-preview-badge">Tổng quan KOC</span>
-              <span class="koc-recruit-live"><i></i> Minh bạch theo thời gian thực</span>
-            </div>
-            <div class="koc-recruit-earning">
-              <span>Thu nhập của bạn</span>
-              <strong>Booking + Hoa hồng bán hàng</strong>
-              <small>Chủ động kiểm soát từng nguồn thu</small>
-            </div>
-            <div class="koc-recruit-mini-grid">
-              <div><span>Nhận booking</span><b>Tự quyết định</b></div>
-              <div><span>Phí dịch vụ</span><b>Niêm yết rõ ràng</b></div>
-              <div><span>Đối soát</span><b>Theo từng giao dịch</b></div>
-              <div><span>Hỗ trợ</span><b>Từ đội ngũ NetViet</b></div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <main class="koc-recruit-container">
+      <div class="reg-portal-hero">
+        <span class="reg-portal-eyebrow">CỔNG ĐĂNG KÝ KOC VIỆT</span>
+        <h1 class="reg-portal-title">Chọn vai trò bạn muốn đăng ký</h1>
+        <p class="reg-portal-sub">
+          Nền tảng kết nối trực tiếp KOC/KOLs và Doanh nghiệp trên toàn quốc. Chọn đúng vai trò để bắt đầu hành trình của bạn.
+        </p>
+      </div>
 
-      <section class="koc-recruit-benefits">
-        <div class="koc-recruit-container">
-          <div class="koc-recruit-section-head">
-            <span>QUYỀN LỢI DÀNH CHO BẠN</span>
-            <h2>Làm nội dung theo cách của bạn</h2>
-            <p>KOC Việt giúp bạn tập trung vào chất lượng nội dung, còn quy trình booking và thanh toán được chuẩn hóa.</p>
+      <div class="reg-portal-grid">
+        <!-- Card 1: KOC -->
+        <article class="reg-portal-card card-koc">
+          <span class="reg-portal-badge">Dành cho Creator</span>
+          <div class="reg-portal-card-header">
+            <div class="reg-portal-icon-wrap" aria-hidden="true">🎤</div>
+            <div>
+              <h2 class="reg-portal-card-title">Đăng ký KOC / Creator</h2>
+            </div>
           </div>
-          <div class="koc-recruit-benefit-grid">
-            ${benefits
-              .map(
-                (item) => `<article class="koc-recruit-benefit-card">
-              <span class="koc-recruit-card-number">${item[0]}</span>
-              <h3>${item[1]}</h3><p>${item[2]}</p>
-            </article>`,
-              )
-              .join("")}
+          <p class="reg-portal-card-desc">
+            Biến sức ảnh hưởng thành nguồn thu nhập bền vững. Chủ động niêm yết bảng giá theo 5 hạng, nhận booking trực tiếp từ nhãn hàng và nhận hoa hồng tiếp thị liên kết.
+          </p>
+          <ul class="reg-portal-features">
+            <li><span class="reg-portal-check">✓</span><span><b>Nhận phí booking</b> khi hoàn thành hợp đồng</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Chủ động bảng giá</b> và toàn quyền lựa chọn booking</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Hoa hồng bán hàng (affiliate)</b> phát sinh trên mỗi đơn</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Ký hợp đồng điện tử</b> pháp lý minh bạch, an tâm hợp tác</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Ví tự động đối soát</b>, hỗ trợ rút tiền nhanh chóng</span></li>
+          </ul>
+          <div class="reg-portal-actions">
+            <a href="#/tuyen-koc" class="btn grad nv-lift" style="width:100%;font-size:15px;font-weight:700;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none">
+              Đăng ký trở thành KOC <span aria-hidden="true">→</span>
+            </a>
+            <p class="reg-portal-note">Miễn phí tạo tài khoản · Hoàn tất hồ sơ trong 15 phút</p>
           </div>
-        </div>
-      </section>
+        </article>
 
-      <section class="koc-recruit-steps" id="koc-how-it-works">
-        <div class="koc-recruit-container">
-          <div class="koc-recruit-section-head light">
-            <span>BẮT ĐẦU CHỈ VỚI 3 BƯỚC</span>
-            <h2>Từ hồ sơ đến booking đầu tiên</h2>
+        <!-- Card 2: Business -->
+        <article class="reg-portal-card card-biz">
+          <span class="reg-portal-badge">Dành cho Nhãn hàng</span>
+          <div class="reg-portal-card-header">
+            <div class="reg-portal-icon-wrap" aria-hidden="true">🏢</div>
+            <div>
+              <h2 class="reg-portal-card-title">Đăng ký Doanh nghiệp</h2>
+            </div>
           </div>
-          <div class="koc-recruit-step-grid">
-            <article><b>1</b><div><h3>Tạo hồ sơ KOC</h3><p>Xác thực email, khai báo kênh mạng xã hội và lĩnh vực nội dung.</p></div></article>
-            <article><b>2</b><div><h3>Hoàn tất xác minh</h3><p>Xác minh danh tính, thiết lập bảng giá và ký hợp đồng điện tử.</p></div></article>
-            <article><b>3</b><div><h3>Nhận booking</h3><p>Sau khi được duyệt, hồ sơ của bạn xuất hiện trên trang khám phá.</p></div></article>
+          <p class="reg-portal-card-desc">
+            Tiếp cận mạng lưới hàng nghìn KOC/KOLs xác minh trên toàn quốc. Đặt booking trực tiếp theo giá công khai và bảo vệ dòng tiền qua ví ký quỹ NetViet.
+          </p>
+          <ul class="reg-portal-features">
+            <li><span class="reg-portal-check">✓</span><span><b>Xem bảng giá công khai</b> của KOC, không phí trung gian</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Bộ lọc thông minh</b> theo ngành hàng, tỉnh thành và ngân sách</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Ví ký quỹ đảm bảo</b>, nghiệm thu nội dung trước giải ngân</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Xuất hóa đơn VAT</b> và hợp đồng điện tử hợp pháp</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Đội ngũ NetViet đồng hành</b> hỗ trợ triển khai chiến dịch</span></li>
+          </ul>
+          <div class="reg-portal-actions">
+            <a href="#/business-register" class="btn primary nv-lift" style="width:100%;font-size:15px;font-weight:700;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;background:#0b1f3a;color:#fff;border:none;text-decoration:none">
+              Đăng ký tài khoản Doanh nghiệp <span aria-hidden="true">→</span>
+            </a>
+            <p class="reg-portal-note">Miễn phí đăng ký · Ban quản trị kích hoạt nhanh chóng</p>
           </div>
-        </div>
-      </section>
+        </article>
+      </div>
 
-      <section class="koc-recruit-final">
-        <div class="koc-recruit-container koc-recruit-final-box">
-          <div><span>SẴN SÀNG BẮT ĐẦU?</span><h2>Xây dựng sự nghiệp KOC cùng KOC Việt</h2>
-            <p>Hoàn thiện hồ sơ trong khoảng 15 phút. Bạn có thể chủ động kiểm soát mọi booking.</p></div>
-          <button class="btn grad nv-lift" id="start-onboard-bottom">Đăng ký trở thành KOC <span aria-hidden="true">→</span></button>
+      <div class="reg-portal-footer-banner">
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="font-size:24px">💬</span>
+          <div>
+            <div style="font-weight:700;color:var(--navy);font-size:15px">Bạn cần hỗ trợ tư vấn trước khi đăng ký?</div>
+            <div style="font-size:13px;color:var(--muted)">Hotline tư vấn miễn phí: <b>0812 98 68 98</b> – <b>0813 487 686</b> · Email: kocviet@netviettv.com.vn</div>
+          </div>
         </div>
-      </section>
+        <div>
+          <a href="#/login" class="btn ghost sm" style="font-weight:600">Đã có tài khoản? Đăng nhập →</a>
+        </div>
+      </div>
     </main>
   </div>`;
-  const start = () => renderOnboarding(el);
-  document.getElementById("start-onboard").addEventListener("click", start);
-  document
-    .getElementById("start-onboard-bottom")
-    .addEventListener("click", start);
-
-  const revealItems = el.querySelectorAll(
-    ".koc-recruit-section-head, .koc-recruit-benefit-card, .koc-recruit-step-grid article, .koc-recruit-final-box",
-  );
-  revealItems.forEach((item, index) => {
-    item.classList.add("koc-recruit-reveal");
-    item.style.setProperty(
-      "--reveal-delay",
-      `${Math.min(index % 4, 3) * 70}ms`,
-    );
-  });
-  if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        });
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -40px" },
-    );
-    revealItems.forEach((item) => observer.observe(item));
-  } else {
-    revealItems.forEach((item) => item.classList.add("is-visible"));
-  }
 }
 
 function renderAiCloneLanding(el) {

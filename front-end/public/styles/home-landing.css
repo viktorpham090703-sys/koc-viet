@@ -2578,17 +2578,25 @@
 
 @media (min-width: 1025px) {
   .lp-home .lp-marketplace-hero .lp-hero-home-inner {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-columns: minmax(500px, 1fr) minmax(0, 1.15fr);
     gap: 32px;
+    align-items: center;
   }
 
   .lp-home .lp-marketplace-hero .lp-hero-visual {
-    align-items: center;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
     min-width: 0;
   }
 
   .lp-home .lp-marketplace-hero .lp-hero-visual img {
-    width: min(128%, 900px);
+    height: 585px;
+    max-height: 585px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    margin: 0 auto;
   }
 
   .lp-home .lp-ai-clone-hero .lp-hero-home-inner {
@@ -4576,25 +4584,29 @@
   line-height: 1.7;
 }
 
-.lp-home .lp-business-mode-managed {
-  border-color: #0f172a;
-  background: #0f172a;
-  color: #ffffff;
+.lp-home .lp-business-mode-managed,
+.lp-business-mode-managed {
+  border-color: rgba(2, 132, 199, 0.22);
+  background: #f8fafc;
+  color: #334155;
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.05);
 }
 
 .lp-home .lp-business-mode-managed h3,
-.lp-home .lp-business-mode-managed p {
-  color: #ffffff;
+.lp-business-mode-managed h3 {
+  color: var(--navy, #0b1f3a);
 }
 
-.lp-home .lp-business-mode-managed p {
-  color: #d7dfeb;
+.lp-home .lp-business-mode-managed p,
+.lp-business-mode-managed p {
+  color: #475569;
 }
 
-.lp-home .lp-business-mode-managed .lp-business-mode-fit {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+.lp-home .lp-business-mode-managed .lp-business-mode-fit,
+.lp-business-mode-managed .lp-business-mode-fit {
+  border-color: rgba(2, 132, 199, 0.22);
+  background: #f0f9ff;
+  color: #0284c7;
 }
 
 .lp-home .lp-business-mode-cta {
@@ -4611,8 +4623,9 @@
   text-underline-offset: 4px;
 }
 
-.lp-home .lp-business-mode-managed .lp-business-mode-cta {
-  color: #ff9d87;
+.lp-home .lp-business-mode-managed .lp-business-mode-cta,
+.lp-business-mode-managed .lp-business-mode-cta {
+  color: #d74328;
 }
 
 .lp-home .lp-business-mode-cta:hover {
@@ -4640,7 +4653,8 @@
   min-height: 250px;
 }
 
-.lp-home .lp-business-process-cta {
+.lp-home .lp-business-process-cta,
+.lp-business-process-cta {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4649,26 +4663,37 @@
   margin: 30px auto 0;
   padding: 24px 28px;
   border-radius: 18px;
-  background: #0f172a;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(11, 31, 58, 0.07);
 }
 
-.lp-home .lp-business-process-cta h3 {
+.lp-home .lp-business-process-cta h3,
+.lp-business-process-cta h3 {
   flex: 1 1 auto;
   min-width: 0;
   max-width: 720px;
   margin: 0;
-  color: #ffffff;
+  color: var(--navy, #0b1f3a);
   font-family: var(--font-display, "Lora", serif);
   font-size: clamp(20px, 2.2vw, 27px);
 }
 
-.lp-home .lp-business-process-cta .btn {
+.lp-home .lp-business-process-cta .btn,
+.lp-business-process-cta .btn {
   flex: 0 0 auto;
   width: auto;
   max-width: 240px;
   min-width: 170px;
   justify-content: center;
+}
+
+.lp-home .lp-business-process-cta .btn.ghost,
+.lp-business-process-cta .btn.ghost {
+  background: #f8fafc;
+  color: #0b1f3a;
+  border: 1px solid #cbd5e1;
+  font-weight: 700;
 }
 
 .lp-home .lp-business-measure-section .lp-section-head {

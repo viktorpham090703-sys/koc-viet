@@ -2682,7 +2682,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
           body: JSON.stringify({
             to: "sales@netviet.vn",
             subject: "Lead báo giá mới: " + esc(body.name),
-            html: `<p>${esc(body.name)} · ${esc(body.phone)} · ${esc(body.company || "")}</p><p>${esc(body.need || "")}</p>`,
+            html: `<p>${esc(body.name)} · ${esc(body.phone)}${body.email ? ` · ${esc(body.email)}` : ""} · ${esc(body.company || "")}</p><p>${esc(body.need || "")}</p>`,
           }),
         },
       );

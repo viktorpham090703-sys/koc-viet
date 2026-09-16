@@ -23,11 +23,18 @@ const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
 
 // Multi-step KOC onboarding funnel → "chờ duyệt"
 // Steps: 0 Email & OTP · 1 Hồ sơ · 2 Phân hạng & Bảng giá · 3 eKYC & Thanh toán · 4 Hợp đồng · 5 Hoàn tất
-export function renderOnboarding(el, options = {}) {
-  const cfg = state.config;
+export async function renderOnboarding(el, options = {}) {
+  if (!state.config || !Array.isArray(state.config.provinces) || !state.config.provinces.length) {
+    try {
+      state.config = await get("/api/config");
+    } catch {
+      state.config = { tiers: [], categories: [], provinces: ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng"] };
+    }
+  }
+  const cfg = state.config || { tiers: [], categories: [], provinces: ["Hà Nội"] };
   const partnerInviteToken = String(options.partnerInviteToken || "").trim();
   const partnerName = String(options.partnerName || "").trim();
-  const cancelHash = String(options.cancelHash || "#/tuyen-koc");
+  const cancelHash = String(options.cancelHash || "#/dang-ky");
   const d = {
     name: "",
     phone: "",
@@ -41,7 +48,7 @@ export function renderOnboarding(el, options = {}) {
     verifiedEmail: "",
     password: "",
     passwordConfirmation: "",
-    province: cfg.provinces[0],
+    province: (cfg.provinces && cfg.provinces[0]) || "Hà Nội",
     categories: [],
     customCategory: "",
     socialMode: "auto",
