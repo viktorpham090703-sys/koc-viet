@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-09-14-partner-invites-v1';
+const SCHEMA_GUARD_VERSION = '2026-09-16-partner-invites-social-changes-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -309,6 +309,7 @@ const MIGRATIONS = [
   `ALTER TABLE partner_members ADD COLUMN activated_at INTEGER`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_current_koc
      ON partner_members(koc_id) WHERE status IN ('pending','active')`,
+  `ALTER TABLE kocs ADD COLUMN social_change_request TEXT`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
@@ -487,6 +488,7 @@ async function ensureV14Schema(env) {
     (kocColumns.results || []).map(column => column.name),
   );
   const requiredKocColumns = [
+    ['social_change_request', `ALTER TABLE kocs ADD COLUMN social_change_request TEXT`],
     ['contract_version', `ALTER TABLE kocs ADD COLUMN contract_version TEXT`],
     ['contract_signed_at', `ALTER TABLE kocs ADD COLUMN contract_signed_at INTEGER`],
     ['contract_signature', `ALTER TABLE kocs ADD COLUMN contract_signature TEXT`],

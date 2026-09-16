@@ -1386,6 +1386,12 @@ async function optimizeProfileImage(file, width, height, quality = 0.84) {
 async function profile(el, editing = false) {
   const cfg = state.config;
   const { koc: k } = await api("/api/koc/profile");
+  const socialRequest = k.social_change_request;
+  const socialRequestNotice = socialRequest ? `<div class="tint-box" role="status">
+    <b>${socialRequest.status === 'pending' ? 'Đang chờ admin xác minh kênh mới' : socialRequest.status === 'rejected' ? 'Yêu cầu đổi kênh chưa được duyệt' : 'Admin đã xác minh kênh mới'}</b>
+    ${socialRequest.status === 'pending' ? `<p>Kênh hiện tại vẫn được sử dụng cho đến khi admin duyệt.</p>${socialRequest.socials.map((s) => `<p style="overflow-wrap:anywhere">${esc(s.platform)}: ${esc(s.handle)}</p>`).join('')}` : ''}
+    ${socialRequest.status === 'rejected' ? `<p>${esc(socialRequest.reason)}. Bạn có thể chỉnh sửa hồ sơ và gửi lại.</p>` : ''}
+  </div>` : '';
   const prices = {};
   (k.prices || []).forEach((p) => (prices[p.category] = p.price));
 
@@ -1416,6 +1422,7 @@ async function profile(el, editing = false) {
           ${(k.prices || []).map((item) => `<div class="profile-price"><span>${esc(item.category)}</span><b class="money">${money(item.price)}</b></div>`).join("") || '<p class="muted">Chưa có bảng giá.</p>'}
         </div>
         <div class="card profile-section"><h3>Kênh mạng xã hội</h3>
+          ${socialRequestNotice}
           ${(k.socials || []).map((item) => {
             const url = socialProfileUrl(item);
             const content = `<span style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0">${socialPlatformIcon(item.platform, 20)}</span><span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span></span><strong>${num(item.followers || k.followers)} followers</strong>`;
@@ -1459,7 +1466,9 @@ async function profile(el, editing = false) {
       <div class="field"><label>Giới thiệu</label><textarea id="pf-bio" rows="3">${esc(k.bio || "")}</textarea></div>
       <div class="field"><label class="required-label">Email liên hệ / đăng nhập</label><input id="pf-email" type="email" value="${esc(k.email || "")}" placeholder="email@domain.com"></div>
       <div class="field"><label class="required-label">Tỉnh/Thành phố</label><select id="pf-prov">${provinceOptions(cfg.provinces, k.province)}</select></div>
-      <div id="pf-socials"></div>
+      ${socialRequestNotice}
+      <p class="hint">Đổi kênh chính đã xác minh sẽ gửi yêu cầu cho admin duyệt. Kênh cũ tiếp tục hiển thị trong thời gian chờ.</p>
+      <fieldset id="pf-socials" style="border:0;padding:0;min-width:0" aria-label="Kênh mạng xã hội" ${socialRequest?.status === 'pending' ? 'disabled' : ''}></fieldset>
       ${tierPanel(k, cfg)}
       <div class="field"><label class="required-label">Ngành hàng & bảng giá</label>
         <div id="pf-cats" class="profile-category-picker">${catList.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "selected" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>
@@ -1498,7 +1507,7 @@ async function profile(el, editing = false) {
     }));
   }
 
-  let socialPickerMode = "auto";
+  let socialPickerMode = "manual";
 
   function renderSocialDrafts() {
     const container = el.querySelector("#pf-socials");
@@ -1663,7 +1672,7 @@ async function profile(el, editing = false) {
     button.disabled = true;
     button.textContent = "Đang lưu…";
     try {
-      await post("/api/koc/profile", {
+      const result = await post("/api/koc/profile", {
         email,
         bio: el.querySelector("#pf-bio").value.trim(),
         province: el.querySelector("#pf-prov").value,
@@ -1676,7 +1685,7 @@ async function profile(el, editing = false) {
       });
       const topAvatar = document.querySelector(".koc-top-profile img");
       if (topAvatar) topAvatar.src = avatarUrl(avatarSource);
-      toast("Đã lưu và cập nhật trang hồ sơ", "ok");
+      toast(result.social_change_pending ? "Đã lưu hồ sơ. Yêu cầu đổi kênh đang chờ admin duyệt." : "Đã lưu và cập nhật trang hồ sơ", "ok");
       profile(el);
     } catch (e) {
       toast(e.message, "err");
