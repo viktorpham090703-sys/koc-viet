@@ -891,22 +891,49 @@ async function loadKocDirectory(el) {
 
 async function socialChanges(el) {
   const { requests } = await api('/api/admin/social-changes');
-  const channels = (socials) => socials.map((s) => {
+  const channels = (socials) => (socials || []).map((s) => {
     const url = socialProfileUrl(s);
-    return `<p style="overflow-wrap:anywhere">${esc(s.platform)} · ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(s.handle)}</a>` : esc(s.handle)} · <b>${num(s.followers)} người theo dõi</b></p>`;
+    return `<div style="overflow-wrap:anywhere;margin-bottom:4px">${esc(s.platform)} · ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(s.handle)}</a>` : esc(s.handle)} · <b>${num(s.followers)} người theo dõi</b></div>`;
   }).join('');
-  el.innerHTML = `<h2>Duyệt cập nhật kênh và người theo dõi</h2><p class="muted">Đối chiếu toàn bộ kênh và số người theo dõi đề nghị với thông tin hiện tại trước khi duyệt.</p>
-    ${requests.length ? requests.map((k, index) => `<section class="card" style="margin-top:16px" data-social-request="${esc(k.id)}">
-      <h3>${esc(k.name)}</h3><p class="muted">Gửi lúc ${fmtDateTime(k.request.submitted_at)}</p>
-      <h4>Kênh hiện tại</h4>${channels(k.socials)}
-      <h4>Kênh đề nghị thay đổi</h4>${channels(k.request.socials)}
-      <div class="field"><label for="social-followers-${index}">Số người theo dõi đã kiểm tra của kênh chính</label>
-        <input id="social-followers-${index}" data-followers type="number" min="1000" max="2000000000" step="1" value="${esc(k.request.socials[0]?.followers ?? '')}" placeholder="Nhập số đã kiểm tra"></div>
-      <p class="hint">Hạng KOC sẽ được cập nhật theo số người theo dõi đã xác minh.</p>
-      <div class="field"><label for="social-reason-${index}">Lý do từ chối (bắt buộc khi từ chối)</label><textarea id="social-reason-${index}" data-reason maxlength="600" rows="2"></textarea></div>
-      <div class="row" style="flex-wrap:wrap"><button type="button" class="btn primary sm" data-review="approve">Duyệt kênh và người theo dõi</button>
-        <button type="button" class="btn danger sm" data-review="reject">Từ chối</button></div>
-    </section>`).join('') : '<p class="muted">Không có yêu cầu đổi kênh đang chờ duyệt.</p>'}`;
+  el.innerHTML = `<h2>Duyệt cập nhật kênh, người theo dõi & bảng giá</h2><p class="muted">Đối chiếu toàn bộ kênh, số người theo dõi, ngành hàng và bảng giá đề nghị với thông tin hiện tại trước khi duyệt.</p>
+    ${requests.length ? requests.map((k, index) => {
+      const currentPrices = k.prices || [];
+      const proposedCategories = Array.isArray(k.request.categories) ? k.request.categories : [];
+      const proposedPrices = k.request.prices || {};
+      const proposedTier = k.request.tier || 'Nano';
+      return `<section class="card" style="margin-top:16px" data-social-request="${esc(k.id)}">
+        <div class="between" style="align-items:flex-start">
+          <div>
+            <h3 style="margin-bottom:2px">${esc(k.name)}</h3>
+            <p class="muted" style="font-size:12px">Gửi yêu cầu lúc ${fmtDateTime(k.request.submitted_at)}</p>
+          </div>
+        </div>
+        <div class="row" style="gap:20px;margin-top:12px;margin-bottom:14px;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:280px;background:var(--bg-muted, #f8fafc);padding:12px 14px;border-radius:8px">
+            <h4 style="margin-top:0;margin-bottom:8px">📌 Thông tin hiện tại</h4>
+            <div style="margin-bottom:6px">Hạng: <b>${tierBadge(k.tier)} ${esc(k.tier)}</b></div>
+            <div style="margin-bottom:8px"><b>Kênh hiện tại:</b><div style="margin-top:4px">${channels(k.socials)}</div></div>
+            <div><b>Ngành hàng & Bảng giá:</b>
+              ${currentPrices.length ? currentPrices.map((p) => `<div style="font-size:13px">• ${esc(p.category)}: <b>${money(p.price)}</b></div>`).join('') : '<p class="muted" style="font-size:13px">Chưa có bảng giá</p>'}
+            </div>
+          </div>
+          <div style="flex:1;min-width:280px;background:var(--bg-card, #f0fdf4);border:1px solid #bbf7d0;padding:12px 14px;border-radius:8px">
+            <h4 style="margin-top:0;margin-bottom:8px;color:#166534">✨ Đề nghị thay đổi</h4>
+            <div style="margin-bottom:6px">Hạng đề xuất: <b>${tierBadge(proposedTier)} ${esc(proposedTier)}</b></div>
+            <div style="margin-bottom:8px"><b>Kênh đề xuất:</b><div style="margin-top:4px">${channels(k.request.socials)}</div></div>
+            <div><b>Ngành hàng & Bảng giá đề xuất:</b>
+              ${proposedCategories.length ? proposedCategories.map((cat) => `<div style="font-size:13px">• ${esc(cat)}: <b>${money(proposedPrices[cat] || 0)}</b></div>`).join('') : '<p class="muted" style="font-size:13px">Không đổi</p>'}
+            </div>
+          </div>
+        </div>
+        <div class="field"><label for="social-followers-${index}">Số người theo dõi đã kiểm tra của kênh chính</label>
+          <input id="social-followers-${index}" data-followers type="number" min="1000" max="2000000000" step="1" value="${esc(k.request.socials[0]?.followers ?? '')}" placeholder="Nhập số đã kiểm tra"></div>
+        <p class="hint">Khi duyệt, hạng KOC, ngành hàng và bảng giá sẽ được cập nhật đồng bộ vào hồ sơ hiển thị.</p>
+        <div class="field"><label for="social-reason-${index}">Lý do từ chối (bắt buộc khi từ chối)</label><textarea id="social-reason-${index}" data-reason maxlength="600" rows="2"></textarea></div>
+        <div class="row" style="flex-wrap:wrap"><button type="button" class="btn primary sm" data-review="approve">Duyệt thay đổi</button>
+          <button type="button" class="btn danger sm" data-review="reject">Từ chối</button></div>
+      </section>`;
+    }).join('') : '<p class="muted">Không có yêu cầu đổi kênh đang chờ duyệt.</p>'}`;
   el.querySelectorAll('[data-review]').forEach((button) => button.addEventListener('click', async () => {
     const card = button.closest('[data-social-request]');
     const k = requests.find((item) => item.id === card.dataset.socialRequest);
@@ -920,7 +947,7 @@ async function socialChanges(el) {
     try {
       await post('/api/admin/social-changes/review', { id: k.id, request_id: k.request.id,
         action: button.dataset.review, followers, reason });
-      toast(button.dataset.review === 'approve' ? 'Đã duyệt cập nhật kênh và người theo dõi' : 'Đã từ chối và thông báo cho KOC', 'ok');
+      toast(button.dataset.review === 'approve' ? 'Đã duyệt cập nhật kênh, người theo dõi và bảng giá' : 'Đã từ chối và thông báo cho KOC', 'ok');
       await socialChanges(el);
     } catch (error) {
       toast(error.message, 'err');

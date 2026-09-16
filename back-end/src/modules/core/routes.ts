@@ -6618,15 +6618,24 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     }
     if (p === "/api/admin/social-changes" && m === "GET") {
       const { results } = await env.DB.prepare(
-        `SELECT id,name,followers,socials,social_change_request FROM kocs
+        `SELECT id,name,followers,socials,categories,tier,social_change_request FROM kocs
          WHERE social_change_request LIKE ? ORDER BY created_at DESC,rowid DESC`,
       ).bind('%"status":"pending"%').all();
-      return J({ requests: results.map((k) => ({
-        id: k.id, name: k.name, socials: JSON.parse(k.socials || '[]').map((s, index) => ({
-          ...s, followers: index === 0 ? Number(k.followers) : Number(s.followers || 0),
-        })),
-        request: JSON.parse(k.social_change_request),
-      })) });
+      const requests = await Promise.all(results.map(async (k) => {
+        const pricesRes = await env.DB.prepare('SELECT category,price FROM koc_prices WHERE koc_id=?').bind(k.id).all();
+        return {
+          id: k.id,
+          name: k.name,
+          tier: k.tier,
+          categories: JSON.parse(k.categories || '[]'),
+          prices: pricesRes.results || [],
+          socials: JSON.parse(k.socials || '[]').map((s, index) => ({
+            ...s, followers: index === 0 ? Number(k.followers) : Number(s.followers || 0),
+          })),
+          request: JSON.parse(k.social_change_request),
+        };
+      }));
+      return J({ requests });
     }
     if (p === "/api/admin/social-changes/review" && m === "POST") {
       if (!['approve', 'reject'].includes(body.action)) return err('Thao tác không hợp lệ');
@@ -6650,12 +6659,42 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         if (!socials.length) return err('Yêu cầu không có kênh hợp lệ');
         socials[0] = { ...socials[0], followers, verified: true,
           verificationSource: 'manual_review', verifiedAt: reviewedAt };
+        const tier = tierOf(followers);
+        const tiersNow = await getTiers(env);
+        const tr = tiersNow.find((t) => t.name === tier) || tiersNow[0];
+        const nextCategories = Array.isArray(request.categories) && request.categories.length
+          ? request.categories
+          : JSON.parse(k.categories || '[]');
+        const nextPrices = request.prices || {};
+
+        const oldAccepting = JSON.parse(k.accepting || '{}');
+        const nextAccepting = {};
+        nextCategories.forEach((c) => (nextAccepting[c] = oldAccepting[c] !== false));
+
         result = await env.DB.prepare(
           `UPDATE kocs SET socials=?,followers=?,followers_verified=1,followers_verified_at=?,
-           followers_verification_source='manual_review',tier=?,social_change_request=?
+           followers_verification_source='manual_review',tier=?,categories=?,accepting=?,social_change_request=?
            WHERE id=? AND social_change_request=?`,
-        ).bind(JSON.stringify(socials), followers, reviewedAt, tierOf(followers), reviewed,
+        ).bind(JSON.stringify(socials), followers, reviewedAt, tier, JSON.stringify(nextCategories), JSON.stringify(nextAccepting), reviewed,
           k.id, k.social_change_request).run();
+
+        if (result.meta.changes) {
+          const priceStmts = [
+            env.DB.prepare("DELETE FROM koc_prices WHERE koc_id=?").bind(k.id),
+          ];
+          for (const cat of nextCategories) {
+            let p = Number(nextPrices[cat]);
+            if (!Number.isFinite(p) || p < tr.min || p > tr.max) {
+              p = tr.min;
+            }
+            priceStmts.push(
+              env.DB.prepare(
+                "INSERT INTO koc_prices (id,koc_id,category,price) VALUES (?,?,?,?)",
+              ).bind(uid(), k.id, cat, p),
+            );
+          }
+          await env.DB.batch(priceStmts);
+        }
       } else {
         result = await env.DB.prepare(
           'UPDATE kocs SET social_change_request=? WHERE id=? AND social_change_request=?',
@@ -6664,8 +6703,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       if (!result.meta.changes) return err('Yêu cầu đã được xử lý hoặc thay đổi. Vui lòng tải lại.', 409);
       await audit(env, me.id, `koc.social_change_${body.action}`, k.id, reviewed);
       await notifyKoc(env, k.id, 'social_change',
-        approved ? 'Đã duyệt cập nhật kênh và người theo dõi' : 'Yêu cầu cập nhật kênh chưa được duyệt',
-        approved ? 'Kênh và số người theo dõi đã được admin duyệt và cập nhật vào hồ sơ.' : reason, '#/profile');
+        approved ? 'Đã duyệt cập nhật kênh, số người theo dõi & bảng giá' : 'Yêu cầu cập nhật kênh chưa được duyệt',
+        approved ? 'Kênh, số người theo dõi, hạng, ngành hàng và bảng giá đã được admin duyệt và cập nhật vào hồ sơ.' : reason, '#/profile');
       return J({ ok: true });
     }
     if (p === "/api/admin/kocs/status" && m === "POST") {
@@ -8072,11 +8111,11 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     const matches = (left, right) => left.length === right.length && left.every((s, index) =>
       normalizedSocialPlatform(s.platform) === normalizedSocialPlatform(right[index].platform) &&
       sameSocialAccountHandle(s.handle, right[index].handle) && Number(s.followers) === Number(right[index].followers));
-    if (!matches(currentValues, requestedSocials)) {
+    const socialChanged = !matches(currentValues, requestedSocials);
+    if (socialChanged) {
       if (socialChangeRequest?.status === 'pending' && !matches(socialChangeRequest.socials, requestedSocials))
         return err('Bạn đã có yêu cầu cập nhật kênh và người theo dõi đang chờ admin duyệt.', 409);
       if (socialChangeRequest?.status !== 'pending') {
-        socialChangeRequest = { id: uid(), status: 'pending', socials: requestedSocials, submitted_at: now() };
         submittedSocialChange = true;
       }
     }
@@ -8090,7 +8129,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     if (!categories.length) return err("Chọn ít nhất 1 ngành hàng");
     const prices = body.prices || {};
     const tiersNow = await getTiers(env);
-    const tr = tiersNow.find((t) => t.name === k.tier) || tiersNow[0];
+    const targetTierName = socialChanged ? tierOf(requestedSocials[0]?.followers ?? k.followers) : k.tier;
+    const tr = tiersNow.find((t) => t.name === targetTierName) || tiersNow[0];
     for (const cat of categories) {
       const v = Number(prices[cat]);
       if (!Number.isFinite(v) || v <= 0)
@@ -8099,6 +8139,17 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         return err(
           `Giá ngành "${cat}" (${v.toLocaleString("vi")}đ) ngoài khung ${tr.name}: ${tr.min.toLocaleString("vi")}–${tr.max.toLocaleString("vi")}đ`,
         );
+    }
+    if (submittedSocialChange) {
+      socialChangeRequest = {
+        id: uid(),
+        status: 'pending',
+        socials: requestedSocials,
+        categories,
+        prices,
+        tier: targetTierName,
+        submitted_at: now(),
+      };
     }
     const bank = body.bank || {};
     const bankName = String(bank.name || "")
@@ -8117,9 +8168,11 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       return err("Ngân hàng đã chọn không hợp lệ");
     const bankBinError = payoutBankBinError(bankName, bankBin);
     if (bankBinError) return err(bankBinError, 422);
+    const isPendingSocial = submittedSocialChange || socialChangeRequest?.status === 'pending';
+    const liveCategories = isPendingSocial ? JSON.parse(k.categories || "[]") : categories;
     const oldAccepting = JSON.parse(k.accepting || "{}");
     const accepting = {};
-    categories.forEach((c) => (accepting[c] = oldAccepting[c] !== false));
+    liveCategories.forEach((c) => (accepting[c] = oldAccepting[c] !== false));
     const profileUpdate = await env.DB.prepare(
       `UPDATE kocs SET email=?,bio=?,province=?,avatar=?,cover=?,socials=?,categories=?,accepting=?,bank_name=?,bank_bin=?,bank_account=?,bank_owner=?,social_change_request=?
        WHERE id=? AND COALESCE(social_change_request,'')=? AND COALESCE(socials,'[]')=?`,
@@ -8131,7 +8184,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         avatar,
         cover,
         JSON.stringify(currentSocials),
-        JSON.stringify(categories),
+        JSON.stringify(liveCategories),
         JSON.stringify(accepting),
         bankName,
         bankBin,
@@ -8150,16 +8203,18 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     await env.DB.prepare("UPDATE users SET email=?,updated_at=? WHERE id=?")
       .bind(email, now(), me.id)
       .run();
-    const stmts = [
-      env.DB.prepare("DELETE FROM koc_prices WHERE koc_id=?").bind(me.koc_id),
-    ];
-    for (const cat of categories)
-      stmts.push(
-        env.DB.prepare(
-          "INSERT INTO koc_prices (id,koc_id,category,price) VALUES (?,?,?,?)",
-        ).bind(uid(), me.koc_id, cat, Number(prices[cat])),
-      );
-    await env.DB.batch(stmts);
+    if (!isPendingSocial) {
+      const stmts = [
+        env.DB.prepare("DELETE FROM koc_prices WHERE koc_id=?").bind(me.koc_id),
+      ];
+      for (const cat of categories)
+        stmts.push(
+          env.DB.prepare(
+            "INSERT INTO koc_prices (id,koc_id,category,price) VALUES (?,?,?,?)",
+          ).bind(uid(), me.koc_id, cat, Number(prices[cat])),
+        );
+      await env.DB.batch(stmts);
+    }
     await audit(env, me.id, "koc.profile_update", me.koc_id, "");
     if (submittedSocialChange) {
       await audit(env, me.id, 'koc.social_change_request', me.koc_id, JSON.stringify(socialChangeRequest));

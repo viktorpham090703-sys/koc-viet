@@ -55,6 +55,21 @@ const NAV = [
   ["#/notifications", icon("notification", "nav-icon"), "Thông báo"],
 ];
 
+if (typeof window !== "undefined" && !window.__kocNotificationBound) {
+  window.__kocNotificationBound = true;
+  window.addEventListener("koc:notification", async (event) => {
+    const item = event.detail;
+    const view = document.getElementById("koc-view");
+    if (!view) return;
+    const current = location.hash.replace("#/", "") || "home";
+    if (current === "profile" && (item?.type === "social_change" || item?.href?.includes("profile"))) {
+      profile(view);
+    } else if (current === "notifications") {
+      notifications(view);
+    }
+  });
+}
+
 export async function renderKoc(el, hash) {
   const page = hash.replace("#/", "") || "home";
   const known = [
@@ -1335,11 +1350,21 @@ const TIER_BENEFITS = {
   ],
 };
 
-function tierPanel(k, cfg) {
-  const tier = (cfg.tiers || []).find((item) => item.name === k.tier) || {};
-  const benefits = TIER_BENEFITS[k.tier] || [];
-  return `<div class="tier-benefit-card">
-    <div class="between"><div><span class="eyebrow">HẠNG HIỆN TẠI</span><h3>${tierBadge(k.tier)} Quyền lợi ${esc(k.tier)}</h3></div><span class="tier-shield">★</span></div>
+function tierOf(followers) {
+  const f = Number(followers || 0);
+  if (f >= 1000000) return "Mega";
+  if (f >= 300000) return "Macro";
+  if (f >= 100000) return "Mid";
+  if (f >= 10000) return "Micro";
+  return "Nano";
+}
+
+function tierPanel(target, cfg, isProjected = false) {
+  const tierName = typeof target === "string" ? target : target.tier;
+  const tier = (cfg.tiers || []).find((item) => item.name === tierName) || {};
+  const benefits = TIER_BENEFITS[tierName] || [];
+  return `<div class="tier-benefit-card ${isProjected ? "is-projected" : ""}">
+    <div class="between"><div><span class="eyebrow">${isProjected ? "HẠNG DỰ KIẾN (THEO SỐ FOLLOWER MỚI)" : "HẠNG HIỆN TẠI"}</span><h3>${tierBadge(tierName)} Quyền lợi ${esc(tierName)}</h3></div><span class="tier-shield">★</span></div>
     <div class="tier-price-range"><span>Khung giá theo hạng</span><b>${tier.name === "Mega" ? `Từ ${money(tier.min || 0)}` : `${money(tier.min || 0)} – ${money(tier.max || 0)}`}</b></div>
     <div class="tier-requirement">Điều kiện tham chiếu: ${tier.name === "Mega" ? `Từ ${num(tier.minF || 0)}` : `${num(tier.minF || 0)} – ${num(tier.maxF || 0)}`} người theo dõi · phí nền tảng ${tier.fee || 0}%</div>
     <ul>${benefits.map((item) => `<li>✓ ${esc(item)}</li>`).join("")}</ul>
@@ -1387,10 +1412,16 @@ async function profile(el, editing = false) {
   const cfg = state.config;
   const { koc: k } = await api("/api/koc/profile");
   const socialRequest = k.social_change_request;
-  const socialRequestNotice = socialRequest ? `<div class="tint-box" role="status">
-    <b>${socialRequest.status === 'pending' ? 'Đang chờ admin duyệt kênh và người theo dõi' : socialRequest.status === 'rejected' ? 'Yêu cầu cập nhật kênh chưa được duyệt' : 'Admin đã duyệt cập nhật kênh'}</b>
-    ${socialRequest.status === 'pending' ? `<p>Kênh và số người theo dõi hiện tại vẫn được giữ nguyên cho đến khi admin duyệt.</p>${socialRequest.socials.map((s) => `<p style="overflow-wrap:anywhere">${esc(s.platform)}: ${esc(s.handle)} · ${num(s.followers)} người theo dõi</p>`).join('')}` : ''}
-    ${socialRequest.status === 'rejected' ? `<p>${esc(socialRequest.reason)}. Bạn có thể chỉnh sửa hồ sơ và gửi lại.</p>` : ''}
+  const socialRequestNotice = socialRequest ? `<div class="tint-box" role="status" style="margin-bottom:16px">
+    <b>${socialRequest.status === 'pending' ? '⏳ Đang chờ admin duyệt kênh, số người theo dõi, ngành hàng & bảng giá' : socialRequest.status === 'rejected' ? '❌ Yêu cầu cập nhật kênh chưa được duyệt' : '✓ Admin đã duyệt cập nhật kênh'}</b>
+    ${socialRequest.status === 'pending' ? `<p style="margin-top:6px">Kênh, số người theo dõi, ngành hàng và bảng giá hiện tại vẫn được giữ nguyên trên sàn cho đến khi admin duyệt.</p>
+      <div style="margin-top:8px;font-size:13px;display:flex;flex-direction:column;gap:4px">
+        ${(socialRequest.socials || []).map((s) => `<div style="overflow-wrap:anywhere">• <b>${esc(s.platform)}</b>: ${esc(s.handle)} · <b>${num(s.followers)}</b> followers</div>`).join('')}
+        ${socialRequest.tier ? `<div>• Hạng đề xuất: <b>${tierBadge(socialRequest.tier)} ${esc(socialRequest.tier)}</b></div>` : ''}
+        ${socialRequest.categories?.length ? `<div>• Ngành hàng đề xuất: <b>${socialRequest.categories.map(esc).join(', ')}</b></div>` : ''}
+        ${socialRequest.prices && Object.keys(socialRequest.prices).length ? `<div style="margin-top:4px">Bảng giá đề xuất: ${Object.entries(socialRequest.prices).map(([cat, pr]) => `${esc(cat)} (${money(pr)})`).join(' · ')}</div>` : ''}
+      </div>` : ''}
+    ${socialRequest.status === 'rejected' ? `<p style="margin-top:6px">${esc(socialRequest.reason)}. Bạn có thể chỉnh sửa hồ sơ và gửi lại.</p>` : ''}
   </div>` : '';
   const prices = {};
   (k.prices || []).forEach((p) => (prices[p.category] = p.price));
@@ -1471,7 +1502,7 @@ async function profile(el, editing = false) {
       ${socialRequestNotice}
       <p class="hint">Thêm, gỡ, đổi kênh hoặc sửa số người theo dõi đều cần admin duyệt. Lưu thay đổi để gửi yêu cầu; thông tin hiện tại được giữ nguyên trong thời gian chờ.</p>
       <fieldset id="pf-socials" style="border:0;padding:0;min-width:0" aria-label="Kênh mạng xã hội" ${socialRequest?.status === 'pending' ? 'disabled' : ''}></fieldset>
-      ${tierPanel(k, cfg)}
+      <div id="pf-tier-panel">${tierPanel(k, cfg)}</div>
       <div class="field"><label class="required-label">Ngành hàng & bảng giá</label>
         <div id="pf-cats" class="profile-category-picker">${catList.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "selected" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>
       </div>
@@ -1495,18 +1526,39 @@ async function profile(el, editing = false) {
   bindBankPicker(el.querySelector('[data-bank-picker="pf-bank-select"]'), cfg.payoutBanks);
   bindPasswordToggles(el);
 
+  function getEffectiveTier() {
+    collectSocialDrafts();
+    const primaryFollowers = Number(socialDrafts[0]?.followers);
+    if (Number.isSafeInteger(primaryFollowers) && primaryFollowers >= 1000) {
+      return tierOf(primaryFollowers);
+    }
+    return k.tier;
+  }
+
+  function updateTierAndPriceBrackets() {
+    const effectiveTier = getEffectiveTier();
+    const tierPanelContainer = el.querySelector("#pf-tier-panel");
+    if (tierPanelContainer) {
+      tierPanelContainer.innerHTML = tierPanel(effectiveTier, cfg, effectiveTier !== k.tier);
+    }
+    renderPrices();
+  }
+
   function collectSocialDrafts() {
     const currentByPlatform = new Map(
       socialDrafts.map((social) => [social.platform, social]),
     );
     const inputs = [...el.querySelectorAll("#pf-socials [data-social-link]")];
     if (!inputs.length) return;
-    socialDrafts = inputs.map((input) => ({
-      ...currentByPlatform.get(input.dataset.platform),
-      platform: input.dataset.platform,
-      handle: input.value.trim(),
-      followers: el.querySelector(`#pf-socials [data-social-followers][data-platform="${input.dataset.platform}"]`).value,
-    }));
+    socialDrafts = inputs.map((input) => {
+      const followersInput = el.querySelector(`#pf-socials [data-social-followers][data-platform="${input.dataset.platform}"]`);
+      return {
+        ...currentByPlatform.get(input.dataset.platform),
+        platform: input.dataset.platform,
+        handle: input.value.trim(),
+        followers: followersInput ? followersInput.value : "",
+      };
+    });
   }
 
   function renderSocialDrafts() {
@@ -1516,6 +1568,10 @@ async function profile(el, editing = false) {
       prefix: "pf",
       escapeHtml: esc,
       reviewRequired: true,
+    });
+    container.querySelectorAll("[data-social-followers]").forEach((input) => {
+      input.addEventListener("input", updateTierAndPriceBrackets);
+      input.addEventListener("change", updateTierAndPriceBrackets);
     });
     container.querySelectorAll("[data-social-toggle]").forEach((button) =>
       button.addEventListener("click", () => {
@@ -1534,6 +1590,7 @@ async function profile(el, editing = false) {
           socialDrafts.push({ platform, handle: "", followers: '' });
         }
         renderSocialDrafts();
+        updateTierAndPriceBrackets();
       }),
     );
   }
@@ -1602,12 +1659,23 @@ async function profile(el, editing = false) {
   });
 
   function renderPrices() {
+    el.querySelectorAll("#pf-prices [data-price]").forEach((input) => {
+      const val = input.value.trim();
+      if (val !== "") prices[input.dataset.price] = Number(val) || 0;
+    });
+    const effectiveTier = getEffectiveTier();
+    const tr = (cfg.tiers || []).find((t) => t.name === effectiveTier) || { min: 0, max: 0, name: effectiveTier };
     const box = el.querySelector("#pf-prices");
+    if (!box) return;
     box.innerHTML =
       cats
         .map(
           (c) =>
-            `<div class="field"><label class="required-label">${esc(c)}</label><input type="number" data-price="${esc(c)}" value="${prices[c] || ""}" placeholder="đ"></div>`,
+            `<div class="field">
+              <label class="required-label">${esc(c)}</label>
+              <input type="number" data-price="${esc(c)}" value="${prices[c] !== undefined && prices[c] !== null ? prices[c] : ""}" min="${tr.min || 0}" ${tr.name === 'Mega' ? '' : `max="${tr.max || 0}"`} step="100000" placeholder="${money(tr.min || 0)} – ${tr.name === 'Mega' ? 'trở lên' : money(tr.max || 0)}">
+              <p class="hint" style="margin-top:2px;font-size:12px">Khung giá hạng ${esc(effectiveTier)}: ${money(tr.min || 0)} – ${tr.name === "Mega" ? "trở lên" : money(tr.max || 0)}</p>
+            </div>`,
         )
         .join("") || '<p class="muted">Chọn ít nhất 1 ngành hàng.</p>';
   }
@@ -1630,6 +1698,20 @@ async function profile(el, editing = false) {
     el.querySelectorAll("[data-price]").forEach((input) => {
       prices[input.dataset.price] = Number(input.value) || 0;
     });
+    const effectiveTier = getEffectiveTier();
+    const tr = (cfg.tiers || []).find((t) => t.name === effectiveTier) || { min: 0, max: 0, name: effectiveTier };
+    for (const cat of cats) {
+      const v = Number(prices[cat]);
+      if (!Number.isFinite(v) || v <= 0) {
+        return toast(`Nhập giá cho ngành "${cat}"`, "err");
+      }
+      if (v < tr.min || v > tr.max) {
+        return toast(
+          `Giá ngành "${cat}" (${money(v)}) ngoài khung ${tr.name}: ${money(tr.min)} – ${tr.name === "Mega" ? "trở lên" : money(tr.max)}`,
+          "err",
+        );
+      }
+    }
     collectSocialDrafts();
     if (!socialDrafts.length)
       return toast("Chọn ít nhất một kênh mạng xã hội", "err");
@@ -1679,7 +1761,7 @@ async function profile(el, editing = false) {
       });
       const topAvatar = document.querySelector(".koc-top-profile img");
       if (topAvatar) topAvatar.src = avatarUrl(avatarSource);
-      toast(result.social_change_pending ? "Đã lưu hồ sơ. Kênh và số người theo dõi đang chờ admin duyệt." : "Đã lưu và cập nhật trang hồ sơ", "ok");
+      toast(result.social_change_pending ? "Đã lưu hồ sơ. Kênh, số người theo dõi, ngành hàng và bảng giá đang chờ admin duyệt." : "Đã lưu và cập nhật trang hồ sơ", "ok");
       profile(el);
     } catch (e) {
       toast(e.message, "err");
