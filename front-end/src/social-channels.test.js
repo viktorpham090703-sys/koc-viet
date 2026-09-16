@@ -203,6 +203,28 @@ test("renders classic manual mode with direct url input boxes and platform pills
   assert.ok(html.includes("✓ Đã xác thực · 1.200 fl"), "Shows verified stats pill in manual mode");
 });
 
+test("profile review mode provides editable followers for every channel without an OAuth bypass", () => {
+  const html = socialChannelPickerHtml({
+    socials: [
+      { platform: 'TikTok', handle: 'https://tiktok.com/@creator', followers: 25000 },
+      { platform: 'Instagram', handle: 'https://instagram.com/creator', followers: 0 },
+    ],
+    prefix: 'pf', escapeHtml: (s) => s, reviewRequired: true,
+  });
+  assert.equal((html.match(/data-social-followers/g) || []).length, 2);
+  assert.ok(html.includes('for="pf-social-link-0-followers"'));
+  assert.ok(html.includes('id="pf-social-link-0-followers"'));
+  assert.ok(html.includes('required value="25000"'));
+  assert.ok(html.includes('required value="0"'));
+  assert.ok(html.includes('min="1000"'));
+  assert.ok(html.includes('min="0"'));
+  assert.ok(html.includes('Thay đổi chỉ có hiệu lực sau khi admin duyệt.'));
+  assert.ok(!html.includes('data-social-mode'));
+  assert.ok(!html.includes('data-social-connect'));
+  const onboarding = socialChannelPickerHtml({ socials: [], prefix: 'ob', mode: 'manual' });
+  assert.ok(!onboarding.includes('data-social-followers'));
+});
+
 test("always renders unlink button for ineligible or primary channels and never disables platform pills", () => {
   const html = socialChannelPickerHtml({
     socials: [

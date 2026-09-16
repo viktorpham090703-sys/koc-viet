@@ -6618,11 +6618,13 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     }
     if (p === "/api/admin/social-changes" && m === "GET") {
       const { results } = await env.DB.prepare(
-        `SELECT id,name,socials,social_change_request FROM kocs
+        `SELECT id,name,followers,socials,social_change_request FROM kocs
          WHERE social_change_request LIKE ? ORDER BY created_at DESC,rowid DESC`,
       ).bind('%"status":"pending"%').all();
       return J({ requests: results.map((k) => ({
-        id: k.id, name: k.name, socials: JSON.parse(k.socials || '[]'),
+        id: k.id, name: k.name, socials: JSON.parse(k.socials || '[]').map((s, index) => ({
+          ...s, followers: index === 0 ? Number(k.followers) : Number(s.followers || 0),
+        })),
         request: JSON.parse(k.social_change_request),
       })) });
     }
@@ -6662,8 +6664,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       if (!result.meta.changes) return err('Yêu cầu đã được xử lý hoặc thay đổi. Vui lòng tải lại.', 409);
       await audit(env, me.id, `koc.social_change_${body.action}`, k.id, reviewed);
       await notifyKoc(env, k.id, 'social_change',
-        approved ? 'Đã duyệt đổi kênh mạng xã hội' : 'Yêu cầu đổi kênh chưa được duyệt',
-        approved ? 'Kênh mới đã được xác minh và cập nhật vào hồ sơ.' : reason, '#/profile');
+        approved ? 'Đã duyệt cập nhật kênh và người theo dõi' : 'Yêu cầu cập nhật kênh chưa được duyệt',
+        approved ? 'Kênh và số người theo dõi đã được admin duyệt và cập nhật vào hồ sơ.' : reason, '#/profile');
       return J({ ok: true });
     }
     if (p === "/api/admin/kocs/status" && m === "POST") {
@@ -8044,35 +8046,38 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       return err("Ảnh vượt quá dung lượng cho phép sau khi tối ưu");
     if (!isImageSource(avatar) || !isImageSource(cover))
       return err("Định dạng ảnh không hợp lệ");
-    let socials = JSON.parse(k.socials || "[]");
-    if (Array.isArray(body.socials)) {
-      const socialResult = validateSocialsInput(body.socials);
+    const currentSocials = JSON.parse(k.socials || '[]');
+    const currentValues = currentSocials.map((s, index) => ({
+      ...s, followers: index === 0 ? Number(k.followers || 0) : Number(s.followers || 0),
+    }));
+    let requestedSocials = currentValues;
+    if (body.socials !== undefined || body.followers !== undefined) {
+      if (body.socials !== undefined && !Array.isArray(body.socials)) return err('Danh sách kênh không hợp lệ');
+      const input = (body.socials ?? currentValues).map((s, index) => ({
+        ...s, followers: index === 0 && body.followers !== undefined ? body.followers : s?.followers,
+      }));
+      if (!input.length) return err('Chọn ít nhất một kênh mạng xã hội');
+      for (const [index, social] of input.entries()) {
+        const value = social.followers;
+        if (!['number', 'string'].includes(typeof value) || String(value).trim() === '' ||
+            !Number.isSafeInteger(Number(value)) || Number(value) < (index === 0 ? 1000 : 0) || Number(value) > 2_000_000_000)
+          return err(`Số người theo dõi của ${social.platform || 'kênh'} không hợp lệ${index === 0 ? ' (kênh chính tối thiểu 1.000)' : ''}`);
+      }
+      const socialResult = validateSocialsInput(input);
       if (socialResult.error) return err(socialResult.error);
-      socials = socialResult.socials;
+      requestedSocials = socialResult.socials;
     }
     let socialChangeRequest = JSON.parse(k.social_change_request || 'null');
     let submittedSocialChange = false;
-    if (Number(k.followers_verified) > 0) {
-      const currentSocials = JSON.parse(k.socials || "[]");
-      const currentSocial = currentSocials[0] || {};
-      const requestedSocial = socials[0] || {};
-      const samePlatform =
-        normalizedSocialPlatform(currentSocial.platform) ===
-        normalizedSocialPlatform(requestedSocial.platform);
-      const sameHandle = sameSocialAccountHandle(currentSocial.handle, requestedSocial.handle);
-      if (!samePlatform || !sameHandle) {
-        if (!socials.length) return err('Chọn ít nhất một kênh mạng xã hội');
-        if (socialChangeRequest?.status === 'pending' &&
-            JSON.stringify(socialChangeRequest.socials) !== JSON.stringify(socials))
-          return err('Bạn đã có yêu cầu đổi kênh đang chờ admin duyệt.', 409);
-        if (socialChangeRequest?.status !== 'pending') {
-          socialChangeRequest = { id: uid(), status: 'pending', socials, submitted_at: now() };
-          submittedSocialChange = true;
-        }
-        socials = currentSocials;
-      } else {
-        socials = preserveVerifiedPrimarySocial(currentSocial, socials.slice(1));
-        if (socialChangeRequest?.status === 'pending') socials = currentSocials;
+    const matches = (left, right) => left.length === right.length && left.every((s, index) =>
+      normalizedSocialPlatform(s.platform) === normalizedSocialPlatform(right[index].platform) &&
+      sameSocialAccountHandle(s.handle, right[index].handle) && Number(s.followers) === Number(right[index].followers));
+    if (!matches(currentValues, requestedSocials)) {
+      if (socialChangeRequest?.status === 'pending' && !matches(socialChangeRequest.socials, requestedSocials))
+        return err('Bạn đã có yêu cầu cập nhật kênh và người theo dõi đang chờ admin duyệt.', 409);
+      if (socialChangeRequest?.status !== 'pending') {
+        socialChangeRequest = { id: uid(), status: 'pending', socials: requestedSocials, submitted_at: now() };
+        submittedSocialChange = true;
       }
     }
     const categories = Array.isArray(body.categories)
@@ -8125,7 +8130,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         province,
         avatar,
         cover,
-        JSON.stringify(socials),
+        JSON.stringify(currentSocials),
         JSON.stringify(categories),
         JSON.stringify(accepting),
         bankName,
@@ -8158,8 +8163,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     await audit(env, me.id, "koc.profile_update", me.koc_id, "");
     if (submittedSocialChange) {
       await audit(env, me.id, 'koc.social_change_request', me.koc_id, JSON.stringify(socialChangeRequest));
-      await notifyAdmins(env, 'social_change', 'KOC yêu cầu đổi kênh mạng xã hội',
-        `${k.name} đã gửi kênh mới để xác minh lại.`, '#/social-changes');
+      await notifyAdmins(env, 'social_change', 'KOC yêu cầu cập nhật kênh và người theo dõi',
+        `${k.name} đã gửi thông tin kênh và số người theo dõi để duyệt.`, '#/social-changes');
     }
     return J({ ok: true, social_change_pending: socialChangeRequest?.status === 'pending' });
   }

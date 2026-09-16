@@ -124,11 +124,12 @@ export function socialChannelPickerHtml({
   primaryVerified = false,
   primaryLabel = "Kênh chính",
   mode = "auto",
+  reviewRequired = false,
 }) {
   const drafts = normalizeSocialDrafts(socials);
   const safe = typeof escapeHtml === "function" ? escapeHtml : String;
   const labelId = `${prefix}-social-channel-label`;
-  const isAutoMode = mode !== "manual";
+  const isAutoMode = !reviewRequired && mode !== "manual";
 
   const verifiedDrafts = drafts.filter(
     (social) => Boolean(social.verified),
@@ -165,7 +166,7 @@ export function socialChannelPickerHtml({
   if (!isAutoMode) {
     // Standard Manual Mode (Input URL box)
     return `<section class="social-channel-picker" aria-labelledby="${labelId}">
-      ${modeSwitcherHtml}
+      ${reviewRequired ? '' : modeSwitcherHtml}
 
       <div class="social-dashboard-overview manual-overview">
         <div class="social-overview-header">
@@ -240,6 +241,12 @@ export function socialChannelPickerHtml({
             <div class="social-manual-hint">
               Đường link trang cá nhân (Ví dụ: <code>${safe(socialChannelPlaceholder(social.platform))}</code>)
             </div>
+            ${reviewRequired ? `<div class="field">
+              <label for="${inputId}-followers">Số người theo dõi ${safe(social.platform)}${index === 0 ? ' (kênh chính)' : ''}</label>
+              <input id="${inputId}-followers" data-social-followers data-platform="${safe(social.platform)}" type="number" inputmode="numeric"
+                min="${index === 0 ? 1000 : 0}" max="2000000000" step="1" required value="${safe(social.followers ?? '')}">
+              <p class="hint">${index === 0 ? 'Kênh chính tối thiểu 1.000 người theo dõi. ' : ''}Thay đổi chỉ có hiệu lực sau khi admin duyệt.</p>
+            </div>` : ''}
           </div>`;
         }).join("") || '<div class="social-cards-empty">Chưa có kênh nào được chọn. Hãy bấm vào các nút nền tảng phía trên để dán link hồ sơ.</div>'}
       </div>

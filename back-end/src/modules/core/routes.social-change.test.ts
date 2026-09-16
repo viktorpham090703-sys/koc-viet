@@ -79,7 +79,8 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.equal(request().id, firstId);
     assert.equal(notifyCount(), 1);
     assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://tiktok.com/@other'))).status, 409);
-    assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@old'))).status, 200);
+    const unchangedProfile = { ...profile(), socials: [{ ...original[0], handle: 'https://www.tiktok.com/@old' }] };
+    assert.equal((await call('/api/koc/profile', 'koc-user', unchangedProfile)).status, 200);
     assert.equal(request().id, firstId);
     assert.equal((await call('/api/koc/profile', 'koc-user')).data.koc.social_change_request.status, 'pending');
     assert.equal((await call('/api/admin/social-changes', 'admin')).data.requests.length, 1);
@@ -109,5 +110,60 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.equal(channel.verificationSource, 'manual_review');
     assert.equal((await call('/api/admin/social-changes', 'admin')).data.requests.length, 0);
     assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM notifications WHERE user_id='koc-user'").get()!.n, 2);
+
+    const baseline = [...original, { platform: 'Instagram', handle: '@secondary', followers: 5000, verified: true }];
+    const changes = [
+      { name: 'primary followers only', socials: [{ ...baseline[0], followers: 40000 }, baseline[1]] },
+      { name: 'primary account only', socials: [{ ...baseline[0], handle: '@another' }, baseline[1]] },
+      { name: 'secondary account', socials: [baseline[0], { ...baseline[1], handle: '@another' }] },
+      { name: 'secondary followers', socials: [baseline[0], { ...baseline[1], followers: 6000 }] },
+      { name: 'added channel', socials: [...baseline, { platform: 'Threads', handle: '@third', followers: 2000 }] },
+      { name: 'removed channel', socials: [baseline[0]] },
+      { name: 'reordered primary', socials: [baseline[1], baseline[0]] },
+    ];
+    const reset = (verified: number) => sqlite.prepare(`UPDATE kocs SET socials=?,followers=25000,tier='Micro',followers_verified=?,social_change_request=NULL WHERE id='koc'`)
+      .run(JSON.stringify(baseline), verified);
+    for (const verified of [0, 1]) {
+      for (const change of changes) {
+        reset(verified);
+        const result = await call('/api/koc/profile', 'koc-user', { ...profile(), socials: change.socials });
+        assert.equal(result.status, 200, change.name);
+        assert.equal(result.data.social_change_pending, true, `${change.name}, verified=${verified}`);
+        assert.deepEqual(JSON.parse(String(row().socials)), baseline, change.name);
+        assert.equal(row().followers, 25000);
+        assert.equal(row().tier, 'Micro');
+        assert.equal(row().followers_verified, verified);
+        assert.equal(request().socials[0].verified, undefined);
+        const approval = await call('/api/admin/social-changes/review', 'admin', {
+          id: 'koc', request_id: request().id, action: 'approve', followers: change.socials[0].followers,
+        });
+        assert.equal(approval.status, 200);
+        assert.equal(row().followers, change.socials[0].followers);
+        assert.deepEqual(JSON.parse(String(row().socials)).map(({ platform, handle, followers }: { platform: string; handle: string; followers: number }) => ({ platform, handle, followers })),
+          change.socials.map(({ platform, handle, followers }) => ({ platform, handle, followers })));
+      }
+    }
+    reset(0);
+    for (const invalid of [-1, 999, 1000.5, 2000000001, null, '', 'abc', true]) {
+      assert.equal((await call('/api/koc/profile', 'koc-user', { ...profile(), socials: [{ ...baseline[0], followers: invalid }] })).status, 400);
+      assert.equal(row().social_change_request, null);
+    }
+    assert.equal((await call('/api/koc/profile', 'koc-user', { ...profile(), socials: [] })).status, 400);
+    assert.equal((await call('/api/koc/profile', 'koc-user', { ...profile(), socials: 'bad' })).status, 400);
+    const noticesBefore = notifyCount();
+    assert.equal((await call('/api/koc/profile', 'koc-user', { ...profile(), socials: baseline })).status, 200);
+    assert.equal(row().social_change_request, null);
+    assert.equal(notifyCount(), noticesBefore);
+    const { socials: _, ...profileWithoutSocials } = profile();
+    assert.equal((await call('/api/koc/profile', 'koc-user', profileWithoutSocials)).status, 200);
+    assert.equal(row().social_change_request, null);
+    assert.equal((await call('/api/koc/profile', 'koc-user', { ...profileWithoutSocials, followers: 35000 })).status, 200);
+    assert.equal(request().socials[0].followers, 35000);
+    assert.equal(row().followers, 25000);
+    assert.equal((await call('/api/admin/social-changes/review', 'admin', {
+      id: 'koc', request_id: request().id, action: 'reject', reason: 'Chưa đủ bằng chứng về số người theo dõi',
+    })).status, 200);
+    assert.equal(row().followers, 25000);
+    assert.deepEqual(JSON.parse(String(row().socials)), baseline);
   } finally { sqlite.close(); }
 });
