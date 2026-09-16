@@ -13,6 +13,8 @@ import {
   avatarUrl,
   passwordInputHtml,
   bindPasswordToggles,
+  copyToClipboard,
+  confirmDialog,
 } from "./ui.js";
 import { state, logout, enhancePortal } from "./app.js";
 import { brandLogo, icon } from "./icons.js";
@@ -72,22 +74,30 @@ function partnerBannersHtml(p) {
   </div>`;
 }
 
+function partnerAccountAvatarHtml(partner) {
+  if (partner?.avatar) {
+    return `<img src="${esc(partner.avatar)}" alt="" decoding="async">`;
+  }
+  return esc(String(partner?.name || state.user.name || "Đ").charAt(0).toUpperCase());
+}
+
 export async function renderPartner(el, hash) {
   const page = hash.replace("#/", "") || "dashboard";
   const active = "#/" + (PAGES.includes(page) ? page : "dashboard");
+  const profileResponse = await api("/api/partner/profile").catch(() => ({ partner: null }));
+  const partnerProfile = profileResponse.partner;
+  const accountName = partnerProfile?.name || state.user.name;
   el.innerHTML = `<div class="portal business-portal">
     <div class="sidebar"><div class="brand"><a class="portal-brand-link" href="#/dashboard" aria-label="KOC Việt — Cổng đối tác">${brandLogo()}</a></div>
       <nav class="portal-nav">${NAV.map((n) => `<a href="${n[0]}" class="${n[0] === active ? "active" : ""}">${n[1]}<span>${n[2]}</span></a>`).join("")}</nav><button class="btn ghost sm portal-sidebar-logout" id="pn-logout">Đăng xuất</button></div>
     <div class="main"><div class="topbar portal-topbar">
       <div class="portal-context"><span class="portal-context-label">KOC VIET</span><h2>Cổng đối tác</h2></div>
-      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ đối tác"><div class="portal-account-avatar" aria-hidden="true">${esc((state.user.name || "P").charAt(0).toUpperCase())}</div><div class="portal-account-meta"><strong>${esc(state.user.name)}</strong><span>Đối tác</span></div></a></div></div>
-      <div class="content"><div id="pn-banners"></div><div id="pn-view"></div></div></div></div>`;
+      <div class="portal-account"><a class="portal-account-identity" href="#/profile" aria-label="Mở hồ sơ đối tác"><div class="portal-account-avatar partner-account-logo" aria-hidden="true">${partnerAccountAvatarHtml(partnerProfile)}</div><div class="portal-account-meta"><strong>${esc(accountName)}</strong><span>Đối tác</span></div></a></div></div>
+      <div class="content"><div id="pn-banners">${partnerBannersHtml(partnerProfile)}</div><div id="pn-view"></div></div></div></div>`;
   document.getElementById("pn-logout").addEventListener("click", logout);
   enhancePortal();
   const view = document.getElementById("pn-view");
   try {
-    // One shell-level fetch to drive the reminder banners on every page.
-    void refreshPartnerBanners();
     if (active === "#/dashboard") await dashboard(view);
     else if (active === "#/kocs") await kocsPage(view);
     else if (active === "#/report") await report(view);
@@ -103,9 +113,109 @@ function stat(l, v, sub = "") {
   return `<div class="card"><div class="muted">${l}</div><div style="font-size:24px;font-weight:800;margin-top:4px" class="money">${v}</div>${sub ? `<div class="muted" style="font-size:12px;margin-top:2px">${sub}</div>` : ""}</div>`;
 }
 
+const inviteUrl = (token) =>
+  `${location.origin}/#/tham-gia-doi-tac/${encodeURIComponent(String(token || ""))}`;
+
+function partnerInviteCard(invite) {
+  if (!invite?.available) {
+    return `<section class="card partner-invite-manage is-disabled">
+      <div class="partner-invite-manage-title">
+        <span class="partner-invite-manage-icon" aria-hidden="true"><img src="/images/koc-viet-app-icon.png" alt=""></span>
+        <div><span class="partner-invite-manage-kicker">MỜI KOC VÀO ĐỘI</span><h2>Liên kết mời đang tạm khóa</h2>
+        <p class="muted">Đối tác cần ở trạng thái hoạt động để sử dụng liên kết mời.</p></div>
+      </div>
+    </section>`;
+  }
+  const url = inviteUrl(invite.token);
+  return `<section class="card partner-invite-manage">
+    <header class="partner-invite-manage-head">
+      <div class="partner-invite-manage-title">
+        <span class="partner-invite-manage-icon" aria-hidden="true"><img src="/images/koc-viet-app-icon.png" alt=""></span>
+        <div>
+          <span class="partner-invite-manage-kicker">MỜI KOC VÀO ĐỘI</span>
+          <h2>Mở rộng đội ngũ của bạn</h2>
+          <p class="muted">Gửi liên kết riêng này cho KOC bạn muốn đồng hành.</p>
+        </div>
+      </div>
+      <div class="partner-invite-count"><strong>${num(invite.useCount || 0)}</strong><span>KOC đã tham gia</span></div>
+    </header>
+    <div class="partner-invite-link-box">
+      <div class="partner-invite-link-label">
+        <span>Liên kết mời của bạn</span>
+        <span class="partner-invite-status"><i></i> Đang hoạt động</span>
+      </div>
+      <div class="partner-invite-link-row">
+        <div class="partner-invite-link-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.2 13.8a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.7 1.7M13.8 10.2a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.7-1.7"/></svg>
+          <input type="text" readonly value="${esc(url)}" aria-label="Liên kết mời KOC" data-partner-invite-input>
+        </div>
+        <button class="btn primary partner-invite-copy-button" type="button" data-partner-invite-copy>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+          Sao chép
+        </button>
+      </div>
+    </div>
+    <footer class="partner-invite-manage-footer">
+      <p><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>KOC cần xác nhận tham gia. Hồ sơ mới chỉ được liên kết sau khi NetViet duyệt.</span></p>
+      <div class="partner-invite-manage-actions">
+        <button class="btn ghost sm" type="button" data-partner-invite-share>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></svg>
+          Chia sẻ
+        </button>
+        <button class="partner-invite-rotate-button" type="button" data-partner-invite-rotate>Tạo liên kết mới</button>
+      </div>
+    </footer>
+  </section>`;
+}
+
+function bindPartnerInviteCard(scope, invite, refresh) {
+  if (!invite?.available) return;
+  const url = inviteUrl(invite.token);
+  scope.querySelector("[data-partner-invite-copy]")?.addEventListener("click", async () => {
+    const copied = await copyToClipboard(url);
+    toast(copied ? "Đã sao chép liên kết mời" : "Không thể sao chép liên kết", copied ? "ok" : "err");
+  });
+  scope.querySelector("[data-partner-invite-input]")?.addEventListener("click", (event) => event.currentTarget.select());
+  scope.querySelector("[data-partner-invite-share]")?.addEventListener("click", async () => {
+    if (!navigator.share) {
+      const copied = await copyToClipboard(url);
+      toast(copied ? "Đã sao chép liên kết để chia sẻ" : "Không thể sao chép liên kết", copied ? "ok" : "err");
+      return;
+    }
+    try {
+      await navigator.share({ title: "Tham gia đội KOC", text: "Mời bạn tham gia đội KOC của tôi trên KOC Việt.", url });
+    } catch (error) {
+      if (error?.name !== "AbortError") toast("Chưa thể chia sẻ liên kết", "err");
+    }
+  });
+  scope.querySelector("[data-partner-invite-rotate]")?.addEventListener("click", async (event) => {
+    // Keep the element before awaiting: DOM Event.currentTarget becomes null afterwards.
+    const button = event.currentTarget;
+    const confirmed = await confirmDialog(
+      "Liên kết cũ sẽ ngừng hoạt động ngay. Bạn có chắc chắn muốn tạo liên kết mới?",
+      { title: "Tạo lại liên kết mời", confirmText: "Tạo liên kết mới", cancelText: "Hủy", tone: "danger" },
+    );
+    if (!confirmed) return;
+    button.disabled = true;
+    button.textContent = "Đang tạo…";
+    try {
+      await post("/api/partner/invite-link/rotate");
+      toast("Đã tạo liên kết mời mới", "ok");
+      await refresh();
+    } catch (error) {
+      toast(error.message, "err");
+      button.disabled = false;
+      button.textContent = "Tạo liên kết mới";
+    }
+  });
+}
+
 async function dashboard(el) {
   el.innerHTML = spinner();
-  const r = await api("/api/partner/overview");
+  const [r, invite] = await Promise.all([
+    api("/api/partner/overview"),
+    api("/api/partner/invite-link").catch(() => ({ available: false })),
+  ]);
   const pct = Math.round(Number(r.partner.fee_rate || 0) * 100);
   el.innerHTML = `<h1>Xin chào, ${esc(state.user.name)}</h1>
     <p class="muted" style="margin-top:4px">Bạn được chia ${pct}% của phí dịch vụ 5% trên mỗi booking hoàn tất của các KOC thuộc đối tác này.</p>
@@ -115,6 +225,7 @@ async function dashboard(el) {
       ${stat("Số dư chờ chi trả", money(r.walletRevenue))}
       ${stat("Tỷ lệ chia sẻ", pct + "%", "của phí dịch vụ 5%")}
     </div>
+    ${partnerInviteCard(invite)}
     <div class="card" style="margin-top:20px">
       <div class="between"><h2>Hoa hồng gần đây</h2><a href="#/report" class="btn ghost sm">Xem báo cáo đầy đủ →</a></div>
       <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Booking</th><th>KOC</th><th>Bạn nhận</th><th>Thời gian</th></tr></thead><tbody>
@@ -133,15 +244,20 @@ async function dashboard(el) {
         }
       </tbody></table></div>
     </div>`;
+  bindPartnerInviteCard(el, invite, () => dashboard(el));
 }
 
 async function kocsPage(el) {
   el.innerHTML = spinner();
-  const r = await api("/api/partner/kocs");
+  const [r, invite] = await Promise.all([
+    api("/api/partner/kocs"),
+    api("/api/partner/invite-link").catch(() => ({ available: false })),
+  ]);
   const kocs = r.kocs || [];
   el.innerHTML = `<div class="between"><div><h1>KOC thuộc đối tác</h1>
       <p class="muted">Danh sách KOC hiện đang được gán cho bạn.</p></div>
       <span class="chip b">${num(kocs.length)} KOC</span></div>
+    ${partnerInviteCard(invite)}
     <div class="table-wrap" style="margin-top:16px"><table><thead><tr>
       <th>KOC</th><th>Hạng</th><th>Khu vực</th><th>Booking hoàn tất</th><th>Hoa hồng từ KOC này</th><th>Ngày gán</th>
     </tr></thead><tbody>
@@ -162,6 +278,7 @@ async function kocsPage(el) {
           : `<tr><td colspan="6">${empty("🙋", "Chưa có KOC nào được gán")}</td></tr>`
       }
     </tbody></table></div>`;
+  bindPartnerInviteCard(el, invite, () => kocsPage(el));
 }
 
 let partnerReportPage = 1;
@@ -334,7 +451,7 @@ async function profile(el, editing = false) {
           new_password: next,
         });
         toast("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.", "ok");
-        setTimeout(() => logout(), 1200);
+        setTimeout(() => logout({ skipConfirmation: true }), 1200);
       } catch (err) {
         toast(err.message, "err");
         btn.disabled = false;
@@ -413,6 +530,11 @@ async function profile(el, editing = false) {
         bank_account: el.querySelector("#pf-bank-account").value.trim(),
         bank_owner: el.querySelector("#pf-bank-owner").value.trim(),
       });
+      state.user.name = name;
+      const topbarAvatar = document.querySelector(".portal-account-avatar");
+      const topbarName = document.querySelector(".portal-account-meta strong");
+      if (topbarAvatar) topbarAvatar.innerHTML = partnerAccountAvatarHtml({ name, avatar });
+      if (topbarName) topbarName.textContent = name;
       toast("Đã lưu hồ sơ", "ok");
       void refreshPartnerBanners();
       profile(el);

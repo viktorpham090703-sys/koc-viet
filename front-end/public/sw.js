@@ -1,5 +1,5 @@
-const SHELL_CACHE = "koc-viet-shell-v3";
-const RUNTIME_CACHE = "koc-viet-runtime-v2";
+const SHELL_CACHE = "koc-viet-shell-v6";
+const RUNTIME_CACHE = "koc-viet-runtime-v5";
 const NOTIFICATION_STATE_CACHE = "koc-viet-notifications-v1";
 const NOTIFICATION_STATE_URL = "/__koc-viet-notification-state__";
 const APP_SHELL = [
@@ -27,8 +27,13 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        Promise.all(
+      .then(async (keys) => {
+        const upgradingExistingApp = keys.some(
+          (key) =>
+            (key.startsWith("koc-viet-shell-") && key !== SHELL_CACHE) ||
+            (key.startsWith("koc-viet-runtime-") && key !== RUNTIME_CACHE),
+        );
+        await Promise.all(
           keys
             .filter(
               (key) =>
@@ -37,9 +42,26 @@ self.addEventListener("activate", (event) => {
                 key !== NOTIFICATION_STATE_CACHE,
             )
             .map((key) => caches.delete(key)),
-        ),
-      )
-      .then(() => self.clients.claim()),
+        );
+        await self.clients.claim();
+
+        // A running tab keeps executing its old hashed JavaScript even after the
+        // cache is replaced. Reload existing tabs once on an actual SW upgrade so
+        // bug fixes become active immediately; do nothing on a first-time install.
+        if (upgradingExistingApp) {
+          const clients = await self.clients.matchAll({
+            type: "window",
+            includeUncontrolled: true,
+          });
+          await Promise.all(
+            clients.map((client) =>
+              typeof client.navigate === "function"
+                ? client.navigate(client.url)
+                : Promise.resolve(),
+            ),
+          );
+        }
+      }),
   );
 });
 

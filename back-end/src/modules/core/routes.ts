@@ -1,6 +1,7 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
 import { now, uid } from './db.js';
 import { sqlSearch, matchesSearch, listPage } from './lib/listSearch.js';
+import { bookingKindFilter } from './lib/bookingKind.js';
 import { TIERS, CATEGORIES, KOC_AVATARS, tierOf, isDemoUser, demoAccountsEnabled } from './seed.js';
 import { eKYC, Signature, Tracking, PLATFORMS, affiliateProvider } from './mock.js';
 import { createAndSendEmailOtp, verifyEmailOtp, isEmailVerified } from './lib/emailOtp.js';
@@ -44,6 +45,7 @@ const J = (data, status = 200, headers = undefined) => Response.json(data, { sta
 const err = (msg, status = 400, headers = undefined) => Response.json({ error: msg }, { status, headers });
 const SESSION_COOKIE = 'kv_session';
 const SESSION_IDLE_SECONDS = 12 * 60 * 60;
+const PARTNER_INVITE_TTL_SECONDS = 10 * 365 * 24 * 60 * 60;
 const FOLLOWER_CHALLENGE_TTL_SECONDS = 30 * 60;
 const FOLLOWER_PROOF_TTL_SECONDS = 24 * 60 * 60;
 const FOLLOWER_OCR_RATE_LIMIT = 15;
@@ -289,6 +291,59 @@ function sessionCookie(request, token = '', maxAge = SESSION_IDLE_SECONDS) {
 
 function jwtSecret(env) {
   return String(env.JWT_SECRET || env.SESSION_SECRET || 'koc_viet_default_jwt_secret_dev_32_bytes_fallback_key');
+}
+
+async function partnerInviteToken(env, invite) {
+  return signJwt({
+    iss: 'koc-viet',
+    aud: 'koc-viet-web',
+    sub: String(invite.partner_id),
+    purpose: 'partner-invite',
+    iat: Number(invite.created_at),
+    exp: Number(invite.expires_at),
+    jti: String(invite.id),
+  }, jwtSecret(env));
+}
+
+async function resolvePartnerInvite(env, token) {
+  const payload = await verifyJwt(String(token || ''), jwtSecret(env));
+  if (!payload || payload.purpose !== 'partner-invite' || !payload.jti) return null;
+  const invite = await env.DB.prepare(
+    `SELECT pil.*,p.name partner_name,p.avatar partner_avatar,p.status partner_status
+     FROM partner_invite_links pil JOIN partners p ON p.id=pil.partner_id
+     WHERE pil.id=? AND pil.partner_id=? AND pil.status='active' AND pil.expires_at>?`,
+  ).bind(String(payload.jti), String(payload.sub), now()).first();
+  if (!invite || invite.partner_status !== 'active') return null;
+  return invite;
+}
+
+async function ensurePartnerInvite(env, partnerId) {
+  let invite = await env.DB.prepare(
+    `SELECT * FROM partner_invite_links
+     WHERE partner_id=? AND status='active' AND expires_at>? LIMIT 1`,
+  ).bind(partnerId, now()).first();
+  if (invite) return invite;
+  const timestamp = now();
+  invite = {
+    id: uid(),
+    partner_id: partnerId,
+    status: 'active',
+    created_at: timestamp,
+    expires_at: timestamp + PARTNER_INVITE_TTL_SECONDS,
+    use_count: 0,
+  };
+  await env.DB.batch([
+    env.DB.prepare(
+      `UPDATE partner_invite_links SET status='revoked',revoked_at=?
+       WHERE partner_id=? AND status='active'`,
+    ).bind(timestamp, partnerId),
+    env.DB.prepare(
+      `INSERT INTO partner_invite_links
+       (id,partner_id,status,created_at,expires_at,use_count)
+       VALUES (?,?,'active',?,?,0)`,
+    ).bind(invite.id, partnerId, invite.created_at, invite.expires_at),
+  ]);
+  return invite;
 }
 
 async function createSession(env, request, user, demo = false) {
@@ -546,6 +601,17 @@ async function notifyBusiness(env, businessId, type, title, message, href) {
     console.warn('notification recipient unavailable', { role: 'business', businessId, type });
     return [];
   }
+  return Promise.all(
+    results.map((user) => notifyUser(env, user.id, type, title, message, href)),
+  );
+}
+
+async function notifyPartner(env, partnerId, type, title, message, href) {
+  const { results = [] } = await env.DB.prepare(
+    `SELECT id FROM users
+     WHERE role='partner' AND partner_id=? AND COALESCE(status,'active')='active'
+     ORDER BY updated_at DESC, created_at DESC`,
+  ).bind(partnerId).all();
   return Promise.all(
     results.map((user) => notifyUser(env, user.id, type, title, message, href)),
   );
@@ -1060,7 +1126,12 @@ async function markPayOSPaymentPaid(env, payment, providerData, source) {
     }
     const fee = Math.round(Number(payment.amount) * 0.05);
     const kocGet = Number(payment.amount) - fee;
-    const partnerSplit = await splitServiceFeeWithPartner(env, booking.koc_id, fee);
+    const partnerSplit = await splitServiceFeeWithPartner(
+      env,
+      booking.koc_id,
+      fee,
+      booking.created_at,
+    );
     const settlementStmts = [
       env.DB.prepare(
         `UPDATE payment_requests
@@ -1911,8 +1982,20 @@ export async function route(request, env, url) {
   // ---------- Social OAuth2 Connect (YouTube, TikTok, Meta) ----------
   if (p === "/api/oauth/social/auth-url" && m === "GET") {
     const platform = url.searchParams.get("platform") || "TikTok";
-    const state = url.searchParams.get("state") || uid();
-    const result = getSocialAuthUrl(env, platform, state);
+    const state = url.searchParams.get("state") || `${platform}_${uid()}`;
+    let reqOrigin = "";
+    try {
+      const originHeader = request.headers.get("origin");
+      const refererHeader = request.headers.get("referer");
+      if (originHeader) {
+        reqOrigin = originHeader;
+      } else if (refererHeader) {
+        reqOrigin = new URL(refererHeader).origin;
+      } else if (url?.origin) {
+        reqOrigin = url.origin;
+      }
+    } catch (_) {}
+    const result = getSocialAuthUrl(env, platform, state, reqOrigin);
     setOAuthSession(state, { status: "pending", platform });
     return J({
       platform,
@@ -2021,7 +2104,22 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
     }
 
     const session = state ? getOAuthSession(state) : null;
-    const platform = url.searchParams.get("platform") || session?.platform || body?.platform || "TikTok";
+    let detectedPlatform = url.searchParams.get("platform") || session?.platform || body?.platform;
+    if (!detectedPlatform && state) {
+      const lowerState = state.toLowerCase();
+      if (lowerState === 'youtube' || lowerState.startsWith('youtube_') || lowerState.includes('youtube')) {
+        detectedPlatform = 'YouTube';
+      } else if (lowerState === 'tiktok' || lowerState.startsWith('tiktok_') || lowerState.includes('tiktok')) {
+        detectedPlatform = 'TikTok';
+      } else if (lowerState === 'instagram' || lowerState.startsWith('instagram_') || lowerState.includes('instagram')) {
+        detectedPlatform = 'Instagram';
+      } else if (lowerState === 'facebook' || lowerState.startsWith('facebook_') || lowerState.includes('facebook')) {
+        detectedPlatform = 'Facebook';
+      } else if (lowerState === 'threads' || lowerState.startsWith('threads_') || lowerState.includes('threads')) {
+        detectedPlatform = 'Threads';
+      }
+    }
+    const platform = detectedPlatform || "YouTube";
 
     if (errorParam || !code) {
       const errMsg = errorParam || 'Không nhận được mã ủy quyền từ nhà cung cấp';
@@ -2111,6 +2209,20 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       return new Response(failHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
   }
+
+  // ---------- Meta / Threads Deauthorize & Data Deletion Callbacks ----------
+  if ((p === "/api/oauth/social/deauthorize" || p === "/api/oauth/meta/deauthorize") && (m === "GET" || m === "POST")) {
+    return J({ success: true, message: "Deauthorized successfully" });
+  }
+
+  if ((p === "/api/oauth/social/data-deletion" || p === "/api/oauth/meta/delete") && (m === "GET" || m === "POST")) {
+    const confirmationCode = "del_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+    return J({
+      url: `https://kocviet.com/privacy.html?code=${confirmationCode}`,
+      confirmation_code: confirmationCode
+    });
+  }
+
   // ---------- KOC list / marketplace (server filter+paginate) ----------
   if (p === "/api/kocs") {
     const q = url.searchParams;
@@ -2388,6 +2500,12 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       contractHtml.length > 250_000
     )
       return err("Bản hợp đồng điện tử không hợp lệ");
+    const inviteToken = String(body.partnerInviteToken || "").trim();
+    const partnerInvite = inviteToken
+      ? await resolvePartnerInvite(env, inviteToken)
+      : null;
+    if (inviteToken && !partnerInvite)
+      return err("Liên kết mời đối tác không hợp lệ hoặc đã bị vô hiệu hóa.", 409);
     const sig = await Signature.sign(
       [
         name,
@@ -2474,8 +2592,30 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       `UPDATE email_otp SET expires_at=?
        WHERE email=? AND purpose='onboard' AND verified=1`,
     ).bind(now(), email);
+    const partnerInviteStatements = [];
+    if (partnerInvite) {
+      const acceptedAt = now();
+      partnerInviteStatements.push(
+        env.DB.prepare(
+          `INSERT INTO partner_members
+           (id,partner_id,koc_id,status,assigned_at,assigned_by,source,invite_id,accepted_at)
+           VALUES (?,?,?,'pending',?,?,'invite_link',?,?)`,
+        ).bind(uid(), partnerInvite.partner_id, id, acceptedAt, userId, partnerInvite.id, acceptedAt),
+        env.DB.prepare(
+          `UPDATE partner_invite_links SET use_count=use_count+1,last_used_at=?
+           WHERE id=? AND status='active'`,
+        ).bind(acceptedAt, partnerInvite.id),
+      );
+    }
     try {
-      await env.DB.batch([createKoc, createUser, createIdentityDocuments, ...stmts, consumeOtp]);
+      await env.DB.batch([
+        createKoc,
+        createUser,
+        createIdentityDocuments,
+        ...stmts,
+        ...partnerInviteStatements,
+        consumeOtp,
+      ]);
     } catch (error) {
       await deleteKocIdentityImages(env, identityObjectKeys).catch(() => {});
       throw error;
@@ -2485,6 +2625,16 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         await env.KV.delete(`follower-proof:${followerProofToken}`);
       } catch (_) {}
     }
+    if (partnerInvite) {
+      await notifyPartner(
+        env,
+        partnerInvite.partner_id,
+        "partner_member_pending",
+        "Một KOC đã đăng ký qua liên kết mời",
+        `${name} đang chờ NetViet duyệt hồ sơ.`,
+        "#/kocs",
+      );
+    }
     return J({
       ok: true,
       tier,
@@ -2492,6 +2642,9 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       ts: sig.ts,
       kocId: id,
       profileStatus: "pending",
+      partnerInvite: partnerInvite
+        ? { name: partnerInvite.partner_name, status: "pending" }
+        : null,
     });
   }
 
@@ -2869,6 +3022,43 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     return new Response(responseBody, {
       status: object.range ? 206 : 200,
       headers,
+    });
+  }
+
+  // Public preview so recipients can inspect the partner before signing in.
+  if (p === "/api/partner-invite/preview" && m === "POST") {
+    const allowed = await consumeRateLimit(
+      env,
+      "partner-invite-preview",
+      requestIp(request),
+      60,
+      15 * 60,
+    );
+    if (!allowed)
+      return err("Bạn đã kiểm tra quá nhiều liên kết. Vui lòng thử lại sau.", 429);
+    const invite = await resolvePartnerInvite(env, body.token);
+    if (!invite)
+      return err("Liên kết mời không hợp lệ hoặc đã bị vô hiệu hóa.", 404);
+    let membership = null;
+    if (me?.role === "koc" && me.koc_id) {
+      const current = await env.DB.prepare(
+        `SELECT pm.partner_id,pm.status,p.name partner_name
+         FROM partner_members pm JOIN partners p ON p.id=pm.partner_id
+         WHERE pm.koc_id=? AND pm.status IN ('pending','active') LIMIT 1`,
+      ).bind(me.koc_id).first();
+      if (current) {
+        membership = {
+          status: current.status,
+          samePartner: current.partner_id === invite.partner_id,
+          partnerName: current.partner_name,
+        };
+      }
+    }
+    return J({
+      partner: { name: invite.partner_name, avatar: invite.partner_avatar || "" },
+      expiresAt: Number(invite.expires_at),
+      viewerRole: me?.role || null,
+      membership,
     });
   }
 
@@ -3484,17 +3674,10 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       cond.push("b.status=?");
       bind.push(st);
     }
-    const bt2 = url.searchParams.get("type");
-    if (bt2 === "aiclone") {
-      cond.push("b.type='aiclone'");
-    } else if (["review", "advertising"].includes(bt2)) {
-      cond.push(
-        `b.type!='aiclone' AND COALESCE(b.booking_type,'ad')='ad' AND COALESCE(b.content_type,'review')=?`,
-      );
-      bind.push(bt2);
-    } else if (bt2) {
-      cond.push("b.booking_type=?");
-      bind.push(bt2);
+    const kind = bookingKindFilter(url.searchParams.get("type"));
+    if (kind) {
+      cond.push(kind.sql);
+      bind.push(...kind.bindings);
     }
     const q2 = url.searchParams.get("search") || url.searchParams.get("q");
     if (q2) {
@@ -4484,7 +4667,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         payoutAmount = kocGet;
         const partnerSplit = isAiClone
           ? { partnerId: null, partnerRate: 0, partnerCut: 0, netvietCut: fee }
-          : await splitServiceFeeWithPartner(env, b.koc_id, fee);
+          : await splitServiceFeeWithPartner(env, b.koc_id, fee, b.created_at);
         stmts.push(
           env.DB.prepare(
             `INSERT INTO wallet_tx (id,koc_id,type,amount,status,note,created_at) VALUES (?,?,?,?,?,?,?)`,
@@ -4884,11 +5067,12 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   // ---------- Affiliate ----------
   if (p === "/api/affiliate") {
     if (me.role !== "koc") return err("403", 403);
+    const kind = bookingKindFilter(url.searchParams.get("type"));
     const { results } = await env.DB.prepare(
       `SELECT a.*, b.code, b.category, b.post_platform, b.created_at booking_created_at FROM affiliate a JOIN bookings b ON b.id=a.booking_id
-       WHERE a.koc_id=? ORDER BY a.orders DESC`,
+       WHERE a.koc_id=?${kind ? ` AND ${kind.sql}` : ""} ORDER BY a.orders DESC`,
     )
-      .bind(me.koc_id)
+      .bind(me.koc_id, ...(kind?.bindings ?? []))
       .all();
     return J({ affiliates: results });
   }
@@ -4926,12 +5110,13 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   // ---------- Affiliate LINKS (per-KOC, auto-generated on accept) ----------
   if (p === "/api/affiliate/links") {
     if (me.role !== "koc") return err("403", 403);
+    const kind = bookingKindFilter(url.searchParams.get("type"));
     const { results } = await env.DB.prepare(
       `SELECT al.*, b.code, b.category, b.commission_rate, b.status bstatus, b.post_platform, bz.name bizname
        FROM affiliate_links al JOIN bookings b ON b.id=al.booking_id JOIN businesses bz ON bz.id=b.business_id
-       WHERE al.koc_id=? ORDER BY al.created_at DESC, al.rowid DESC`,
+       WHERE al.koc_id=?${kind ? ` AND ${kind.sql}` : ""} ORDER BY al.created_at DESC, al.rowid DESC`,
     )
-      .bind(me.koc_id)
+      .bind(me.koc_id, ...(kind?.bindings ?? []))
       .all();
     for (const l of results) {
       const agg = await env.DB.prepare(
@@ -5575,7 +5760,110 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     return err('Hành động không hợp lệ');
   }
 
+  // ================= PARTNER INVITATIONS =================
+  if (p === '/api/partner-invite/accept' && m === 'POST') {
+    if (!me) return err('Vui lòng đăng nhập bằng tài khoản KOC để tham gia.', 401);
+    if (me.role !== 'koc' || !me.koc_id)
+      return err('Chỉ tài khoản KOC mới có thể tham gia đối tác.', 403);
+    const allowed = await consumeRateLimit(env, 'partner-invite-accept', me.id, 10, 60 * 60);
+    if (!allowed) return err('Bạn đã thử tham gia quá nhiều lần. Vui lòng thử lại sau.', 429);
+    const invite = await resolvePartnerInvite(env, body.token);
+    if (!invite) return err('Liên kết mời không hợp lệ hoặc đã bị vô hiệu hóa.', 404);
+    const koc = await env.DB.prepare('SELECT id,name,status FROM kocs WHERE id=?')
+      .bind(me.koc_id).first();
+    if (!koc || koc.status !== 'active')
+      return err('Hồ sơ KOC chưa ở trạng thái hoạt động.', 409);
+    const current = await env.DB.prepare(
+      `SELECT pm.partner_id,pm.status,p.name partner_name
+       FROM partner_members pm JOIN partners p ON p.id=pm.partner_id
+       WHERE pm.koc_id=? AND pm.status IN ('pending','active') LIMIT 1`,
+    ).bind(me.koc_id).first();
+    if (current?.partner_id === invite.partner_id) {
+      return J({ ok: true, alreadyMember: true, partner: { name: invite.partner_name } });
+    }
+    if (current) {
+      return err(`Bạn đang thuộc đối tác ${current.partner_name}. Vui lòng liên hệ admin nếu cần chuyển đổi.`, 409);
+    }
+    const timestamp = now();
+    try {
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO partner_members
+           (id,partner_id,koc_id,status,assigned_at,assigned_by,source,invite_id,accepted_at,activated_at)
+           VALUES (?,?,?,'active',?,?,'invite_link',?,?,?)`,
+        ).bind(uid(), invite.partner_id, me.koc_id, timestamp, me.id, invite.id, timestamp, timestamp),
+        env.DB.prepare(
+          `UPDATE partner_invite_links SET use_count=use_count+1,last_used_at=?
+           WHERE id=? AND status='active'`,
+        ).bind(timestamp, invite.id),
+      ]);
+    } catch (_) {
+      const conflict = await env.DB.prepare(
+        `SELECT p.name partner_name FROM partner_members pm JOIN partners p ON p.id=pm.partner_id
+         WHERE pm.koc_id=? AND pm.status IN ('pending','active') LIMIT 1`,
+      ).bind(me.koc_id).first();
+      return err(
+        conflict
+          ? `KOC đã thuộc đối tác ${conflict.partner_name}.`
+          : 'Chưa thể tham gia đối tác. Vui lòng thử lại.',
+        409,
+      );
+    }
+    await audit(env, me.id, 'partner.invite_accept', invite.partner_id,
+      `koc=${me.koc_id} invite=${invite.id}`);
+    await notifyPartner(
+      env,
+      invite.partner_id,
+      'partner_member_joined',
+      'KOC mới đã tham gia đội của bạn',
+      `${koc.name} đã chấp nhận liên kết mời.`,
+      '#/kocs',
+    );
+    return J({ ok: true, partner: { name: invite.partner_name } });
+  }
+
   // ================= PARTNER =================
+  if (p === '/api/partner/invite-link' && m === 'GET') {
+    if (me.role !== 'partner' || !me.partner_id) return err('403', 403);
+    const partner = await env.DB.prepare('SELECT id,status FROM partners WHERE id=?')
+      .bind(me.partner_id).first();
+    if (!partner) return err('Không tìm thấy đối tác', 404);
+    if (partner.status !== 'active') return J({ available: false });
+    const invite = await ensurePartnerInvite(env, me.partner_id);
+    return J({
+      available: true,
+      token: await partnerInviteToken(env, invite),
+      expiresAt: Number(invite.expires_at),
+      useCount: Number(invite.use_count || 0),
+    });
+  }
+
+  if (p === '/api/partner/invite-link/rotate' && m === 'POST') {
+    if (me.role !== 'partner' || !me.partner_id) return err('403', 403);
+    const partner = await env.DB.prepare('SELECT id,status FROM partners WHERE id=?')
+      .bind(me.partner_id).first();
+    if (!partner || partner.status !== 'active')
+      return err('Đối tác chưa ở trạng thái hoạt động.', 409);
+    const timestamp = now();
+    const invite = {
+      id: uid(), partner_id: me.partner_id, created_at: timestamp,
+      expires_at: timestamp + PARTNER_INVITE_TTL_SECONDS, use_count: 0,
+    };
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE partner_invite_links SET status='revoked',revoked_at=?
+         WHERE partner_id=? AND status='active'`,
+      ).bind(timestamp, me.partner_id),
+      env.DB.prepare(
+        `INSERT INTO partner_invite_links
+         (id,partner_id,status,created_at,expires_at,use_count)
+         VALUES (?,?,'active',?,?,0)`,
+      ).bind(invite.id, me.partner_id, invite.created_at, invite.expires_at),
+    ]);
+    await audit(env, me.id, 'partner.invite_rotate', me.partner_id, `invite=${invite.id}`);
+    return J({ token: await partnerInviteToken(env, invite), expiresAt: invite.expires_at, useCount: 0 });
+  }
+
   if (p === '/api/partner/wallet/withdraw' && m === 'POST') {
     if (me.role !== 'partner' || !me.partner_id) return err('403', 403);
     let ticket;
@@ -5991,7 +6279,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       const bind = [];
       let clause = `WHERE k.status='active'
         AND NOT EXISTS (SELECT 1 FROM partner_members pm
-                        WHERE pm.koc_id=k.id AND pm.status='active')`;
+                        WHERE pm.koc_id=k.id AND pm.status IN ('pending','active'))`;
       if (search) {
         clause += ` AND (k.name LIKE ? OR k.email LIKE ? OR k.phone LIKE ?)`;
         const term = `%${search}%`;
@@ -6051,7 +6339,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         const placeholders = kocIds.map(() => "?").join(",");
         const conflict = await env.DB.prepare(
           `SELECT k.name FROM partner_members pm JOIN kocs k ON k.id=pm.koc_id
-           WHERE pm.status='active' AND pm.koc_id IN (${placeholders})`,
+           WHERE pm.status IN ('pending','active') AND pm.koc_id IN (${placeholders})`,
         ).bind(...kocIds).all();
         if (conflict.results.length)
           return err(
@@ -6167,7 +6455,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         const placeholders = add.map(() => "?").join(",");
         const conflict = await env.DB.prepare(
           `SELECT k.name FROM partner_members pm JOIN kocs k ON k.id=pm.koc_id
-           WHERE pm.status='active' AND pm.partner_id!=? AND pm.koc_id IN (${placeholders})`,
+           WHERE pm.status IN ('pending','active') AND pm.partner_id!=? AND pm.koc_id IN (${placeholders})`,
         ).bind(id, ...add).all();
         if (conflict.results.length)
           return err(
@@ -6178,10 +6466,15 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       for (const kocId of add) {
         stmts.push(
           env.DB.prepare(
+            `UPDATE partner_members
+             SET status='active',assigned_at=?,assigned_by=?,activated_at=?,removed_at=NULL
+             WHERE partner_id=? AND koc_id=? AND status='pending'`,
+          ).bind(now(), me.id, now(), id, kocId),
+          env.DB.prepare(
             `INSERT OR IGNORE INTO partner_members
-             (id,partner_id,koc_id,status,assigned_at,assigned_by)
-             VALUES (?,?,?,'active',?,?)`,
-          ).bind(uid(), id, kocId, now(), me.id),
+             (id,partner_id,koc_id,status,assigned_at,assigned_by,source,activated_at)
+             VALUES (?,?,?,'active',?,?,'admin',?)`,
+          ).bind(uid(), id, kocId, now(), me.id, now()),
         );
       }
       for (const kocId of remove) {
@@ -6434,6 +6727,15 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
           `UPDATE users SET status=?,updated_at=?
            WHERE role='koc' AND koc_id=?`,
         ).bind(status, now(), body.id),
+        body.approve
+          ? env.DB.prepare(
+              `UPDATE partner_members SET status='active',activated_at=?,removed_at=NULL
+               WHERE koc_id=? AND status='pending'`,
+            ).bind(now(), body.id)
+          : env.DB.prepare(
+              `UPDATE partner_members SET status='removed',removed_at=?
+               WHERE koc_id=? AND status='pending'`,
+            ).bind(now(), body.id),
       ]);
       if (koc.status !== status) {
         const recipient = await kocEmailContact(env, body.id, koc);
@@ -6464,6 +6766,12 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         env.DB.prepare(
           `UPDATE users SET status='active',updated_at=?
            WHERE role='koc' AND koc_id=?`,
+        ).bind(now(), id),
+      ));
+      ids.forEach((id) => stmts.push(
+        env.DB.prepare(
+          `UPDATE partner_members SET status='active',activated_at=?,removed_at=NULL
+           WHERE koc_id=? AND status='pending'`,
         ).bind(now(), id),
       ));
       if (stmts.length) await env.DB.batch(stmts);
@@ -7965,15 +8273,17 @@ function normalizePartnerBank(body) {
 }
 
 // Return the active partner a KOC belongs to (with its fee share), or null.
-async function resolveKocPartner(env, kocId) {
+async function resolveKocPartner(env, kocId, eligibleAt = null) {
   if (!kocId) return null;
+  const eligibilityClause = eligibleAt == null ? '' : ' AND pm.assigned_at<=?';
   const row = await env.DB.prepare(
     `SELECT p.id partner_id, p.fee_rate
      FROM partner_members pm
      JOIN partners p ON p.id = pm.partner_id
      WHERE pm.koc_id = ? AND pm.status = 'active' AND p.status = 'active'
+       ${eligibilityClause}
      LIMIT 1`,
-  ).bind(kocId).first();
+  ).bind(kocId, ...(eligibleAt == null ? [] : [Number(eligibleAt)])).first();
   if (!row) return null;
   const rate = Number(row.fee_rate);
   if (!Number.isFinite(rate) || rate <= 0) return null;
@@ -7985,9 +8295,9 @@ async function resolveKocPartner(env, kocId) {
 
 // Split the KOC Viet 5% service fee between the platform and the KOC's partner.
 // serviceFee is the integer VND amount KOC Viet keeps on the booking.
-async function splitServiceFeeWithPartner(env, kocId, serviceFee) {
+async function splitServiceFeeWithPartner(env, kocId, serviceFee, eligibleAt = null) {
   const fee = Math.max(0, Math.round(Number(serviceFee) || 0));
-  const partner = fee > 0 ? await resolveKocPartner(env, kocId) : null;
+  const partner = fee > 0 ? await resolveKocPartner(env, kocId, eligibleAt) : null;
   if (!partner) {
     return { partnerId: null, partnerRate: 0, partnerCut: 0, netvietCut: fee };
   }

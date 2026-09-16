@@ -20,10 +20,16 @@ function Protected({ roles }: { roles?: Role[] }) {
   return <PortalLayout />
 }
 function AppIndex() { const { user } = useAuth(); return <Navigate to={user?.role === 'koc' ? '/app/home' : '/app/dashboard'} replace /> }
+function TermsRedirect() { if (typeof window !== 'undefined') window.location.replace('/terms.html'); return null }
+function PrivacyRedirect() { if (typeof window !== 'undefined') window.location.replace('/privacy.html'); return null }
 
 const resource = (title:string, endpoint:string, collection:string, columns?:string[]) => <ResourcePage title={title} endpoint={endpoint} collection={collection} columns={columns}/>
 export const router = createBrowserRouter([
   { path:'/', element:<HomeLanding/> },
+  { path:'/terms', element:<TermsRedirect/> },
+  { path:'/terms.html', element:<TermsRedirect/> },
+  { path:'/privacy', element:<PrivacyRedirect/> },
+  { path:'/privacy.html', element:<PrivacyRedirect/> },
   { path:'/trang-chu', element:<HomeLanding/> },
   { path:'/koc', element:<KocLanding/> },
   { path:'/doanh-nghiep', element:<BusinessLanding/> },

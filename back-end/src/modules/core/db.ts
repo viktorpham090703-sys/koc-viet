@@ -4,7 +4,7 @@ import { hashPassword } from './lib/password.js';
 let _migrated = false;
 let _migrationPromise = null;
 const SCHEMA_GUARD_KEY = 'runtime_schema_guard';
-const SCHEMA_GUARD_VERSION = '2026-09-16-social-change-requests-v1';
+const SCHEMA_GUARD_VERSION = '2026-09-16-partner-invites-social-changes-v1';
 
 const BUSINESS_PRODUCT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS business_products (
@@ -296,6 +296,19 @@ const MIGRATIONS = [
   // ---- partner login accounts: admin-issued, forced password change on first login ----
   `ALTER TABLE users ADD COLUMN partner_id TEXT`,
   `ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`,
+  // ---- self-service partner invitation links ----
+  `CREATE TABLE IF NOT EXISTS partner_invite_links (
+     id TEXT PRIMARY KEY, partner_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active',
+     created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+     revoked_at INTEGER, use_count INTEGER NOT NULL DEFAULT 0, last_used_at INTEGER )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_invite_links_active_partner
+     ON partner_invite_links(partner_id) WHERE status='active'`,
+  `ALTER TABLE partner_members ADD COLUMN source TEXT NOT NULL DEFAULT 'admin'`,
+  `ALTER TABLE partner_members ADD COLUMN invite_id TEXT`,
+  `ALTER TABLE partner_members ADD COLUMN accepted_at INTEGER`,
+  `ALTER TABLE partner_members ADD COLUMN activated_at INTEGER`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_current_koc
+     ON partner_members(koc_id) WHERE status IN ('pending','active')`,
   `ALTER TABLE kocs ADD COLUMN social_change_request TEXT`,
 ];
 
@@ -720,6 +733,27 @@ async function ensureV14Schema(env) {
       console.warn('partner program schema migration skipped', e && e.message || e);
     }
   }
+  await env.DB.exec(`CREATE TABLE IF NOT EXISTS partner_invite_links (
+    id TEXT PRIMARY KEY, partner_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active',
+    created_at BIGINT NOT NULL, expires_at BIGINT NOT NULL,
+    revoked_at BIGINT, use_count BIGINT NOT NULL DEFAULT 0, last_used_at BIGINT
+  )`);
+  await env.DB.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_invite_links_active_partner
+    ON partner_invite_links(partner_id) WHERE status='active'`);
+  const partnerMemberColumns = await env.DB.prepare(`PRAGMA table_info(partner_members)`).all();
+  const existingPartnerMemberColumns = new Set(
+    (partnerMemberColumns.results || []).map(column => column.name),
+  );
+  for (const [name, sql] of [
+    ['source', `ALTER TABLE partner_members ADD COLUMN source TEXT NOT NULL DEFAULT 'admin'`],
+    ['invite_id', `ALTER TABLE partner_members ADD COLUMN invite_id TEXT`],
+    ['accepted_at', `ALTER TABLE partner_members ADD COLUMN accepted_at BIGINT`],
+    ['activated_at', `ALTER TABLE partner_members ADD COLUMN activated_at BIGINT`],
+  ]) {
+    if (!existingPartnerMemberColumns.has(name)) await env.DB.prepare(sql).run();
+  }
+  await env.DB.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_current_koc
+    ON partner_members(koc_id) WHERE status IN ('pending','active')`);
   await env.DB.exec(`CREATE TABLE IF NOT EXISTS partner_payout_tickets (
     id TEXT PRIMARY KEY, partner_id TEXT NOT NULL REFERENCES partners(id),
     user_id TEXT NOT NULL REFERENCES users(id), amount BIGINT NOT NULL CHECK (amount >= 10000),

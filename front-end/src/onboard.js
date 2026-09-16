@@ -16,14 +16,18 @@ import {
   normalizeSocialDrafts,
   isValidSocialUrl,
   socialChannelPickerHtml,
+  isPlatformPendingApproval,
 } from "./social-channels.js";
 
 const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
 
 // Multi-step KOC onboarding funnel → "chờ duyệt"
 // Steps: 0 Email & OTP · 1 Hồ sơ · 2 Phân hạng & Bảng giá · 3 eKYC & Thanh toán · 4 Hợp đồng · 5 Hoàn tất
-export function renderOnboarding(el) {
+export function renderOnboarding(el, options = {}) {
   const cfg = state.config;
+  const partnerInviteToken = String(options.partnerInviteToken || "").trim();
+  const partnerName = String(options.partnerName || "").trim();
+  const cancelHash = String(options.cancelHash || "#/tuyen-koc");
   const d = {
     name: "",
     phone: "",
@@ -110,7 +114,7 @@ export function renderOnboarding(el) {
     // the same hash again is a no-op and the browser won't fire 'hashchange' — dispatch it
     // ourselves so the app's router re-renders the landing page instead of leaving this
     // half-cancelled form on screen (same pattern app.js's own goHash() uses).
-    const target = "#/tuyen-koc";
+    const target = cancelHash;
     const changed = location.hash !== target;
     location.hash = target;
     if (!changed) window.dispatchEvent(new Event("hashchange"));
@@ -137,11 +141,12 @@ export function renderOnboarding(el) {
       }
       <div class="between onboard-header" style="padding-right:${showCancel ? "44px" : "0"}">
         <div class="row" style="gap:10px;min-width:0">
-          <a href="#/tuyen-koc" class="logo" style="font-size:18px">KOC<span style="color:var(--navy)"> Viet</span></a>
+          <a href="${esc(cancelHash)}" class="logo" style="font-size:18px">KOC<span style="color:var(--navy)"> Viet</span></a>
         </div>
         <span class="onboard-step-count">${step < 5 ? `Bước ${step + 1}/6` : ""}</span>
       </div>
       <div class="step-dots">${steps.map((_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("")}</div>
+      ${partnerInviteToken ? `<div class="onboard-partner-invite">Bạn đang đăng ký theo lời mời của <b>${esc(partnerName || "đối tác")}</b>. Hồ sơ sẽ được liên kết sau khi NetViet phê duyệt.</div>` : ""}
       <div class="onboard-title"><span>THÔNG TIN ĐĂNG KÝ</span><h1>${steps[step]}</h1></div>${inner}
       ${
         showNav
@@ -654,10 +659,23 @@ export function renderOnboarding(el) {
         render();
       }),
     );
+    el.querySelectorAll("[data-switch-to-manual]").forEach((link) =>
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        collect1();
+        d.socialMode = "manual";
+        render();
+      }),
+    );
     el.querySelectorAll("[data-social-oauth]").forEach((button) =>
       button.addEventListener("click", async () => {
-        collect1();
         const platform = button.dataset.socialOauth;
+        if (isPlatformPendingApproval(platform)) {
+          toast(`Tính năng kết nối tự động với ${platform} đang chờ nền tảng xét duyệt. Vui lòng chuyển sang tab "Nhập link thủ công" để điền liên kết.`, "err");
+          return;
+        }
+        collect1();
         window.__lastOAuthPlatform = platform;
         const oldText = button.textContent;
         button.disabled = true;
@@ -1528,6 +1546,7 @@ export function renderOnboarding(el) {
         <div class="copybox" style="margin:12px auto;max-width:420px">Mã hợp đồng: ${esc(d.hash || "").slice(0, 24)}…</div>
         <p class="muted">Timestamp: ${fmtDateTime(d.ts || Date.now())}</p>
         <p class="muted" style="margin-top:14px">Tài khoản đã được tạo. Đội ngũ quản trị sẽ duyệt hồ sơ; sau khi được kích hoạt, bạn mới có thể đăng nhập và xuất hiện trên trang khám phá KOC.</p>
+        ${partnerInviteToken ? `<p class="partner-invite-notice success" style="margin-top:12px">Sau khi hồ sơ được duyệt, bạn sẽ thuộc đội KOC của <b>${esc(partnerName || "đối tác đã mời")}</b>.</p>` : ""}
       </div>
       <a href="#/login" class="btn primary">Về trang đăng nhập</a>`,
       { hideNav: true },
@@ -1551,6 +1570,7 @@ export function renderOnboarding(el) {
         categories: d.categories,
         followers: d.followers,
         followerVerificationToken: "",
+        partnerInviteToken,
         bio: d.bio,
         socials: d.socials,
         prices: d.prices,
@@ -1577,6 +1597,7 @@ export function renderOnboarding(el) {
       d.hash = r.hash;
       d.ts = r.ts;
       d.tier = r.tier;
+      if (partnerInviteToken) sessionStorage.removeItem("koc-viet:partner-invite");
       step = 5;
       render();
     } catch (e) {

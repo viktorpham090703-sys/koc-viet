@@ -17,15 +17,25 @@ export interface SocialChannelStats {
   notice?: string;
 }
 
-const oauthSessions = new Map<string, { status: string; stats?: SocialChannelStats; error?: string; codeVerifier?: string; updatedAt: number }>();
+export interface OAuthSessionData {
+  status: string;
+  platform?: string;
+  stats?: SocialChannelStats;
+  error?: string;
+  codeVerifier?: string;
+  updatedAt?: number;
+}
 
-export function setOAuthSession(state: string, data: { status: string; stats?: SocialChannelStats; error?: string; codeVerifier?: string }) {
+const oauthSessions = new Map<string, OAuthSessionData>();
+
+export function setOAuthSession(state: string, data: Partial<OAuthSessionData>) {
   if (!state) return;
-  oauthSessions.set(state, { ...data, updatedAt: Date.now() });
+  const existing = oauthSessions.get(state) || { status: 'pending' };
+  oauthSessions.set(state, { ...existing, ...data, updatedAt: Date.now() });
   if (oauthSessions.size > 200) {
     const cutoff = Date.now() - 15 * 60 * 1000;
     for (const [k, v] of oauthSessions.entries()) {
-      if (v.updatedAt < cutoff) oauthSessions.delete(k);
+      if ((v.updatedAt || 0) < cutoff) oauthSessions.delete(k);
     }
   }
 }
@@ -37,27 +47,68 @@ export function getOAuthSession(state: string) {
   return oauthSessions.get(state) || null;
 }
 
-export function getOAuthRedirectUri(env: any, platform: string): string {
+export function getOAuthRedirectUri(env: any, platform: string, requestOrigin?: string): string {
   const normalized = String(platform || '').toLowerCase();
-  if (normalized === 'youtube' && env.GOOGLE_REDIRECT_URI) {
+  if (normalized === 'youtube' && env?.GOOGLE_REDIRECT_URI) {
     return String(env.GOOGLE_REDIRECT_URI).trim();
   }
-  if (normalized === 'tiktok' && env.TIKTOK_REDIRECT_URI) {
+  if (normalized === 'tiktok' && env?.TIKTOK_REDIRECT_URI) {
     return String(env.TIKTOK_REDIRECT_URI).trim();
   }
-  if (normalized === 'instagram' && env.INSTAGRAM_REDIRECT_URI) {
+  if (normalized === 'instagram' && env?.INSTAGRAM_REDIRECT_URI) {
     return String(env.INSTAGRAM_REDIRECT_URI).trim();
   }
-  if (normalized === 'facebook' && env.META_REDIRECT_URI) {
+  if (normalized === 'facebook' && env?.META_REDIRECT_URI) {
     return String(env.META_REDIRECT_URI).trim();
   }
-  const origin = env.BACKEND_ORIGIN || `http://localhost:${env.PORT || 3000}`;
-  return `${origin}/api/oauth/social/callback?platform=${encodeURIComponent(platform)}`;
+  if (normalized === 'threads' && env?.THREADS_REDIRECT_URI) {
+    return String(env.THREADS_REDIRECT_URI).trim();
+  }
+
+  // 1. Explicit BACKEND_ORIGIN configured in env
+  if (env?.BACKEND_ORIGIN) {
+    const origin = String(env.BACKEND_ORIGIN).trim().replace(/\/+$/, '');
+    return `${origin}/api/oauth/social/callback`;
+  }
+
+  // 2. Infer origin from any other configured platform redirect URI in env (e.g. THREADS_REDIRECT_URI = https://kocviet.com/...)
+  const otherRedirectUri =
+    env?.THREADS_REDIRECT_URI ||
+    env?.INSTAGRAM_REDIRECT_URI ||
+    env?.TIKTOK_REDIRECT_URI ||
+    env?.META_REDIRECT_URI;
+  if (otherRedirectUri) {
+    try {
+      const u = new URL(String(otherRedirectUri).trim());
+      if (u.protocol && u.host && !u.host.includes('localhost') && !u.host.includes('127.0.0.1')) {
+        return `${u.origin}/api/oauth/social/callback`;
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fall back to requestOrigin if provided and not localhost
+  if (requestOrigin) {
+    try {
+      const u = new URL(String(requestOrigin).trim());
+      if (u.protocol && u.host && !u.host.includes('localhost') && !u.host.includes('127.0.0.1')) {
+        return `${u.origin}/api/oauth/social/callback`;
+      }
+    } catch (_) {}
+  }
+
+  // 4. Localhost fallback
+  const origin = `http://localhost:${env?.PORT || 3000}`;
+  return `${origin}/api/oauth/social/callback`;
 }
 
-export function getSocialAuthUrl(env: any, platform: string, state: string): { url: string; isMock: boolean } {
+export function getSocialAuthUrl(
+  env: any,
+  platform: string,
+  state: string,
+  requestOrigin?: string,
+): { url: string; isMock: boolean } {
   const normalizedPlatform = String(platform || '').toLowerCase();
-  const redirectUri = getOAuthRedirectUri(env, platform);
+  const redirectUri = getOAuthRedirectUri(env, platform, requestOrigin);
 
   if (normalizedPlatform === 'youtube') {
     const clientId = String(env.GOOGLE_CLIENT_ID || '').trim();
@@ -67,6 +118,11 @@ export function getSocialAuthUrl(env: any, platform: string, state: string): { u
         isMock: true,
       };
     }
+
+    const codeVerifier = crypto.randomBytes(32).toString('base64url');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+    setOAuthSession(state, { status: 'pending', platform: 'YouTube', codeVerifier });
+
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
@@ -76,6 +132,8 @@ export function getSocialAuthUrl(env: any, platform: string, state: string): { u
       include_granted_scopes: 'true',
       state,
       prompt: 'consent',
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
     return { url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`, isMock: false };
   }
@@ -141,6 +199,24 @@ export function getSocialAuthUrl(env: any, platform: string, state: string): { u
     return { url: `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`, isMock: false };
   }
 
+  if (normalizedPlatform === 'threads') {
+    const appId = String(env.THREADS_APP_ID || env.META_APP_ID || '').trim();
+    if (!appId) {
+      return {
+        url: `/api/oauth/social/dev-connect?platform=Threads&state=${encodeURIComponent(state)}`,
+        isMock: true,
+      };
+    }
+    const params = new URLSearchParams({
+      client_id: appId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'threads_basic',
+      state,
+    });
+    return { url: `https://threads.net/oauth/authorize?${params.toString()}`, isMock: false };
+  }
+
   return {
     url: `/api/oauth/social/dev-connect?platform=${encodeURIComponent(platform)}&state=${encodeURIComponent(state)}`,
     isMock: true,
@@ -164,16 +240,21 @@ export async function exchangeOAuthCode(
       throw new Error('Chưa cấu hình GOOGLE_CLIENT_ID hoặc GOOGLE_CLIENT_SECRET');
     }
 
+    const tokenParams: Record<string, string> = {
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    };
+    if (codeVerifier) {
+      tokenParams.code_verifier = codeVerifier;
+    }
+
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
+      body: new URLSearchParams(tokenParams),
     });
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
@@ -464,6 +545,116 @@ export async function exchangeOAuthCode(
       verifiedAt,
       isPersonalAccount,
       notice,
+    };
+  }
+
+  if (normalizedPlatform === 'threads') {
+    const appId = String(env.THREADS_APP_ID || env.META_APP_ID || '').trim();
+    const appSecret = String(env.THREADS_APP_SECRET || env.META_APP_SECRET || '').trim();
+    if (!appId || !appSecret) {
+      throw new Error('Chưa cấu hình THREADS_APP_ID hoặc THREADS_APP_SECRET');
+    }
+
+    const tokenRes = await fetch('https://graph.threads.net/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: appId,
+        client_secret: appSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+        code,
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData?.access_token;
+    if (!accessToken) {
+      const rawMsg = tokenData?.error_message || tokenData?.error?.message || tokenData?.error || 'Lỗi đổi token Threads';
+      console.error('[Threads OAuth Error]', JSON.stringify(tokenData));
+      throw new Error(rawMsg);
+    }
+
+    let username = '';
+    let displayName = '';
+    let avatarUrl = '';
+    let followers = 0;
+
+    const authHeaders = {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'KOC-Viet-App/1.0',
+    };
+
+    // 1. Fetch user profile from /me or /{user_id}
+    try {
+      let meRes = await fetch(
+        'https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url,threads_biography',
+        { headers: authHeaders },
+      );
+      let meData = await meRes.json();
+      console.log('[Threads Me Data]', JSON.stringify(meData));
+
+      // Fallback with user_id if /me alias did not return username
+      if (!meData?.username && tokenData?.user_id) {
+        meRes = await fetch(
+          `https://graph.threads.net/v1.0/${tokenData.user_id}?fields=id,username,name,threads_profile_picture_url,threads_biography`,
+          { headers: authHeaders },
+        );
+        meData = await meRes.json();
+        console.log('[Threads User_ID Data]', JSON.stringify(meData));
+      }
+
+      // Fallback with access_token query parameter if needed
+      if (!meData?.username) {
+        meRes = await fetch(
+          `https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url,threads_biography&access_token=${encodeURIComponent(accessToken)}`,
+        );
+        meData = await meRes.json();
+        console.log('[Threads QueryParam Data]', JSON.stringify(meData));
+      }
+
+      if (meData?.username) username = String(meData.username).trim();
+      if (meData?.name) displayName = String(meData.name).trim();
+      if (meData?.threads_profile_picture_url) avatarUrl = String(meData.threads_profile_picture_url).trim();
+      
+      if (!username && meData?.error) {
+        console.error('[Threads Profile Error]', JSON.stringify(meData.error));
+        throw new Error(meData.error.message || 'Lỗi truy vấn hồ sơ Threads');
+      }
+    } catch (e: any) {
+      console.error('[Threads Fetch Profile Error]', e.message);
+      if (!username) {
+        throw new Error(e.message || 'Không thể lấy thông tin tài khoản Threads');
+      }
+    }
+
+    // 2. Fetch follower count via Threads Insights API
+    try {
+      const insightsRes = await fetch(
+        'https://graph.threads.net/v1.0/me/threads_insights?metric=followers_count',
+        { headers: authHeaders },
+      );
+      const insightsData = await insightsRes.json();
+      console.log('[Threads Insights Data]', JSON.stringify(insightsData));
+      const metricItem = insightsData?.data?.find?.((item: any) => item.name === 'followers_count');
+      const val = metricItem?.values?.[0]?.value ?? metricItem?.total_value?.value;
+      if (typeof val === 'number') {
+        followers = val;
+      }
+    } catch (_) {}
+
+    const cleanUsername = username.replace(/^@+/, '');
+    const handle = `https://www.threads.net/@${cleanUsername}`;
+
+    return {
+      platform: 'Threads',
+      handle,
+      url: handle,
+      displayName: displayName || `@${cleanUsername}`,
+      followers: followers > 0 ? followers : 0,
+      avatarUrl,
+      verified: true,
+      verificationSource: 'oauth2_threads',
+      verifiedAt,
     };
   }
 

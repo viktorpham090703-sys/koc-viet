@@ -45,6 +45,12 @@ export const SOCIAL_CHANNELS = Object.freeze([
   },
 ]);
 
+export const PENDING_APPROVAL_PLATFORMS = Object.freeze(["TikTok", "Facebook"]);
+
+export function isPlatformPendingApproval(platform) {
+  return PENDING_APPROVAL_PLATFORMS.includes(String(platform || "").trim());
+}
+
 const CHANNEL_BY_PLATFORM = new Map(
   SOCIAL_CHANNELS.map((channel) => [channel.platform, channel]),
 );
@@ -284,7 +290,11 @@ export function socialChannelPickerHtml({
             const isVerified = isSelected && Boolean(drafts[index].verified);
             return `<button type="button" class="social-platform-pill${isSelected ? " selected" : ""}${isVerified ? " verified" : ""}" data-social-toggle="${safe(channel.platform)}" aria-pressed="${isSelected}">
               <span class="platform-pill-icon">${socialPlatformIcon(channel.platform, 18)}</span>
-              <span class="platform-pill-name">${safe(channel.platform)}${channel.platform === "Threads" ? ' <span class="platform-pill-demo-tag" style="font-size:10px;background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:4px;font-weight:600;margin-left:2px">Demo</span>' : ''}</span>
+              <span class="platform-pill-name">${safe(channel.platform)}${
+                isPlatformPendingApproval(channel.platform)
+                  ? ' <span class="platform-pill-pending-tag" style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 4px;border-radius:4px;font-weight:600;margin-left:2px">Chờ duyệt</span>'
+                  : ''
+              }</span>
               ${isVerified ? '<span class="platform-pill-status dot" title="Đã liên kết">●</span>' : isSelected ? '<span class="platform-pill-status check">✓</span>' : '<span class="platform-pill-status add">+</span>'}
             </button>`;
           }).join("")}
@@ -300,6 +310,7 @@ export function socialChannelPickerHtml({
         const followersCount = Number(social.followers || 0);
         const isEligible = isVerified && followersCount >= 1000;
         const isIneligible = isVerified && followersCount < 1000;
+        const isLocked = !isVerified && isPlatformPendingApproval(social.platform);
 
         const isPersonal = Boolean(
           social.isPersonalAccount ||
@@ -309,14 +320,18 @@ export function socialChannelPickerHtml({
         const handleUrl = socialProfileUrl(social) || String(social.handle || "").trim();
         const platformLower = String(social.platform || "").toLowerCase();
 
-        return `<div class="social-account-card ${platformLower} ${isVerified ? (isEligible ? "verified-eligible" : "verified-ineligible") : "unconnected"}">
+        return `<div class="social-account-card ${platformLower} ${isVerified ? (isEligible ? "verified-eligible" : "verified-ineligible") : "unconnected"}${isLocked ? " is-pending-approval" : ""}">
           <input type="hidden" id="${inputId}" data-social-link data-platform="${safe(social.platform)}" value="${safe(handleUrl)}">
           
           <!-- Card Header -->
           <div class="social-card-header">
             <div class="social-card-brand">
               <span class="social-brand-logo">${socialPlatformIcon(social.platform, 22)}</span>
-              <span class="social-brand-name">${safe(social.platform)}${social.platform === "Threads" ? ' <span class="social-card-demo-badge" style="font-size:11px;font-weight:600;color:#d97706;background:#fffbeb;padding:1px 6px;border-radius:4px;border:1px solid #fde68a;margin-left:4px">Demo</span>' : ''}</span>
+              <span class="social-brand-name">${safe(social.platform)}${
+                isLocked
+                  ? ' <span class="social-card-pending-badge" style="font-size:11px;font-weight:600;color:#92400e;background:#fef3c7;padding:1px 6px;border-radius:4px;border:1px solid #fde68a;margin-left:4px">🔒 Chờ duyệt</span>'
+                  : ''
+              }</span>
               <span class="social-role-badge ${index === 0 ? "primary" : "secondary"}">
                 ${index === 0 ? (isVerified ? "Kênh chính · Đã liên kết" : safe(primaryLabel)) : "Kênh phụ"}
               </span>
@@ -397,13 +412,27 @@ export function socialChannelPickerHtml({
               <!-- Unconnected State -->
               <div class="social-unconnected-layout">
                 <div class="social-unconnected-info">
-                  <div class="social-unconnected-heading">${social.platform === "Threads" ? "Kênh Threads (Bản thử nghiệm / Demo)" : `Chưa kết nối tài khoản ${safe(social.platform)}`}</div>
-                  <p class="social-unconnected-subtext">${social.platform === "Threads" ? 'Kênh Threads hiện đang trong chế độ thử nghiệm (Demo). Bạn có thể kết nối để trải nghiệm hoặc chuyển sang tab "Nhập link thủ công" để điền URL hồ sơ Threads.' : `Kết nối tài khoản ${safe(social.platform)} để hệ thống tự động đồng bộ liên kết hồ sơ và số lượng người theo dõi.`}</p>
+                  <div class="social-unconnected-heading">${
+                    isLocked
+                      ? `Kênh ${safe(social.platform)} (Đang chờ nền tảng xét duyệt)`
+                      : `Chưa kết nối tài khoản ${safe(social.platform)}`
+                  }</div>
+                  <p class="social-unconnected-subtext">${
+                    isLocked
+                      ? `Tính năng kết nối tự động với ${safe(social.platform)} đang chờ nền tảng xét duyệt. Bạn vui lòng chuyển sang tab <a href="javascript:void(0)" data-switch-to-manual style="color:var(--primary);font-weight:600;text-decoration:underline;">"Nhập link thủ công"</a> ở trên để liên kết kênh ngay.`
+                      : `Kết nối tài khoản ${safe(social.platform)} để hệ thống tự động đồng bộ liên kết hồ sơ và số lượng người theo dõi.`
+                  }</p>
                 </div>
                 <div class="social-unconnected-actions">
-                  <button type="button" class="btn-card-action connect-primary" data-social-oauth="${safe(social.platform)}" title="Bấm để ${social.platform === "Threads" ? "trải nghiệm kết nối Threads" : `kết nối tài khoản ${safe(social.platform)}`}">
-                    ${social.platform === "Threads" ? "Kết nối Threads (Demo)" : `Kết nối ${safe(social.platform)}`}
-                  </button>
+                  ${isLocked ? `
+                    <button type="button" class="btn-card-action locked" disabled aria-disabled="true" title="Tính năng kết nối tự động với ${safe(social.platform)} đang chờ nền tảng xét duyệt">
+                      <span class="btn-icon">🔒</span> Đang chờ duyệt
+                    </button>
+                  ` : `
+                    <button type="button" class="btn-card-action connect-primary" data-social-oauth="${safe(social.platform)}" title="Bấm để kết nối tài khoản ${safe(social.platform)}">
+                      Kết nối ${safe(social.platform)}
+                    </button>
+                  `}
                 </div>
               </div>
             `}

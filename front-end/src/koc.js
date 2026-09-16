@@ -226,6 +226,7 @@ async function campaigns(el, page = kocCampaignPage) {
   el.querySelectorAll('[data-campaign-submit]').forEach(b=>b.addEventListener('click',async()=>{const id=b.dataset.campaignSubmit,url=el.querySelector(`[data-campaign-url="${id}"]`).value.trim(),note=el.querySelector(`[data-campaign-note="${id}"]`).value.trim();try{await post('/api/campaign/allocation/action',{id,action:'submit',url,note});toast('Đã gửi nội dung cho doanh nghiệp duyệt','ok');campaigns(el,kocCampaignPage)}catch(e){toast(e.message,'err')}}));
 }
 
+const BOOKING_KINDS = [['all','Tất cả'],['aiclone','AI Clone Avatar'],['review','Review'],['advertising','Quảng cáo'],['affiliate','Tiếp thị liên kết'],['combo','Combo']];
 const kocBookingFilters = {search: '', kind: 'all', page: 1};
 async function bookings(el, page = kocBookingFilters.page) {
   kocBookingFilters.page = page;
@@ -233,9 +234,8 @@ async function bookings(el, page = kocBookingFilters.page) {
   if (kocBookingFilters.kind !== 'all') params.set('type', kocBookingFilters.kind);
   const r = await api('/api/bookings?' + params);
   kocBookingFilters.page = r.page;
-  const kinds = [['all','Tất cả'],['aiclone','AI Clone Avatar'],['review','Review'],['advertising','Quảng cáo'],['affiliate','Tiếp thị liên kết'],['combo','Combo']];
   el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Booking của tôi</h2><p style="opacity:.85;font-size:12px;margin-top:4px">Theo dõi và tra cứu các booking của bạn</p></div>
-    <div class="m-body"><div class="booking-type-tabs" id="bk-tabs">${kinds.map(([key,label])=>`<button class="${key===kocBookingFilters.kind?'active':''}" data-kind="${key}">${label}</button>`).join('')}</div>
+    <div class="m-body"><div class="booking-type-tabs" id="bk-tabs">${BOOKING_KINDS.map(([key,label])=>`<button class="${key===kocBookingFilters.kind?'active':''}" data-kind="${key}">${label}</button>`).join('')}</div>
     <div id="bk-list">${r.bookings.length?r.bookings.map(bookingCard).join(''):empty('📋','Không có booking phù hợp. Thử từ khóa hoặc hình thức hợp tác khác.')}</div></div>`;
   mountRemoteSearch(el,{key:'koc-bookings',label:'Tìm booking',placeholder:'Mã booking, doanh nghiệp hoặc ngành hàng…',value:kocBookingFilters.search,anchor:'#bk-list',meta:r,
     onSearch:query=>{kocBookingFilters.search=query;return bookings(el,1);},onPage:page=>bookings(el,page)});
@@ -737,9 +737,8 @@ async function content(el, page = kocContentPage) {
   const active = r.bookings.filter((b) =>
     ["confirmed", "producing", "posted"].includes(b.status),
   );
-  const kinds = [['all','Tất cả'],['aiclone','AI Clone Avatar'],['review','Review'],['advertising','Quảng cáo'],['affiliate','Tiếp thị liên kết'],['combo','Combo']];
   el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Nội dung đang sản xuất</h2></div><div class="m-body">
-    <div class="booking-type-tabs" id="ct-tabs">${kinds.map(([key,label]) => `<button type="button" class="${key === kocContentKind ? 'active' : ''}" data-kind="${key}" aria-pressed="${key === kocContentKind}">${label}</button>`).join('')}</div>
+    <div class="booking-type-tabs" id="ct-tabs">${BOOKING_KINDS.map(([key,label]) => `<button type="button" class="${key === kocContentKind ? 'active' : ''}" data-kind="${key}" aria-pressed="${key === kocContentKind}">${label}</button>`).join('')}</div>
     <div class="koc-content-grid"></div>
   </div>`;
   const body = el.querySelector(".m-body");
@@ -773,21 +772,41 @@ async function content(el, page = kocContentPage) {
     );
 }
 
+let kocAffiliateKind = "all";
 async function affiliate(el) {
+  const query =
+    kocAffiliateKind === "all"
+      ? ""
+      : `?type=${encodeURIComponent(kocAffiliateKind)}`;
   const [legacy, r] = await Promise.all([
-    api("/api/affiliate"),
-    api("/api/affiliate/links"),
+    api(`/api/affiliate${query}`),
+    api(`/api/affiliate/links${query}`),
   ]);
-  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Hoa hồng bán hàng</h2><p style="opacity:.85;font-size:12px">Nhớ gắn nhãn #quangcao khi đăng bài</p></div><div class="m-body"></div>`;
+  el.innerHTML = `<div class="m-head koc-page-heading"><h2 style="color:#fff">Hoa hồng bán hàng</h2><p style="opacity:.85;font-size:12px">Nhớ gắn nhãn #quangcao khi đăng bài</p></div><div class="m-body">
+    <div class="booking-type-tabs" id="af-tabs">${BOOKING_KINDS.map(([key,label]) => `<button type="button" class="${key === kocAffiliateKind ? 'active' : ''}" data-kind="${key}" aria-pressed="${key === kocAffiliateKind}">${label}</button>`).join('')}</div>
+    <div class="koc-affiliate-grid"></div>
+  </div>`;
   const body = el.querySelector(".m-body");
-  body.classList.add("koc-affiliate-grid");
+  const grid = body.querySelector(".koc-affiliate-grid");
+  body.querySelectorAll("#af-tabs [data-kind]").forEach((button) =>
+    button.addEventListener("click", () => {
+      kocAffiliateKind = button.dataset.kind;
+      affiliate(el);
+    }),
+  );
   const hasNew = r.links && r.links.length;
   const hasLegacy = legacy.affiliates && legacy.affiliates.length;
   if (!hasNew && !hasLegacy) {
-    body.innerHTML = empty(
-      "🔗",
-      "Nhận booking tiếp thị liên kết để hệ thống tạo đường dẫn sản phẩm riêng",
-    );
+    grid.innerHTML =
+      kocAffiliateKind === "all"
+        ? empty(
+            "🔗",
+            "Nhận booking tiếp thị liên kết để hệ thống tạo đường dẫn sản phẩm riêng",
+          )
+        : empty(
+            "🔗",
+            "Không có liên kết bán hàng phù hợp. Thử hình thức hợp tác khác.",
+          );
     return;
   }
   let html = "";
@@ -857,7 +876,7 @@ async function affiliate(el) {
     </div>`;
     })
     .join("");
-  body.innerHTML = html;
+  grid.innerHTML = html;
   mountListSearch(el,{key:'koc-affiliate',label:'Tìm liên kết bán hàng',placeholder:'Mã booking, doanh nghiệp, sàn hoặc ngành hàng…',itemSelector:'.koc-affiliate-card',containerSelector:'.koc-affiliate-grid',searchText:card=>card.dataset.search});
   body.querySelectorAll("[data-copy]").forEach((b) =>
     b.addEventListener("click", async () => {
@@ -1582,7 +1601,7 @@ async function profile(el, editing = false) {
         new_password: newPassword,
       });
       toast("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.", "ok");
-      setTimeout(() => logout(), 1200);
+      setTimeout(() => logout({ skipConfirmation: true }), 1200);
     } catch (e) {
       toast(e.message, "err");
       button.disabled = false;

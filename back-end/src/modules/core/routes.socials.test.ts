@@ -6,6 +6,7 @@ import {
   sameSocialAccountHandle,
   validKocRegistrationFollowerCount,
   validateSocialsInput,
+  route,
 } from './routes.js'
 
 test('account changes compare exact identities, including Facebook profile IDs', () => {
@@ -125,3 +126,34 @@ test('does not preserve a verified primary channel from a removed platform', () 
 
   assert.deepEqual(merged, requested)
 })
+
+test('GET /api/oauth/social/auth-url succeeds for YouTube, Threads, and Instagram', async () => {
+  const env = {
+    GOOGLE_CLIENT_ID: 'google-client-id',
+    GOOGLE_CLIENT_SECRET: 'google-secret',
+    GOOGLE_REDIRECT_URI: 'https://kocviet.com/api/oauth/social/callback',
+    THREADS_APP_ID: '1637121447938714',
+    THREADS_APP_SECRET: 'threads-secret',
+    THREADS_REDIRECT_URI: 'https://kocviet.com/api/oauth/social/callback',
+    INSTAGRAM_APP_ID: '1064282613121655',
+    INSTAGRAM_APP_SECRET: 'insta-secret',
+    INSTAGRAM_REDIRECT_URI: 'https://kocviet.com/api/oauth/social/callback',
+  }
+
+  for (const platform of ['YouTube', 'Threads', 'Instagram']) {
+    const url = new URL(`https://kocviet.com/api/oauth/social/auth-url?platform=${platform}`)
+    const request = new Request(url, {
+      method: 'GET',
+      headers: { origin: 'https://kocviet.com' },
+    })
+
+    const response = await route(request, env, url)
+    assert.equal(response.status, 200)
+    const data = await response.json()
+    assert.equal(data.platform, platform)
+    assert.ok(data.state && data.state.startsWith(platform))
+    assert.ok(data.authUrl && data.authUrl.startsWith('https://'))
+    assert.equal(data.isMock, false)
+  }
+})
+
