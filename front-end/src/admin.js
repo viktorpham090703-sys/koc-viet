@@ -779,7 +779,7 @@ async function kocManagement(el, section = "queue") {
       <a class="btn ${section === "queue" ? "primary" : "ghost"} sm" href="#/queue" role="tab" aria-selected="${section === "queue"}">Hồ sơ chờ duyệt</a>
       <a class="btn ${section === "contracts" ? "primary" : "ghost"} sm" href="#/contracts" role="tab" aria-selected="${section === "contracts"}">Hợp đồng điện tử</a>
       <a class="btn ${section === "kocs" ? "primary" : "ghost"} sm" href="#/kocs" role="tab" aria-selected="${section === "kocs"}">Thông tin KOC</a>
-      <a class="btn ${section === "social-changes" ? "primary" : "ghost"} sm" href="#/social-changes" role="tab" aria-selected="${section === "social-changes"}">Yêu cầu đổi kênh</a>
+      <a class="btn ${section === "social-changes" ? "primary" : "ghost"} sm" href="#/social-changes" role="tab" aria-selected="${section === "social-changes"}">Duyệt kênh & người theo dõi</a>
     </div>
     <div id="koc-management-content"></div>`;
   const content = el.querySelector("#koc-management-content");
@@ -893,18 +893,18 @@ async function socialChanges(el) {
   const { requests } = await api('/api/admin/social-changes');
   const channels = (socials) => socials.map((s) => {
     const url = socialProfileUrl(s);
-    return `<p style="overflow-wrap:anywhere">${esc(s.platform)} · ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(s.handle)}</a>` : esc(s.handle)}</p>`;
+    return `<p style="overflow-wrap:anywhere">${esc(s.platform)} · ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(s.handle)}</a>` : esc(s.handle)} · <b>${num(s.followers)} người theo dõi</b></p>`;
   }).join('');
-  el.innerHTML = `<h2>Yêu cầu đổi kênh mạng xã hội</h2><p class="muted">Kiểm tra quyền sở hữu và số người theo dõi của kênh chính mới trước khi duyệt.</p>
+  el.innerHTML = `<h2>Duyệt cập nhật kênh và người theo dõi</h2><p class="muted">Đối chiếu toàn bộ kênh và số người theo dõi đề nghị với thông tin hiện tại trước khi duyệt.</p>
     ${requests.length ? requests.map((k, index) => `<section class="card" style="margin-top:16px" data-social-request="${esc(k.id)}">
       <h3>${esc(k.name)}</h3><p class="muted">Gửi lúc ${fmtDateTime(k.request.submitted_at)}</p>
       <h4>Kênh hiện tại</h4>${channels(k.socials)}
       <h4>Kênh đề nghị thay đổi</h4>${channels(k.request.socials)}
-      <div class="field"><label for="social-followers-${index}">Số người theo dõi đã xác minh của kênh chính mới</label>
-        <input id="social-followers-${index}" data-followers type="number" min="1000" max="2000000000" step="1" placeholder="Nhập số đã kiểm tra"></div>
+      <div class="field"><label for="social-followers-${index}">Số người theo dõi đã kiểm tra của kênh chính</label>
+        <input id="social-followers-${index}" data-followers type="number" min="1000" max="2000000000" step="1" value="${esc(k.request.socials[0]?.followers ?? '')}" placeholder="Nhập số đã kiểm tra"></div>
       <p class="hint">Hạng KOC sẽ được cập nhật theo số người theo dõi đã xác minh.</p>
       <div class="field"><label for="social-reason-${index}">Lý do từ chối (bắt buộc khi từ chối)</label><textarea id="social-reason-${index}" data-reason maxlength="600" rows="2"></textarea></div>
-      <div class="row" style="flex-wrap:wrap"><button type="button" class="btn primary sm" data-review="approve">Xác nhận kênh mới</button>
+      <div class="row" style="flex-wrap:wrap"><button type="button" class="btn primary sm" data-review="approve">Duyệt kênh và người theo dõi</button>
         <button type="button" class="btn danger sm" data-review="reject">Từ chối</button></div>
     </section>`).join('') : '<p class="muted">Không có yêu cầu đổi kênh đang chờ duyệt.</p>'}`;
   el.querySelectorAll('[data-review]').forEach((button) => button.addEventListener('click', async () => {
@@ -920,7 +920,7 @@ async function socialChanges(el) {
     try {
       await post('/api/admin/social-changes/review', { id: k.id, request_id: k.request.id,
         action: button.dataset.review, followers, reason });
-      toast(button.dataset.review === 'approve' ? 'Đã xác minh và cập nhật kênh mới' : 'Đã từ chối và thông báo cho KOC', 'ok');
+      toast(button.dataset.review === 'approve' ? 'Đã duyệt cập nhật kênh và người theo dõi' : 'Đã từ chối và thông báo cho KOC', 'ok');
       await socialChanges(el);
     } catch (error) {
       toast(error.message, 'err');
