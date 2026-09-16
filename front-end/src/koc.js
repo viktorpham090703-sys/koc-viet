@@ -55,6 +55,21 @@ const NAV = [
   ["#/notifications", icon("notification", "nav-icon"), "Thông báo"],
 ];
 
+if (typeof window !== "undefined" && !window.__kocNotificationBound) {
+  window.__kocNotificationBound = true;
+  window.addEventListener("koc:notification", async (event) => {
+    const item = event.detail;
+    const view = document.getElementById("koc-view");
+    if (!view) return;
+    const current = location.hash.replace("#/", "") || "home";
+    if (current === "profile" && (item?.type === "social_change" || item?.href?.includes("profile"))) {
+      profile(view);
+    } else if (current === "notifications") {
+      notifications(view);
+    }
+  });
+}
+
 export async function renderKoc(el, hash) {
   const page = hash.replace("#/", "") || "home";
   const known = [

@@ -1,10 +1,11 @@
 import { api } from "./api.js";
+import { toast } from "./ui.js";
 
 const NOTIFICATION_STATE_CACHE = "koc-viet-notifications-v1";
 const NOTIFICATION_STATE_URL = "/__koc-viet-notification-state__";
 const PWA_INSTALL_ACTION_DISMISSED = "koc-viet-pwa-install-dismissed-v1";
 const PWA_NOTIFICATION_ACTION_DISMISSED = "koc-viet-pwa-notifications-dismissed-v1";
-const POLL_INTERVAL = 60_000;
+const POLL_INTERVAL = 20_000;
 
 let deferredInstallPrompt = null;
 let serviceWorkerRegistration = null;
@@ -40,6 +41,9 @@ export function initializePwa(options = {}) {
     initialized = true;
     registerServiceWorker();
     document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") checkForNewNotifications();
+    });
+    window.addEventListener("focus", () => {
       if (document.visibilityState === "visible") checkForNewNotifications();
     });
     window.addEventListener("online", checkForNewNotifications);
@@ -245,18 +249,16 @@ function updateNotificationPolling() {
     notificationTimer = null;
   }
 
-  if (
-    !authenticated ||
-    !("Notification" in window) ||
-    Notification.permission !== "granted"
-  ) {
+  if (!authenticated) {
     return;
   }
 
   checkForNewNotifications();
   notificationTimer = window.setInterval(checkForNewNotifications, POLL_INTERVAL);
-  registerPeriodicNotificationSync();
-  ensurePushSubscription();
+  if ("Notification" in window && Notification.permission === "granted") {
+    registerPeriodicNotificationSync();
+    ensurePushSubscription();
+  }
 }
 
 async function ensurePushSubscription(options = {}) {
@@ -381,9 +383,7 @@ async function checkForNewNotifications() {
   if (
     notificationSyncInFlight ||
     !authenticated ||
-    document.visibilityState === "hidden" ||
-    !("Notification" in window) ||
-    Notification.permission !== "granted"
+    document.visibilityState === "hidden"
   ) {
     return notificationSyncInFlight;
   }
@@ -392,6 +392,12 @@ async function checkForNewNotifications() {
     try {
       const data = await api("/api/notifications");
       const notifications = Array.isArray(data.notifications) ? data.notifications : [];
+      if (typeof data.unread === "number") {
+        document.querySelectorAll(".notification-count").forEach((badge) => {
+          badge.textContent = data.unread > 9 ? "9+" : String(data.unread || 0);
+          badge.hidden = !data.unread;
+        });
+      }
       const previousState = await readNotificationState();
 
       if (!previousState?.initialized) {
@@ -417,13 +423,17 @@ async function checkForNewNotifications() {
       });
 
       for (const item of fresh) {
-        await showSystemNotification({
-          id: item.id,
-          title: item.title || "Thông báo mới từ KOC Việt",
-          message: item.message || "Bạn có một cập nhật mới.",
-          href: item.href || "/#/notifications",
-          timestamp: Number(item.created_at || 0) * 1000,
-        });
+        toast(`${item.title}: ${item.message}`, "ok");
+        window.dispatchEvent(new CustomEvent("koc:notification", { detail: item }));
+        if ("Notification" in window && Notification.permission === "granted") {
+          await showSystemNotification({
+            id: item.id,
+            title: item.title || "Thông báo mới từ KOC Việt",
+            message: item.message || "Bạn có một cập nhật mới.",
+            href: item.href || "/#/notifications",
+            timestamp: Number(item.created_at || 0) * 1000,
+          });
+        }
       }
     } catch (_) {
       // Offline sessions and expired sessions are retried on focus or next poll.
