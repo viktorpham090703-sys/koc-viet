@@ -160,7 +160,7 @@ export async function renderKocProfile(el, id) {
       <h3 style="margin-bottom:8px;font-size:20px;color:var(--navy)">Bạn muốn đặt booking KOC này?</h3>
       <p class="muted" style="margin-bottom:16px;font-size:14px">Đăng ký tài khoản doanh nghiệp để gửi brief, xác nhận giá niêm yết và thanh toán an toàn qua ví đảm bảo.</p>
       <div class="row" style="justify-content:center;gap:12px;flex-wrap:wrap">
-        <a href="/#/dang-ky?role=business" class="btn primary" style="background:#B91C1C;color:#fff;border:none;min-width:200px;font-weight:700">Đăng ký Doanh nghiệp</a>
+        <a href="/#/dang-ky?role=business" class="btn primary" style="background:#ea583c;color:#fff;border:none;min-width:200px;font-weight:700;box-shadow:0 4px 16px rgba(234,88,60,0.35)">Đăng ký Doanh nghiệp</a>
         <a href="#/login" class="btn ghost" style="min-width:180px">Đăng nhập để đặt booking</a>
       </div>
     </div>`;
