@@ -9,6 +9,7 @@ function pubShell(inner) {
         <a href="#/login" class="logo" style="font-size:22px">KOC<span style="color:var(--navy)"> Viet</span></a>
         <div class="row" style="gap:12px">
           <a href="#/explore" class="btn ghost sm">Khám phá KOC</a>
+          <a href="/#/dang-ky?role=business" class="btn ghost sm" style="font-weight:600;color:var(--navy)">Đăng ký doanh nghiệp</a>
           <a href="#/login" class="btn primary sm">Đăng nhập</a>
         </div>
       </div>
@@ -155,8 +156,12 @@ export async function renderKocProfile(el, id) {
           : '<p class="muted" style="margin-top:8px">Chưa có đánh giá.</p>'}
       </div>
     </div>
-    <div class="card" style="margin-top:16px;text-align:center">
-      <p class="muted">Đăng nhập tài khoản doanh nghiệp để đặt booking KOC này.</p>
-      <a href="#/login" class="btn primary" style="max-width:240px;margin:10px auto 0">Đăng nhập để đặt booking</a>
+    <div class="card" style="margin-top:16px;text-align:center;padding:28px 20px;background:#f8fafc;border:1px solid var(--border);border-radius:18px">
+      <h3 style="margin-bottom:8px;font-size:20px;color:var(--navy)">Bạn muốn đặt booking KOC này?</h3>
+      <p class="muted" style="margin-bottom:16px;font-size:14px">Đăng ký tài khoản doanh nghiệp để gửi brief, xác nhận giá niêm yết và thanh toán an toàn qua ví đảm bảo.</p>
+      <div class="row" style="justify-content:center;gap:12px;flex-wrap:wrap">
+        <a href="/#/dang-ky?role=business" class="btn primary" style="background:#B91C1C;color:#fff;border:none;min-width:200px;font-weight:700">Đăng ký Doanh nghiệp</a>
+        <a href="#/login" class="btn ghost" style="min-width:180px">Đăng nhập để đặt booking</a>
+      </div>
     </div>`;
 }

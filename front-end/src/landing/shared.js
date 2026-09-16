@@ -106,7 +106,7 @@ export function lpHeader(active) {
       <nav class="lp-nav" id="lp-nav">
         ${ROUTES.map(([href, label]) => `<a href="${href}" class="${active === href ? "active" : ""}">${label}</a>`).join("")}
         <div class="lp-auth-btns">
-          <a href="/#/tuyen-koc" class="btn ghost sm">Đăng ký</a>
+          <a href="/#/dang-ky" class="btn ghost sm">Đăng ký</a>
           <a href="#/login" class="btn primary sm">Đăng nhập</a>
         </div>
       </nav>
@@ -352,16 +352,17 @@ export function lpContactForm(idSuffix, title) {
       <h3 style="margin-bottom:14px">${title}</h3>
       <form class="lp-contact-form" data-id="${idSuffix}">
         ${isSupport ? `<div class="field"><label for="support-request-type">Loại yêu cầu</label><select id="support-request-type" name="requestType" required><option value="" selected disabled>Chọn loại yêu cầu</option><option value="Hỗ trợ kỹ thuật">Hỗ trợ kỹ thuật</option><option value="Khiếu nại thanh toán">Khiếu nại thanh toán</option><option value="Tư vấn AI Clone Avatar">Tư vấn AI Clone Avatar</option><option value="Khác">Khác</option></select></div>` : ""}
-        <div class="field"><label>Họ tên</label><input required placeholder="Nguyễn Văn A"></div>
-        <div class="field"><label>Số điện thoại</label><input required placeholder="09xx xxx xxx"></div>
-        <div class="field"><label>Tên doanh nghiệp (nếu có)</label><input placeholder="Công ty / thương hiệu"></div>
-        <div class="field"><label>Nội dung cần tư vấn</label><textarea rows="3" placeholder="Bạn cần hỗ trợ điều gì?"></textarea></div>
-        ${isSupport ? `<div class="lp-contact-submit-row"><button type="submit" class="btn primary">Gửi yêu cầu</button><p><span aria-hidden="true">✓</span> Chúng tôi phản hồi trong 2 giờ làm việc</p></div>` : `<button type="submit" class="btn primary" style="width:100%">Gửi yêu cầu</button><p class="lp-muted" style="text-align:center">Yêu cầu được ghi nhận và gửi mô phỏng tới đội ngũ NetViet.</p>`}
+        <div class="field"><label>Họ tên</label><input required name="name" placeholder="Nguyễn Văn A"></div>
+        <div class="field"><label>Số điện thoại</label><input required name="phone" placeholder="09xx xxx xxx"></div>
+        <div class="field"><label>Email</label><input type="email" name="email" placeholder="example@email.com"></div>
+        <div class="field"><label>Tên doanh nghiệp (nếu có)</label><input name="company" placeholder="Công ty / thương hiệu"></div>
+        <div class="field"><label>Nội dung cần tư vấn</label><textarea name="need" rows="3" placeholder="Bạn cần hỗ trợ điều gì?"></textarea></div>
+        ${isSupport ? `<div class="lp-contact-submit-row"><button type="submit" class="btn primary">Gửi yêu cầu</button><p><span aria-hidden="true">✓</span> Chúng tôi phản hồi trong 2 giờ làm việc</p></div>` : `<button type="submit" class="btn primary" style="width:100%">Gửi yêu cầu</button><p class="lp-muted" style="text-align:center">Thông tin của bạn được bảo mật và chuyển trực tiếp tới chuyên viên NetViet.</p>`}
       </form>
       <div class="lp-contact-success">
         <div class="ico"><img src=/images/check-circle.svg alt aria-hidden=true style=width:1em;height:1em;vertical-align:-0.125em></div>
         <h3>Đã ghi nhận yêu cầu của bạn!</h3>
-        <p class="muted">Đội ngũ NetViet sẽ liên hệ tư vấn trong thời gian sớm nhất (demo — mô phỏng gửi email).</p>
+        <p class="muted">Thông tin của bạn được bảo mật và chuyển trực tiếp tới chuyên viên NetViet.</p>
       </div>
     </div>
   </div>`;
@@ -417,13 +418,11 @@ export function bindLandingEvents(root) {
   root.querySelectorAll(".lp-contact-form").forEach((f) => {
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const inputs = f.querySelectorAll("input, textarea");
-      const [name, phone, company, need] = [
-        inputs[0],
-        inputs[1],
-        inputs[2],
-        inputs[3],
-      ];
+      const name = f.querySelector('[name="name"]')?.value?.trim() || "";
+      const phone = f.querySelector('[name="phone"]')?.value?.trim() || "";
+      const email = f.querySelector('[name="email"]')?.value?.trim() || "";
+      const company = f.querySelector('[name="company"]')?.value?.trim() || "";
+      const need = f.querySelector('[name="need"]')?.value?.trim() || "";
       const requestType = f.querySelector('[name="requestType"]')?.value || "";
       // best-effort persist as a real lead; UI success shows regardless
       try {
@@ -431,12 +430,13 @@ export function bindLandingEvents(root) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: name?.value || "",
-            phone: phone?.value || "",
-            company: company?.value || "",
+            name,
+            phone,
+            email,
+            company,
             need: requestType
-              ? `[Loại yêu cầu: ${requestType}]\n${need?.value || ""}`
-              : need?.value || "",
+              ? `[Loại yêu cầu: ${requestType}]\n${need}`
+              : need,
             source: "landing-" + (f.dataset.id || "contact"),
           }),
         });

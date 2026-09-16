@@ -80,7 +80,7 @@ function pageHome() {
         </h1>
         <p class="lp-hero-sub">KOC Việt - Nền tảng kết nối trực tiếp Doanh nghiệp và KOC/KOL trên toàn quốc.</p>
         <div class="lp-hero-cta">
-          <a href="/#/tuyen-koc" class="btn btn-primary">Đăng ký KOC miễn phí</a>
+          <a href="/#/dang-ky" class="btn btn-primary">Đăng ký KOC miễn phí</a>
           <a href="/#/explore" class="btn btn-secondary">Tìm KOC cho chiến dịch</a>
         </div>
       </div>
@@ -364,7 +364,7 @@ function pageHome() {
     <div class="lp-cta-final-inner">
       <h2>Booking minh bạch. Thanh toán an tâm. Kết nối bền vững.</h2>
       <div class="lp-hero-cta">
-        <a href="/#/tuyen-koc" class="btn navy nv-lift">Đăng ký làm KOC — miễn phí</a>
+        <a href="/#/dang-ky" class="btn navy nv-lift">Đăng ký làm KOC — miễn phí</a>
         <a href="/#/explore" class="btn ghost nv-lift">Booking KOC ngay hôm nay</a>
       </div>
     </div>
@@ -390,7 +390,7 @@ function pageKoc() {
     eyebrow: "DÀNH CHO KOC/KOLs",
     h1: `Bạn định giá.<br>Nền tảng mang booking đến.<br><span class="coral">Ví tự cộng tiền.</span>`,
     sub: `Tự đặt phí theo ngành hàng, nhận booking từ 200.000+ doanh nghiệp và kiếm thêm hoa hồng affiliate trên mỗi đơn hàng.<span class="lp-koc-hero-speed">Đăng ký và ký hợp đồng điện tử trong <strong>chưa đầy 15 phút.</strong></span>`,
-    ctas: [{ href: "/#/tuyen-koc", label: "Tạo hồ sơ KOC miễn phí" }],
+    ctas: [{ href: "/#/dang-ky", label: "Tạo hồ sơ KOC miễn phí" }],
     trust: "Miễn phí trọn đời · Nhận 95% mỗi booking · Rút tiền trong 24h",
     img: {
       src: "/images/koc-hero-seamless.png",
@@ -668,7 +668,7 @@ function pageKoc() {
 
   const ctaFinal = lpCtaFinal(
     "Hồ sơ của bạn có thể nhận booking đầu tiên ngay tuần này.",
-    [{ href: "/#/tuyen-koc", label: "Tạo hồ sơ KOC miễn phí — mất 15 phút" }],
+    [{ href: "/#/dang-ky", label: "Tạo hồ sơ KOC miễn phí — mất 15 phút" }],
   );
 
   return (
@@ -684,12 +684,8 @@ function pageBusiness() {
     h1: `<span class="lp-hero-line">Booking KOC,</span><span class="coral lp-hero-line">dễ như đặt xe.</span>`,
     sub: `Không cần qua nhiều tầng agency. Chọn KOC, xem giá công khai và hiệu quả thực tế, rồi chốt booking trực tiếp trên KOC Việt.<span class="lp-business-hero-budget">Từ ngân sách 0 Đồng đến tiền tỷ, đều có KOC/KOLs phù hợp.</span>`,
     ctas: [
-      { href: "/#/explore", label: "Tìm KOC ngay — miễn phí" },
-      {
-        href: "#contact-form",
-        ghost: true,
-        label: "Nhận tư vấn chiến dịch lớn",
-      },
+      { href: "/#/business-register", label: "Đăng ký Doanh nghiệp ngay" },
+      { href: "/#/explore", ghost: true, label: "Tìm KOC ngay — miễn phí" },
     ],
     img: {
       src: "/images/business-hero-transparent-v2.png",
@@ -790,7 +786,10 @@ function pageBusiness() {
           <span class="lp-business-mode-fit">Phù hợp SME &amp; chiến dịch đơn lẻ</span>
           <h3>TỰ BOOKING QUA MARKETPLACE</h3>
           <p>Phù hợp SME, cửa hàng và chiến dịch đơn lẻ: lọc KOC theo ngành, tỉnh, hạng và giá; booking trực tiếp rồi theo dõi từng bài đăng.</p>
-          <a class="lp-business-mode-cta" href="/#/explore">Khám phá KOC <span aria-hidden="true">→</span></a>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="lp-business-mode-cta" href="/#/business-register">Đăng ký để booking <span aria-hidden="true">→</span></a>
+            <a class="lp-business-mode-cta" href="/#/explore" style="color:var(--muted)">Khám phá KOC</a>
+          </div>
         </article>
         <article class="lp-card lp-business-mode-card lp-business-mode-managed">
           <span class="lp-business-mode-fit">Phù hợp chiến dịch quy mô lớn</span>
@@ -839,7 +838,10 @@ function pageBusiness() {
       </div>
       <div class="lp-business-process-cta">
         <h3>Bắt đầu chiến dịch đầu tiên của bạn</h3>
-        <a href="/#/explore" class="btn primary nv-lift">Tìm KOC ngay</a>
+        <div style="display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:14px">
+          <a href="/#/business-register" class="btn primary nv-lift" style="background:#B91C1C;color:#fff;border:none">Đăng ký Doanh nghiệp để booking</a>
+          <a href="/#/explore" class="btn ghost nv-lift">Khám phá danh sách KOC</a>
+        </div>
       </div>
     </div>
   </section>`;
@@ -898,7 +900,31 @@ function pageBusiness() {
     </div>
   </section>`;
 
-  const contact = `<section class="lp-section tint" aria-label="Liên hệ tư vấn">
+  const bizRegisterSection = `<section class="lp-section tint lp-biz-register-section" id="dang-ky-doanh-nghiep" aria-label="Đăng ký tài khoản doanh nghiệp">
+    <div class="lp-section-inner">
+      <div class="lp-card lp-biz-banner-card" style="background:linear-gradient(135deg,#0b1f3a 0%,#15345d 100%);color:#fff;border-radius:24px;padding:48px 40px;box-shadow:0 18px 45px rgba(11,31,58,.16)">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:28px">
+          <div style="max-width:680px">
+            <span style="display:inline-block;font-size:12px;font-weight:800;letter-spacing:0.12em;color:#ff9b85;text-transform:uppercase;margin-bottom:8px">ĐĂNG KÝ DOANH NGHIỆP</span>
+            <h2 style="color:#fff;font-size:clamp(26px,3vw,34px);line-height:1.25;margin:0 0 12px">Mở tài khoản Doanh nghiệp – Bắt đầu booking KOC ngay</h2>
+            <p style="color:#d5deea;font-size:15.5px;line-height:1.65;margin:0">Đăng ký hoàn toàn miễn phí chỉ trong 1 phút. Tiếp cận ngay danh sách KOC đã ký hợp đồng điện tử, niêm yết giá công khai và bảo vệ thanh toán qua ví đảm bảo.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;min-width:260px">
+            <a href="/#/business-register" class="btn primary nv-lift" style="background:#B91C1C;color:#fff;border:none;font-weight:700;font-size:15px;padding:14px 24px;text-align:center;text-decoration:none">Đăng ký Doanh nghiệp ngay →</a>
+            <a href="/#/explore" class="btn nv-lift" style="background:#fff;color:#0b1f3a;font-weight:700;font-size:14.5px;padding:14px 24px;text-align:center;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.12);text-decoration:none">Xem trước danh sách KOC</a>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:28px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.12)">
+          <div style="display:flex;align-items:center;gap:10px"><span style="color:#4ade80;font-size:16px;font-weight:bold">✓</span><span style="font-size:13.5px;color:#d5deea">Không phí mở tài khoản</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="color:#4ade80;font-size:16px;font-weight:bold">✓</span><span style="font-size:13.5px;color:#d5deea">Bảng giá 5 hạng minh bạch</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="color:#4ade80;font-size:16px;font-weight:bold">✓</span><span style="font-size:13.5px;color:#d5deea">Ví đảm bảo giữ tiền an toàn</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="color:#4ade80;font-size:16px;font-weight:bold">✓</span><span style="font-size:13.5px;color:#d5deea">Hóa đơn VAT &amp; đối soát tự động</span></div>
+        </div>
+      </div>
+    </div>
+  </section>`;
+
+  const contact = `<section class="lp-section" aria-label="Liên hệ tư vấn">
     <div class="lp-section-inner">
       ${lpContactForm("doanh-nghiep", "Nhận tư vấn miễn phí")}
     </div>
@@ -907,12 +933,8 @@ function pageBusiness() {
   const ctaFinal = lpCtaFinal(
     "Chiến dịch KOC đầu tiên của bạn có thể chạy ngay hôm nay.",
     [
-      { href: "/#/explore", label: "Tìm KOC ngay" },
-      {
-        href: "#contact-form",
-        label: "Đặt lịch tư vấn 1-1 miễn phí",
-        ghost: true,
-      },
+      { href: "/#/business-register", label: "Đăng ký tài khoản Doanh nghiệp" },
+      { href: "/#/explore", label: "Tìm KOC ngay", ghost: true },
     ],
   );
 
@@ -922,6 +944,7 @@ function pageBusiness() {
     solutions +
     twoModes +
     bookingProcess +
+    bizRegisterSection +
     measure +
     contact +
     ctaFinal
@@ -1090,12 +1113,33 @@ function pageMarketplace() {
     </div>
   </section>`;
 
+  const bizBookingSection = `<section class="lp-section tint lp-marketplace-biz-cta" aria-label="Đăng ký tài khoản doanh nghiệp để đặt booking KOC">
+    <div class="lp-section-inner">
+      <div class="lp-card" style="background:linear-gradient(135deg,#0b1f3a 0%,#183a64 100%);color:#fff;border-radius:24px;padding:40px 36px;box-shadow:0 18px 45px rgba(11,31,58,.14)">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px">
+          <div style="max-width:650px">
+            <span style="display:inline-block;font-size:12px;font-weight:800;letter-spacing:0.12em;color:#ff9b85;text-transform:uppercase;margin-bottom:6px">ĐẶT BOOKING KOC NHANH CHÓNG</span>
+            <h2 style="color:#fff;font-size:28px;margin:0 0 10px;line-height:1.3">Bạn muốn đặt booking KOC? Mở tài khoản doanh nghiệp ngay</h2>
+            <p style="color:#d5deea;font-size:15px;line-height:1.65;margin:0">Tạo tài khoản Doanh nghiệp miễn phí để trực tiếp gửi brief, chốt gói booking theo bảng giá niêm yết và thanh toán an toàn qua Ví ký quỹ đảm bảo.</p>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <a href="/#/business-register" class="btn primary nv-lift" style="background:#B91C1C;color:#fff;border:none;font-weight:700;padding:13px 24px;text-align:center;text-decoration:none">Đăng ký Doanh nghiệp để booking →</a>
+            <a href="/doanh-nghiep" class="btn nv-lift" style="background:#fff;color:#0b1f3a;font-weight:700;padding:13px 24px;text-align:center;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.12);text-decoration:none">Tìm hiểu thêm</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>`;
+
   const ctaFinal = lpCtaFinal(
     "KOC phù hợp nhất với bạn có thể đang ở ngay tỉnh bên cạnh.",
-    [{ href: "/#/explore", label: "Bắt đầu lọc và booking" }],
+    [
+      { href: "/#/business-register", label: "Đăng ký Doanh nghiệp để booking" },
+      { href: "/#/explore", label: "Bắt đầu lọc và booking", ghost: true },
+    ],
   );
 
-  return hero + filters + profile + flow + commit + ctaFinal;
+  return hero + filters + profile + flow + bizBookingSection + commit + ctaFinal;
 }
 
 // ---------- 5. AI Clone Avatar (/ai-clone) ----------
@@ -1555,7 +1599,7 @@ function pagePricing() {
   const ctaFinal = lpCtaFinal(
     "Giá minh bạch là khởi đầu của sự hợp tác bền vững.",
     [
-      { href: "/#/tuyen-koc", label: "KOC: Đặt bảng giá của bạn" },
+      { href: "/#/dang-ky", label: "KOC: Đặt bảng giá của bạn" },
       {
         href: "/#/explore",
         label: "Doanh nghiệp: Xem KOC theo khung giá",
@@ -1667,7 +1711,7 @@ function pageCommunity() {
               <li><span aria-hidden="true">✓</span> Mở rộng mạng lưới KOC và trở thành người kết nối cộng đồng tại địa phương.</li>
             </ul>
           </div>
-          <a href="/#/tuyen-koc" class="btn btn-primary" style="display:inline-flex;align-items:center;justify-content:center;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;color:#fff;background:#ea583c;">Ứng tuyển trưởng nhóm tỉnh</a>
+          <a href="/#/dang-ky" class="btn btn-primary" style="display:inline-flex;align-items:center;justify-content:center;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;color:#fff;background:#ea583c;">Ứng tuyển trưởng nhóm tỉnh</a>
         </div>
       </div>
     </div>
@@ -1718,7 +1762,7 @@ function pageCommunity() {
           <div class="lp-roadmap-cta-content">
             <h3>Tỉnh của bạn chưa có trong mạng lưới?</h3>
             <p>Trở thành người kết nối KOC đầu tiên tại địa phương.</p>
-            <a href="/#/tuyen-koc" class="btn btn-primary nv-lift">Đăng ký trở thành trưởng nhóm tỉnh</a>
+            <a href="/#/dang-ky" class="btn btn-primary nv-lift">Đăng ký trở thành trưởng nhóm tỉnh</a>
           </div>
         </div>
       </div>
@@ -1728,7 +1772,7 @@ function pageCommunity() {
   const ctaFinal = lpCtaFinal(
     "Cộng đồng tỉnh bạn đang hình thành — có mặt sớm, lợi thế sớm.",
     [
-      { href: "/#/tuyen-koc", label: "KOC: Gia nhập cộng đồng tỉnh" },
+      { href: "/#/dang-ky", label: "KOC: Gia nhập cộng đồng tỉnh" },
       {
         href: "/#/explore",
         label: "Doanh nghiệp: Lọc KOC theo tỉnh",
