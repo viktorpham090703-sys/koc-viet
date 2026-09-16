@@ -1388,8 +1388,8 @@ async function profile(el, editing = false) {
   const { koc: k } = await api("/api/koc/profile");
   const socialRequest = k.social_change_request;
   const socialRequestNotice = socialRequest ? `<div class="tint-box" role="status">
-    <b>${socialRequest.status === 'pending' ? 'Đang chờ admin xác minh kênh mới' : socialRequest.status === 'rejected' ? 'Yêu cầu đổi kênh chưa được duyệt' : 'Admin đã xác minh kênh mới'}</b>
-    ${socialRequest.status === 'pending' ? `<p>Kênh hiện tại vẫn được sử dụng cho đến khi admin duyệt.</p>${socialRequest.socials.map((s) => `<p style="overflow-wrap:anywhere">${esc(s.platform)}: ${esc(s.handle)}</p>`).join('')}` : ''}
+    <b>${socialRequest.status === 'pending' ? 'Đang chờ admin duyệt kênh và người theo dõi' : socialRequest.status === 'rejected' ? 'Yêu cầu cập nhật kênh chưa được duyệt' : 'Admin đã duyệt cập nhật kênh'}</b>
+    ${socialRequest.status === 'pending' ? `<p>Kênh và số người theo dõi hiện tại vẫn được giữ nguyên cho đến khi admin duyệt.</p>${socialRequest.socials.map((s) => `<p style="overflow-wrap:anywhere">${esc(s.platform)}: ${esc(s.handle)} · ${num(s.followers)} người theo dõi</p>`).join('')}` : ''}
     ${socialRequest.status === 'rejected' ? `<p>${esc(socialRequest.reason)}. Bạn có thể chỉnh sửa hồ sơ và gửi lại.</p>` : ''}
   </div>` : '';
   const prices = {};
@@ -1423,9 +1423,9 @@ async function profile(el, editing = false) {
         </div>
         <div class="card profile-section"><h3>Kênh mạng xã hội</h3>
           ${socialRequestNotice}
-          ${(k.socials || []).map((item) => {
+          ${(k.socials || []).map((item, index) => {
             const url = socialProfileUrl(item);
-            const content = `<span style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0">${socialPlatformIcon(item.platform, 20)}</span><span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span></span><strong>${num(item.followers || k.followers)} followers</strong>`;
+            const content = `<span style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0">${socialPlatformIcon(item.platform, 20)}</span><span><b>${esc(item.platform)}</b><small>${esc(item.handle)}</small></span></span><strong>${num(index === 0 ? k.followers : item.followers || 0)} followers</strong>`;
             return url
               ? `<a class="profile-social-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${content}</a>`
               : `<div class="profile-social-link">${content}</div>`;
@@ -1451,7 +1451,9 @@ async function profile(el, editing = false) {
   const catList = [...new Set(cfg.categories.concat(cats))];
   let avatarSource = k.avatar || "";
   let coverSource = k.cover || "";
-  let socialDrafts = normalizeSocialDrafts(k.socials, { withFallback: true });
+  let socialDrafts = normalizeSocialDrafts(k.socials, { withFallback: true }).map((s, index) => ({
+    ...s, verified: false, followers: index === 0 ? Number(k.followers || 0) : Number(s.followers || 0),
+  }));
   el.innerHTML = `<div class="m-head koc-page-heading koc-profile-heading"><div class="between"><h2 style="color:#fff">✏️ Chỉnh sửa hồ sơ</h2><button class="chip on-dark" id="pf-cancel">Hủy</button></div></div>
     <div class="m-body koc-profile-edit-body">
       <div class="image-editor">
@@ -1467,7 +1469,7 @@ async function profile(el, editing = false) {
       <div class="field"><label class="required-label">Email liên hệ / đăng nhập</label><input id="pf-email" type="email" value="${esc(k.email || "")}" placeholder="email@domain.com"></div>
       <div class="field"><label class="required-label">Tỉnh/Thành phố</label><select id="pf-prov">${provinceOptions(cfg.provinces, k.province)}</select></div>
       ${socialRequestNotice}
-      <p class="hint">Đổi kênh chính đã xác minh sẽ gửi yêu cầu cho admin duyệt. Kênh cũ tiếp tục hiển thị trong thời gian chờ.</p>
+      <p class="hint">Thêm, gỡ, đổi kênh hoặc sửa số người theo dõi đều cần admin duyệt. Lưu thay đổi để gửi yêu cầu; thông tin hiện tại được giữ nguyên trong thời gian chờ.</p>
       <fieldset id="pf-socials" style="border:0;padding:0;min-width:0" aria-label="Kênh mạng xã hội" ${socialRequest?.status === 'pending' ? 'disabled' : ''}></fieldset>
       ${tierPanel(k, cfg)}
       <div class="field"><label class="required-label">Ngành hàng & bảng giá</label>
@@ -1499,15 +1501,13 @@ async function profile(el, editing = false) {
     );
     const inputs = [...el.querySelectorAll("#pf-socials [data-social-link]")];
     if (!inputs.length) return;
-    socialDrafts = inputs.map((input, index) => ({
+    socialDrafts = inputs.map((input) => ({
       ...currentByPlatform.get(input.dataset.platform),
       platform: input.dataset.platform,
       handle: input.value.trim(),
-      followers: index === 0 ? k.followers : Number(currentByPlatform.get(input.dataset.platform)?.followers || k.followers),
+      followers: el.querySelector(`#pf-socials [data-social-followers][data-platform="${input.dataset.platform}"]`).value,
     }));
   }
-
-  let socialPickerMode = "manual";
 
   function renderSocialDrafts() {
     const container = el.querySelector("#pf-socials");
@@ -1515,16 +1515,8 @@ async function profile(el, editing = false) {
       socials: socialDrafts,
       prefix: "pf",
       escapeHtml: esc,
-      primaryVerified: k.followers_verified,
-      mode: socialPickerMode,
+      reviewRequired: true,
     });
-    container.querySelectorAll("[data-social-mode]").forEach((button) =>
-      button.addEventListener("click", () => {
-        collectSocialDrafts();
-        socialPickerMode = button.dataset.socialMode;
-        renderSocialDrafts();
-      }),
-    );
     container.querySelectorAll("[data-social-toggle]").forEach((button) =>
       button.addEventListener("click", () => {
         collectSocialDrafts();
@@ -1539,7 +1531,7 @@ async function profile(el, editing = false) {
             toast(`Chỉ được chọn tối đa ${MAX_SOCIAL_CHANNELS} kênh`, "err");
             return;
           }
-          socialDrafts.push({ platform, handle: "", followers: k.followers });
+          socialDrafts.push({ platform, handle: "", followers: '' });
         }
         renderSocialDrafts();
       }),
@@ -1652,10 +1644,12 @@ async function profile(el, editing = false) {
         `Link ${invalidLink.platform} phải bắt đầu bằng http:// hoặc https://`,
         "err",
       );
-    const socials = socialDrafts.map((social, index) => ({
-      ...social,
-      followers: index === 0 ? k.followers : Number(social.followers || k.followers),
-    }));
+    const invalidFollowers = [...el.querySelectorAll('#pf-socials [data-social-followers]')].find((input) => !input.checkValidity());
+    if (invalidFollowers) {
+      invalidFollowers.reportValidity();
+      return;
+    }
+    const socials = socialDrafts.map((social) => ({ ...social, followers: Number(social.followers) }));
     const bank = selectedPayoutBank(el.querySelector("#pf-bank-select"));
     const bankName = bank.name;
     const bankBin = bank.bin;
@@ -1685,7 +1679,7 @@ async function profile(el, editing = false) {
       });
       const topAvatar = document.querySelector(".koc-top-profile img");
       if (topAvatar) topAvatar.src = avatarUrl(avatarSource);
-      toast(result.social_change_pending ? "Đã lưu hồ sơ. Yêu cầu đổi kênh đang chờ admin duyệt." : "Đã lưu và cập nhật trang hồ sơ", "ok");
+      toast(result.social_change_pending ? "Đã lưu hồ sơ. Kênh và số người theo dõi đang chờ admin duyệt." : "Đã lưu và cập nhật trang hồ sơ", "ok");
       profile(el);
     } catch (e) {
       toast(e.message, "err");
