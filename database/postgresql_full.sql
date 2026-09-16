@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS kocs (
   followers_verified BIGINT NOT NULL DEFAULT 0,
   followers_verified_at BIGINT,
   followers_verification_source TEXT,
+  social_change_request TEXT,
   bank_bin TEXT
 );
 
