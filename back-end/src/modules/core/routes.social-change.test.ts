@@ -25,6 +25,7 @@ test('social change requests preserve the live channel until an admin reviews th
   const original = [{ platform: 'TikTok', handle: '@old', followers: 25000, verified: true, verificationSource: 'oauth2_tiktok' }];
   sqlite.prepare(`INSERT INTO kocs(id,name,tier,province,email,followers,followers_verified,socials,categories,status,created_at)
     VALUES ('koc','KOC Test','Micro','Hà Nội','koc@example.test',25000,1,?,'["Mỹ phẩm"]','active',1)`).run(JSON.stringify(original));
+  sqlite.prepare(`INSERT INTO koc_prices(id,koc_id,category,price) VALUES ('p1','koc','Mỹ phẩm',1000000)`).run();
   const DB = {
     prepare(sql: string) {
       const prepared = sqlite.prepare(sql);
@@ -52,10 +53,10 @@ test('social change requests preserve the live channel until an admin reviews th
       body: body ? JSON.stringify(body) : undefined }), env, url);
     return { status: res.status, data: await res.json() };
   }
-  const profile = (handle = 'https://www.tiktok.com/@new') => ({
+  const profile = (handle = 'https://www.tiktok.com/@new', followers = 30000, price = 1000000, cats = ['Mỹ phẩm']) => ({
     email: 'koc@example.test', bio: 'Updated bio', province: 'Hà Nội',
-    socials: [{ platform: 'TikTok', handle, followers: 9999999, verified: true }],
-    categories: ['Mỹ phẩm'], prices: { 'Mỹ phẩm': 1000000 },
+    socials: [{ platform: 'TikTok', handle, followers, verified: true }],
+    categories: cats, prices: Object.fromEntries(cats.map(c => [c, price])),
     bank: { name: 'Techcombank', bin: '970407', account: '19031234567890', owner: 'KOC TEST' },
   });
   const row = () => sqlite.prepare("SELECT * FROM kocs WHERE id='koc'").get()!;
@@ -65,17 +66,25 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.equal((await call('/api/koc/profile', '', profile())).status, 401);
     assert.equal((await call('/api/koc/profile', 'business', profile())).status, 403);
     assert.equal((await call('/api/koc/profile', 'koc-user', { ...profile(), prices: {} })).status, 400);
+    // Price outside target tier is rejected
+    const invalidPrice = await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', 150000, 1000000));
+    assert.equal(invalidPrice.status, 400);
+    assert.match(invalidPrice.data.error, /ngoài khung Mid/);
     assert.equal(row().social_change_request, null);
-    const submitted = await call('/api/koc/profile', 'koc-user', profile());
+    const submitted = await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', 30000, 1500000, ['Mỹ phẩm', 'Thời trang']));
     assert.equal(submitted.status, 200);
     assert.equal(submitted.data.social_change_pending, true);
     assert.deepEqual(JSON.parse(String(row().socials)), original);
+    assert.deepEqual(JSON.parse(String(row().categories)), ['Mỹ phẩm']); // live categories kept while pending
+    assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM koc_prices WHERE koc_id='koc'").get()!.n, 1); // live prices kept
     assert.equal(row().followers, 25000);
     assert.equal(row().bio, 'Updated bio');
     assert.equal(request().socials[0].verified, undefined);
+    assert.deepEqual(request().categories, ['Mỹ phẩm', 'Thời trang']);
+    assert.equal(request().prices['Mỹ phẩm'], 1500000);
     assert.equal(notifyCount(), 1);
     const firstId = request().id;
-    assert.equal((await call('/api/koc/profile', 'koc-user', profile())).status, 200);
+    assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', 30000, 1500000, ['Mỹ phẩm', 'Thời trang']))).status, 200);
     assert.equal(request().id, firstId);
     assert.equal(notifyCount(), 1);
     assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://tiktok.com/@other'))).status, 409);
@@ -94,7 +103,7 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.deepEqual(JSON.parse(String(row().socials)), original);
     assert.equal(request().status, 'rejected');
     assert.equal((await call('/api/admin/social-changes/review', 'admin', review)).status, 409);
-    assert.equal((await call('/api/koc/profile', 'koc-user', profile())).status, 200);
+    assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', 30000, 1500000, ['Mỹ phẩm', 'Thời trang']))).status, 200);
     const pendingReview = { ...review, request_id: request().id, followers: 150000 };
     const concurrent = await Promise.all([
       call('/api/admin/social-changes/review', 'admin', pendingReview),
@@ -103,6 +112,8 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.deepEqual(concurrent.map((r) => r.status).sort(), [200, 409]);
     assert.equal(row().followers, 150000);
     assert.equal(row().tier, 'Mid');
+    assert.deepEqual(JSON.parse(String(row().categories)), ['Mỹ phẩm', 'Thời trang']); // updated to approved
+    assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM koc_prices WHERE koc_id='koc'").get()!.n, 2); // updated to approved
     const channel = JSON.parse(String(row().socials))[0];
     assert.equal(channel.handle, 'https://www.tiktok.com/@new');
     assert.equal(channel.followers, 150000);
