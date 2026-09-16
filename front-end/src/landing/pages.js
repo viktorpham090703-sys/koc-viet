@@ -903,7 +903,7 @@ function pageBusiness() {
             <p style="color:#d5deea;font-size:15.5px;line-height:1.65;margin:0">Đăng ký hoàn toàn miễn phí chỉ trong 1 phút. Tiếp cận ngay danh sách KOC đã ký hợp đồng điện tử, niêm yết giá công khai và bảo vệ thanh toán qua ví đảm bảo.</p>
           </div>
           <div style="display:flex;flex-direction:column;gap:10px;min-width:260px">
-            <a href="/#/business-register" class="btn primary nv-lift" style="background:#B91C1C;color:#fff;border:none;font-weight:700;font-size:15px;padding:14px 24px;text-align:center;text-decoration:none">Đăng ký Doanh nghiệp ngay →</a>
+            <a href="/#/business-register" class="btn primary nv-lift" style="background:#ea583c;color:#fff;border:none;font-weight:700;font-size:15px;padding:14px 24px;text-align:center;text-decoration:none;box-shadow:0 4px 16px rgba(234,88,60,0.35)">Đăng ký Doanh nghiệp ngay →</a>
             <a href="/#/explore" class="btn nv-lift" style="background:#fff;color:#0b1f3a;font-weight:700;font-size:14.5px;padding:14px 24px;text-align:center;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.12);text-decoration:none">Xem trước danh sách KOC</a>
           </div>
         </div>
@@ -1116,7 +1116,7 @@ function pageMarketplace() {
             <p style="color:#d5deea;font-size:15px;line-height:1.65;margin:0">Tạo tài khoản Doanh nghiệp miễn phí để trực tiếp gửi brief, chốt gói booking theo bảng giá niêm yết và thanh toán an toàn qua Ví ký quỹ đảm bảo.</p>
           </div>
           <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <a href="/#/business-register" class="btn primary nv-lift" style="background:#B91C1C;color:#fff;border:none;font-weight:700;padding:13px 24px;text-align:center;text-decoration:none">Đăng ký Doanh nghiệp để booking →</a>
+            <a href="/#/business-register" class="btn primary nv-lift" style="background:#ea583c;color:#fff;border:none;font-weight:700;padding:13px 24px;text-align:center;text-decoration:none;box-shadow:0 4px 16px rgba(234,88,60,0.35)">Đăng ký Doanh nghiệp để booking →</a>
             <a href="/doanh-nghiep" class="btn nv-lift" style="background:#fff;color:#0b1f3a;font-weight:700;padding:13px 24px;text-align:center;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.12);text-decoration:none">Tìm hiểu thêm</a>
           </div>
         </div>
