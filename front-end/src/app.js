@@ -635,7 +635,7 @@ function renderRegisterPortal(el) {
             Biến sức ảnh hưởng thành nguồn thu nhập bền vững. Chủ động niêm yết bảng giá theo 5 hạng, nhận booking trực tiếp từ nhãn hàng và nhận hoa hồng tiếp thị liên kết.
           </p>
           <ul class="reg-portal-features">
-            <li><span class="reg-portal-check">✓</span><span><b>Nhận 95% phí booking</b> khi hoàn thành hợp đồng</span></li>
+            <li><span class="reg-portal-check">✓</span><span><b>Nhận phí booking</b> khi hoàn thành hợp đồng</span></li>
             <li><span class="reg-portal-check">✓</span><span><b>Chủ động bảng giá</b> và toàn quyền lựa chọn booking</span></li>
             <li><span class="reg-portal-check">✓</span><span><b>Hoa hồng bán hàng (affiliate)</b> phát sinh trên mỗi đơn</span></li>
             <li><span class="reg-portal-check">✓</span><span><b>Ký hợp đồng điện tử</b> pháp lý minh bạch, an tâm hợp tác</span></li>
