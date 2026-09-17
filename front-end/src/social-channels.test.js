@@ -218,6 +218,7 @@ test("profile review mode provides editable followers for every channel without 
   assert.ok(html.includes('required value="0"'));
   assert.ok(html.includes('min="1000"'));
   assert.ok(html.includes('min="0"'));
+  assert.ok(html.includes('data-integer-input'));
   assert.ok(html.includes('Thay đổi chỉ có hiệu lực sau khi admin duyệt.'));
   assert.ok(!html.includes('data-social-mode'));
   assert.ok(!html.includes('data-social-connect'));

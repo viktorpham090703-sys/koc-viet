@@ -243,8 +243,8 @@ export function socialChannelPickerHtml({
             </div>
             ${reviewRequired ? `<div class="field">
               <label for="${inputId}-followers">Số người theo dõi ${safe(social.platform)}${index === 0 ? ' (kênh chính)' : ''}</label>
-              <input id="${inputId}-followers" data-social-followers data-platform="${safe(social.platform)}" type="number" inputmode="numeric"
-                min="${index === 0 ? 1000 : 0}" max="2000000000" step="1" required value="${safe(social.followers ?? '')}">
+              <input id="${inputId}-followers" data-social-followers data-platform="${safe(social.platform)}" data-integer-input type="text" inputmode="numeric"
+                min="${index === 0 ? 1000 : 0}" max="2000000000" step="1" required value="${safe(social.followers ?? '')}" placeholder="${index === 0 ? '1.000' : '0'}">
               <p class="hint">${index === 0 ? 'Kênh chính tối thiểu 1.000 người theo dõi. ' : ''}Thay đổi chỉ có hiệu lực sau khi admin duyệt.</p>
             </div>` : ''}
           </div>`;

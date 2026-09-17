@@ -5,6 +5,9 @@ import { parseIntegerInput, bindIntegerInputs } from "./number-input.js";
 test("accepts plain and Vietnamese grouped integers without changing their value", () => {
   for (const value of ["1000000", "1.000.000", " 1.000.000 "])
     assert.equal(parseIntegerInput(value), 1_000_000);
+  assert.equal(parseIntegerInput("1000"), 1_000);
+  assert.equal(parseIntegerInput("1.000"), 1_000);
+  assert.equal(parseIntegerInput(1000), 1_000);
   assert.equal(parseIntegerInput("200.000"), 200_000);
   assert.equal(parseIntegerInput("0"), 0);
   assert.equal(parseIntegerInput("2.000.000.000"), 2_000_000_000);

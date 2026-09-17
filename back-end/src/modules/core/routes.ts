@@ -61,8 +61,18 @@ const SOCIAL_PLATFORMS = {
 const MAX_SOCIAL_CHANNELS = 5;
 export const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
 
+export function parseIntegerInput(value: unknown): number {
+  if (typeof value === 'number') {
+    return Number.isSafeInteger(value) ? value : NaN;
+  }
+  const text = String(value ?? '').trim();
+  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(text)) return NaN;
+  const number = Number(text.replace(/\./g, ''));
+  return Number.isSafeInteger(number) ? number : NaN;
+}
+
 export function validKocRegistrationFollowerCount(value) {
-  const followers = Number(value);
+  const followers = parseIntegerInput(value);
   return (
     Number.isSafeInteger(followers) &&
     followers >= MIN_KOC_REGISTRATION_FOLLOWERS &&
@@ -137,7 +147,7 @@ export function validateSocialsInput(value) {
     if (!validSocialReference(handle) || handle.length > 300) {
       return { socials: [], error: `Link kênh ${platform} không hợp lệ` };
     }
-    const followerValue = Number(item?.followers);
+    const followerValue = parseIntegerInput(item?.followers);
     seen.add(platform);
     socials.push({
       platform,
@@ -8097,10 +8107,14 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       }));
       if (!input.length) return err('Chọn ít nhất một kênh mạng xã hội');
       for (const [index, social] of input.entries()) {
-        const value = social.followers;
-        if (!['number', 'string'].includes(typeof value) || String(value).trim() === '' ||
-            !Number.isSafeInteger(Number(value)) || Number(value) < (index === 0 ? 1000 : 0) || Number(value) > 2_000_000_000)
+        const value = parseIntegerInput(social.followers);
+        if (
+          !Number.isSafeInteger(value) ||
+          value < (index === 0 ? 1000 : 0) ||
+          value > 2_000_000_000
+        )
           return err(`Số người theo dõi của ${social.platform || 'kênh'} không hợp lệ${index === 0 ? ' (kênh chính tối thiểu 1.000)' : ''}`);
+        social.followers = value;
       }
       const socialResult = validateSocialsInput(input);
       if (socialResult.error) return err(socialResult.error);
@@ -8132,13 +8146,14 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     const targetTierName = socialChanged ? tierOf(requestedSocials[0]?.followers ?? k.followers) : k.tier;
     const tr = tiersNow.find((t) => t.name === targetTierName) || tiersNow[0];
     for (const cat of categories) {
-      const v = Number(prices[cat]);
+      const v = parseIntegerInput(prices[cat]);
       if (!Number.isFinite(v) || v <= 0)
         return err(`Nhập giá cho ngành "${cat}"`);
       if (v < tr.min || v > tr.max)
         return err(
           `Giá ngành "${cat}" (${v.toLocaleString("vi")}đ) ngoài khung ${tr.name}: ${tr.min.toLocaleString("vi")}–${tr.max.toLocaleString("vi")}đ`,
         );
+      prices[cat] = v;
     }
     if (submittedSocialChange) {
       socialChangeRequest = {
