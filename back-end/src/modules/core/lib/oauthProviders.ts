@@ -211,7 +211,7 @@ export function getSocialAuthUrl(
       client_id: appId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'threads_basic',
+      scope: 'threads_basic,threads_manage_insights',
       state,
     });
     return { url: `https://threads.net/oauth/authorize?${params.toString()}`, isMock: false };

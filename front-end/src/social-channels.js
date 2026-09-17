@@ -359,7 +359,7 @@ export function socialChannelPickerHtml({
                 <div class="social-account-details">
                   <div class="social-avatar-container">
                     ${social.avatarUrl ? `
-                      <img src="${safe(social.avatarUrl)}" alt="${safe(social.displayName || social.platform)}" class="social-avatar-image" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                      <img src="${safe(social.avatarUrl)}" alt="${safe(social.displayName || social.platform)}" class="social-avatar-image" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
                     ` : ""}
                     <div class="social-avatar-fallback" style="${social.avatarUrl ? 'display:none' : 'display:flex'}">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
