@@ -1,4 +1,5 @@
 export function parseIntegerInput(value) {
+  if (typeof value === "number") return Number.isSafeInteger(value) ? value : NaN;
   const text = String(value ?? "").trim();
   if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(text)) return NaN;
   const number = Number(text.replace(/\./g, ""));

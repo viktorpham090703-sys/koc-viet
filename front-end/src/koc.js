@@ -43,6 +43,7 @@ import {
   socialProfileUrl,
   socialPlatformIcon,
 } from "./social-channels.js";
+import { parseIntegerInput, bindIntegerInputs } from "./number-input.js";
 
 
 const NAV = [
@@ -1525,10 +1526,11 @@ async function profile(el, editing = false) {
 
   bindBankPicker(el.querySelector('[data-bank-picker="pf-bank-select"]'), cfg.payoutBanks);
   bindPasswordToggles(el);
+  bindIntegerInputs(el);
 
   function getEffectiveTier() {
     collectSocialDrafts();
-    const primaryFollowers = Number(socialDrafts[0]?.followers);
+    const primaryFollowers = parseIntegerInput(socialDrafts[0]?.followers);
     if (Number.isSafeInteger(primaryFollowers) && primaryFollowers >= 1000) {
       return tierOf(primaryFollowers);
     }
@@ -1569,9 +1571,16 @@ async function profile(el, editing = false) {
       escapeHtml: esc,
       reviewRequired: true,
     });
+    bindIntegerInputs(container);
     container.querySelectorAll("[data-social-followers]").forEach((input) => {
-      input.addEventListener("input", updateTierAndPriceBrackets);
-      input.addEventListener("change", updateTierAndPriceBrackets);
+      input.addEventListener("input", () => {
+        input.setCustomValidity("");
+        updateTierAndPriceBrackets();
+      });
+      input.addEventListener("change", () => {
+        input.setCustomValidity("");
+        updateTierAndPriceBrackets();
+      });
     });
     container.querySelectorAll("[data-social-toggle]").forEach((button) =>
       button.addEventListener("click", () => {
@@ -1661,7 +1670,10 @@ async function profile(el, editing = false) {
   function renderPrices() {
     el.querySelectorAll("#pf-prices [data-price]").forEach((input) => {
       const val = input.value.trim();
-      if (val !== "") prices[input.dataset.price] = Number(val) || 0;
+      if (val !== "") {
+        const parsed = parseIntegerInput(val);
+        if (Number.isSafeInteger(parsed)) prices[input.dataset.price] = parsed;
+      }
     });
     const effectiveTier = getEffectiveTier();
     const tr = (cfg.tiers || []).find((t) => t.name === effectiveTier) || { min: 0, max: 0, name: effectiveTier };
@@ -1673,11 +1685,12 @@ async function profile(el, editing = false) {
           (c) =>
             `<div class="field">
               <label class="required-label">${esc(c)}</label>
-              <input type="number" data-price="${esc(c)}" value="${prices[c] !== undefined && prices[c] !== null ? prices[c] : ""}" min="${tr.min || 0}" ${tr.name === 'Mega' ? '' : `max="${tr.max || 0}"`} step="100000" placeholder="${money(tr.min || 0)} – ${tr.name === 'Mega' ? 'trở lên' : money(tr.max || 0)}">
+              <input type="text" inputmode="numeric" data-integer-input data-price="${esc(c)}" value="${prices[c] !== undefined && prices[c] !== null && prices[c] !== "" ? (Number.isFinite(Number(prices[c])) ? num(prices[c]) : esc(prices[c])) : ""}" placeholder="${num(tr.min || 0)} – ${tr.name === 'Mega' ? 'trở lên' : num(tr.max || 0)}">
               <p class="hint" style="margin-top:2px;font-size:12px">Khung giá hạng ${esc(effectiveTier)}: ${money(tr.min || 0)} – ${tr.name === "Mega" ? "trở lên" : money(tr.max || 0)}</p>
             </div>`,
         )
         .join("") || '<p class="muted">Chọn ít nhất 1 ngành hàng.</p>';
+    bindIntegerInputs(box);
   }
   renderPrices();
   el.querySelectorAll("#pf-cats [data-c]").forEach((button) =>
@@ -1696,13 +1709,13 @@ async function profile(el, editing = false) {
       return toast("Email không hợp lệ", "err");
     if (!cats.length) return toast("Chọn ít nhất 1 ngành hàng", "err");
     el.querySelectorAll("[data-price]").forEach((input) => {
-      prices[input.dataset.price] = Number(input.value) || 0;
+      prices[input.dataset.price] = parseIntegerInput(input.value);
     });
     const effectiveTier = getEffectiveTier();
     const tr = (cfg.tiers || []).find((t) => t.name === effectiveTier) || { min: 0, max: 0, name: effectiveTier };
     for (const cat of cats) {
-      const v = Number(prices[cat]);
-      if (!Number.isFinite(v) || v <= 0) {
+      const v = prices[cat];
+      if (!Number.isSafeInteger(v) || v <= 0) {
         return toast(`Nhập giá cho ngành "${cat}"`, "err");
       }
       if (v < tr.min || v > tr.max) {
@@ -1726,12 +1739,23 @@ async function profile(el, editing = false) {
         `Link ${invalidLink.platform} phải bắt đầu bằng http:// hoặc https://`,
         "err",
       );
-    const invalidFollowers = [...el.querySelectorAll('#pf-socials [data-social-followers]')].find((input) => !input.checkValidity());
-    if (invalidFollowers) {
-      invalidFollowers.reportValidity();
-      return;
+    const followerInputs = [...el.querySelectorAll('#pf-socials [data-social-followers]')];
+    for (const [index, input] of followerInputs.entries()) {
+      const parsed = parseIntegerInput(input.value);
+      const min = index === 0 ? 1000 : 0;
+      if (!Number.isSafeInteger(parsed) || parsed < min || parsed > 2000000000) {
+        input.setCustomValidity(index === 0 && (Number.isNaN(parsed) || parsed < 1000)
+          ? "Kênh chính tối thiểu 1.000 người theo dõi"
+          : "Số người theo dõi không hợp lệ");
+        input.reportValidity();
+        return;
+      }
+      input.setCustomValidity("");
     }
-    const socials = socialDrafts.map((social) => ({ ...social, followers: Number(social.followers) }));
+    const socials = socialDrafts.map((social) => ({
+      ...social,
+      followers: parseIntegerInput(social.followers),
+    }));
     const bank = selectedPayoutBank(el.querySelector("#pf-bank-select"));
     const bankName = bank.name;
     const bankBin = bank.bin;
