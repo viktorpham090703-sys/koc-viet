@@ -53,7 +53,7 @@ test('social change requests preserve the live channel until an admin reviews th
       body: body ? JSON.stringify(body) : undefined }), env, url);
     return { status: res.status, data: await res.json() };
   }
-  const profile = (handle = 'https://www.tiktok.com/@new', followers = 30000, price = 1000000, cats = ['Mỹ phẩm']) => ({
+  const profile = (handle = 'https://www.tiktok.com/@new', followers: number | string = 30000, price: number | string = 1000000, cats = ['Mỹ phẩm']) => ({
     email: 'koc@example.test', bio: 'Updated bio', province: 'Hà Nội',
     socials: [{ platform: 'TikTok', handle, followers, verified: true }],
     categories: cats, prices: Object.fromEntries(cats.map(c => [c, price])),
@@ -84,7 +84,7 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.equal(request().prices['Mỹ phẩm'], 1500000);
     assert.equal(notifyCount(), 1);
     const firstId = request().id;
-    assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', 30000, 1500000, ['Mỹ phẩm', 'Thời trang']))).status, 200);
+    assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', '30.000', '1.500.000', ['Mỹ phẩm', 'Thời trang']))).status, 200);
     assert.equal(request().id, firstId);
     assert.equal(notifyCount(), 1);
     assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://tiktok.com/@other'))).status, 409);
