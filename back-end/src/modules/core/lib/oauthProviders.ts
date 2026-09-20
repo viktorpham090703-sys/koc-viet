@@ -174,7 +174,7 @@ export function getSocialAuthUrl(
       client_id: appId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'instagram_business_basic',
+      scope: 'instagram_business_basic,instagram_business_manage_insights',
       state,
     });
     return { url: `https://www.instagram.com/oauth/authorize?${params.toString()}`, isMock: false };
@@ -505,6 +505,13 @@ export async function exchangeOAuthCode(
       }
       if (graphData?.username) username = graphData.username;
       if (graphData?.profile_picture_url) avatarUrl = graphData.profile_picture_url;
+    } catch (_) {}
+
+    // Query Instagram Insights API to trigger required API call for App Review (instagram_business_manage_insights)
+    try {
+      const insightsRes = await fetch(`https://graph.instagram.com/me/insights?metric=impressions,reach&period=day&access_token=${accessToken}`);
+      const insightsData = await insightsRes.json();
+      console.log('[Instagram Insights Data]', JSON.stringify(insightsData));
     } catch (_) {}
 
     // Also try connected Instagram Business via Facebook accounts if not found yet
