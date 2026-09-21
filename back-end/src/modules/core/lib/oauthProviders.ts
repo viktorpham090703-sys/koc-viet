@@ -198,7 +198,7 @@ export function getSocialAuthUrl(
         redirectUri,
       };
     }
-    const scope = String(env.META_SCOPES || 'public_profile,pages_show_list,pages_read_engagement').trim();
+    const scope = String(env.META_SCOPES || 'public_profile').trim();
     const params = new URLSearchParams({
       client_id: appId,
       redirect_uri: redirectUri,
