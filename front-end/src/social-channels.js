@@ -45,7 +45,7 @@ export const SOCIAL_CHANNELS = Object.freeze([
   },
 ]);
 
-export const PENDING_APPROVAL_PLATFORMS = Object.freeze(["TikTok", "Facebook"]);
+export const PENDING_APPROVAL_PLATFORMS = Object.freeze(["TikTok"]);
 
 export function isPlatformPendingApproval(platform) {
   return PENDING_APPROVAL_PLATFORMS.includes(String(platform || "").trim());

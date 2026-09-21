@@ -91,12 +91,19 @@ export function getOAuthRedirectUri(env: any, platform: string, requestOrigin?: 
     try {
       const u = new URL(String(requestOrigin).trim());
       if (u.protocol && u.host && !u.host.includes('localhost') && !u.host.includes('127.0.0.1')) {
-        return `${u.origin}/api/oauth/social/callback`;
+        const host = u.host.replace(/^www\./i, '');
+        return `${u.protocol}//${host}/api/oauth/social/callback`;
       }
     } catch (_) {}
   }
 
-  // 4. Localhost fallback
+  // 4. Fallback for production or public platforms
+  const isProd = env?.NODE_ENV === 'production' || process.env.NODE_ENV === 'production';
+  if (isProd) {
+    return 'https://kocviet.com/api/oauth/social/callback';
+  }
+
+  // 5. Localhost fallback
   const origin = `http://localhost:${env?.PORT || 3000}`;
   return `${origin}/api/oauth/social/callback`;
 }
@@ -106,7 +113,7 @@ export function getSocialAuthUrl(
   platform: string,
   state: string,
   requestOrigin?: string,
-): { url: string; isMock: boolean } {
+): { url: string; isMock: boolean; redirectUri: string } {
   const normalizedPlatform = String(platform || '').toLowerCase();
   const redirectUri = getOAuthRedirectUri(env, platform, requestOrigin);
 
@@ -116,6 +123,7 @@ export function getSocialAuthUrl(
       return {
         url: `/api/oauth/social/dev-connect?platform=YouTube&state=${encodeURIComponent(state)}`,
         isMock: true,
+        redirectUri,
       };
     }
 
@@ -135,7 +143,7 @@ export function getSocialAuthUrl(
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
     });
-    return { url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`, isMock: false };
+    return { url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`, isMock: false, redirectUri };
   }
 
   if (normalizedPlatform === 'tiktok') {
@@ -144,6 +152,7 @@ export function getSocialAuthUrl(
       return {
         url: `/api/oauth/social/dev-connect?platform=TikTok&state=${encodeURIComponent(state)}`,
         isMock: true,
+        redirectUri,
       };
     }
 
@@ -164,7 +173,7 @@ export function getSocialAuthUrl(
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
     });
-    return { url: `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`, isMock: false };
+    return { url: `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`, isMock: false, redirectUri };
   }
 
   if (normalizedPlatform === 'instagram') {
@@ -177,7 +186,7 @@ export function getSocialAuthUrl(
       scope: 'instagram_business_basic,instagram_business_manage_insights',
       state,
     });
-    return { url: `https://www.instagram.com/oauth/authorize?${params.toString()}`, isMock: false };
+    return { url: `https://www.instagram.com/oauth/authorize?${params.toString()}`, isMock: false, redirectUri };
   }
 
   if (normalizedPlatform === 'facebook') {
@@ -186,9 +195,10 @@ export function getSocialAuthUrl(
       return {
         url: `/api/oauth/social/dev-connect?platform=${encodeURIComponent(platform)}&state=${encodeURIComponent(state)}`,
         isMock: true,
+        redirectUri,
       };
     }
-    const scope = String(env.META_SCOPES || 'public_profile').trim();
+    const scope = String(env.META_SCOPES || 'public_profile,pages_show_list,pages_read_engagement').trim();
     const params = new URLSearchParams({
       client_id: appId,
       redirect_uri: redirectUri,
@@ -196,7 +206,7 @@ export function getSocialAuthUrl(
       scope,
       state,
     });
-    return { url: `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`, isMock: false };
+    return { url: `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`, isMock: false, redirectUri };
   }
 
   if (normalizedPlatform === 'threads') {
@@ -205,6 +215,7 @@ export function getSocialAuthUrl(
       return {
         url: `/api/oauth/social/dev-connect?platform=Threads&state=${encodeURIComponent(state)}`,
         isMock: true,
+        redirectUri,
       };
     }
     const params = new URLSearchParams({
@@ -214,12 +225,13 @@ export function getSocialAuthUrl(
       scope: 'threads_basic,threads_manage_insights',
       state,
     });
-    return { url: `https://threads.net/oauth/authorize?${params.toString()}`, isMock: false };
+    return { url: `https://threads.net/oauth/authorize?${params.toString()}`, isMock: false, redirectUri };
   }
 
   return {
     url: `/api/oauth/social/dev-connect?platform=${encodeURIComponent(platform)}&state=${encodeURIComponent(state)}`,
     isMock: true,
+    redirectUri,
   };
 }
 
@@ -228,9 +240,11 @@ export async function exchangeOAuthCode(
   platform: string,
   code: string,
   codeVerifier?: string,
+  requestOrigin?: string,
+  explicitRedirectUri?: string,
 ): Promise<SocialChannelStats> {
   const normalizedPlatform = String(platform || '').toLowerCase();
-  const redirectUri = getOAuthRedirectUri(env, platform);
+  const redirectUri = explicitRedirectUri || getOAuthRedirectUri(env, platform, requestOrigin);
   const verifiedAt = now();
 
   if (normalizedPlatform === 'youtube') {
@@ -635,19 +649,37 @@ export async function exchangeOAuthCode(
     }
 
     // 2. Fetch follower count via Threads Insights API
+    const threadsUserId = String(tokenData?.user_id || meData?.id || '').trim();
     try {
-      const insightsRes = await fetch(
-        'https://graph.threads.net/v1.0/me/threads_insights?metric=followers_count',
+      const targetPath = threadsUserId ? `${threadsUserId}/threads_insights` : 'me/threads_insights';
+      let insightsRes = await fetch(
+        `https://graph.threads.net/v1.0/${targetPath}?metric=followers_count`,
         { headers: authHeaders },
       );
-      const insightsData = await insightsRes.json();
+      let insightsData = await insightsRes.json();
       console.log('[Threads Insights Data]', JSON.stringify(insightsData));
-      const metricItem = insightsData?.data?.find?.((item: any) => item.name === 'followers_count');
-      const val = metricItem?.values?.[0]?.value ?? metricItem?.total_value?.value;
+
+      if ((!insightsData?.data || insightsData?.error) && threadsUserId) {
+        insightsRes = await fetch(
+          'https://graph.threads.net/v1.0/me/threads_insights?metric=followers_count',
+          { headers: authHeaders },
+        );
+        insightsData = await insightsRes.json();
+        console.log('[Threads Insights Fallback Data]', JSON.stringify(insightsData));
+      }
+
+      const metricItem = insightsData?.data?.find?.((item: any) => item.name === 'followers_count') || insightsData?.data?.[0];
+      const val =
+        metricItem?.total_value?.value ??
+        metricItem?.values?.[0]?.value ??
+        metricItem?.value ??
+        insightsData?.total_value?.value;
       if (typeof val === 'number') {
         followers = val;
       }
-    } catch (_) {}
+    } catch (e: any) {
+      console.error('[Threads Insights Error]', e?.message);
+    }
 
     const cleanUsername = username.replace(/^@+/, '');
     const handle = `https://www.threads.net/@${cleanUsername}`;
