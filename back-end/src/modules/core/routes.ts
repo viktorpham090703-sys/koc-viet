@@ -2005,7 +2005,7 @@ export async function route(request, env, url) {
       }
     } catch (_) {}
     const result = getSocialAuthUrl(env, platform, state, reqOrigin);
-    setOAuthSession(state, { status: "pending", platform, redirectUri: result.redirectUri });
+    setOAuthSession(state, { status: "pending", platform, redirectUri: result.redirectUri, appId: (result as any).appId });
     return J({
       platform,
       state,
@@ -2088,20 +2088,20 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
     try {
       let reqOrigin = "";
       try {
-        const originHeader = request.headers.get("origin");
-        const refererHeader = request.headers.get("referer");
-        if (originHeader) {
-          reqOrigin = originHeader;
-        } else if (refererHeader) {
-          reqOrigin = new URL(refererHeader).origin;
-        } else if (url?.origin) {
-          reqOrigin = url.origin;
+        const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host");
+        const protoHeader = request.headers.get("x-forwarded-proto") || "https";
+        if (hostHeader && !hostHeader.includes("localhost") && !hostHeader.includes("127.0.0.1")) {
+          const cleanHost = hostHeader.split(",")[0].trim().replace(/^www\./i, "");
+          reqOrigin = `${protoHeader}://${cleanHost}`;
+        } else if (url?.origin && !url.origin.includes("localhost") && !url.origin.includes("127.0.0.1")) {
+          reqOrigin = url.origin.replace(/^https?:\/\/www\./i, "https://");
         }
       } catch (_) {}
       const session = state ? getOAuthSession(state) : null;
       const codeVerifier = session?.codeVerifier;
       const explicitRedirectUri = session?.redirectUri;
-      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier, reqOrigin, explicitRedirectUri);
+      const explicitAppId = (session as any)?.appId;
+      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier, reqOrigin, explicitRedirectUri, explicitAppId);
       if (state) setOAuthSession(state, { status: "completed", stats });
       return J({ ok: true, stats });
     } catch (e: any) {
@@ -2183,7 +2183,8 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
       const session = state ? getOAuthSession(state) : null;
       const codeVerifier = session?.codeVerifier;
       const explicitRedirectUri = session?.redirectUri;
-      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier, reqOrigin, explicitRedirectUri);
+      const explicitAppId = (session as any)?.appId;
+      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier, reqOrigin, explicitRedirectUri, explicitAppId);
       if (state) setOAuthSession(state, { status: "completed", stats });
       if (wantsJson) return J({ ok: true, stats });
       const isPersonal = Boolean(stats.isPersonalAccount);

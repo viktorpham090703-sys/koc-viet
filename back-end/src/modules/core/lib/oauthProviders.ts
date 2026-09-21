@@ -188,7 +188,7 @@ export function getSocialAuthUrl(
       scope: 'instagram_business_basic,instagram_business_manage_insights',
       state,
     });
-    return { url: `https://www.instagram.com/oauth/authorize?${params.toString()}`, isMock: false, redirectUri };
+    return { url: `https://www.instagram.com/oauth/authorize?${params.toString()}`, isMock: false, redirectUri, appId };
   }
 
   if (normalizedPlatform === 'facebook') {
@@ -244,6 +244,7 @@ export async function exchangeOAuthCode(
   codeVerifier?: string,
   requestOrigin?: string,
   explicitRedirectUri?: string,
+  explicitAppId?: string,
 ): Promise<SocialChannelStats> {
   const normalizedPlatform = String(platform || '').toLowerCase();
   const redirectUri = explicitRedirectUri || getOAuthRedirectUri(env, platform, requestOrigin);
@@ -454,7 +455,7 @@ export async function exchangeOAuthCode(
   }
 
   if (normalizedPlatform === 'instagram') {
-    const appId = String(env.INSTAGRAM_APP_ID || env.META_APP_ID || '1064282613121655').trim();
+    const appId = String(explicitAppId || env.INSTAGRAM_APP_ID || '1064282613121655').trim();
     const appSecret = String(env.INSTAGRAM_APP_SECRET || env.META_APP_SECRET || '').trim();
     if (!appId || !appSecret) {
       throw new Error('Chưa cấu hình INSTAGRAM_APP_ID hoặc INSTAGRAM_APP_SECRET');
@@ -484,6 +485,7 @@ export async function exchangeOAuthCode(
       accessToken = igTokenData.access_token;
       userId = String(igTokenData.user_id || '');
     } else {
+      console.warn('[Instagram API Direct Exchange Failed]', JSON.stringify(igTokenData));
       // Fallback attempt: https://graph.facebook.com/v19.0/oauth/access_token
       const fbTokenRes = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?${tokenParams.toString()}`);
       const fbTokenData = await fbTokenRes.json();
@@ -492,7 +494,12 @@ export async function exchangeOAuthCode(
     }
 
     if (!accessToken) {
-      throw new Error(igTokenData?.error_message || igTokenData?.error?.message || 'Lỗi đổi token Instagram');
+      const detailedErr =
+        igTokenData?.error_message ||
+        igTokenData?.error?.message ||
+        'Lỗi đổi token Instagram';
+      console.error('[Instagram Token Exchange Failed]', JSON.stringify({ igTokenData, appId, redirectUri }));
+      throw new Error(detailedErr);
     }
 
     let username = '';
