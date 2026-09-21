@@ -2006,7 +2006,7 @@ export async function route(request, env, url) {
       }
     } catch (_) {}
     const result = getSocialAuthUrl(env, platform, state, reqOrigin);
-    setOAuthSession(state, { status: "pending", platform });
+    setOAuthSession(state, { status: "pending", platform, redirectUri: result.redirectUri });
     return J({
       platform,
       state,
@@ -2087,9 +2087,22 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
     }
 
     try {
+      let reqOrigin = "";
+      try {
+        const originHeader = request.headers.get("origin");
+        const refererHeader = request.headers.get("referer");
+        if (originHeader) {
+          reqOrigin = originHeader;
+        } else if (refererHeader) {
+          reqOrigin = new URL(refererHeader).origin;
+        } else if (url?.origin) {
+          reqOrigin = url.origin;
+        }
+      } catch (_) {}
       const session = state ? getOAuthSession(state) : null;
       const codeVerifier = session?.codeVerifier;
-      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier);
+      const explicitRedirectUri = session?.redirectUri;
+      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier, reqOrigin, explicitRedirectUri);
       if (state) setOAuthSession(state, { status: "completed", stats });
       return J({ ok: true, stats });
     } catch (e: any) {
@@ -2129,6 +2142,9 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
         detectedPlatform = 'Threads';
       }
     }
+    if (!detectedPlatform && code && String(code).startsWith('AQ')) {
+      detectedPlatform = 'Instagram';
+    }
     const platform = detectedPlatform || "YouTube";
 
     if (errorParam || !code) {
@@ -2150,8 +2166,22 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
     }
 
     try {
-      const codeVerifier = state ? getOAuthSession(state)?.codeVerifier : undefined;
-      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier);
+      let reqOrigin = "";
+      try {
+        const originHeader = request.headers.get("origin");
+        const refererHeader = request.headers.get("referer");
+        if (originHeader) {
+          reqOrigin = originHeader;
+        } else if (refererHeader) {
+          reqOrigin = new URL(refererHeader).origin;
+        } else if (url?.origin) {
+          reqOrigin = url.origin;
+        }
+      } catch (_) {}
+      const session = state ? getOAuthSession(state) : null;
+      const codeVerifier = session?.codeVerifier;
+      const explicitRedirectUri = session?.redirectUri;
+      const stats = await exchangeOAuthCode(env, platform, code, codeVerifier, reqOrigin, explicitRedirectUri);
       if (state) setOAuthSession(state, { status: "completed", stats });
       if (wantsJson) return J({ ok: true, stats });
       const isPersonal = Boolean(stats.isPersonalAccount);

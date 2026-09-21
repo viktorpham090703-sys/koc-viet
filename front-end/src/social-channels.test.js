@@ -276,16 +276,16 @@ test("renders approved active channel for Threads without demo badge", () => {
   assert.ok(!html.includes('class="btn-card-action locked"'), "Threads is not locked");
 });
 
-test("identifies TikTok and Facebook as pending platform approval", () => {
-  assert.deepEqual([...PENDING_APPROVAL_PLATFORMS], ["TikTok", "Facebook"]);
+test("identifies TikTok as pending platform approval", () => {
+  assert.deepEqual([...PENDING_APPROVAL_PLATFORMS], ["TikTok"]);
   assert.equal(isPlatformPendingApproval("TikTok"), true);
-  assert.equal(isPlatformPendingApproval("Facebook"), true);
+  assert.equal(isPlatformPendingApproval("Facebook"), false);
   assert.equal(isPlatformPendingApproval("YouTube"), false);
   assert.equal(isPlatformPendingApproval("Instagram"), false);
   assert.equal(isPlatformPendingApproval("Threads"), false);
 });
 
-test("locks connect button and prevents OAuth clicks for TikTok and Facebook in auto mode", () => {
+test("locks connect button and prevents OAuth clicks for TikTok in auto mode while Facebook is unlocked", () => {
   const html = socialChannelPickerHtml({
     socials: [
       { platform: "TikTok", handle: "", followers: 0, verified: false },
@@ -296,17 +296,16 @@ test("locks connect button and prevents OAuth clicks for TikTok and Facebook in 
     mode: "auto",
   });
 
-  // Verify locked buttons
-  assert.ok(html.includes('class="btn-card-action locked" disabled aria-disabled="true"'), "Renders disabled locked button");
+  // Verify locked button for TikTok
+  assert.ok(html.includes('class="btn-card-action locked" disabled aria-disabled="true"'), "Renders disabled locked button for TikTok");
   assert.ok(html.includes("Đang chờ duyệt"), "Button displays 'Đang chờ duyệt'");
   assert.ok(!html.includes('data-social-oauth="TikTok"'), "Does NOT bind OAuth click listener for TikTok");
-  assert.ok(!html.includes('data-social-oauth="Facebook"'), "Does NOT bind OAuth click listener for Facebook");
+  assert.ok(html.includes('data-social-oauth="Facebook"'), "Binds OAuth click listener for unlocked Facebook");
 
   // Verify pending badges & messages
-  assert.ok(html.includes('class="social-card-pending-badge"'), "Renders pending approval badge in card header");
-  assert.ok(html.includes('class="platform-pill-pending-tag"'), "Renders pending tag in platform pills");
+  assert.ok(html.includes('class="social-card-pending-badge"'), "Renders pending approval badge in card header for TikTok");
   assert.ok(html.includes("Kênh TikTok (Đang chờ nền tảng xét duyệt)"), "Displays clear pending heading for TikTok");
-  assert.ok(html.includes("Kênh Facebook (Đang chờ nền tảng xét duyệt)"), "Displays clear pending heading for Facebook");
+  assert.ok(html.includes("Chưa kết nối tài khoản Facebook"), "Displays connect heading for unlocked Facebook");
   assert.ok(html.includes("data-switch-to-manual"), "Provides quick link to switch to manual mode");
 });
 
