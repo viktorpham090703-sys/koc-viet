@@ -90,7 +90,9 @@ export function getOAuthRedirectUri(env: any, platform: string, requestOrigin?: 
   if (requestOrigin) {
     try {
       const u = new URL(String(requestOrigin).trim());
-      if (u.protocol && u.host && !u.host.includes('localhost') && !u.host.includes('127.0.0.1')) {
+      const forbiddenDomains = ['instagram.com', 'facebook.com', 'threads.net', 'tiktok.com', 'google.com', 'accounts.google.com'];
+      const isThirdParty = forbiddenDomains.some(d => u.host === d || u.host.endsWith('.' + d));
+      if (!isThirdParty && u.protocol && u.host && !u.host.includes('localhost') && !u.host.includes('127.0.0.1')) {
         const host = u.host.replace(/^www\./i, '');
         return `${u.protocol}//${host}/api/oauth/social/callback`;
       }
