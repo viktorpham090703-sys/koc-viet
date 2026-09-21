@@ -1995,14 +1995,13 @@ export async function route(request, env, url) {
     const state = url.searchParams.get("state") || `${platform}_${uid()}`;
     let reqOrigin = "";
     try {
-      const originHeader = request.headers.get("origin");
-      const refererHeader = request.headers.get("referer");
-      if (originHeader) {
-        reqOrigin = originHeader;
-      } else if (refererHeader) {
-        reqOrigin = new URL(refererHeader).origin;
-      } else if (url?.origin) {
-        reqOrigin = url.origin;
+      const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host");
+      const protoHeader = request.headers.get("x-forwarded-proto") || "https";
+      if (hostHeader && !hostHeader.includes("localhost") && !hostHeader.includes("127.0.0.1")) {
+        const cleanHost = hostHeader.split(",")[0].trim().replace(/^www\./i, "");
+        reqOrigin = `${protoHeader}://${cleanHost}`;
+      } else if (url?.origin && !url.origin.includes("localhost") && !url.origin.includes("127.0.0.1")) {
+        reqOrigin = url.origin.replace(/^https?:\/\/www\./i, "https://");
       }
     } catch (_) {}
     const result = getSocialAuthUrl(env, platform, state, reqOrigin);
@@ -2116,14 +2115,18 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
     let state = url.searchParams.get("state") || body?.state || "";
     const errorParam = url.searchParams.get("error") || body?.error;
 
-    if (code && code.includes('code=')) {
-      try {
-        const parsed = new URL(code.startsWith('http') ? code : `https://${code}`);
-        const extractedCode = parsed.searchParams.get('code');
-        const extractedState = parsed.searchParams.get('state');
-        if (extractedCode) code = extractedCode;
-        if (extractedState && !state) state = extractedState;
-      } catch (_) {}
+    if (code) {
+      code = String(code).trim();
+      if (code.includes('code=')) {
+        try {
+          const parsed = new URL(code.startsWith('http') ? code : `https://${code}`);
+          const extractedCode = parsed.searchParams.get('code');
+          const extractedState = parsed.searchParams.get('state');
+          if (extractedCode) code = extractedCode;
+          if (extractedState && !state) state = extractedState;
+        } catch (_) {}
+      }
+      code = code.replace(/#_.*$/, '').replace(/#.*$/, '').trim();
     }
 
     const session = state ? getOAuthSession(state) : null;
@@ -2168,14 +2171,13 @@ h3{margin:8px 0 4px}p{color:#64748b;font-size:14px;margin:0 0 16px}</style>
     try {
       let reqOrigin = "";
       try {
-        const originHeader = request.headers.get("origin");
-        const refererHeader = request.headers.get("referer");
-        if (originHeader) {
-          reqOrigin = originHeader;
-        } else if (refererHeader) {
-          reqOrigin = new URL(refererHeader).origin;
-        } else if (url?.origin) {
-          reqOrigin = url.origin;
+        const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host");
+        const protoHeader = request.headers.get("x-forwarded-proto") || "https";
+        if (hostHeader && !hostHeader.includes("localhost") && !hostHeader.includes("127.0.0.1")) {
+          const cleanHost = hostHeader.split(",")[0].trim().replace(/^www\./i, "");
+          reqOrigin = `${protoHeader}://${cleanHost}`;
+        } else if (url?.origin && !url.origin.includes("localhost") && !url.origin.includes("127.0.0.1")) {
+          reqOrigin = url.origin.replace(/^https?:\/\/www\./i, "https://");
         }
       } catch (_) {}
       const session = state ? getOAuthSession(state) : null;
