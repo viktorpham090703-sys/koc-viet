@@ -276,16 +276,16 @@ test("renders approved active channel for Threads without demo badge", () => {
   assert.ok(!html.includes('class="btn-card-action locked"'), "Threads is not locked");
 });
 
-test("identifies TikTok as pending platform approval", () => {
-  assert.deepEqual([...PENDING_APPROVAL_PLATFORMS], ["TikTok"]);
-  assert.equal(isPlatformPendingApproval("TikTok"), true);
+test("identifies platforms pending platform approval", () => {
+  assert.deepEqual([...PENDING_APPROVAL_PLATFORMS], []);
+  assert.equal(isPlatformPendingApproval("TikTok"), false);
   assert.equal(isPlatformPendingApproval("Facebook"), false);
   assert.equal(isPlatformPendingApproval("YouTube"), false);
   assert.equal(isPlatformPendingApproval("Instagram"), false);
   assert.equal(isPlatformPendingApproval("Threads"), false);
 });
 
-test("locks connect button and prevents OAuth clicks for TikTok in auto mode while Facebook is unlocked", () => {
+test("enables connect button and binds OAuth clicks for TikTok and Facebook in auto mode", () => {
   const html = socialChannelPickerHtml({
     socials: [
       { platform: "TikTok", handle: "", followers: 0, verified: false },
@@ -296,17 +296,12 @@ test("locks connect button and prevents OAuth clicks for TikTok in auto mode whi
     mode: "auto",
   });
 
-  // Verify locked button for TikTok
-  assert.ok(html.includes('class="btn-card-action locked" disabled aria-disabled="true"'), "Renders disabled locked button for TikTok");
-  assert.ok(html.includes("Đang chờ duyệt"), "Button displays 'Đang chờ duyệt'");
-  assert.ok(!html.includes('data-social-oauth="TikTok"'), "Does NOT bind OAuth click listener for TikTok");
-  assert.ok(html.includes('data-social-oauth="Facebook"'), "Binds OAuth click listener for unlocked Facebook");
-
-  // Verify pending badges & messages
-  assert.ok(html.includes('class="social-card-pending-badge"'), "Renders pending approval badge in card header for TikTok");
-  assert.ok(html.includes("Kênh TikTok (Đang chờ nền tảng xét duyệt)"), "Displays clear pending heading for TikTok");
-  assert.ok(html.includes("Chưa kết nối tài khoản Facebook"), "Displays connect heading for unlocked Facebook");
-  assert.ok(html.includes("data-switch-to-manual"), "Provides quick link to switch to manual mode");
+  // Verify unlocked button for TikTok & Facebook
+  assert.ok(!html.includes('class="btn-card-action locked"'), "No locked buttons");
+  assert.ok(html.includes('data-social-oauth="TikTok"'), "Binds OAuth click listener for TikTok");
+  assert.ok(html.includes('data-social-oauth="Facebook"'), "Binds OAuth click listener for Facebook");
+  assert.ok(html.includes("Chưa kết nối tài khoản TikTok"), "Displays connect heading for TikTok");
+  assert.ok(html.includes("Chưa kết nối tài khoản Facebook"), "Displays connect heading for Facebook");
 });
 
 test("allows TikTok and Facebook manual entry without locked state in manual mode", () => {
