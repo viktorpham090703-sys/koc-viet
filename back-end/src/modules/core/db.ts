@@ -34,7 +34,7 @@ const MIGRATIONS = [
      reviews_count INTEGER DEFAULT 0, completed_bookings INTEGER DEFAULT 0,
      contract_hash TEXT, leader INTEGER DEFAULT 0, created_at INTEGER NOT NULL )`,
   `CREATE TABLE IF NOT EXISTS koc_prices (
-     id TEXT PRIMARY KEY, koc_id TEXT NOT NULL, category TEXT NOT NULL, price INTEGER NOT NULL )`,
+     id TEXT PRIMARY KEY, koc_id TEXT NOT NULL, category TEXT NOT NULL, price INTEGER NOT NULL, description TEXT NOT NULL DEFAULT '' )`,
   `CREATE TABLE IF NOT EXISTS businesses (
      id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, contact TEXT, created_at INTEGER NOT NULL )`,
   `CREATE TABLE IF NOT EXISTS bookings (
@@ -310,12 +310,17 @@ const MIGRATIONS = [
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_members_current_koc
      ON partner_members(koc_id) WHERE status IN ('pending','active')`,
   `ALTER TABLE kocs ADD COLUMN social_change_request TEXT`,
+  `ALTER TABLE koc_prices ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
 ];
 
 // Repair the v14 schema even when a previous deployment advanced schema_version
 // after swallowing a failed migration. This is required for older persistent
 // databases that can report the latest version while still missing objects.
 async function ensureV14Schema(env) {
+  const priceColumns = await env.DB.prepare(`PRAGMA table_info(koc_prices)`).all();
+  if (!priceColumns.results.some(column => column.name === 'description')) {
+    await env.DB.exec(`ALTER TABLE koc_prices ADD COLUMN description TEXT NOT NULL DEFAULT ''`);
+  }
   await env.DB.exec(
     `CREATE TABLE IF NOT EXISTS push_subscriptions (
        endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,

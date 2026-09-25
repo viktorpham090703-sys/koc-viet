@@ -1,3 +1,4 @@
+import { priceDescriptionField } from "./price-description.js";
 import { withdrawModal } from "./withdrawal.js";
 import { api, post } from "./api.js";
 import { mountListSearch, mountRemoteSearch } from "./list-search.js";
@@ -1420,11 +1421,12 @@ async function profile(el, editing = false) {
         ${(socialRequest.socials || []).map((s) => `<div style="overflow-wrap:anywhere">• <b>${esc(s.platform)}</b>: ${esc(s.handle)} · <b>${num(s.followers)}</b> followers</div>`).join('')}
         ${socialRequest.tier ? `<div>• Hạng đề xuất: <b>${tierBadge(socialRequest.tier)} ${esc(socialRequest.tier)}</b></div>` : ''}
         ${socialRequest.categories?.length ? `<div>• Ngành hàng đề xuất: <b>${socialRequest.categories.map(esc).join(', ')}</b></div>` : ''}
-        ${socialRequest.prices && Object.keys(socialRequest.prices).length ? `<div style="margin-top:4px">Bảng giá đề xuất: ${Object.entries(socialRequest.prices).map(([cat, pr]) => `${esc(cat)} (${money(pr)})`).join(' · ')}</div>` : ''}
+        ${socialRequest.prices && Object.keys(socialRequest.prices).length ? `<div style="margin-top:4px">Bảng giá đề xuất: ${Object.entries(socialRequest.prices).map(([cat, pr]) => `<div>${esc(cat)} (${money(pr)})<p class="hint price-description">${esc(socialRequest.price_descriptions?.[cat] || 'Chưa bổ sung mô tả dịch vụ.')}</p></div>`).join('')}</div>` : ''}
       </div>` : ''}
     ${socialRequest.status === 'rejected' ? `<p style="margin-top:6px">${esc(socialRequest.reason)}. Bạn có thể chỉnh sửa hồ sơ và gửi lại.</p>` : ''}
   </div>` : '';
   const prices = {};
+  const priceDescriptions = Object.fromEntries((k.prices || []).map(p => [p.category, p.description || ""]));
   (k.prices || []).forEach((p) => (prices[p.category] = p.price));
 
   if (!editing) {
@@ -1451,7 +1453,7 @@ async function profile(el, editing = false) {
         </div>
         ${tierPanel(k, cfg)}
         <div class="card profile-section"><h3>Ngành hàng & bảng giá</h3>
-          ${(k.prices || []).map((item) => `<div class="profile-price"><span>${esc(item.category)}</span><b class="money">${money(item.price)}</b></div>`).join("") || '<p class="muted">Chưa có bảng giá.</p>'}
+          ${(k.prices || []).map((item) => `<div class="profile-price"><div><strong>${esc(item.category)}</strong><p class="hint price-description">${esc(item.description || "Chưa bổ sung mô tả dịch vụ.")}</p></div><b class="money">${money(item.price)}</b></div>`).join("") || '<p class="muted">Chưa có bảng giá.</p>'}
         </div>
         <div class="card profile-section"><h3>Kênh mạng xã hội</h3>
           ${socialRequestNotice}
@@ -1668,6 +1670,9 @@ async function profile(el, editing = false) {
   });
 
   function renderPrices() {
+    el.querySelectorAll('#pf-prices [data-price-description]').forEach(input => {
+      priceDescriptions[input.dataset.priceDescription] = input.value;
+    });
     el.querySelectorAll("#pf-prices [data-price]").forEach((input) => {
       const val = input.value.trim();
       if (val !== "") {
@@ -1682,11 +1687,12 @@ async function profile(el, editing = false) {
     box.innerHTML =
       cats
         .map(
-          (c) =>
+          (c, i) =>
             `<div class="field">
-              <label class="required-label">${esc(c)}</label>
-              <input type="text" inputmode="numeric" data-integer-input data-price="${esc(c)}" value="${prices[c] !== undefined && prices[c] !== null && prices[c] !== "" ? (Number.isFinite(Number(prices[c])) ? num(prices[c]) : esc(prices[c])) : ""}" placeholder="${num(tr.min || 0)} – ${tr.name === 'Mega' ? 'trở lên' : num(tr.max || 0)}">
+              <label class="required-label" for="pf-price-${i}">${esc(c)} · Giá niêm yết (VNĐ)</label>
+              <input id="pf-price-${i}" type="text" inputmode="numeric" data-integer-input data-price="${esc(c)}" value="${prices[c] !== undefined && prices[c] !== null && prices[c] !== "" ? (Number.isFinite(Number(prices[c])) ? num(prices[c]) : esc(prices[c])) : ""}" placeholder="${num(tr.min || 0)} – ${tr.name === 'Mega' ? 'trở lên' : num(tr.max || 0)}">
               <p class="hint" style="margin-top:2px;font-size:12px">Khung giá hạng ${esc(effectiveTier)}: ${money(tr.min || 0)} – ${tr.name === "Mega" ? "trở lên" : money(tr.max || 0)}</p>
+              ${priceDescriptionField(c, priceDescriptions[c], `pf-price-description-${i}`)}
             </div>`,
         )
         .join("") || '<p class="muted">Chọn ít nhất 1 ngành hàng.</p>';
@@ -1708,6 +1714,14 @@ async function profile(el, editing = false) {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return toast("Email không hợp lệ", "err");
     if (!cats.length) return toast("Chọn ít nhất 1 ngành hàng", "err");
+    for (const input of el.querySelectorAll('#pf-prices [data-price-description]')) {
+      if (!input.reportValidity()) return;
+      if (!input.value.trim()) {
+        input.focus();
+        return toast('Ghi rõ dịch vụ, đơn vị tính và phạm vi công việc cho từng mức giá.', 'err');
+      }
+      priceDescriptions[input.dataset.priceDescription] = input.value.trim();
+    }
     el.querySelectorAll("[data-price]").forEach((input) => {
       prices[input.dataset.price] = parseIntegerInput(input.value);
     });
@@ -1781,6 +1795,7 @@ async function profile(el, editing = false) {
         socials,
         categories: cats,
         prices,
+        price_descriptions: priceDescriptions,
         bank: { name: bankName, bin: bankBin, account: bankAccount, owner: bankOwner },
       });
       const topAvatar = document.querySelector(".koc-top-profile img");

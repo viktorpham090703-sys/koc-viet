@@ -78,7 +78,8 @@ CREATE TABLE IF NOT EXISTS koc_prices (
   id TEXT PRIMARY KEY,
   koc_id TEXT NOT NULL,
   category TEXT NOT NULL,
-  price BIGINT NOT NULL
+  price BIGINT NOT NULL,
+  description TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS koc_identity_documents (

@@ -1,3 +1,4 @@
+import { priceDescriptionField } from "./price-description.js";
 import { get, post } from "./api.js";
 import { registrationAgeError } from "./registration-age.js";
 import { openIdentityCamera } from "./identity-camera.js";
@@ -56,6 +57,7 @@ export async function renderOnboarding(el, options = {}) {
     followers: 0,
     bio: "",
     prices: {},
+    priceDescriptions: {},
     tier: "Nano",
     files: { front: "", back: "", selfie: "", frontPreview: "", backPreview: "", selfiePreview: "" },
     dob: "",
@@ -881,12 +883,15 @@ export async function renderOnboarding(el, options = {}) {
         <p class="muted" style="font-size:12px;margin-top:8px">Hạng càng cao, khung giá niêm yết theo ngành hàng càng rộng. Hạng được xem xét định kỳ theo số người theo dõi, tỉ lệ hoàn thành booking và điểm đánh giá.</p>
       </div>
       <p class="muted" style="margin:12px 0 6px">Đặt phí cố định cho từng ngành hàng (trong khung):</p>
-      ${d.categories.map((c, i) => `<div class="field"><label class="required-label" for="o-price-${i}">${esc(c)}</label><input id="o-price-${i}" type="text" inputmode="numeric" data-integer-input data-price="${esc(c)}" value="${num(d.prices[c] || tr.min)}" placeholder="${num(tr.min)}"></div>`).join("")}
+      ${d.categories.map((c, i) => `<div class="field"><label class="required-label" for="o-price-${i}">${esc(c)}</label><input id="o-price-${i}" type="text" inputmode="numeric" data-integer-input data-price="${esc(c)}" value="${num(d.prices[c] || tr.min)}" placeholder="${num(tr.min)}">${priceDescriptionField(c, d.priceDescriptions[c], `o-price-description-${i}`)}</div>`).join("")}
       ${d.categories.length ? "" : '<p class="err">Bạn chưa chọn ngành hàng ở bước trước.</p>'}`);
     bindChrome();
     bindIntegerInputs(el);
   }
   function collect2() {
+    el.querySelectorAll('[data-price-description]').forEach(input => {
+      d.priceDescriptions[input.dataset.priceDescription] = input.value.trim();
+    });
     el.querySelectorAll("[data-price]").forEach((inp) => {
       d.prices[inp.dataset.price] = parseIntegerInput(inp.value);
     });
@@ -894,6 +899,14 @@ export async function renderOnboarding(el, options = {}) {
   function validate2() {
     const tr = cfg.tiers.find((t) => t.name === d.tier);
     collect2();
+    for (const input of el.querySelectorAll('[data-price-description]')) {
+      if (!input.reportValidity()) return false;
+      if (!input.value.trim()) {
+        input.focus();
+        toast('Ghi rõ dịch vụ, đơn vị tính và phạm vi công việc cho từng mức giá.', 'err');
+        return false;
+      }
+    }
     let ok = true;
     el.querySelectorAll("[data-price]").forEach((inp) => {
       const v = d.prices[inp.dataset.price];
@@ -1581,6 +1594,7 @@ export async function renderOnboarding(el, options = {}) {
         bio: d.bio,
         socials: d.socials,
         prices: d.prices,
+        price_descriptions: d.priceDescriptions,
         identity: {
           dob: d.dob,
           cccd: d.cccd,
