@@ -914,7 +914,7 @@ async function socialChanges(el) {
             <div style="margin-bottom:6px">Hạng: <b>${tierBadge(k.tier)} ${esc(k.tier)}</b></div>
             <div style="margin-bottom:8px"><b>Kênh hiện tại:</b><div style="margin-top:4px">${channels(k.socials)}</div></div>
             <div><b>Ngành hàng & Bảng giá:</b>
-              ${currentPrices.length ? currentPrices.map((p) => `<div style="font-size:13px">• ${esc(p.category)}: <b>${money(p.price)}</b></div>`).join('') : '<p class="muted" style="font-size:13px">Chưa có bảng giá</p>'}
+              ${currentPrices.length ? currentPrices.map((p) => `<div style="font-size:13px">• ${esc(p.category)}: <b>${money(p.price)}</b><p class="hint price-description">${esc(p.description || 'Chưa bổ sung mô tả dịch vụ.')}</p></div>`).join('') : '<p class="muted" style="font-size:13px">Chưa có bảng giá</p>'}
             </div>
           </div>
           <div style="flex:1;min-width:280px;background:var(--bg-card, #f0fdf4);border:1px solid #bbf7d0;padding:12px 14px;border-radius:8px">
@@ -922,7 +922,7 @@ async function socialChanges(el) {
             <div style="margin-bottom:6px">Hạng đề xuất: <b>${tierBadge(proposedTier)} ${esc(proposedTier)}</b></div>
             <div style="margin-bottom:8px"><b>Kênh đề xuất:</b><div style="margin-top:4px">${channels(k.request.socials)}</div></div>
             <div><b>Ngành hàng & Bảng giá đề xuất:</b>
-              ${proposedCategories.length ? proposedCategories.map((cat) => `<div style="font-size:13px">• ${esc(cat)}: <b>${money(proposedPrices[cat] || 0)}</b></div>`).join('') : '<p class="muted" style="font-size:13px">Không đổi</p>'}
+              ${proposedCategories.length ? proposedCategories.map((cat) => `<div style="font-size:13px">• ${esc(cat)}: <b>${money(proposedPrices[cat] || 0)}</b><p class="hint price-description">${esc(k.request.price_descriptions?.[cat] || 'Chưa bổ sung mô tả dịch vụ.')}</p></div>`).join('') : '<p class="muted" style="font-size:13px">Không đổi</p>'}
             </div>
           </div>
         </div>
@@ -1048,7 +1048,7 @@ async function kocDetail(k, listEl = null) {
     </div>
     ${k.status === "locked" ? `<div class="tint-box" style="margin:0 0 12px"><b>Lý do khóa</b><div>${esc(k.locked_reason || "—")}</div><div class="muted" style="font-size:12px">${k.locked_at ? fmtDateTime(k.locked_at) : ""}</div></div>` : ""}
     ${k.bio ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Giới thiệu</div><div class="muted">${esc(k.bio)}</div></div>` : ""}
-    ${(k.prices || []).length ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Bảng giá booking</div>${k.prices.map((price) => `<div class="between"><span>${esc(price.category)}</span><b>${money(price.price)}</b></div>`).join("")}</div>` : ""}
+    ${(k.prices || []).length ? `<div class="tint-box" style="margin:0 0 12px"><div style="font-size:12px;font-weight:700;margin-bottom:5px">Bảng giá booking</div>${k.prices.map((price) => `<div><div class="between"><span>${esc(price.category)}</span><b>${money(price.price)}</b></div><p class="hint price-description">${esc(price.description || "Chưa bổ sung mô tả dịch vụ.")}</p></div>`).join("")}</div>` : ""}
     <div class="tint-box" style="margin:0 0 12px">
       <div style="font-size:12px;font-weight:700;margin-bottom:4px">💳 Tài khoản nhận thanh toán</div>
       <div class="between"><span>Ngân hàng</span>${bankIdentityHtml(state.config?.payoutBanks, k.bank_name, k.bank_bin, "—")}</div>

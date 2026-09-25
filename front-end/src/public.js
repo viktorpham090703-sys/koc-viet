@@ -138,7 +138,7 @@ export async function renderKocProfile(el, id) {
     <div class="grid" style="grid-template-columns:1fr;margin-top:16px">
       <div class="card"><h2>Bảng giá niêm yết theo ngành hàng</h2>
         <table style="margin-top:10px"><thead><tr><th>Ngành hàng</th><th>Trạng thái</th><th style="text-align:right">Phí cố định</th></tr></thead><tbody>
-        ${(k.prices||[]).map(p=>`<tr><td>${esc(p.category)}</td>
+        ${(k.prices||[]).map(p=>`<tr><td><strong>${esc(p.category)}</strong><p class="hint price-description">${esc(p.description || 'Chưa bổ sung mô tả dịch vụ.')}</p></td>
           <td>${k.accepting[p.category]!==false?'<span class="chip g">Đang nhận</span>':'<span class="chip r">Tạm ngưng</span>'}</td>
           <td style="text-align:right" class="money">${money(p.price)}</td></tr>`).join('')}
         </tbody></table>
