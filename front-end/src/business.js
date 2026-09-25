@@ -451,7 +451,7 @@ async function openKocProfile(kocId, el) {
         </div>
         <div class="business-koc-profile-section">
           <h3>Giá booking niêm yết</h3>
-          ${(koc.prices || []).length ? `<div class="business-koc-prices">${koc.prices.map((price) => `<div><span>${esc(price.category)}</span><b>${money(price.price)}</b></div>`).join("")}</div>` : '<p class="muted">Chưa có gói booking đang mở.</p>'}
+          ${(koc.prices || []).length ? `<div class="business-koc-prices">${koc.prices.map((price) => `<div><div><strong>${esc(price.category)}</strong><p class="hint price-description">${esc(price.description || "Chưa bổ sung mô tả dịch vụ.")}</p></div><b>${money(price.price)}</b></div>`).join("")}</div>` : '<p class="muted">Chưa có gói booking đang mở.</p>'}
         </div>
       </div>
       <div class="business-koc-profile-actions">
@@ -482,6 +482,7 @@ async function openBookingForm(kocId, el) {
       </select></div>
     <div class="field"><label class="required-label">Gói ngành hàng (giá niêm yết cố định)</label>
       <select id="bf-cat">${prices.map((p) => `<option value="${esc(p.category)}" data-price="${p.price}">${esc(p.category)} — ${money(p.price)}</option>`).join("")}</select></div>
+    <div class="tint-box"><strong>Giá này bao gồm</strong><p class="price-description" id="bf-description" aria-live="polite">${esc(prices[0].description || 'Chưa có mô tả dịch vụ. Cần làm rõ phạm vi với KOC trước khi đặt.')}</p></div>
     <div class="tint-box between" id="bf-esc-box"><span>Phí booking · được giữ an toàn đến khi hoàn thành</span><b class="money" id="bf-price">${money(prices[0].price)}</b></div>
     <div id="bf-aff" style="display:none">
       <div class="field" style="margin-top:12px"><label class="required-label">🛒 Sàn áp dụng</label>
@@ -518,6 +519,7 @@ async function openBookingForm(kocId, el) {
   }
   typeSel.addEventListener("change", syncType);
   sel.addEventListener("change", () => {
+    m.querySelector('#bf-description').textContent = prices.find(p => p.category === sel.value)?.description || 'Chưa có mô tả dịch vụ. Cần làm rõ phạm vi với KOC trước khi đặt.';
     m.querySelector("#bf-price").textContent = money(
       sel.selectedOptions[0].dataset.price,
     );

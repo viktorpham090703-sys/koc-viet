@@ -1,4 +1,5 @@
 // @ts-nocheck -- compatibility core migrated from the original Worker; type incrementally by domain.
+import { validatePriceDescriptions } from './lib/priceDescriptions.js';
 import { now, uid } from './db.js';
 import { sqlSearch, matchesSearch, listPage } from './lib/listSearch.js';
 import { bookingKindFilter } from './lib/bookingKind.js';
@@ -2309,7 +2310,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     const kocs = [];
     for (const r of results) {
       const pr = await env.DB.prepare(
-        "SELECT category,price FROM koc_prices WHERE koc_id=?",
+        "SELECT category,price,description FROM koc_prices WHERE koc_id=?",
       )
         .bind(r.id)
         .all();
@@ -2336,7 +2337,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       .first();
     if (!r) return err("Không tìm thấy KOC", 404);
     const pr = await env.DB.prepare(
-      "SELECT category,price FROM koc_prices WHERE koc_id=?",
+      "SELECT category,price,description FROM koc_prices WHERE koc_id=?",
     )
       .bind(id)
       .all();
@@ -2501,6 +2502,9 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     const tr = tiersNow.find((t) => t.name === tier);
     // validate prices in tier range
     const prices = body.prices || {};
+    const priceDetails = validatePriceDescriptions([...new Set([...(body.categories || []), ...Object.keys(prices)])], body.price_descriptions);
+    if (priceDetails.error) return err(priceDetails.error);
+    const priceDescriptions = priceDetails.descriptions;
     for (const [cat, val] of Object.entries(prices)) {
       const v = Number(val);
       if (v < tr.min || v > tr.max)
@@ -2608,8 +2612,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     for (const [cat, val] of Object.entries(prices)) {
       stmts.push(
         env.DB.prepare(
-          `INSERT INTO koc_prices (id,koc_id,category,price) VALUES (?,?,?,?)`,
-        ).bind(uid(), id, cat, Number(val)),
+          `INSERT INTO koc_prices (id,koc_id,category,price,description) VALUES (?,?,?,?,?)`,
+        ).bind(uid(), id, cat, Number(val), priceDescriptions[cat]),
       );
     }
     const createUser = env.DB.prepare(
@@ -3375,7 +3379,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
     const { results } = await env.DB.prepare(
       `SELECT k.id,k.name,k.avatar,k.tier,k.province,k.categories,k.followers,k.rating,
               CASE WHEN EXISTS(SELECT 1 FROM aiclone ar WHERE ar.koc_id=k.id) THEN 1 ELSE 0 END ai_clone_ready,
-              p.category,p.price
+              p.category,p.price,p.description
        FROM kocs k
        LEFT JOIN koc_prices p ON p.koc_id=k.id
        WHERE k.id IN (
@@ -3404,6 +3408,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       if (row.category) byId.get(row.id).prices.push({
         category: row.category,
         price: Number(row.price || 0),
+        description: row.description || "",
       });
     }
     return J({
@@ -6630,7 +6635,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       const kocs = [];
       for (const row of results) {
         const prices = await env.DB.prepare(
-          `SELECT category,price FROM koc_prices WHERE koc_id=? ORDER BY category`,
+          `SELECT category,price,description FROM koc_prices WHERE koc_id=? ORDER BY category`,
         ).bind(row.id).all();
         const partner = await env.DB.prepare(
           `SELECT p.id, p.name, p.status FROM partner_members pm
@@ -6665,7 +6670,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
          WHERE social_change_request LIKE ? ORDER BY created_at DESC,rowid DESC`,
       ).bind('%"status":"pending"%').all();
       const requests = await Promise.all(results.map(async (k) => {
-        const pricesRes = await env.DB.prepare('SELECT category,price FROM koc_prices WHERE koc_id=?').bind(k.id).all();
+        const pricesRes = await env.DB.prepare('SELECT category,price,description FROM koc_prices WHERE koc_id=?').bind(k.id).all();
         return {
           id: k.id,
           name: k.name,
@@ -6709,6 +6714,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
           ? request.categories
           : JSON.parse(k.categories || '[]');
         const nextPrices = request.prices || {};
+        const currentPrices = await env.DB.prepare('SELECT category,description FROM koc_prices WHERE koc_id=?').bind(k.id).all();
+        const nextDescriptions = request.price_descriptions || Object.fromEntries(currentPrices.results.map(p => [p.category, p.description]));
 
         const oldAccepting = JSON.parse(k.accepting || '{}');
         const nextAccepting = {};
@@ -6732,8 +6739,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
             }
             priceStmts.push(
               env.DB.prepare(
-                "INSERT INTO koc_prices (id,koc_id,category,price) VALUES (?,?,?,?)",
-              ).bind(uid(), k.id, cat, p),
+                "INSERT INTO koc_prices (id,koc_id,category,price,description) VALUES (?,?,?,?,?)",
+              ).bind(uid(), k.id, cat, p, nextDescriptions[cat] || ""),
             );
           }
           await env.DB.batch(priceStmts);
@@ -8049,7 +8056,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
           .first("c"),
       ) || 0;
     const pr = await env.DB.prepare(
-      "SELECT category,price FROM koc_prices WHERE koc_id=?",
+      "SELECT category,price,description FROM koc_prices WHERE koc_id=?",
     )
       .bind(me.koc_id)
       .all();
@@ -8088,7 +8095,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       .first();
     if (!k) return err("Không tìm thấy hồ sơ", 404);
     const pr = await env.DB.prepare(
-      "SELECT category,price FROM koc_prices WHERE koc_id=?",
+      "SELECT category,price,description FROM koc_prices WHERE koc_id=?",
     )
       .bind(me.koc_id)
       .all();
@@ -8175,6 +8182,9 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       : JSON.parse(k.categories || "[]");
     if (!categories.length) return err("Chọn ít nhất 1 ngành hàng");
     const prices = body.prices || {};
+    const priceDetails = validatePriceDescriptions(categories, body.price_descriptions);
+    if (priceDetails.error) return err(priceDetails.error);
+    const priceDescriptions = priceDetails.descriptions;
     const tiersNow = await getTiers(env);
     const targetTierName = socialChanged ? tierOf(requestedSocials[0]?.followers ?? k.followers) : k.tier;
     const tr = tiersNow.find((t) => t.name === targetTierName) || tiersNow[0];
@@ -8195,6 +8205,7 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         socials: requestedSocials,
         categories,
         prices,
+        price_descriptions: priceDescriptions,
         tier: targetTierName,
         submitted_at: now(),
       };
@@ -8258,8 +8269,8 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
       for (const cat of categories)
         stmts.push(
           env.DB.prepare(
-            "INSERT INTO koc_prices (id,koc_id,category,price) VALUES (?,?,?,?)",
-          ).bind(uid(), me.koc_id, cat, Number(prices[cat])),
+            "INSERT INTO koc_prices (id,koc_id,category,price,description) VALUES (?,?,?,?,?)",
+          ).bind(uid(), me.koc_id, cat, Number(prices[cat]), priceDescriptions[cat]),
         );
       await env.DB.batch(stmts);
     }

@@ -57,6 +57,7 @@ test('social change requests preserve the live channel until an admin reviews th
     email: 'koc@example.test', bio: 'Updated bio', province: 'Hà Nội',
     socials: [{ platform: 'TikTok', handle, followers, verified: true }],
     categories: cats, prices: Object.fromEntries(cats.map(c => [c, price])),
+    price_descriptions: Object.fromEntries(cats.map(c => [c, 'Livestream 1 giờ trên TikTok, tối đa 3 sản phẩm.'])),
     bank: { name: 'Techcombank', bin: '970407', account: '19031234567890', owner: 'KOC TEST' },
   });
   const row = () => sqlite.prepare("SELECT * FROM kocs WHERE id='koc'").get()!;
@@ -65,6 +66,13 @@ test('social change requests preserve the live channel until an admin reviews th
   try {
     assert.equal((await call('/api/koc/profile', '', profile())).status, 401);
     assert.equal((await call('/api/koc/profile', 'business', profile())).status, 403);
+    for (const description of [undefined, null, '', '   ', 123, {}, 'a'.repeat(2001)]) {
+      const invalid = await call('/api/koc/profile', 'koc-user', { ...profile(), price_descriptions: { 'Mỹ phẩm': description } });
+      assert.equal(invalid.status, 400);
+      assert.match(invalid.data.error, /Mô tả giá/);
+      assert.equal(row().social_change_request, null);
+      assert.equal(sqlite.prepare("SELECT price FROM koc_prices WHERE id='p1'").get()!.price, 1000000);
+    }
     assert.equal((await call('/api/koc/profile', 'koc-user', { ...profile(), prices: {} })).status, 400);
     // Price outside target tier is rejected
     const invalidPrice = await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', 150000, 1000000));
@@ -82,6 +90,7 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.equal(request().socials[0].verified, undefined);
     assert.deepEqual(request().categories, ['Mỹ phẩm', 'Thời trang']);
     assert.equal(request().prices['Mỹ phẩm'], 1500000);
+    assert.equal(request().price_descriptions['Mỹ phẩm'], profile().price_descriptions['Mỹ phẩm']);
     assert.equal(notifyCount(), 1);
     const firstId = request().id;
     assert.equal((await call('/api/koc/profile', 'koc-user', profile('https://www.tiktok.com/@new', '30.000', '1.500.000', ['Mỹ phẩm', 'Thời trang']))).status, 200);
@@ -114,6 +123,7 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.equal(row().tier, 'Mid');
     assert.deepEqual(JSON.parse(String(row().categories)), ['Mỹ phẩm', 'Thời trang']); // updated to approved
     assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM koc_prices WHERE koc_id='koc'").get()!.n, 2); // updated to approved
+    assert.equal(sqlite.prepare("SELECT description FROM koc_prices WHERE koc_id='koc' AND category='Mỹ phẩm'").get()!.description, profile().price_descriptions['Mỹ phẩm']);
     const channel = JSON.parse(String(row().socials))[0];
     assert.equal(channel.handle, 'https://www.tiktok.com/@new');
     assert.equal(channel.followers, 150000);
@@ -167,6 +177,11 @@ test('social change requests preserve the live channel until an admin reviews th
     assert.equal(notifyCount(), noticesBefore);
     const { socials: _, ...profileWithoutSocials } = profile();
     assert.equal((await call('/api/koc/profile', 'koc-user', profileWithoutSocials)).status, 200);
+    const descriptionUpdate = { ...profileWithoutSocials, price_descriptions: { 'Mỹ phẩm': '  1 video giới thiệu 60 giây trên TikTok, bao gồm 2 lần chỉnh sửa.  ' } };
+    assert.equal((await call('/api/koc/profile', 'koc-user', descriptionUpdate)).status, 200);
+    const savedDescription = descriptionUpdate.price_descriptions['Mỹ phẩm'].trim();
+    assert.equal(sqlite.prepare("SELECT description FROM koc_prices WHERE koc_id='koc' AND category='Mỹ phẩm'").get()!.description, savedDescription);
+    assert.equal((await call('/api/koc/profile', 'koc-user')).data.koc.prices[0].description, savedDescription);
     assert.equal(row().social_change_request, null);
     assert.equal((await call('/api/koc/profile', 'koc-user', { ...profileWithoutSocials, followers: 35000 })).status, 200);
     assert.equal(request().socials[0].followers, 35000);
