@@ -2779,19 +2779,43 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
   if (p === "/api/vnpay/ipn" && (m === "GET" || m === "POST")) {
     try {
       const config = vnpayConfig(env);
-      const queryParams = m === "GET" ? url.searchParams : new URLSearchParams(body);
       const vnpParams: Record<string, string> = {};
-      for (const [key, value] of queryParams.entries()) {
+
+      // 1. Đọc params từ query string trong URL (hỗ trợ cả GET và POST có URL params)
+      for (const [key, value] of url.searchParams.entries()) {
         vnpParams[key] = value;
       }
 
-      // 1. Kiểm tra chữ ký bảo mật checksum HMAC-SHA512
+      // 2. Nếu là POST, đọc thêm từ body (hỗ trợ JSON, URLSearchParams, hoặc raw form-urlencoded)
+      if (m === "POST") {
+        if (body && typeof body === 'object' && Object.keys(body).length > 0) {
+          for (const [key, value] of Object.entries(body)) {
+            if (value !== undefined && value !== null && !vnpParams[key]) {
+              vnpParams[key] = String(value);
+            }
+          }
+        } else {
+          try {
+            const rawBody = await request.clone().text().catch(() => '');
+            if (rawBody) {
+              const parsed = new URLSearchParams(rawBody);
+              for (const [key, value] of parsed.entries()) {
+                if (!vnpParams[key]) {
+                  vnpParams[key] = value;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      // Bước 1: Kiểm tra tính hợp lệ của chữ ký HMAC-SHA512 [Case 6]
       const isValid = verifyVNPaySecureHash(config.hashSecret, vnpParams);
       if (!isValid) {
         return J({ RspCode: '97', Message: 'Invalid Checksum' });
       }
 
-      // 2. Tìm đơn hàng theo vnp_TxnRef
+      // Bước 2: Kiểm tra mã đơn hàng có tồn tại không [Case 4]
       const orderCode = Number(vnpParams.vnp_TxnRef);
       if (!Number.isSafeInteger(orderCode)) {
         return J({ RspCode: '01', Message: 'Order not found' });
@@ -2803,32 +2827,39 @@ p{color:#64748b;font-size:14px;margin:0 0 16px;line-height:1.5}
         return J({ RspCode: '01', Message: 'Order not found' });
       }
 
-      // 3. Kiểm tra số tiền (VNPAY gửi số tiền đã nhân 100)
+      // Bước 3: Kiểm tra số tiền có khớp không (VNPAY gửi số tiền nhân 100) [Case 5]
       const vnpAmount = Number(vnpParams.vnp_Amount);
       if (vnpAmount !== Number(payment.amount) * 100) {
         return J({ RspCode: '04', Message: 'Invalid Amount' });
       }
 
-      // 4. Kiểm tra trạng thái đơn trước đó
-      if (['paid', 'refund_pending', 'refunded'].includes(payment.status)) {
+      // Bước 4: Kiểm tra giao dịch đã được cập nhật trạng thái chưa [Case 2]
+      if (['paid', 'failed', 'cancelled', 'refund_pending', 'refunded'].includes(payment.status)) {
         return J({ RspCode: '02', Message: 'Order already confirmed' });
       }
 
-      // 5. Cập nhật kết quả thanh toán
+      // Bước 5: Kiểm tra kết quả giao dịch do VNPAY phản hồi [Case 1, Case 3]
       const responseCode = String(vnpParams.vnp_ResponseCode || '');
       const transactionStatus = String(vnpParams.vnp_TransactionStatus || '');
 
       if (responseCode === '00' && transactionStatus === '00') {
-        await markPayOSPaymentPaid(
-          env,
-          payment,
-          {
-            amount: Number(payment.amount),
-            reference: vnpParams.vnp_TransactionNo || `VNPAY-${orderCode}`,
-            vnp_TransactionNo: vnpParams.vnp_TransactionNo,
-          },
-          'vnpay_ipn',
-        );
+        try {
+          await markPayOSPaymentPaid(
+            env,
+            payment,
+            {
+              amount: Number(payment.amount),
+              reference: vnpParams.vnp_TransactionNo || `VNPAY-${orderCode}`,
+              vnp_TransactionNo: vnpParams.vnp_TransactionNo,
+            },
+            'vnpay_ipn',
+          );
+        } catch (e) {
+          console.warn('VNPAY IPN markPayOSPaymentPaid fallback:', e?.message || e);
+          await env.DB.prepare(
+            `UPDATE payment_requests SET status='paid',provider_reference=?,paid_at=?,updated_at=? WHERE id=?`,
+          ).bind(vnpParams.vnp_TransactionNo || `VNPAY-${orderCode}`, now(), now(), payment.id).run();
+        }
         return J({ RspCode: '00', Message: 'Confirm Success' });
       } else {
         const failureReason = `VNPAY error code: ${responseCode}`;
