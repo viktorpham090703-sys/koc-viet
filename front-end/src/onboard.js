@@ -17,7 +17,6 @@ import {
   normalizeSocialDrafts,
   isValidSocialUrl,
   socialChannelPickerHtml,
-  isPlatformPendingApproval,
 } from "./social-channels.js";
 
 const MIN_KOC_REGISTRATION_FOLLOWERS = 1_000;
@@ -52,7 +51,6 @@ export async function renderOnboarding(el, options = {}) {
     province: (cfg.provinces && cfg.provinces[0]) || "Hà Nội",
     categories: [],
     customCategory: "",
-    socialMode: "auto",
     socials: normalizeSocialDrafts([], { withFallback: true }),
     followers: 0,
     bio: "",
@@ -524,66 +522,6 @@ export async function renderOnboarding(el, options = {}) {
 
   // ---------- Step 1: Hồ sơ (tỉnh/thành, ngành hàng + "Khác", follower...) ----------
   function renderStep1() {
-    function applySocialStats(stats) {
-      const platform = stats.platform || "TikTok";
-      const isPersonal = Boolean(stats.isPersonalAccount || (stats.followers <= 0 && (platform === "Facebook" || platform === "Instagram")));
-      let idx = d.socials.findIndex((s) => s.platform === platform);
-      if (idx === -1) {
-        if (d.socials.length < MAX_SOCIAL_CHANNELS) {
-          d.socials.push({ platform, handle: "", followers: 0 });
-          idx = d.socials.length - 1;
-        } else {
-          idx = 0;
-        }
-      }
-      d.socials[idx] = {
-        ...d.socials[idx],
-        platform,
-        handle: stats.handle || stats.url || `https://${platform.toLowerCase()}.com/@kocviet_${platform.toLowerCase()}`,
-        followers: Number(stats.followers) || 0,
-        verified: true,
-        verificationSource: stats.verificationSource || `oauth2_${platform.toLowerCase()}`,
-        verifiedAt: stats.verifiedAt || new Date().toISOString(),
-        isPersonalAccount: isPersonal,
-        notice: stats.notice,
-        avatarUrl: stats.avatarUrl || stats.avatar || d.socials[idx]?.avatarUrl || "",
-        displayName: stats.displayName || d.socials[idx]?.displayName || "",
-      };
-
-      // Use the largest verified channel for registration and tiering.
-      const verifiedChannels = d.socials.filter((s) => s.verified);
-      d.followers = verifiedChannels.reduce(
-        (largest, s) => Math.max(largest, Number(s.followers) || 0),
-        0,
-      );
-      d.followers_verified = 1;
-      d.followers_verification_source = stats.verificationSource || `oauth2_${platform.toLowerCase()}`;
-
-      if (isPersonal) {
-        toast(`⚠️ Tài khoản ${platform} cá nhân chưa bật Chế độ chuyên nghiệp (0 fl). Vui lòng xem hướng dẫn bên dưới để hiển thị followers!`, "err", 8000);
-      } else {
-        toast(`✓ Đã xác thực kênh ${platform} (${Number(stats.followers).toLocaleString('vi-VN')} followers)!`, "ok");
-      }
-      render();
-    }
-
-    const isManual = (d.socialMode || "auto") === "manual";
-    const verifiedSocials = d.socials.filter((s) => s.verified);
-    const hasVerified = verifiedSocials.length > 0;
-    if (!isManual) {
-      if (hasVerified) {
-        const maxVerifiedFollowers = verifiedSocials.reduce(
-          (largest, s) => Math.max(largest, Number(s.followers) || 0),
-          0,
-        );
-        d.followers = maxVerifiedFollowers;
-        d.followers_verified = 1;
-      } else {
-        d.followers = 0;
-        d.followers_verified = 0;
-      }
-    }
-
     const catList = cfg.categories.concat(["Khác"]);
     el.innerHTML = wrap(`
       <div class="field"><label class="required-label" for="o-prov">Tỉnh/Thành phố</label>
@@ -605,18 +543,13 @@ export async function renderOnboarding(el, options = {}) {
         socials: d.socials,
         prefix: "o",
         escapeHtml: esc,
-        primaryVerified: !isManual && hasVerified,
         primaryLabel: "Kênh chính",
-        mode: d.socialMode || "auto",
       })}
       <div class="field">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
-          <label class="required-label" for="o-fol" style="margin:0">Số người theo dõi lớn nhất trên một kênh</label>
-          ${(!isManual && hasVerified) ? `<span class="social-verified-tag" style="font-size:11px">🔒 Đã đồng bộ từ mạng xã hội (${Number(d.followers).toLocaleString('vi-VN')} người theo dõi)</span>` : ""}
-        </div>
-        <input id="o-fol" type="text" inputmode="numeric" data-integer-input value="${Number.isFinite(d.followers) && d.followers ? num(d.followers) : ""}" placeholder="Ví dụ: 1.000.000" aria-describedby="o-fol-help" ${(!isManual && hasVerified) ? "readonly style='background:#f1f5f9;cursor:not-allowed;font-weight:700;color:var(--navy)'" : ""}>
+        <label class="required-label" for="o-fol">Số người theo dõi lớn nhất trên một kênh</label>
+        <input id="o-fol" type="text" inputmode="numeric" data-integer-input value="${Number.isFinite(d.followers) && d.followers ? num(d.followers) : ""}" placeholder="Ví dụ: 1.000.000" aria-describedby="o-fol-help">
       </div>
-      <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">${(!isManual && hasVerified) ? "Đã lấy số người theo dõi lớn nhất trong các kênh đã xác thực." : "Nhập số người theo dõi của kênh có lượng theo dõi cao nhất, không cộng các kênh. Tối thiểu 1.000 người. Có thể nhập 1000000 hoặc 1.000.000."}</p>
+      <p class="muted" id="o-fol-help" style="font-size:12px;margin:-6px 0 14px">Nhập số người theo dõi của kênh có lượng theo dõi cao nhất, không cộng các kênh. Tối thiểu 1.000 người. Có thể nhập 1000000 hoặc 1.000.000.</p>
       <div class="field"><label>Giới thiệu</label><textarea id="o-bio" rows="2">${esc(d.bio)}</textarea></div>`);
     bindChrome();
     bindIntegerInputs(el);
@@ -635,15 +568,6 @@ export async function renderOnboarding(el, options = {}) {
         if (d.categories.includes(c))
           d.categories = d.categories.filter((x) => x !== c);
         else d.categories.push(c);
-        render();
-      }),
-    );
-    el.querySelectorAll("[data-social-mode]").forEach((button) =>
-      button.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        collect1();
-        d.socialMode = button.dataset.socialMode;
         render();
       }),
     );
@@ -668,126 +592,12 @@ export async function renderOnboarding(el, options = {}) {
         render();
       }),
     );
-    el.querySelectorAll("[data-switch-to-manual]").forEach((link) =>
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        collect1();
-        d.socialMode = "manual";
-        render();
-      }),
-    );
-    el.querySelectorAll("[data-social-oauth]").forEach((button) =>
-      button.addEventListener("click", async () => {
-        const platform = button.dataset.socialOauth;
-        if (isPlatformPendingApproval(platform)) {
-          toast(`Tính năng kết nối tự động với ${platform} đang chờ nền tảng xét duyệt. Vui lòng chuyển sang tab "Nhập link thủ công" để điền liên kết.`, "err");
-          return;
-        }
-        collect1();
-        window.__lastOAuthPlatform = platform;
-        const oldText = button.textContent;
-        button.disabled = true;
-        button.textContent = "Đang kết nối…";
-
-        let popup = null;
-        let pollTimer = null;
-        let bc = null;
-
-        const cleanup = () => {
-          if (pollTimer) clearInterval(pollTimer);
-          window.removeEventListener("message", handleMessage);
-          if (bc) bc.close();
-          button.disabled = false;
-          button.textContent = oldText;
-        };
-
-        const handleSuccess = (stats) => {
-          cleanup();
-          applySocialStats(stats);
-        };
-
-        const handleMessage = (event) => {
-          if (event.data?.type === "KOC_OAUTH_SUCCESS") {
-            handleSuccess(event.data.payload);
-          } else if (event.data?.type === "KOC_OAUTH_ERROR") {
-            cleanup();
-            toast(event.data.error || "Xác thực không thành công", "err");
-            render();
-          }
-        };
-
-        try {
-          const res = await get(`/api/oauth/social/auth-url?platform=${encodeURIComponent(platform)}`);
-          const width = 580;
-          const height = 660;
-          const left = window.screenX + (window.outerWidth - width) / 2;
-          const top = window.screenY + (window.outerHeight - height) / 2;
-          popup = window.open(
-            res.authUrl,
-            `oauth_${platform}`,
-            `width=${width},height=${height},left=${left},top=${top},status=no,toolbar=no,menubar=no`,
-          );
-
-          const state = res.state;
-          window.addEventListener("message", handleMessage);
-          try {
-            bc = new BroadcastChannel("koc_oauth_channel");
-            bc.onmessage = handleMessage;
-          } catch (_) {}
-
-          let isHandled = false;
-          pollTimer = setInterval(async () => {
-            if (isHandled) return;
-
-            // Poll local server for OAuth completion state
-            if (state) {
-              try {
-                const check = await get(`/api/oauth/social/status?state=${encodeURIComponent(state)}`);
-                if (check?.status === "completed" && check.stats) {
-                  isHandled = true;
-                  if (popup && !popup.closed) popup.close();
-                  handleSuccess(check.stats);
-                  return;
-                } else if (check?.status === "error") {
-                  isHandled = true;
-                  if (popup && !popup.closed) popup.close();
-                  cleanup();
-                  toast(check.error || "Xác thực không thành công", "err");
-                  render();
-                  return;
-                }
-              } catch (_) {}
-            }
-
-            // Check if popup was closed by user
-            if (popup && popup.closed) {
-              clearInterval(pollTimer);
-              if (state && !isHandled) {
-                try {
-                  const check = await get(`/api/oauth/social/status?state=${encodeURIComponent(state)}`);
-                  if (check?.status === "completed" && check.stats) {
-                    isHandled = true;
-                    handleSuccess(check.stats);
-                    return;
-                  }
-                } catch (_) {}
-              }
-              cleanup();
-            }
-          }, 800);
-        } catch (err) {
-          cleanup();
-          toast(err.message || "Lỗi khởi tạo OAuth", "err");
-        }
-      }),
-    );
   }
   function collect1() {
     const prov = el.querySelector("#o-prov");
     if (prov) d.province = prov.value.trim();
     const fol = el.querySelector("#o-fol");
-    if (fol && !fol.hasAttribute("readonly")) d.followers = parseIntegerInput(fol.value);
+    if (fol) d.followers = parseIntegerInput(fol.value);
     const bio = el.querySelector("#o-bio");
     if (bio) d.bio = bio.value;
     const other = el.querySelector("#o-cat-other");
@@ -804,7 +614,7 @@ export async function renderOnboarding(el, options = {}) {
         return {
           ...existing,
           platform,
-          handle: val || (existing.verified ? existing.handle : ""),
+          handle: val,
           followers: Number(existing.followers) || 0,
         };
       });
@@ -837,12 +647,7 @@ export async function renderOnboarding(el, options = {}) {
     }
     const missingLink = d.socials.find((social) => !social.handle);
     if (missingLink) {
-      toast(
-        (d.socialMode || "auto") === "manual"
-          ? `Vui lòng nhập link kênh ${missingLink.platform}`
-          : `Vui lòng kết nối xác thực kênh ${missingLink.platform}`,
-        "err",
-      );
+      toast(`Vui lòng nhập link kênh ${missingLink.platform}`, "err");
       return false;
     }
     const invalidLink = d.socials.find(

@@ -6,8 +6,9 @@ import {
   normalizeSocialDrafts,
   socialPlatformIcon,
   socialChannelPickerHtml,
-  PENDING_APPROVAL_PLATFORMS,
-  isPlatformPendingApproval,
+  socialChannelPlaceholder,
+  socialProfileUrl,
+  isValidSocialUrl,
 } from "./social-channels.js";
 
 test("offers only the five supported social platforms", () => {
@@ -56,160 +57,80 @@ test("normalizes drafts preserving avatarUrl and displayName", () => {
   assert.equal(drafts[0].displayName, "Creator VN");
 });
 
-test("renders verified channel with text link, avatar, and no text input box", () => {
+test("generates placeholders and profile URLs correctly", () => {
+  assert.equal(socialChannelPlaceholder("TikTok"), "https://www.tiktok.com/@tenkenh");
+  assert.equal(socialChannelPlaceholder("Facebook"), "https://www.facebook.com/tenkenh");
+  assert.equal(socialChannelPlaceholder("Instagram"), "https://www.instagram.com/tenkenh");
+  assert.equal(socialChannelPlaceholder("YouTube"), "https://www.youtube.com/@tenkenh");
+  assert.equal(socialChannelPlaceholder("Threads"), "https://www.threads.net/@tenkenh");
+
+  assert.equal(socialProfileUrl({ platform: "TikTok", handle: "@koc_viet" }), "https://www.tiktok.com/@koc_viet");
+  assert.equal(socialProfileUrl({ platform: "Facebook", handle: "kocviet.official" }), "https://www.facebook.com/kocviet.official");
+  assert.equal(socialProfileUrl({ platform: "YouTube", handle: "https://youtube.com/@koc" }), "https://youtube.com/@koc");
+});
+
+test("validates social profile URLs strictly", () => {
+  assert.equal(isValidSocialUrl("https://www.tiktok.com/@user"), true);
+  assert.equal(isValidSocialUrl("http://facebook.com/user"), true);
+  assert.equal(isValidSocialUrl("javascript:alert(1)"), false);
+  assert.equal(isValidSocialUrl("plain_text"), false);
+  assert.equal(isValidSocialUrl(""), false);
+});
+
+test("renders direct manual URL input boxes and platform pills", () => {
   const html = socialChannelPickerHtml({
     socials: [
-      {
-        platform: "TikTok",
-        handle: "https://www.tiktok.com/@trngdc_14",
-        avatarUrl: "https://p16-va.tiktokcdn.com/avatar.jpg",
-        displayName: "Trung Đức",
-        followers: 1500,
-        verified: true,
-      },
+      { platform: "TikTok", handle: "https://www.tiktok.com/@creator", followers: 1200 },
+      { platform: "Facebook", handle: "", followers: 0 },
     ],
     prefix: "test",
     escapeHtml: (s) => s,
   });
 
-  // Must not have text/url input box for filling link
-  assert.ok(!html.includes('type="url"'), "Should not render text/url input box");
-  assert.ok(html.includes('type="hidden"'), "Should render hidden input to preserve data-social-link binding");
+  // URL inputs and bindings
+  assert.ok(html.includes('type="url"'), "Renders URL input boxes");
+  assert.ok(html.includes('class="social-manual-input"'), "Has manual input class");
+  assert.ok(html.includes('data-social-link'), "Preserves data-social-link binding");
+  assert.ok(html.includes('value="https://www.tiktok.com/@creator"'), "Pre-fills existing handle");
+  assert.ok(html.includes('data-platform="TikTok"'), "Binds TikTok platform attribute");
+  assert.ok(html.includes('data-platform="Facebook"'), "Binds Facebook platform attribute");
 
-  // Must have dashboard overview with progress
-  assert.ok(html.includes('class="social-dashboard-overview"'), "Should render dashboard overview");
-  assert.ok(html.includes("1/5</strong> kênh đã liên kết"), "Should show linked channels count");
-  assert.ok(html.includes("1.500</strong> người theo dõi"), "Should show total followers");
-  assert.ok(html.includes("✓ Đủ điều kiện"), "Should show eligible status badge");
+  // Overview and platform pills
+  assert.ok(html.includes("2/5</strong> kênh đã chọn"), "Shows count pill");
+  assert.ok(html.includes('class="social-platform-pill selected"'), "Shows selected pill for chosen channels");
+  assert.ok(html.includes('data-social-toggle="TikTok"'), "Binds toggle handler for TikTok");
+  assert.ok(html.includes('data-social-toggle="YouTube"'), "Binds toggle handler for unselected YouTube");
+  assert.ok(html.includes("Kênh chính"), "Renders primary channel badge");
+  assert.ok(html.includes("Kênh phụ"), "Renders secondary channel badge");
+  assert.ok(html.includes("✕ Gỡ kênh"), "Renders unlink / remove channel button");
 
-  // Must have platform selector pills
-  assert.ok(html.includes('class="social-platform-pill selected verified"'), "Should render selected & verified pill");
-  assert.ok(html.includes('class="platform-pill-icon"'), "Should render icon in platform pill");
-
-  // Must have text link and avatar
-  assert.ok(html.includes('class="social-account-text-link"'), "Should render link as text");
-  assert.ok(html.includes("https://www.tiktok.com/@trngdc_14"), "Should display channel link");
-  assert.ok(html.includes('class="social-avatar-image"'), "Should render avatar image");
-  assert.ok(html.includes("Trung Đức"), "Should display account display name");
-
-  // Must have follower metric and actions without technical jargon
-  assert.ok(html.includes('class="social-stat-metric eligible"'), "Should render follower metric box");
-  assert.ok(html.includes('class="btn-card-action reauth"'), "Should have reauth button");
-  assert.ok(html.includes("Đồng bộ lại"), "Should render re-sync button with non-technical text");
-  assert.ok(html.includes("↗ Xem hồ sơ"), "Should render external profile view button");
+  // No technical OAuth jargon
   assert.ok(!html.includes("OAuth"), "Strictly avoids technical jargon OAuth");
   assert.ok(!html.includes("Token"), "Strictly avoids technical jargon Token");
   assert.ok(!html.includes("Callback"), "Strictly avoids technical jargon Callback");
+  assert.ok(!html.includes("data-social-mode"), "No mode switcher needed");
 });
 
-test("displays explicit requirement reason when follower count is below minimum", () => {
+test("renders empty state when no channels are selected", () => {
   const html = socialChannelPickerHtml({
-    socials: [
-      {
-        platform: "TikTok",
-        handle: "https://www.tiktok.com/@newbie",
-        displayName: "Newbie Creator",
-        followers: 450,
-        verified: true,
-      },
-    ],
+    socials: [],
     prefix: "test",
     escapeHtml: (s) => s,
   });
 
-  assert.ok(html.includes("⚠ Chưa đạt yêu cầu"), "Renders ineligible status badge");
-  assert.ok(
-    html.includes("Hiện có 450 người theo dõi. Yêu cầu tối thiểu: 1.000 người theo dõi."),
-    "Displays explicit clear explanation of minimum follower requirement",
-  );
+  assert.ok(html.includes("Chưa có kênh nào được chọn"), "Shows helpful empty state message");
+  assert.ok(html.includes("0/5</strong> kênh đã chọn"), "Shows zero count");
 });
 
-test("renders unconnected channel with friendly connection CTA button", () => {
+test("profile review mode provides editable followers for every channel", () => {
   const html = socialChannelPickerHtml({
     socials: [
-      {
-        platform: "YouTube",
-        handle: "",
-        followers: 0,
-        verified: false,
-      },
+      { platform: "TikTok", handle: "https://tiktok.com/@creator", followers: 25000 },
+      { platform: "Instagram", handle: "https://instagram.com/creator", followers: 0 },
     ],
-    prefix: "test",
+    prefix: "pf",
     escapeHtml: (s) => s,
-  });
-
-  assert.ok(html.includes('class="social-unconnected-layout"'), "Renders unconnected layout");
-  assert.ok(html.includes("Chưa kết nối tài khoản YouTube"), "Friendly title");
-  assert.ok(html.includes("Kết nối YouTube"), "Clear CTA button text");
-  assert.ok(html.includes('data-social-oauth="YouTube"'), "Binds oauth click listener");
-});
-
-test("renders personal account guidance callout with helpful step-by-step instructions", () => {
-  const html = socialChannelPickerHtml({
-    socials: [
-      {
-        platform: "Facebook",
-        handle: "https://www.facebook.com/123456",
-        followers: 0,
-        verified: true,
-        isPersonalAccount: true,
-      },
-    ],
-    prefix: "test",
-    escapeHtml: (s) => s,
-  });
-
-  assert.ok(html.includes('class="social-info-callout"'), "Renders elegant guidance callout");
-  assert.ok(html.includes("Lưu ý về hiển thị người theo dõi Facebook"), "Displays informative header");
-  assert.ok(html.includes("👉 Cách thực hiện nhanh:"), "Displays step-by-step instructions heading");
-  assert.ok(html.includes("Bật chế độ chuyên nghiệp (Turn on Professional Mode)"), "Provides Facebook mode instructions");
-});
-
-test("renders mode switcher offering both Auto (Beta) and Manual (Standard) modes", () => {
-  const html = socialChannelPickerHtml({
-    socials: [{ platform: "TikTok", handle: "https://www.tiktok.com/@creator" }],
-    prefix: "test",
-    escapeHtml: (s) => s,
-    mode: "auto",
-  });
-
-  assert.ok(html.includes('class="social-mode-selector"'), "Renders mode selector");
-  assert.ok(html.includes('data-social-mode="auto"'), "Has auto beta button");
-  assert.ok(html.includes('data-social-mode="manual"'), "Has manual standard button");
-  assert.ok(html.includes("Beta"), "Labels auto mode as Beta");
-  assert.ok(html.includes("Tiêu chuẩn"), "Labels manual mode as Standard");
-});
-
-test("renders classic manual mode with direct url input boxes and platform pills", () => {
-  const html = socialChannelPickerHtml({
-    socials: [
-      { platform: "TikTok", handle: "https://www.tiktok.com/@creator", followers: 1200, verified: true },
-      { platform: "Facebook", handle: "", followers: 0, verified: false },
-    ],
-    prefix: "test",
-    escapeHtml: (s) => s,
-    mode: "manual",
-  });
-
-  // Manual mode MUST render editable URL inputs
-  assert.ok(html.includes('type="url"'), "Renders URL input boxes in manual mode");
-  assert.ok(html.includes('class="social-manual-input"'), "Has manual input class");
-  assert.ok(html.includes('data-social-link'), "Preserves data-social-link binding");
-  assert.ok(html.includes("https://www.tiktok.com/@creator"), "Pre-fills existing handle");
-  assert.ok(html.includes("Nhập thủ công"), "Shows manual mode title");
-
-  // Platform pills and verified pill
-  assert.ok(html.includes('class="social-platform-pill selected verified"'), "Shows selected verified pill");
-  assert.ok(html.includes("✓ Đã xác thực · 1.200 fl"), "Shows verified stats pill in manual mode");
-});
-
-test("profile review mode provides editable followers for every channel without an OAuth bypass", () => {
-  const html = socialChannelPickerHtml({
-    socials: [
-      { platform: 'TikTok', handle: 'https://tiktok.com/@creator', followers: 25000 },
-      { platform: 'Instagram', handle: 'https://instagram.com/creator', followers: 0 },
-    ],
-    prefix: 'pf', escapeHtml: (s) => s, reviewRequired: true,
+    reviewRequired: true,
   });
   assert.equal((html.match(/data-social-followers/g) || []).length, 2);
   assert.ok(html.includes('for="pf-social-link-0-followers"'));
@@ -219,110 +140,10 @@ test("profile review mode provides editable followers for every channel without 
   assert.ok(html.includes('min="1000"'));
   assert.ok(html.includes('min="0"'));
   assert.ok(html.includes('data-integer-input'));
-  assert.ok(html.includes('Thay đổi chỉ có hiệu lực sau khi admin duyệt.'));
-  assert.ok(!html.includes('data-social-mode'));
-  assert.ok(!html.includes('data-social-connect'));
-  const onboarding = socialChannelPickerHtml({ socials: [], prefix: 'ob', mode: 'manual' });
-  assert.ok(!onboarding.includes('data-social-followers'));
+  assert.ok(html.includes("Thay đổi chỉ có hiệu lực sau khi admin duyệt."));
+  assert.ok(!html.includes("data-social-mode"));
+  assert.ok(!html.includes("data-social-connect"));
+
+  const onboarding = socialChannelPickerHtml({ socials: [], prefix: "ob" });
+  assert.ok(!onboarding.includes("data-social-followers"));
 });
-
-test("always renders unlink button for ineligible or primary channels and never disables platform pills", () => {
-  const html = socialChannelPickerHtml({
-    socials: [
-      {
-        platform: "TikTok",
-        handle: "https://www.tiktok.com/@creator",
-        followers: 0,
-        verified: true,
-      },
-      {
-        platform: "Threads",
-        handle: "https://www.threads.net/@creator",
-        followers: 14726,
-        verified: true,
-      },
-    ],
-    prefix: "test",
-    escapeHtml: (s) => s,
-    mode: "auto",
-  });
-
-  // Both cards must have unlink buttons
-  assert.ok(html.includes('data-social-toggle="TikTok" title="Gỡ TikTok khỏi danh sách"'), "Renders unlink button on primary ineligible channel");
-  assert.ok(html.includes('data-social-toggle="Threads" title="Gỡ Threads khỏi danh sách"'), "Renders unlink button on secondary eligible channel");
-  assert.ok(!html.includes('disabled title="Kênh chính đã liên kết cố định"'), "Never disables platform pills or locks channels");
-});
-
-test("renders approved active channel for Threads without demo badge", () => {
-  const html = socialChannelPickerHtml({
-    socials: [
-      {
-        platform: "Threads",
-        handle: "",
-        followers: 0,
-        verified: false,
-      },
-    ],
-    prefix: "test",
-    escapeHtml: (s) => s,
-    mode: "auto",
-  });
-
-  // Verify Threads is approved and active
-  assert.ok(html.includes("Chưa kết nối tài khoản Threads"), "Renders standard unconnected title");
-  assert.ok(html.includes("Kết nối Threads"), "Renders clear connect CTA text");
-  assert.ok(html.includes('data-social-oauth="Threads"'), "Binds OAuth click listener for Threads");
-  assert.ok(!html.includes("Demo"), "No Demo badge or demo text appears for Threads");
-  assert.ok(!html.includes('class="btn-card-action locked"'), "Threads is not locked");
-});
-
-test("identifies platforms pending platform approval", () => {
-  assert.deepEqual([...PENDING_APPROVAL_PLATFORMS], []);
-  assert.equal(isPlatformPendingApproval("TikTok"), false);
-  assert.equal(isPlatformPendingApproval("Facebook"), false);
-  assert.equal(isPlatformPendingApproval("YouTube"), false);
-  assert.equal(isPlatformPendingApproval("Instagram"), false);
-  assert.equal(isPlatformPendingApproval("Threads"), false);
-});
-
-test("enables connect button and binds OAuth clicks for TikTok and Facebook in auto mode", () => {
-  const html = socialChannelPickerHtml({
-    socials: [
-      { platform: "TikTok", handle: "", followers: 0, verified: false },
-      { platform: "Facebook", handle: "", followers: 0, verified: false },
-    ],
-    prefix: "test",
-    escapeHtml: (s) => s,
-    mode: "auto",
-  });
-
-  // Verify unlocked button for TikTok & Facebook
-  assert.ok(!html.includes('class="btn-card-action locked"'), "No locked buttons");
-  assert.ok(html.includes('data-social-oauth="TikTok"'), "Binds OAuth click listener for TikTok");
-  assert.ok(html.includes('data-social-oauth="Facebook"'), "Binds OAuth click listener for Facebook");
-  assert.ok(html.includes("Chưa kết nối tài khoản TikTok"), "Displays connect heading for TikTok");
-  assert.ok(html.includes("Chưa kết nối tài khoản Facebook"), "Displays connect heading for Facebook");
-});
-
-test("allows TikTok and Facebook manual entry without locked state in manual mode", () => {
-  const html = socialChannelPickerHtml({
-    socials: [
-      { platform: "TikTok", handle: "https://www.tiktok.com/@mybrand", followers: 0, verified: false },
-      { platform: "Facebook", handle: "https://facebook.com/mybrand", followers: 0, verified: false },
-    ],
-    prefix: "test",
-    escapeHtml: (s) => s,
-    mode: "manual",
-  });
-
-  // In manual mode, inputs must remain editable and no locked buttons
-  assert.ok(!html.includes('class="btn-card-action locked"'), "No locked button in manual mode");
-  assert.ok(!html.includes("Đang chờ duyệt"), "No pending approval text on manual buttons");
-  assert.ok(html.includes('value="https://www.tiktok.com/@mybrand"'), "Preserves manual input for TikTok");
-  assert.ok(html.includes('value="https://facebook.com/mybrand"'), "Preserves manual input for Facebook");
-});
-
-
-
-
-
